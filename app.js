@@ -44,11 +44,27 @@ function fetchWithTimeout(url, options = {}) {
     });
 }
 
+function getItemTitle(meta) {
+  if (!meta) return '';
+  if (state && state.homeLang === 'pt-br' && meta.name_pt) return meta.name_pt;
+  return meta.name || '';
+}
+
+function getItemDescription(meta) {
+  if (!meta) return '';
+  if (state && state.homeLang === 'pt-br' && meta.description_pt) return meta.description_pt;
+  return meta.description || '';
+}
+
 function getPosterUrl(meta) {
+  if (!meta) return '';
+  if (state && state.homeLang === 'pt-br' && meta.poster_pt) return meta.poster_pt;
   return meta.poster || (meta.id ? `https://images.metahub.space/poster/medium/${meta.id}/img` : '');
 }
 
 function getBackgroundUrl(meta) {
+  if (!meta) return '';
+  if (state && state.homeLang === 'pt-br' && meta.background_pt) return meta.background_pt;
   return meta.background || (meta.id ? `https://images.metahub.space/background/medium/${meta.id}/img` : '');
 }
 
@@ -848,33 +864,40 @@ const UI = {
       state.catalogs.popular = popular || [];
       state.catalogs.featured = featured || [];
       
-      if (state.homeLang === 'pt-br') {
-        const localizeBatch = async (items) => {
-          const promises = items.slice(0, 12).map(async (item) => {
-            const cleanId = (item.id || '').split(':')[0];
-            if (cleanId.startsWith('tt')) {
-              try {
-                const res = await fetchWithTimeout(`https://api.themoviedb.org/3/find/${cleanId}?api_key=15d2ea6d0dc1d476efbca3ecc92bfe30&external_source=imdb_id&language=pt-BR`);
-                const data = await res.json();
-                const tmdbItem = (data.movie_results && data.movie_results[0]) || (data.tv_results && data.tv_results[0]);
-                if (tmdbItem) {
-                  if (tmdbItem.title || tmdbItem.name) item.name = tmdbItem.title || tmdbItem.name;
-                  if (tmdbItem.overview) item.description = tmdbItem.overview;
-                  if (tmdbItem.poster_path) item.poster = `https://image.tmdb.org/t/p/w500${tmdbItem.poster_path}`;
-                  if (tmdbItem.backdrop_path) item.background = `https://image.tmdb.org/t/p/w1280${tmdbItem.backdrop_path}`;
-                }
-              } catch(e) {}
-            }
-          });
-          await Promise.all(promises);
-        };
-        await Promise.all([localizeBatch(state.catalogs.popular), localizeBatch(state.catalogs.featured)]);
-      }
-
+      // Render initial cards immediately
       if (state.catalogs.popular && state.catalogs.popular.length > 0) {
         this.setHero(state.catalogs.popular[0]);
       }
+      this.renderCatalogs();
+
+      // Fetch Portuguese Brazilian translations (titles, descriptions, backdrops, and posters) in background
+      const allItems = [...(state.catalogs.popular || []), ...(state.catalogs.featured || [])];
+      const localizeBatch = async (items) => {
+        const promises = items.map(async (item) => {
+          const cleanId = (item.id || '').split(':')[0];
+          if (cleanId.startsWith('tt')) {
+            try {
+              const res = await fetchWithTimeout(`https://api.themoviedb.org/3/find/${cleanId}?api_key=15d2ea6d0dc1d476efbca3ecc92bfe30&external_source=imdb_id&language=pt-BR`);
+              const data = await res.json();
+              const tmdbItem = (data.movie_results && data.movie_results[0]) || (data.tv_results && data.tv_results[0]);
+              if (tmdbItem) {
+                if (tmdbItem.title || tmdbItem.name) item.name_pt = tmdbItem.title || tmdbItem.name;
+                if (tmdbItem.overview) item.description_pt = tmdbItem.overview;
+                if (tmdbItem.poster_path) item.poster_pt = `https://image.tmdb.org/t/p/w500${tmdbItem.poster_path}`;
+                if (tmdbItem.backdrop_path) item.background_pt = `https://image.tmdb.org/t/p/w1280${tmdbItem.backdrop_path}`;
+              }
+            } catch(e) {}
+          }
+        });
+        await Promise.all(promises);
+      };
       
+      await localizeBatch(allItems);
+
+      // Re-render hero & catalog with Portuguese posters & titles
+      if (state.catalogs.popular && state.catalogs.popular.length > 0) {
+        this.setHero(state.catalogs.popular[0]);
+      }
       this.renderCatalogs();
     } catch (err) {
       console.error('Error in loadInitialData:', err);
@@ -885,7 +908,6 @@ const UI = {
   
   setHero(meta) {
     state.heroMeta = meta;
-    const heroSection = document.getElementById('hero-section');
     const heroBackdrop = document.getElementById('hero-backdrop');
     const heroTitle = document.getElementById('hero-title');
     const heroMeta = document.getElementById('hero-meta');
@@ -900,7 +922,7 @@ const UI = {
         const bgUrl = getBackgroundUrl(meta);
         heroBackdrop.style.backgroundImage = `url('${bgUrl}')`;
     }
-    if (heroTitle) heroTitle.textContent = meta.name;
+    if (heroTitle) heroTitle.textContent = getItemTitle(meta);
     if (heroMeta) {
       const year = meta.year || meta.releaseInfo || '';
       const rating = meta.imdbRating ? `<span class="rating">⭐ ${meta.imdbRating}</span>` : '';
@@ -908,20 +930,21 @@ const UI = {
       heroMeta.innerHTML = [year, rating, runtime].filter(Boolean).join(' &nbsp;|&nbsp; ');
     }
     if (heroDescription) {
-        heroDescription.textContent = meta.description || 'Sem descrição disponível.';
+        heroDescription.textContent = getItemDescription(meta) || meta.description || 'Sem descrição disponível.';
     }
   },
   
   createMovieCard(item) {
     const posterUrl = getPosterUrl(item);
+    const title = getItemTitle(item);
     const isSeries = (item.type === 'series') || (state.currentType === 'series');
     return `
       <div class="movie-card" onclick="UI.openModal('${item.id}')">
-        <img class="movie-poster" src="${posterUrl}" alt="${item.name}" onerror="this.style.background='linear-gradient(135deg, #1a1a2e, #2a2a4e)'; this.style.minHeight='270px';" loading="lazy">
+        <img class="movie-poster" src="${posterUrl}" alt="${title}" onerror="this.style.background='linear-gradient(135deg, #1a1a2e, #2a2a4e)'; this.style.minHeight='270px';" loading="lazy">
         <span class="movie-card-type">${isSeries ? '📺 SÉRIE' : '🎬 FILME'}</span>
         ${item.imdbRating ? `<span class="movie-card-rating">⭐ ${item.imdbRating}</span>` : ''}
         <div class="movie-card-overlay">
-          <span class="movie-card-title">${item.name}</span>
+          <span class="movie-card-title">${title}</span>
           <span class="movie-card-year">${item.year || ''}</span>
         </div>
       </div>
@@ -991,6 +1014,8 @@ const UI = {
     if (activeQuery.length > 0) {
       this.performSearch(activeQuery);
     } else {
+      if (state.heroMeta) this.setHero(state.heroMeta);
+      this.renderCatalogs();
       this.loadInitialData();
     }
   },
