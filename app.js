@@ -178,6 +178,19 @@ const User = {
     return progressMap[cleanId] || progressMap[metaId] || null;
   },
 
+  removeProgress(metaId) {
+    if (!metaId) return;
+    const cleanId = metaId.split(':')[0];
+    const progressMap = this.getAllProgress();
+    delete progressMap[cleanId];
+    delete progressMap[metaId];
+    localStorage.setItem('johnflix_progress', JSON.stringify(progressMap));
+  },
+
+  clearAllProgress() {
+    localStorage.removeItem('johnflix_progress');
+  },
+
   getWatchlist() {
     try {
       return JSON.parse(localStorage.getItem('johnflix_watchlist') || '{}');
@@ -1112,6 +1125,18 @@ const UI = {
     }
   },
 
+  removeHistoryItem(metaId) {
+    User.removeProgress(metaId);
+    this.renderCatalogs();
+  },
+
+  clearHistory() {
+    if (confirm('Tem certeza que deseja apagar todo o seu histórico de filmes e séries assistidos?')) {
+      User.clearAllProgress();
+      this.renderCatalogs();
+    }
+  },
+
   createContinueCard(item) {
     const cleanId = (item.id || '').split(':')[0];
     const posterUrl = item.poster && !item.poster.includes(':') ? item.poster : `https://images.metahub.space/poster/medium/${cleanId}/img`;
@@ -1122,6 +1147,7 @@ const UI = {
 
     return `
       <div class="movie-card continue-card" onclick="UI.openModal('${cleanId}')">
+        <button class="continue-card-delete" onclick="event.stopPropagation(); UI.removeHistoryItem('${cleanId}');" title="Remover do histórico">✕</button>
         <div class="continue-poster-wrapper">
           <img class="movie-poster" src="${posterUrl}" alt="${name}" onerror="this.src='https://images.metahub.space/poster/medium/${cleanId}/img';" loading="lazy">
           ${isSeries ? `<span class="movie-card-type" style="background:rgba(139,92,246,0.95); font-weight:800;">📺 SÉRIE</span>` : '<span class="movie-card-type">🎬 FILME</span>'}
@@ -1157,9 +1183,14 @@ const UI = {
       const continueCardsHtml = progressList.map(item => this.createContinueCard(item)).join('');
       html += `
         <section class="catalog-section continue-watching-section">
-          <h2 class="section-title" style="color:#d8b4fe; display:flex; align-items:center; gap:8px;">
-            <span>🕒</span> Continuar Assistindo
-          </h2>
+          <div style="display:flex; align-items:center; justify-content:space-between; padding-right:4%; margin-bottom:1rem;">
+            <h2 class="section-title" style="color:#d8b4fe; display:flex; align-items:center; gap:8px; margin-bottom:0;">
+              <span>🕒</span> Continuar Assistindo
+            </h2>
+            <button class="btn btn-secondary" onclick="UI.clearHistory()" style="padding:6px 14px; font-size:0.8rem; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:#fca5a5; gap:6px; cursor:pointer;" title="Limpar todo o histórico">
+              🗑️ Limpar Histórico
+            </button>
+          </div>
           <div class="carousel-wrapper">
             <button class="carousel-btn carousel-prev" onclick="window.scrollCarousel('continue', -1)">‹</button>
             <div class="carousel-track" id="carousel-continue">
