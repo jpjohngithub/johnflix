@@ -22,6 +22,7 @@
         <nav class="header-nav">
           <a href="#" class="nav-link active" data-type="movie">Filmes</a>
           <a href="#" class="nav-link" data-type="series">Séries</a>
+          <a href="#" class="nav-link" id="nav-watchlist">⭐ Minha Lista</a>
         </nav>
         <div class="header-actions">
           <div class="search-container" id="search-container">
@@ -113,9 +114,14 @@
             </div>
           </div>
           <div class="modal-streams-section">
-            <button class="btn btn-primary" id="modal-auto-play-btn" style="background: linear-gradient(135deg, #22c55e, #16a34a); box-shadow: 0 0 20px rgba(34,197,94,0.4); margin-bottom: 1.2rem; width: 100%; justify-content: center; font-size: 1.1rem; font-weight: 700; gap: 8px;">
-              ⚡ Assistir Agora (Auto-Play Dublado PT-BR)
-            </button>
+            <div style="display:flex; gap:12px; margin-bottom:1.2rem; flex-wrap:wrap;">
+              <button class="btn btn-primary" id="modal-auto-play-btn" style="flex:1; min-width:240px; background: linear-gradient(135deg, #22c55e, #16a34a); box-shadow: 0 0 20px rgba(34,197,94,0.4); justify-content: center; font-size: 1.05rem; font-weight: 700; gap: 8px;">
+                ⚡ Assistir Agora (Auto-Play Dublado PT-BR)
+              </button>
+              <button class="btn btn-secondary" id="modal-watchlist-btn" style="background: rgba(255,255,255,0.08); border: 1px solid var(--accent); color: white; justify-content: center; font-weight: 700; gap: 8px; font-size:0.95rem;">
+                ⭐ + Minha Lista
+              </button>
+            </div>
             <div class="streams-header">
               <h3 class="streams-title">Todas as Fontes Disponíveis (Dublado / Legendado / HD)</h3>
             </div>
@@ -289,6 +295,10 @@
       <button class="mobile-nav-item" data-type="series">
         <span class="mobile-nav-icon">📺</span>
         <span class="mobile-nav-label">Séries</span>
+      </button>
+      <button class="mobile-nav-item" id="mobile-nav-watchlist">
+        <span class="mobile-nav-icon">⭐</span>
+        <span class="mobile-nav-label">Minha Lista</span>
       </button>
       <button class="mobile-nav-item" id="mobile-nav-search">
         <span class="mobile-nav-icon">🔍</span>

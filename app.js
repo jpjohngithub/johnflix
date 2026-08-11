@@ -134,6 +134,43 @@ const User = {
     if (!metaId) return null;
     const progressMap = this.getAllProgress();
     return progressMap[metaId] || null;
+  },
+
+  getWatchlist() {
+    try {
+      return JSON.parse(localStorage.getItem('johnflix_watchlist') || '{}');
+    } catch(e) { return {}; }
+  },
+
+  isInWatchlist(metaId) {
+    if (!metaId) return false;
+    const cleanId = metaId.split(':')[0];
+    const watchlist = this.getWatchlist();
+    return !!watchlist[cleanId];
+  },
+
+  toggleWatchlist(meta) {
+    if (!meta || !meta.id) return false;
+    const cleanId = meta.id.split(':')[0];
+    const watchlist = this.getWatchlist();
+
+    if (watchlist[cleanId]) {
+      delete watchlist[cleanId];
+      localStorage.setItem('johnflix_watchlist', JSON.stringify(watchlist));
+      return false;
+    } else {
+      watchlist[cleanId] = {
+        id: cleanId,
+        name: meta.name || 'Vídeo',
+        poster: getPosterUrl(meta),
+        type: state.currentType,
+        year: meta.year || meta.releaseInfo || '',
+        imdbRating: meta.imdbRating || '',
+        addedAt: Date.now()
+      };
+      localStorage.setItem('johnflix_watchlist', JSON.stringify(watchlist));
+      return true;
+    }
   }
 };
 
@@ -572,6 +609,21 @@ const UI = {
       });
     }
     
+    // Watchlist Nav Links
+    const showWatchlist = (e) => {
+      if (e) e.preventDefault();
+      this.hideSearchResults();
+      const watchlistSec = document.getElementById('watchlist-section');
+      if (watchlistSec) {
+        watchlistSec.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        alert('Sua lista de favoritos está vazia no momento! Adicione filmes e séries clicando no botão "⭐ + Minha Lista".');
+      }
+    };
+
+    document.getElementById('nav-watchlist')?.addEventListener('click', showWatchlist);
+    document.getElementById('mobile-nav-watchlist')?.addEventListener('click', showWatchlist);
+
     // Hero buttons & Auto-Play BR
     document.getElementById('hero-play-btn')?.addEventListener('click', async () => {
       if (state.heroMeta) {
@@ -1207,6 +1259,32 @@ const UI = {
       } else {
         autoPlayBtn.innerHTML = `⚡ Assistir Agora (Auto-Play Dublado PT-BR)`;
       }
+    }
+
+    // Watchlist button state & click listener
+    const watchlistBtn = document.getElementById('modal-watchlist-btn');
+    if (watchlistBtn) {
+      const updateWatchlistBtnUI = () => {
+        const isSaved = User.isInWatchlist(meta.id);
+        if (isSaved) {
+          watchlistBtn.innerHTML = '⭐ Na Minha Lista ✓';
+          watchlistBtn.style.background = 'rgba(139, 92, 246, 0.4)';
+          watchlistBtn.style.borderColor = 'var(--accent)';
+        } else {
+          watchlistBtn.innerHTML = '⭐ + Minha Lista';
+          watchlistBtn.style.background = 'rgba(255, 255, 255, 0.08)';
+          watchlistBtn.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+        }
+      };
+
+      updateWatchlistBtnUI();
+
+      watchlistBtn.onclick = () => {
+        if (!state.currentMeta) return;
+        User.toggleWatchlist(state.currentMeta);
+        updateWatchlistBtnUI();
+        this.renderCatalogs();
+      };
     }
 
     // Reset season/episode to 1
