@@ -137,7 +137,7 @@ const User = {
     
     let posterUrl = extra.poster || '';
     let itemTitle = extra.name || extra.title || '';
-    let itemType = extra.type || state.currentType;
+    let itemType = extra.type || (state.currentMeta ? state.currentMeta.type : null) || ((extra.season && extra.season > 1) ? 'series' : (state.currentType === 'series' ? 'series' : 'movie'));
 
     if (state.currentMeta) {
       const metaCleanId = (state.currentMeta.id || '').split(':')[0];
@@ -146,6 +146,7 @@ const User = {
         if (!itemTitle || itemTitle.startsWith('🇧🇷') || itemTitle.startsWith('🌐')) {
           itemTitle = state.currentMeta.name;
         }
+        itemType = state.currentMeta.type || itemType;
       }
     }
 
@@ -239,7 +240,7 @@ const User = {
         id: cleanId,
         name: meta.name || 'Filme / Série',
         poster: posterUrl,
-        type: meta.type || state.currentType || 'movie',
+        type: meta.type || (state.currentType === 'series' ? 'series' : 'movie'),
         year: meta.year || meta.releaseInfo || '',
         imdbRating: meta.imdbRating || '',
         addedAt: Date.now()
@@ -1360,9 +1361,15 @@ const UI = {
 
     // 1. Continuar Assistindo (Recent Progress)
     const allProgressMap = User.getAllProgress();
-    const progressList = Object.values(allProgressMap)
+    let progressList = Object.values(allProgressMap)
       .filter(item => item && item.currentTime > 10 && item.percentage < 95)
       .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+
+    if (state.currentType === 'movie') {
+      progressList = progressList.filter(item => item.type !== 'series');
+    } else if (state.currentType === 'series') {
+      progressList = progressList.filter(item => item.type === 'series');
+    }
 
     if (progressList.length > 0) {
       const continueCardsHtml = progressList.map(item => this.createContinueCard(item)).join('');
@@ -1389,8 +1396,14 @@ const UI = {
 
     // 2. Minha Lista Carousel on Home (if items exist)
     const watchlistMap = User.getWatchlist();
-    const watchlistArray = Object.values(watchlistMap)
+    let watchlistArray = Object.values(watchlistMap)
       .sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+
+    if (state.currentType === 'movie') {
+      watchlistArray = watchlistArray.filter(item => item.type !== 'series');
+    } else if (state.currentType === 'series') {
+      watchlistArray = watchlistArray.filter(item => item.type === 'series');
+    }
 
     if (watchlistArray.length > 0) {
       const watchlistCardsHtml = watchlistArray.map(item => this.createMovieCard(item)).join('');
