@@ -1011,6 +1011,17 @@ const UI = {
   async loadInitialData() {
     try {
       this.hideSearchResults();
+
+      if (state.currentType === 'watchlist') {
+        const heroSection = document.getElementById('hero-section');
+        if (heroSection) heroSection.classList.add('hidden');
+        this.renderCatalogs();
+        this.hideLoadingScreen();
+        return;
+      } else {
+        const heroSection = document.getElementById('hero-section');
+        if (heroSection) heroSection.classList.remove('hidden');
+      }
       
       const cacheKey = `cat_${state.currentType}_${state.currentGenre || 'all'}`;
       const cached = Cache.get(cacheKey);
@@ -1202,6 +1213,73 @@ const UI = {
     if (!container) return;
     
     let html = '';
+
+    // If dedicated Watchlist mode
+    if (state.currentType === 'watchlist') {
+      const allProgressMap = User.getAllProgress();
+      const progressList = Object.values(allProgressMap)
+        .filter(item => item && item.currentTime > 10 && item.percentage < 95)
+        .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+
+      if (progressList.length > 0) {
+        const continueCardsHtml = progressList.map(item => this.createContinueCard(item)).join('');
+        html += `
+          <section class="catalog-section continue-watching-section" style="padding-top:20px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding-right:4%; margin-bottom:1rem;">
+              <h2 class="section-title" style="color:#d8b4fe; display:flex; align-items:center; gap:8px; margin-bottom:0;">
+                <span>🕒</span> Continuar Assistindo
+              </h2>
+              <button class="btn btn-secondary" onclick="UI.clearHistory()" style="padding:6px 14px; font-size:0.8rem; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:#fca5a5; gap:6px; cursor:pointer;" title="Limpar todo o histórico">
+                🗑️ Limpar Histórico
+              </button>
+            </div>
+            <div class="carousel-wrapper">
+              <button class="carousel-btn carousel-prev" onclick="window.scrollCarousel('continue', -1)">‹</button>
+              <div class="carousel-track" id="carousel-continue">
+                ${continueCardsHtml}
+              </div>
+              <button class="carousel-btn carousel-next" onclick="window.scrollCarousel('continue', 1)">›</button>
+            </div>
+          </section>
+        `;
+      }
+
+      const watchlistMap = User.getWatchlist();
+      const watchlistArray = Object.values(watchlistMap)
+        .sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+
+      if (watchlistArray.length > 0) {
+        const watchlistCardsHtml = watchlistArray.map(item => this.createMovieCard(item)).join('');
+        html += `
+          <section class="catalog-section watchlist-section" id="watchlist-section" style="padding-top:20px;">
+            <h2 class="section-title" style="color:#facc15; display:flex; align-items:center; gap:8px;">
+              <span>⭐</span> Minha Lista (${watchlistArray.length})
+            </h2>
+            <div class="search-grid" style="padding: 0 4%;">
+              ${watchlistCardsHtml}
+            </div>
+          </section>
+        `;
+      } else {
+        html += `
+          <div class="empty-state" style="text-align:center; padding: 120px 20px 80px;">
+            <div style="font-size: 3.5rem; margin-bottom: 1rem;">⭐</div>
+            <h2 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 0.5rem; color: white;">Sua lista de favoritos está vazia</h2>
+            <p style="color: var(--text-secondary); max-width: 500px; margin: 0 auto 1.5rem; line-height: 1.6;">
+              Navegue pelos filmes e séries e clique no botão <strong>"⭐ + Minha Lista"</strong> dentro dos detalhes para salvar o que deseja assistir mais tarde!
+            </p>
+            <button class="btn btn-primary" onclick="document.querySelector('[data-type=\\'movie\\']').click();" style="margin: 0 auto; padding: 12px 28px;">
+              🎬 Explorar Filmes e Séries
+            </button>
+          </div>
+        `;
+      }
+
+      container.innerHTML = html;
+      return;
+    }
+
+    // Normal Movies / Series Catalog Mode
     const typeName = state.currentType === 'movie' ? 'Filmes' : 'Séries';
 
     // 1. Continuar Assistindo (Recent Progress)
@@ -1232,11 +1310,34 @@ const UI = {
         </section>
       `;
     }
-    
-    if (state.catalogs.popular.length > 0) {
+
+    // 2. Minha Lista Carousel on Home (if items exist)
+    const watchlistMap = User.getWatchlist();
+    const watchlistArray = Object.values(watchlistMap)
+      .sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+
+    if (watchlistArray.length > 0) {
+      const watchlistCardsHtml = watchlistArray.map(item => this.createMovieCard(item)).join('');
+      html += `
+        <section class="catalog-section watchlist-section" id="watchlist-section">
+          <h2 class="section-title" style="color:#facc15; display:flex; align-items:center; gap:8px;">
+            <span>⭐</span> Minha Lista / Favoritos (${watchlistArray.length})
+          </h2>
+          <div class="carousel-wrapper">
+            <button class="carousel-btn carousel-prev" onclick="window.scrollCarousel('watchlist', -1)">‹</button>
+            <div class="carousel-track" id="carousel-watchlist">
+              ${watchlistCardsHtml}
+            </div>
+            <button class="carousel-btn carousel-next" onclick="window.scrollCarousel('watchlist', 1)">›</button>
+          </div>
+        </section>
+      `;
+    }
+
+    if (state.catalogs.popular && state.catalogs.popular.length > 0) {
       html += this.createCarousel(`${typeName} Populares`, state.catalogs.popular, 'popular');
     }
-    if (state.catalogs.featured.length > 0) {
+    if (state.catalogs.featured && state.catalogs.featured.length > 0) {
       html += this.createCarousel(`${typeName} em Destaque`, state.catalogs.featured, 'featured');
     }
     
