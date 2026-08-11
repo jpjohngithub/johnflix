@@ -193,7 +193,27 @@ const User = {
 
   getWatchlist() {
     try {
-      return JSON.parse(localStorage.getItem('johnflix_watchlist') || '{}');
+      const raw = JSON.parse(localStorage.getItem('johnflix_watchlist') || '{}');
+      const sanitized = {};
+      Object.keys(raw).forEach(key => {
+        const item = raw[key];
+        if (!item) return;
+        const cleanId = (item.id || key).split(':')[0];
+        if (!cleanId || !cleanId.startsWith('tt')) return;
+
+        let poster = item.poster;
+        if (!poster || poster.includes(':') || poster === '') {
+          poster = `https://images.metahub.space/poster/medium/${cleanId}/img`;
+        }
+
+        sanitized[cleanId] = {
+          ...item,
+          id: cleanId,
+          poster: poster,
+          name: item.name && item.name !== 'Vídeo' ? item.name : 'Filme / Série'
+        };
+      });
+      return sanitized;
     } catch(e) { return {}; }
   },
 
@@ -214,11 +234,12 @@ const User = {
       localStorage.setItem('johnflix_watchlist', JSON.stringify(watchlist));
       return false;
     } else {
+      const posterUrl = getPosterUrl(meta) || `https://images.metahub.space/poster/medium/${cleanId}/img`;
       watchlist[cleanId] = {
         id: cleanId,
-        name: meta.name || 'Vídeo',
-        poster: getPosterUrl(meta),
-        type: state.currentType,
+        name: meta.name || 'Filme / Série',
+        poster: posterUrl,
+        type: meta.type || state.currentType || 'movie',
         year: meta.year || meta.releaseInfo || '',
         imdbRating: meta.imdbRating || '',
         addedAt: Date.now()
@@ -668,12 +689,22 @@ const UI = {
     const showWatchlist = (e) => {
       if (e) e.preventDefault();
       this.hideSearchResults();
-      const watchlistSec = document.getElementById('watchlist-section');
-      if (watchlistSec) {
-        watchlistSec.scrollIntoView({ behavior: 'smooth' });
-      } else {
+      const watchlistMap = User.getWatchlist();
+      const watchlistArray = Object.values(watchlistMap);
+
+      if (watchlistArray.length === 0) {
         alert('Sua lista de favoritos está vazia no momento! Adicione filmes e séries clicando no botão "⭐ + Minha Lista".');
+        return;
       }
+
+      this.renderCatalogs();
+
+      setTimeout(() => {
+        const watchlistSec = document.getElementById('watchlist-section');
+        if (watchlistSec) {
+          watchlistSec.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 50);
     };
 
     document.getElementById('nav-watchlist')?.addEventListener('click', showWatchlist);
