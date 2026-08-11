@@ -1148,6 +1148,7 @@ const UI = {
     const playerTitle = document.getElementById('player-title');
     const hudTitle = document.getElementById('hud-title');
     const hudBottom = document.querySelector('.hud-bottom');
+    const openTabBtn = document.getElementById('hud-open-tab-btn');
     
     if (!playerOverlay || !iframe) return;
     
@@ -1158,6 +1159,10 @@ const UI = {
     if (video) video.classList.add('hidden');
     if (hudBottom) hudBottom.classList.add('hidden');
     
+    if (openTabBtn) {
+      openTabBtn.href = embedUrl;
+    }
+
     if (playerLoading) {
       playerLoading.classList.remove('hidden');
       playerLoading.querySelector('p').textContent = 'Carregando Player Web HD...';
@@ -1166,6 +1171,7 @@ const UI = {
     if (playerTitle) playerTitle.textContent = title;
     if (hudTitle) hudTitle.textContent = title;
     
+    iframe.setAttribute('referrerpolicy', 'no-referrer');
     iframe.src = embedUrl;
     
     // Auto-hide loading spinner quickly so iframe is 100% visible and ready for interaction
@@ -1183,10 +1189,15 @@ const UI = {
     const playerTitle = document.getElementById('player-title');
     const hudTitle = document.getElementById('hud-title');
     const hudBottom = document.querySelector('.hud-bottom');
+    const openTabBtn = document.getElementById('hud-open-tab-btn');
     
     if (!video || !playerOverlay) return;
     
     this.closePlayer(); // Reset any previous playback
+    
+    if (openTabBtn) {
+      openTabBtn.href = url;
+    }
     
     playerOverlay.classList.remove('hidden');
     video.classList.remove('hidden');

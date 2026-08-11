@@ -173,7 +173,7 @@
     <!-- Video Player Overlay -->
     <div id="player-overlay" class="player-overlay hidden">
       <div class="player-container" id="player-container">
-        <iframe id="iframe-player" class="hidden" allowfullscreen allow="autoplay; fullscreen; encrypted-media; picture-in-picture; accelerometer; gyroscope" frameborder="0" style="width:100%; height:100%; border:none;"></iframe>
+        <iframe id="iframe-player" class="hidden" allowfullscreen allow="autoplay; fullscreen; encrypted-media; picture-in-picture; accelerometer; gyroscope" referrerpolicy="no-referrer" frameborder="0" style="width:100%; height:100%; border:none; position:absolute; inset:0; z-index:1;"></iframe>
         <video id="video-player" controls autoplay></video>
         
         <!-- Custom Player HUD Controls -->
@@ -195,6 +195,9 @@
             </div>
 
             <div class="hud-top-actions">
+              <a id="hud-open-tab-btn" href="#" target="_blank" rel="noopener noreferrer" class="hud-toggle-bar-btn" style="text-decoration:none; background:rgba(139,92,246,0.3); border-color:var(--accent);" title="Abrir player direto em nova aba para contornar bloqueios">
+                🔗 Nova Aba
+              </a>
               <button class="hud-toggle-bar-btn" id="hud-toggle-top-btn" title="Ocultar/Mostrar Barra do Topo">
                 👁️ Ocultar Barra
               </button>
