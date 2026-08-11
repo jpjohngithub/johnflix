@@ -194,26 +194,30 @@ const API = {
       brazucaStreams.forEach(s => {
         const rawTitle = (s.title || s.name || s.description || 'Brazuca Torrents').replace(/\n/g, ' ');
         const titleLower = rawTitle.toLowerCase();
+        const isDub = titleLower.includes('dublado') || titleLower.includes('dub') || titleLower.includes('dual') || titleLower.includes('pt-br') || titleLower.includes('português');
 
-        if (s.url) {
+        if (s.url && !s.url.startsWith('magnet:')) {
           streamsList.push({
-            name: `🇧🇷 Dublado PT-BR — Brazuca ${rawTitle}`,
-            title: 'Rede Brazuca Torrents • Áudio Português BR',
+            name: `🇧🇷 Dublado PT-BR — Brazuca Direct ${rawTitle}`,
+            title: 'Rede Brazuca Torrents • Stream Direct HD',
             url: s.url,
-            isDub: true,
-            category: 'dubbed',
+            isDub: isDub,
+            category: isDub ? 'dubbed' : 'web',
             score: 9
           });
-        } else if (s.infoHash) {
-          const magnetUrl = `magnet:?xt=urn:btih:${s.infoHash}&dn=${encodeURIComponent(rawTitle)}`;
-          streamsList.push({
-            name: `🇧🇷 Dublado PT-BR — Brazuca Torrents ${rawTitle}`,
-            title: 'Link Magnético Direct / Torrent Brasil',
-            url: magnetUrl,
-            isDub: true,
-            category: 'dubbed',
-            score: 7
-          });
+        } else if (s.infoHash || (s.url && s.url.startsWith('magnet:'))) {
+          const hash = s.infoHash || (s.url.match(/btih:([a-zA-Z0-9]+)/) || [])[1];
+          if (hash) {
+            const magnetUrl = s.url && s.url.startsWith('magnet:') ? s.url : `magnet:?xt=urn:btih:${hash}&dn=${encodeURIComponent(rawTitle)}`;
+            streamsList.push({
+              name: `🧲 Brazuca Torrent Magnet — ${rawTitle}`,
+              title: 'Link Magnético Torrent • Áudio Brasil',
+              magnetUrl: magnetUrl,
+              isDub: isDub,
+              category: 'web',
+              score: 2
+            });
+          }
         }
       });
 
@@ -971,15 +975,17 @@ const UI = {
       state.currentEpisode
     );
 
-    if (!streams || streams.length === 0) {
-      alert('Nenhum stream disponível para este título no momento.');
+    // Filter playable video streams only for Auto-Play
+    const playable = streams.filter(s => (s.url && !s.url.startsWith('magnet:')) || s.embedUrl);
+    if (!playable || playable.length === 0) {
+      alert('Nenhum player web direto disponível para este título no momento.');
       if (playerLoading) playerLoading.classList.add('hidden');
       this.closePlayer();
       return;
     }
 
     // Sort streams: Dubbed PT-BR first, then highest score
-    const sorted = [...streams].sort((a, b) => {
+    const sorted = [...playable].sort((a, b) => {
       if (a.isDub && !b.isDub) return -1;
       if (!a.isDub && b.isDub) return 1;
       return (b.score || 0) - (a.score || 0);
@@ -1074,6 +1080,20 @@ const UI = {
     let titleParts = ((stream.title || stream.description || '')).split('\n');
     let qualityDetails = titleParts.join(' | ');
     let name = stream.name;
+    
+    if (stream.magnetUrl) {
+      return `
+        <div class="stream-item">
+          <div class="stream-info">
+            <span class="stream-name">${name}</span>
+            <span class="stream-details">🧲 Link Magnético Torrent • Abrir no BitTorrent/uTorrent</span>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <a href="${stream.magnetUrl}" target="_self" class="stream-play-btn" style="background:#f59e0b; color:black; font-weight:700; text-decoration:none;">🧲 Abrir Magnet Link</a>
+          </div>
+        </div>
+      `;
+    }
     
     if (stream.url) {
       const escapedUrl = stream.url.replace(/'/g, "\\'");
