@@ -350,12 +350,12 @@ const API = {
   async fetchStreams(type, id, season = 1, episode = 1) {
     try {
       const streamId = type === 'series' ? `${id}:${season}:${episode}` : id;
-      const cacheKey = `st_${streamId}`;
+      const cacheKey = `st_v4_${streamId}`;
       const cached = Cache.get(cacheKey);
       if (cached && cached.length > 0) return cached;
 
       // Helper: fetch from a Stremio-protocol addon with timeout + CORS fallback
-      const fetchAddon = async (baseUrl, timeoutMs = 5000) => {
+      const fetchAddon = async (baseUrl, timeoutMs = 8000) => {
         const tryFetch = async (url) => {
           const controller = new AbortController();
           const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -377,7 +377,7 @@ const API = {
 
         const directUrl = `${baseUrl}/stream/${type}/${streamId}.json`;
         let result = await tryFetch(directUrl);
-        if (result !== null) return result;
+        if (result && result.length > 0) return result;
 
         // CORS proxy fallback
         const proxyUrl = `https://corsproxy.io/?url=${encodeURIComponent(directUrl)}`;
@@ -385,11 +385,17 @@ const API = {
         return result || [];
       };
 
-      const [fenixStreams, frostStreams, brazucaStreams] = await Promise.all([
+      const [fenixRes, frostRes, brazucaRes, torrentioRes] = await Promise.allSettled([
         fetchAddon('https://fenixflix.fenixhub.online'),
         fetchAddon('https://froststream.cloutteam.com'),
-        fetchAddon('https://94c8cb9f702d-brazuca-torrents.baby-beamup.club')
+        fetchAddon('https://94c8cb9f702d-brazuca-torrents.baby-beamup.club'),
+        fetchAddon('https://torrentio.strem.fun')
       ]);
+
+      const fenixStreams = fenixRes.status === 'fulfilled' ? fenixRes.value : [];
+      const frostStreams = frostRes.status === 'fulfilled' ? frostRes.value : [];
+      const brazucaStreams = brazucaRes.status === 'fulfilled' ? brazucaRes.value : [];
+      const torrentioStreams = torrentioRes.status === 'fulfilled' ? torrentioRes.value : [];
 
       const streamsList = [];
 
@@ -513,6 +519,39 @@ const API = {
           isDub: isDub,
           category: 'torrent',
           score: (seeders > 50 ? 15 : seeders > 10 ? 10 : 5) + (isDub ? 10 : 0) + (quality === '1080P' ? 8 : quality === '720P' ? 5 : 2)
+        });
+      });
+
+      // ══════════════════════════════════════════════
+      // 🧲 Torrentio — High Seeders Torrent Backup
+      // ══════════════════════════════════════════════
+      (torrentioStreams || []).slice(0, 5).forEach(s => {
+        const hash = s.infoHash;
+        if (!hash) return;
+
+        const titleRaw = (s.title || s.name || 'Torrentio HD').replace(/\n/g, ' ');
+        const combinedText = titleRaw.toLowerCase();
+        const isDub = combinedText.includes('dublado') || combinedText.includes('dual') || combinedText.includes('pt-br') || combinedText.includes('português');
+        const qualMatch = titleRaw.match(/(4k|2160p|1080p|720p|480p)/i);
+        const quality = qualMatch ? qualMatch[1].toUpperCase() : 'HD';
+
+        const trackers = [
+          'udp://tracker.opentrackr.org:1337/announce',
+          'udp://open.stealth.si:80/announce',
+          'udp://tracker.torrent.eu.org:451/announce'
+        ];
+        const filename = s.behaviorHints?.filename || titleRaw;
+        const magnetUrl = `magnet:?xt=urn:btih:${hash}&dn=${encodeURIComponent(filename)}&${trackers.map(t => `tr=${encodeURIComponent(t)}`).join('&')}`;
+
+        streamsList.push({
+          name: `🧲 Torrentio Magnet ${quality} ${isDub ? '(Dublado PT-BR)' : ''}`,
+          title: `⚡ Torrentio • ${titleRaw.slice(0, 100)}`,
+          magnetUrl: magnetUrl,
+          infoHash: hash,
+          fileIdx: s.fileIdx,
+          isDub: isDub,
+          category: 'torrent',
+          score: (isDub ? 12 : 3) + (quality === '1080P' ? 5 : 2)
         });
       });
 
