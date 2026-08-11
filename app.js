@@ -353,21 +353,36 @@ const API = {
       const cacheKey = `st_${streamId}`;
       const cached = Cache.get(cacheKey);
       if (cached && cached.length > 0) return cached;
-      
-      const fetchAddon = async (baseUrl) => {
-        try {
+
+      // Helper: fetch from a Stremio-protocol addon with timeout + CORS fallback
+      const fetchAddon = async (baseUrl, timeoutMs = 5000) => {
+        const tryFetch = async (url) => {
           const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort(), 3500);
-          const res = await fetch(`${baseUrl}/stream/${type}/${streamId}.json`, { signal: controller.signal });
-          clearTimeout(timer);
-          if (res.ok) {
-            const data = await res.json();
-            return data.streams || [];
+          const timer = setTimeout(() => controller.abort(), timeoutMs);
+          try {
+            const res = await fetch(url, { 
+              signal: controller.signal,
+              headers: { 'Accept': 'application/json' }
+            });
+            clearTimeout(timer);
+            if (res.ok) {
+              const data = await res.json();
+              return data.streams || [];
+            }
+          } catch (e) {
+            clearTimeout(timer);
           }
-        } catch(e) {
-          console.warn(`Failed to fetch from ${baseUrl}:`, e);
-        }
-        return [];
+          return null;
+        };
+
+        const directUrl = `${baseUrl}/stream/${type}/${streamId}.json`;
+        let result = await tryFetch(directUrl);
+        if (result !== null) return result;
+
+        // CORS proxy fallback
+        const proxyUrl = `https://corsproxy.io/?url=${encodeURIComponent(directUrl)}`;
+        result = await tryFetch(proxyUrl);
+        return result || [];
       };
 
       const [fenixStreams, frostStreams, brazucaStreams] = await Promise.all([
@@ -378,73 +393,127 @@ const API = {
 
       const streamsList = [];
 
-      // Process FenixFlix streams (PT-BR Dublado)
+      // ══════════════════════════════════════════════
+      // 🔥 FenixFlix — Direct MP4/CDN streams PT-BR
+      // API response: { name: "FenixFlix 720p", description: "🐦‍🔥 Title\n🇧🇷 Dublado\n🌐 ON", url: "https://download.mediafire.com/..." }
+      // ══════════════════════════════════════════════
       fenixStreams.forEach(s => {
-        if (s.url && !s.url.includes('koyeb.app')) {
-          const rawTitle = (s.title || s.name || s.description || 'FenixFlix HD').replace(/\n/g, ' ');
-          const titleLower = rawTitle.toLowerCase();
-          const urlLower = s.url.toLowerCase();
-          const isDub = titleLower.includes('dublado') || titleLower.includes('dub') || urlLower.includes('dub') || urlLower.includes('primevicio') || (titleLower.includes('português') && !titleLower.includes('inglês'));
+        if (!s.url) return;
 
-          streamsList.push({
-            name: `${isDub ? '🇧🇷 Dublado PT-BR' : '🌐 Multi-Áudio / Dual'} — FenixFlix ${rawTitle}`,
-            title: 'Servidor Nativo HD • Alta Velocidade Brasil',
-            url: s.url,
-            isDub: isDub,
-            category: isDub ? 'dubbed' : 'web',
-            score: (urlLower.includes('primevicio') ? 10 : 0) + (urlLower.includes('mediafire') ? 8 : 0) + (isDub ? 5 : 0)
-          });
-        }
+        // FenixFlix uses `description` field for 🇧🇷 Dublado / 🇺🇸 Legendado marker
+        const descRaw = (s.description || s.title || s.name || '').replace(/\n/g, ' ');
+        const nameRaw = (s.name || 'FenixFlix HD');
+        const combinedText = descRaw.toLowerCase();
+
+        const isDub = combinedText.includes('dublado') || combinedText.includes('🇧🇷') || combinedText.includes('dual');
+        const isLeg = combinedText.includes('legendado') || combinedText.includes('🇺🇸');
+
+        // Extract quality from name (720p, 1080p, 4K)
+        const qualMatch = nameRaw.match(/(4k|2160p|1080p|720p|480p)/i);
+        const quality = qualMatch ? qualMatch[1].toUpperCase() : 'HD';
+
+        // Score based on quality + dub status
+        const qualScore = quality === '4K' || quality === '2160P' ? 20
+          : quality === '1080P' ? 15
+          : quality === '720P' ? 10
+          : 5;
+
+        streamsList.push({
+          name: `${isDub ? '🇧🇷 Dublado PT-BR' : isLeg ? '📝 Legendado PT-BR' : '🌐 Dual Áudio'} — FenixFlix ${quality}`,
+          title: `🔥 FenixFlix • ${descRaw.slice(0, 80)}`,
+          url: s.url,
+          isDub: isDub,
+          isLeg: isLeg,
+          category: isDub ? 'dubbed' : 'web',
+          score: qualScore + (isDub ? 20 : 0) + (isLeg ? 5 : 0)
+        });
       });
 
-      // Process FrostStream streams (PT-BR Dublado)
+      // ══════════════════════════════════════════════
+      // ❄️ FrostStream — Direct IPTV/CDN streams PT-BR
+      // API response: { name: "FrostStream 720p", title: "🎬 Title\n🌊 Provider\n🌎 Português", url: "http://iptv.server/.../movie.mp4" }
+      // Providers: IPTV, CDMovieDB, RedeFlix, Tomato, MyEmbed, AniZone
+      // ══════════════════════════════════════════════
       frostStreams.forEach(s => {
-        if (s.url && !s.url.includes('koyeb.app')) {
-          const rawTitle = (s.title || s.name || s.description || 'FrostStream HD').replace(/\n/g, ' ');
-          const titleLower = rawTitle.toLowerCase();
-          const urlLower = s.url.toLowerCase();
-          const isDub = titleLower.includes('redeflix') || urlLower.includes('primevicio') || (titleLower.includes('português') && !titleLower.includes('inglês'));
+        if (!s.url) return;
 
-          streamsList.push({
-            name: `${isDub ? '🇧🇷 Dublado PT-BR' : '🌐 Multi-Áudio / Dual'} — FrostStream ${rawTitle}`,
-            title: 'Servidor Nativo HD • Alta Velocidade',
-            url: s.url,
-            isDub: isDub,
-            category: isDub ? 'dubbed' : 'web',
-            score: (urlLower.includes('primevicio') ? 10 : 0) + (urlLower.includes('cdteam') ? 7 : 0) + (isDub ? 5 : 0)
-          });
+        // FrostStream uses `title` field for language and provider info
+        const titleRaw = (s.title || s.description || s.name || '').replace(/\n/g, ' ');
+        const nameRaw = (s.name || 'FrostStream HD');
+        const combinedText = titleRaw.toLowerCase();
+
+        // FrostStream marks language as "🌎 Português" or "🌎 English"
+        const isPt = combinedText.includes('português') || combinedText.includes('pt-br') || combinedText.includes('redeflix') || combinedText.includes('🌎 port');
+        const isEn = combinedText.includes('english') || combinedText.includes('inglês');
+        const isDub = isPt && !isEn;
+
+        // Extract provider from title (HJA = IPTV, CDMovieDB, RedeFlix, Tomato, etc.)
+        const providers = { 'redeflix': 15, 'cdmoviedb': 12, 'tomato': 10, 'myembed': 8, 'iptv': 7, 'hja': 8, 'anizone': 5 };
+        let providerScore = 5;
+        for (const [prov, score] of Object.entries(providers)) {
+          if (combinedText.includes(prov)) { providerScore = score; break; }
         }
+
+        const qualMatch = nameRaw.match(/(4k|2160p|1080p|720p|480p)/i);
+        const quality = qualMatch ? qualMatch[1].toUpperCase() : 'HD';
+        const qualScore = quality === '1080P' ? 10 : quality === '720P' ? 7 : 5;
+
+        streamsList.push({
+          name: `${isDub ? '🇧🇷 Dublado PT-BR' : '🌐 Stream Internacional'} — FrostStream ${quality}`,
+          title: `❄️ FrostStream • ${titleRaw.slice(0, 80)}`,
+          url: s.url,
+          isDub: isDub,
+          category: isDub ? 'dubbed' : 'web',
+          score: qualScore + providerScore + (isDub ? 15 : 0)
+        });
       });
 
-      // Process Brazuca Torrents (PT-BR Dublado)
+      // ══════════════════════════════════════════════
+      // 🧲 Brazuca Torrents — Torrent infoHash streams PT-BR
+      // API response: { name: "Brazuca\n1080p", title: "Title\n👤 seeders 💾 size ⚙️ provider\nDual Audio", infoHash: "sha1hash", fileIdx: 3, sources: [...] }
+      // Brazuca returns ONLY torrents (infoHash) — no direct HTTP URLs
+      // Built-in WebTorrent playback via magnet links
+      // ══════════════════════════════════════════════
       brazucaStreams.forEach(s => {
-        const rawTitle = (s.title || s.name || s.description || 'Brazuca Torrents').replace(/\n/g, ' ');
-        const titleLower = rawTitle.toLowerCase();
-        const isDub = titleLower.includes('dublado') || titleLower.includes('dub') || titleLower.includes('dual') || titleLower.includes('pt-br') || titleLower.includes('português');
+        // Brazuca gives infoHash (torrent) - build proper magnet link
+        const hash = s.infoHash;
+        if (!hash) return;
 
-        if (s.url && !s.url.startsWith('magnet:')) {
-          streamsList.push({
-            name: `🇧🇷 Dublado PT-BR — Brazuca Direct ${rawTitle}`,
-            title: 'Rede Brazuca Torrents • Stream Direct HD',
-            url: s.url,
-            isDub: isDub,
-            category: isDub ? 'dubbed' : 'web',
-            score: 9
-          });
-        } else if (s.infoHash || (s.url && s.url.startsWith('magnet:'))) {
-          const hash = s.infoHash || (s.url.match(/btih:([a-zA-Z0-9]+)/) || [])[1];
-          if (hash) {
-            const magnetUrl = s.url && s.url.startsWith('magnet:') ? s.url : `magnet:?xt=urn:btih:${hash}&dn=${encodeURIComponent(rawTitle)}`;
-            streamsList.push({
-              name: `🧲 Brazuca Torrent Magnet — ${rawTitle}`,
-              title: 'Link Magnético Torrent • Áudio Brasil',
-              magnetUrl: magnetUrl,
-              isDub: isDub,
-              category: 'web',
-              score: 2
-            });
-          }
-        }
+        const titleRaw = (s.title || s.name || 'Brazuca HD').replace(/\n/g, ' ');
+        const combinedText = titleRaw.toLowerCase();
+
+        const isDub = combinedText.includes('dublado') || combinedText.includes('dual') || combinedText.includes('pt-br') || combinedText.includes('português');
+        const qualMatch = titleRaw.match(/(4k|2160p|1080p|720p|480p)/i);
+        const quality = qualMatch ? qualMatch[1].toUpperCase() : 'HD';
+
+        // Extract seeder count from title for scoring ("👤 24" pattern)
+        const seederMatch = titleRaw.match(/👤\s*(\d+)/);
+        const seeders = seederMatch ? parseInt(seederMatch[1], 10) : 0;
+
+        // Build a magnet link with multiple trackers for maximum speed
+        const trackers = [
+          'udp://tracker.opentrackr.org:1337/announce',
+          'udp://open.stealth.si:80/announce',
+          'udp://tracker.torrent.eu.org:451/announce',
+          'udp://tracker.fnix.net:6969/announce',
+          'udp://explodie.org:6969/announce',
+          'udp://p2p.publictracker.xyz:6969/announce',
+          ...(s.sources || []).filter(src => src.startsWith('tracker:')).map(src => src.replace('tracker:', ''))
+        ];
+
+        const filename = s.behaviorHints?.filename || titleRaw;
+        const magnetUrl = `magnet:?xt=urn:btih:${hash}&dn=${encodeURIComponent(filename)}&${trackers.map(t => `tr=${encodeURIComponent(t)}`).join('&')}`;
+
+        streamsList.push({
+          name: `🧲 ${isDub ? '🇧🇷 Brazuca' : 'Brazuca'} Torrent ${quality} ${isDub ? '(Dublado/Dual)' : ''}`,
+          title: `🇧🇷 Brazuca Torrents • ${titleRaw.slice(0, 100)}`,
+          magnetUrl: magnetUrl,
+          infoHash: hash,
+          fileIdx: s.fileIdx,
+          isDub: isDub,
+          category: 'torrent',
+          score: (seeders > 50 ? 15 : seeders > 10 ? 10 : 5) + (isDub ? 10 : 0) + (quality === '1080P' ? 8 : quality === '720P' ? 5 : 2)
+        });
       });
 
       // Dedicated PT-BR Dubbed & Web Embed Players (WarezCDN, SuperFlix, EmbedFlix, MegaFlix, VidSrc, AutoEmbed, SmashyStream, 2Embed)
@@ -1767,75 +1836,101 @@ const UI = {
   renderStreams(streams) {
     const streamsList = document.getElementById('streams-list');
     if (!streamsList) return;
-    
+
     const dubbed = streams.filter(s => s.category === 'dubbed');
     const web = streams.filter(s => s.category === 'web');
+    const torrents = streams.filter(s => s.category === 'torrent');
 
     let html = '';
 
     if (dubbed.length > 0) {
-      html += '<div style="color:#22c55e; font-weight:800; font-size:1rem; margin:1rem 0 0.5rem; display:flex; align-items:center; gap:6px;"><span>🟢</span> FONTES 100% DUBLADAS EM PORTUGUÊS (ÁUDIO BRASIL)</div>';
+      html += '<div style="color:#22c55e; font-weight:800; font-size:1rem; margin:1rem 0 0.5rem; display:flex; align-items:center; gap:6px;">'
+        + '<span>🟢</span> FONTES DUBLADAS PT-BR (ÁUDIO BRASIL)</div>';
       html += dubbed.map(stream => this.createStreamItem(stream)).join('');
     }
 
     if (web.length > 0) {
-      html += '<div style="color:#3b82f6; font-weight:800; font-size:1rem; margin:1.8rem 0 0.5rem; display:flex; align-items:center; gap:6px;"><span>🔵</span> PLAYERS WEB HD DE ALTA VELOCIDADE (SERVIDORES WEB)</div>';
+      html += '<div style="color:#3b82f6; font-weight:800; font-size:1rem; margin:1.8rem 0 0.5rem; display:flex; align-items:center; gap:6px;">'
+        + '<span>🔵</span> PLAYERS WEB HD (SERVIDORES WEB)</div>';
       html += web.map(stream => this.createStreamItem(stream)).join('');
+    }
+
+    if (torrents.length > 0) {
+      html += '<div style="color:#f59e0b; font-weight:800; font-size:1rem; margin:1.8rem 0 0.5rem; display:flex; align-items:center; gap:6px;">'
+        + '<span>🧲</span> BRAZUCA TORRENTS PT-BR (ABRIR COM CLIENTE TORRENT)</div>';
+      html += torrents.map(stream => this.createStreamItem(stream)).join('');
+    }
+
+    if (html === '') {
+      html = '<p style="color:#a0a0b0; text-align:center; padding:2rem;">Nenhuma fonte disponível no momento. Tente novamente em instantes.</p>';
     }
 
     streamsList.innerHTML = html;
   },
   
   createStreamItem(stream) {
-    let titleParts = ((stream.title || stream.description || '')).split('\n');
-    let qualityDetails = titleParts.join(' | ');
-    let name = stream.name;
-    
+    const detailRaw = (stream.title || stream.description || '');
+    const qualityDetails = detailRaw.replace(/\n/g, ' • ').slice(0, 120);
+    const name = stream.name;
+
+    // 🧲 Brazuca Torrent — show magnet link with copy button
     if (stream.magnetUrl) {
+      const escapedMagnet = stream.magnetUrl.replace(/"/g, '&quot;');
+      const escapedName = name.replace(/'/g, "\\'");
       return `
-        <div class="stream-item">
+        <div class="stream-item" style="border-left: 3px solid #f59e0b;">
           <div class="stream-info">
             <span class="stream-name">${name}</span>
-            <span class="stream-details">🧲 Link Magnético Torrent • Abrir no BitTorrent/uTorrent</span>
+            <span class="stream-details" style="color:#f59e0b;">${qualityDetails || '🧲 Abrir com cliente torrent (uTorrent, BitTorrent, qBittorrent)'}</span>
           </div>
           <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-            <a href="${stream.magnetUrl}" target="_self" class="stream-play-btn" style="background:#f59e0b; color:black; font-weight:700; text-decoration:none;">🧲 Abrir Magnet Link</a>
+            <a href="${escapedMagnet}" class="stream-play-btn" style="background:#f59e0b; color:#000; font-weight:700; text-decoration:none;">🧲 Abrir Magnet</a>
+            <button class="stream-play-btn" style="background:rgba(245,158,11,0.2); border:1px solid #f59e0b; color:#f59e0b;"
+              onclick="navigator.clipboard.writeText('${escapedMagnet.replace(/'/g, "\\'").slice(0,200)}').then(()=>this.textContent='✅ Copiado!').catch(()=>{})">📋 Copiar Link</button>
           </div>
         </div>
       `;
     }
-    
+
+    // 🎬 FenixFlix / FrostStream — direct MP4/IPTV stream URL
     if (stream.url) {
       const escapedUrl = stream.url.replace(/'/g, "\\'");
       const escapedTitle = name.replace(/'/g, "\\'");
+      const borderColor = stream.isDub ? '#22c55e' : '#3b82f6';
+      const sourceLabel = name.includes('FenixFlix') ? '🔥 FenixFlix' : name.includes('FrostStream') ? '❄️ FrostStream' : '🎬 Stream Direto';
       return `
-        <div class="stream-item">
+        <div class="stream-item" style="border-left: 3px solid ${borderColor};">
           <div class="stream-info">
             <span class="stream-name">${name}</span>
-            <span class="stream-details">${qualityDetails}</span>
+            <span class="stream-details">${sourceLabel} • ${qualityDetails}</span>
           </div>
           <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-            <button class="stream-play-btn" onclick="UI.playStream('${escapedUrl}', '${escapedTitle}')">▶ Assistir no App</button>
-            <a href="${stream.url}" target="_blank" rel="noopener" class="stream-play-btn" style="background:rgba(255,255,255,0.15); text-decoration:none;" title="Abrir direto em nova aba para Brave/Safari">🔗 Nova Aba</a>
-          </div>
-        </div>
-      `;
-    } else if (stream.embedUrl) {
-      const escapedEmbed = stream.embedUrl.replace(/'/g, "\\'");
-      const escapedTitle = name.replace(/'/g, "\\'");
-      return `
-        <div class="stream-item">
-          <div class="stream-info">
-            <span class="stream-name">${name}</span>
-            <span class="stream-details">${qualityDetails}</span>
-          </div>
-          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-            <button class="stream-play-btn" onclick="UI.playIframe('${escapedEmbed}', '${escapedTitle}')">▶ Assistir no App</button>
-            <a href="${stream.embedUrl}" target="_blank" rel="noopener" class="stream-play-btn" style="background:rgba(255,255,255,0.15); text-decoration:none;" title="Abrir direto em nova aba para Brave/Safari">🔗 Nova Aba</a>
+            <button class="stream-play-btn" onclick="UI.playStream('${escapedUrl}', '${escapedTitle}')">▶ Assistir</button>
+            <a href="${stream.url}" target="_blank" rel="noopener" class="stream-play-btn" style="background:rgba(255,255,255,0.1); text-decoration:none;">🔗 Nova Aba</a>
           </div>
         </div>
       `;
     }
+
+    // 🖥️ Embed players (WarezCDN, SuperFlix, VidSrc, etc.)
+    if (stream.embedUrl) {
+      const escapedEmbed = stream.embedUrl.replace(/'/g, "\\'");
+      const escapedTitle = name.replace(/'/g, "\\'");
+      const borderColor = stream.isDub ? '#8b5cf6' : '#6366f1';
+      return `
+        <div class="stream-item" style="border-left: 3px solid ${borderColor};">
+          <div class="stream-info">
+            <span class="stream-name">${name}</span>
+            <span class="stream-details">${qualityDetails}</span>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <button class="stream-play-btn" onclick="UI.playIframe('${escapedEmbed}', '${escapedTitle}')">▶ Assistir</button>
+            <a href="${stream.embedUrl}" target="_blank" rel="noopener" class="stream-play-btn" style="background:rgba(255,255,255,0.1); text-decoration:none;">🔗 Nova Aba</a>
+          </div>
+        </div>
+      `;
+    }
+
     return '';
   },
 
