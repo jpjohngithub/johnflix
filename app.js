@@ -104,15 +104,29 @@ const User = {
   saveProgress(metaId, currentTime, duration, extra = {}) {
     if (!metaId || !currentTime || currentTime < 5) return;
     const progressMap = this.getAllProgress();
+    
+    let posterUrl = extra.poster || '';
+    let itemTitle = extra.title || '';
+    let itemType = extra.type || state.currentType;
+
+    if (state.currentMeta && (state.currentMeta.id === metaId || metaId.startsWith(state.currentMeta.id))) {
+      if (!posterUrl) posterUrl = getPosterUrl(state.currentMeta);
+      if (!itemTitle) itemTitle = state.currentMeta.name;
+    }
+
     progressMap[metaId] = {
+      id: metaId,
+      name: itemTitle || (progressMap[metaId] ? progressMap[metaId].name : 'Vídeo'),
+      poster: posterUrl || (progressMap[metaId] ? progressMap[metaId].poster : ''),
+      type: itemType,
       currentTime: Math.floor(currentTime),
       duration: Math.floor(duration || 0),
-      percentage: duration > 0 ? Math.floor((currentTime / duration) * 100) : 0,
-      title: extra.title || '',
-      season: extra.season || 1,
-      episode: extra.episode || 1,
+      percentage: duration > 0 ? Math.min(100, Math.floor((currentTime / duration) * 100)) : 0,
+      season: extra.season || state.currentSeason || 1,
+      episode: extra.episode || state.currentEpisode || 1,
       updatedAt: Date.now()
     };
+    
     localStorage.setItem('johnflix_progress', JSON.stringify(progressMap));
   },
 
@@ -1004,12 +1018,63 @@ const UI = {
     }
   },
 
+  createContinueCard(item) {
+    const posterUrl = item.poster || (item.id ? `https://images.metahub.space/poster/medium/${item.id}/img` : '');
+    const isSeries = item.type === 'series';
+    const pct = item.percentage || 0;
+    const epBadge = isSeries ? `T${item.season || 1}:E${item.episode || 1}` : '';
+    const cleanId = (item.id || '').split(':')[0];
+
+    return `
+      <div class="movie-card continue-card" onclick="UI.openModal('${cleanId}')">
+        <div class="continue-poster-wrapper">
+          <img class="movie-poster" src="${posterUrl}" alt="${item.name || ''}" onerror="this.style.background='linear-gradient(135deg, #1a1a2e, #2a2a4e)'; this.style.minHeight='270px';" loading="lazy">
+          ${isSeries ? `<span class="movie-card-type" style="background:rgba(139,92,246,0.95); font-weight:800;">📺 SÉRIE</span>` : '<span class="movie-card-type">🎬 FILME</span>'}
+          <div class="continue-play-overlay">
+            <div class="continue-play-btn-circle">▶</div>
+          </div>
+          <div class="continue-progress-bar-container">
+            <div class="continue-progress-bar-fill" style="width: ${pct}%;"></div>
+          </div>
+        </div>
+        <div class="movie-card-overlay continue-card-overlay">
+          <span class="movie-card-title">${item.name || 'Vídeo'}</span>
+          <span class="continue-card-meta">${epBadge ? `${epBadge} • ` : ''}${formatTime(item.currentTime)}</span>
+        </div>
+      </div>
+    `;
+  },
+
   renderCatalogs() {
     const container = document.getElementById('catalog-container');
     if (!container) return;
     
     let html = '';
     const typeName = state.currentType === 'movie' ? 'Filmes' : 'Séries';
+
+    // 1. Continuar Assistindo (Recent Progress)
+    const allProgressMap = User.getAllProgress();
+    const progressList = Object.values(allProgressMap)
+      .filter(item => item && item.currentTime > 10 && item.percentage < 95)
+      .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+
+    if (progressList.length > 0) {
+      const continueCardsHtml = progressList.map(item => this.createContinueCard(item)).join('');
+      html += `
+        <section class="catalog-section continue-watching-section">
+          <h2 class="section-title" style="color:#d8b4fe; display:flex; align-items:center; gap:8px;">
+            <span>🕒</span> Continuar Assistindo
+          </h2>
+          <div class="carousel-wrapper">
+            <button class="carousel-btn carousel-prev" onclick="window.scrollCarousel('continue', -1)">‹</button>
+            <div class="carousel-track" id="carousel-continue">
+              ${continueCardsHtml}
+            </div>
+            <button class="carousel-btn carousel-next" onclick="window.scrollCarousel('continue', 1)">›</button>
+          </div>
+        </section>
+      `;
+    }
     
     if (state.catalogs.popular.length > 0) {
       html += this.createCarousel(`${typeName} Populares`, state.catalogs.popular, 'popular');
@@ -1633,6 +1698,11 @@ const UI = {
       video.src = '';
       video.classList.remove('hidden');
     }
+    
+    // Refresh Continue Watching carousel
+    try {
+      this.renderCatalogs();
+    } catch(e) {}
   },
   
   hideLoadingScreen() {
