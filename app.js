@@ -302,10 +302,44 @@ const API = {
   
   async fetchMeta(type, id) {
     try {
-      const url = `https://v3-cinemeta.strem.io/meta/${type}/${id}.json`;
-      const res = await fetchWithTimeout(url);
-      const data = await res.json();
-      return data.meta || null;
+      const cleanId = (id || '').split(':')[0];
+      const reqType = (type === 'all' || type === 'watchlist' || !type) ? 'movie' : type;
+      
+      let url = `https://v3-cinemeta.strem.io/meta/${reqType}/${cleanId}.json`;
+      let res = await fetchWithTimeout(url).catch(() => null);
+      let data = res ? await res.json().catch(() => null) : null;
+      
+      if (data && data.meta) {
+        return data.meta;
+      }
+      
+      // Fallback: If requested type was 'movie' (or 'all'), try 'series'
+      const altType = reqType === 'movie' ? 'series' : 'movie';
+      url = `https://v3-cinemeta.strem.io/meta/${altType}/${cleanId}.json`;
+      res = await fetchWithTimeout(url).catch(() => null);
+      data = res ? await res.json().catch(() => null) : null;
+      
+      if (data && data.meta) {
+        return data.meta;
+      }
+
+      // Fallback to local catalog items if Cinemeta network is down
+      const allItems = [...(state.catalogs.popular || []), ...(state.catalogs.featured || [])];
+      const localItem = allItems.find(x => x && x.id === cleanId);
+      if (localItem) {
+        return {
+          id: localItem.id,
+          type: localItem.type || 'movie',
+          name: localItem.name || 'Título',
+          poster: localItem.poster,
+          background: localItem.background,
+          description: localItem.description || '',
+          year: localItem.year || '',
+          imdbRating: localItem.imdbRating || ''
+        };
+      }
+
+      return null;
     } catch (error) {
       console.error('Error fetching meta:', error);
       return null;
@@ -1127,9 +1161,10 @@ const UI = {
   
   createMovieCard(item) {
     const posterUrl = getPosterUrl(item);
-    const isSeries = (item.type === 'series') || (state.currentType === 'series');
+    const itemType = item.type || (state.currentType === 'series' ? 'series' : 'movie');
+    const isSeries = itemType === 'series';
     return `
-      <div class="movie-card" onclick="UI.openModal('${item.id}')">
+      <div class="movie-card" onclick="UI.openModal('${item.id}', '${itemType}')">
         <img class="movie-poster" src="${posterUrl}" alt="${item.name}" onerror="this.style.background='linear-gradient(135deg, #1a1a2e, #2a2a4e)'; this.style.minHeight='270px';" loading="lazy">
         <span class="movie-card-type">${isSeries ? '📺 SÉRIE' : '🎬 FILME'}</span>
         ${item.imdbRating ? `<span class="movie-card-rating">⭐ ${item.imdbRating}</span>` : ''}
@@ -1229,7 +1264,7 @@ const UI = {
     const epBadge = isSeries ? `T${item.season || 1}:E${item.episode || 1}` : '';
 
     return `
-      <div class="movie-card continue-card" onclick="UI.openModal('${cleanId}')">
+      <div class="movie-card continue-card" onclick="UI.openModal('${cleanId}', '${item.type || (isSeries ? 'series' : 'movie')}')">
         <button class="continue-card-delete" onclick="event.stopPropagation(); UI.removeHistoryItem('${cleanId}');" title="Remover do histórico">✕</button>
         <div class="continue-poster-wrapper">
           <img class="movie-poster" src="${posterUrl}" alt="${name}" onerror="this.src='https://images.metahub.space/poster/medium/${cleanId}/img';" loading="lazy">
@@ -1445,7 +1480,7 @@ const UI = {
     document.getElementById('hero-section')?.classList.remove('hidden');
   },
   
-  async openModal(id) {
+  async openModal(id, explicitType) {
     const modal = document.getElementById('movie-modal');
     if (!modal) return;
     
@@ -1453,7 +1488,8 @@ const UI = {
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
     
-    const meta = await API.fetchMeta(state.currentType, id);
+    const reqType = explicitType || state.currentType;
+    const meta = await API.fetchMeta(reqType, id);
     if (!meta) {
       alert('Erro ao carregar detalhes.');
       this.closeModal();
