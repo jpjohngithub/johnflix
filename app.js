@@ -392,7 +392,16 @@ const UI = {
         }
 
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        this.loadInitialData();
+
+        const searchInput = document.getElementById('search-input');
+        const activeQuery = searchInput ? searchInput.value.trim() : '';
+
+        if (activeQuery.length > 0) {
+          this.performSearch(activeQuery);
+        } else {
+          this.hideSearchResults();
+          this.loadInitialData();
+        }
       });
     });
 
@@ -424,42 +433,7 @@ const UI = {
     
     // Search input (Instant 0ms local match + fast Cinemeta catalog fetch)
     if (searchInput) {
-      const performSearch = async (query) => {
-        const q = query.trim().toLowerCase();
-        if (q.length === 0) {
-          this.hideSearchResults();
-          return;
-        }
-
-        // 1. INSTANT 0ms Local Catalog Search
-        const allLocal = [...(state.catalogs.popular || []), ...(state.catalogs.featured || [])];
-        const localMatches = allLocal.filter((item, index, self) => {
-          const isUnique = self.findIndex(t => t.id === item.id) === index;
-          const nameMatch = (item.name || '').toLowerCase().includes(q);
-          const descMatch = (item.description || '').toLowerCase().includes(q);
-          return isUnique && (nameMatch || descMatch);
-        });
-
-        if (localMatches.length > 0) {
-          this.showSearchResults(localMatches);
-        }
-
-        // 2. Fetch full Cinemeta search in parallel if query length >= 2
-        if (q.length >= 2) {
-          const remoteResults = await API.searchContent(state.currentType, query.trim());
-          if (remoteResults && remoteResults.length > 0) {
-            // Merge local and remote avoiding duplicates
-            const combinedMap = new Map();
-            localMatches.forEach(item => combinedMap.set(item.id, item));
-            remoteResults.forEach(item => combinedMap.set(item.id, item));
-            this.showSearchResults(Array.from(combinedMap.values()));
-          } else if (localMatches.length === 0) {
-            this.showSearchResults([]);
-          }
-        }
-      };
-
-      const debouncedRemoteSearch = debounce(performSearch, 100);
+      const debouncedRemoteSearch = debounce((q) => this.performSearch(q), 100);
 
       searchInput.addEventListener('input', (e) => {
         const val = e.target.value;
@@ -858,6 +832,40 @@ const UI = {
     container.innerHTML = html;
   },
   
+  async performSearch(query) {
+    const q = query.trim().toLowerCase();
+    if (q.length === 0) {
+      this.hideSearchResults();
+      return;
+    }
+
+    // 1. INSTANT 0ms Local Catalog Search
+    const allLocal = [...(state.catalogs.popular || []), ...(state.catalogs.featured || [])];
+    const localMatches = allLocal.filter((item, index, self) => {
+      const isUnique = self.findIndex(t => t.id === item.id) === index;
+      const nameMatch = (item.name || '').toLowerCase().includes(q);
+      const descMatch = (item.description || '').toLowerCase().includes(q);
+      return isUnique && (nameMatch || descMatch);
+    });
+
+    if (localMatches.length > 0) {
+      this.showSearchResults(localMatches);
+    }
+
+    // 2. Fetch full Cinemeta search for currentType (movie or series)
+    if (q.length >= 2) {
+      const remoteResults = await API.searchContent(state.currentType, query.trim());
+      if (remoteResults && remoteResults.length > 0) {
+        const combinedMap = new Map();
+        localMatches.forEach(item => combinedMap.set(item.id, item));
+        remoteResults.forEach(item => combinedMap.set(item.id, item));
+        this.showSearchResults(Array.from(combinedMap.values()));
+      } else if (localMatches.length === 0) {
+        this.showSearchResults([]);
+      }
+    }
+  },
+
   showSearchResults(results) {
     const resultsArea = document.getElementById('search-results');
     const grid = document.getElementById('search-grid');
@@ -870,12 +878,14 @@ const UI = {
     }
     resultsArea.classList.remove('hidden');
     document.getElementById('catalog-container')?.classList.add('hidden');
+    document.getElementById('hero-section')?.classList.add('hidden');
   },
   
   hideSearchResults() {
     const resultsArea = document.getElementById('search-results');
     if (resultsArea) resultsArea.classList.add('hidden');
     document.getElementById('catalog-container')?.classList.remove('hidden');
+    document.getElementById('hero-section')?.classList.remove('hidden');
   },
   
   async openModal(id) {
