@@ -66,6 +66,45 @@ function openMagnet(infoHash, name) {
 
 
 
+// --- Internationalization (I18N) Dictionary ---
+
+const I18N = {
+  'pt-br': {
+    movies: 'Filmes 🎬',
+    series: 'Séries 📺',
+    searchPlaceholder: 'Buscar filmes e séries...',
+    allGenres: 'Todos os Gêneros',
+    popularMovies: 'Filmes Populares',
+    featuredMovies: 'Filmes em Destaque',
+    popularSeries: 'Séries Populares',
+    featuredSeries: 'Séries em Destaque',
+    watch: 'Assistir',
+    moreInfo: 'Mais Info',
+    autoPlayBr: '⚡ Assistir Agora (Auto-Play Dublado PT-BR)',
+    sourcesTitle: 'Todas as Fontes Disponíveis (Dublado / Legendado / HD)',
+    searchResults: 'Resultados da Busca',
+    noResults: 'Nenhum resultado encontrado.',
+    changeSource: '📡 Trocar Fonte:'
+  },
+  'en': {
+    movies: 'Movies 🎬',
+    series: 'TV Series 📺',
+    searchPlaceholder: 'Search movies & series...',
+    allGenres: 'All Genres',
+    popularMovies: 'Popular Movies',
+    featuredMovies: 'Top Featured Movies',
+    popularSeries: 'Popular TV Series',
+    featuredSeries: 'Top Featured TV Series',
+    watch: 'Watch Now',
+    moreInfo: 'More Info',
+    autoPlayBr: '⚡ Watch Now (Smart Auto-Play)',
+    sourcesTitle: 'All Available Stream Sources (HD / Multi-Audio)',
+    searchResults: 'Search Results',
+    noResults: 'No results found.',
+    changeSource: '📡 Change Stream:'
+  }
+};
+
 // --- State Management ---
 
 const state = {
@@ -73,6 +112,7 @@ const state = {
   currentGenre: '',
   currentMeta: null,
   currentLang: 'dublado', // 'dublado', 'legendado', 'original'
+  homeLang: 'pt-br', // 'pt-br' or 'en'
   currentSeason: 1,
   currentEpisode: 1,
   catalogs: {
@@ -454,6 +494,15 @@ const UI = {
       });
     }
 
+    // Global Home Language Select
+    const homeLangSelect = document.getElementById('home-lang-select');
+    if (homeLangSelect) {
+      homeLangSelect.addEventListener('change', (e) => {
+        state.homeLang = e.target.value;
+        this.updateLanguage();
+      });
+    }
+
     // Language selector
     document.querySelectorAll('.lang-btn[data-lang]').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -811,6 +860,55 @@ const UI = {
     `;
   },
   
+  updateLanguage() {
+    const lang = state.homeLang || 'pt-br';
+    const t = I18N[lang] || I18N['pt-br'];
+
+    // Update Header Links & Search Placeholder
+    const movieNav = document.querySelectorAll('[data-type="movie"]');
+    const seriesNav = document.querySelectorAll('[data-type="series"]');
+    movieNav.forEach(el => {
+      const label = el.querySelector('.mobile-nav-label');
+      if (label) label.textContent = lang === 'en' ? 'Movies' : 'Filmes';
+      else el.textContent = t.movies;
+    });
+    seriesNav.forEach(el => {
+      const label = el.querySelector('.mobile-nav-label');
+      if (label) label.textContent = lang === 'en' ? 'Series' : 'Séries';
+      else el.textContent = t.series;
+    });
+
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) searchInput.placeholder = t.searchPlaceholder;
+
+    const genreSelect = document.getElementById('genre-select');
+    if (genreSelect && genreSelect.options[0]) {
+      genreSelect.options[0].textContent = t.allGenres;
+    }
+
+    const heroTypeName = document.getElementById('hero-type-name');
+    if (heroTypeName) {
+      heroTypeName.textContent = state.currentType === 'movie' ? t.movies : t.series;
+    }
+
+    const modalAutoPlayBtn = document.getElementById('modal-auto-play-btn');
+    if (modalAutoPlayBtn) {
+      modalAutoPlayBtn.textContent = t.autoPlayBr;
+    }
+
+    const streamsTitle = document.querySelector('.streams-title');
+    if (streamsTitle) {
+      streamsTitle.textContent = t.sourcesTitle;
+    }
+
+    const activeQuery = searchInput ? searchInput.value.trim() : '';
+    if (activeQuery.length > 0) {
+      this.performSearch(activeQuery);
+    } else {
+      this.loadInitialData();
+    }
+  },
+
   renderCatalogs() {
     const container = document.getElementById('catalog-container');
     if (!container) return;
