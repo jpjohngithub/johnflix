@@ -18,10 +18,9 @@ function debounce(fn, delay) {
   };
 }
 
-function fetchWithTimeout(url, options = {}) {
-  const timeout = 12000; // 12 seconds
+function fetchWithTimeout(url, options = {}, timeoutMs = 3500) {
   const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeout);
+  const id = setTimeout(() => controller.abort(), timeoutMs);
   
   return fetch(url, { ...options, signal: controller.signal })
     .then(response => {
@@ -30,19 +29,39 @@ function fetchWithTimeout(url, options = {}) {
     })
     .catch(async (error) => {
       clearTimeout(id);
-      console.warn(`Direct fetch failed for ${url}, trying fallback...`, error);
-      
-      try {
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-        const res = await fetch(proxyUrl);
-        if (res.ok) return res;
-      } catch (e) {
-        console.warn('Proxy fallback failed:', e);
+      if (url.includes('cinemeta-catalogs.strem.io')) {
+        const altUrl = url.replace('cinemeta-catalogs.strem.io', 'v3-cinemeta.strem.io');
+        const altRes = await fetch(altUrl).catch(() => null);
+        if (altRes && altRes.ok) return altRes;
       }
-
       throw error;
     });
 }
+
+// --- Instant 0ms Local Cache System ---
+
+const Cache = {
+  get(key) {
+    try {
+      const item = localStorage.getItem('jf_cache_' + key);
+      if (!item) return null;
+      const parsed = JSON.parse(item);
+      if (Date.now() - parsed.time < 30 * 60 * 1000) {
+        return parsed.data;
+      }
+    } catch(e) {}
+    return null;
+  },
+  set(key, data) {
+    try {
+      if (!data) return;
+      localStorage.setItem('jf_cache_' + key, JSON.stringify({
+        time: Date.now(),
+        data: data
+      }));
+    } catch(e) {}
+  }
+};
 
 function getPosterUrl(meta) {
   return meta.poster || (meta.id ? `https://images.metahub.space/poster/medium/${meta.id}/img` : '');
@@ -169,11 +188,14 @@ const API = {
   async fetchStreams(type, id, season = 1, episode = 1) {
     try {
       const streamId = type === 'series' ? `${id}:${season}:${episode}` : id;
+      const cacheKey = `st_${streamId}`;
+      const cached = Cache.get(cacheKey);
+      if (cached && cached.length > 0) return cached;
       
       const fetchAddon = async (baseUrl) => {
         try {
           const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort(), 6000);
+          const timer = setTimeout(() => controller.abort(), 3500);
           const res = await fetch(`${baseUrl}/stream/${type}/${streamId}.json`, { signal: controller.signal });
           clearTimeout(timer);
           if (res.ok) {
@@ -390,6 +412,7 @@ const API = {
         }
       );
 
+      Cache.set(cacheKey, streamsList);
       return streamsList;
     } catch (error) {
       console.error('Error fetching streams:', error);
@@ -774,9 +797,18 @@ const UI = {
   async loadInitialData() {
     try {
       this.hideSearchResults();
-      const catalogContainer = document.getElementById('catalog-container');
-      if (catalogContainer) catalogContainer.innerHTML = '<div class="loading-spinner"></div>';
       
+      const cacheKey = `cat_${state.currentType}_${state.currentGenre || 'all'}`;
+      const cached = Cache.get(cacheKey);
+      
+      if (cached && cached.popular && cached.popular.length > 0) {
+        state.catalogs.popular = cached.popular;
+        state.catalogs.featured = cached.featured || [];
+        this.setHero(cached.popular[0]);
+        this.renderCatalogs();
+        this.hideLoadingScreen();
+      }
+
       const extra = state.currentGenre ? { genre: state.currentGenre } : {};
       
       const [popular, featured] = await Promise.all([
@@ -784,14 +816,13 @@ const UI = {
         API.fetchCatalog(state.currentType, 'imdbRating', extra)
       ]).catch(() => [[], []]);
       
-      state.catalogs.popular = popular || [];
-      state.catalogs.featured = featured || [];
-      
       if (popular && popular.length > 0) {
+        state.catalogs.popular = popular;
+        state.catalogs.featured = featured || [];
+        Cache.set(cacheKey, { popular: state.catalogs.popular, featured: state.catalogs.featured });
         this.setHero(popular[0]);
+        this.renderCatalogs();
       }
-      
-      this.renderCatalogs();
     } catch (err) {
       console.error('Error in loadInitialData:', err);
     } finally {
