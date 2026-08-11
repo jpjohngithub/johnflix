@@ -1359,68 +1359,57 @@ const UI = {
     // Normal Movies / Series Catalog Mode
     const typeName = state.currentType === 'all' ? 'Filmes & Séries' : (state.currentType === 'movie' ? 'Filmes' : 'Séries');
 
-    // 1. Continuar Assistindo (Recent Progress)
-    const allProgressMap = User.getAllProgress();
-    let progressList = Object.values(allProgressMap)
-      .filter(item => item && item.currentTime > 10 && item.percentage < 95)
-      .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    // 1. Continuar Assistindo & 2. Minha Lista Carousel (ONLY on 'all' home tab)
+    if (state.currentType === 'all') {
+      const allProgressMap = User.getAllProgress();
+      const progressList = Object.values(allProgressMap)
+        .filter(item => item && item.currentTime > 10 && item.percentage < 95)
+        .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
 
-    if (state.currentType === 'movie') {
-      progressList = progressList.filter(item => item.type !== 'series');
-    } else if (state.currentType === 'series') {
-      progressList = progressList.filter(item => item.type === 'series');
-    }
+      if (progressList.length > 0) {
+        const continueCardsHtml = progressList.map(item => this.createContinueCard(item)).join('');
+        html += `
+          <section class="catalog-section continue-watching-section">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding-right:4%; margin-bottom:1rem;">
+              <h2 class="section-title" style="color:#d8b4fe; display:flex; align-items:center; gap:8px; margin-bottom:0;">
+                <span>🕒</span> Continuar Assistindo
+              </h2>
+              <button class="btn btn-secondary" onclick="UI.clearHistory()" style="padding:6px 14px; font-size:0.8rem; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:#fca5a5; gap:6px; cursor:pointer;" title="Limpar todo o histórico">
+                🗑️ Limpar Histórico
+              </button>
+            </div>
+            <div class="carousel-wrapper">
+              <button class="carousel-btn carousel-prev" onclick="window.scrollCarousel('continue', -1)">‹</button>
+              <div class="carousel-track" id="carousel-continue">
+                ${continueCardsHtml}
+              </div>
+              <button class="carousel-btn carousel-next" onclick="window.scrollCarousel('continue', 1)">›</button>
+            </div>
+          </section>
+        `;
+      }
 
-    if (progressList.length > 0) {
-      const continueCardsHtml = progressList.map(item => this.createContinueCard(item)).join('');
-      html += `
-        <section class="catalog-section continue-watching-section">
-          <div style="display:flex; align-items:center; justify-content:space-between; padding-right:4%; margin-bottom:1rem;">
-            <h2 class="section-title" style="color:#d8b4fe; display:flex; align-items:center; gap:8px; margin-bottom:0;">
-              <span>🕒</span> Continuar Assistindo
+      const watchlistMap = User.getWatchlist();
+      const watchlistArray = Object.values(watchlistMap)
+        .sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+
+      if (watchlistArray.length > 0) {
+        const watchlistCardsHtml = watchlistArray.map(item => this.createMovieCard(item)).join('');
+        html += `
+          <section class="catalog-section watchlist-section" id="watchlist-section">
+            <h2 class="section-title" style="color:#facc15; display:flex; align-items:center; gap:8px;">
+              <span>⭐</span> Minha Lista / Favoritos (${watchlistArray.length})
             </h2>
-            <button class="btn btn-secondary" onclick="UI.clearHistory()" style="padding:6px 14px; font-size:0.8rem; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:#fca5a5; gap:6px; cursor:pointer;" title="Limpar todo o histórico">
-              🗑️ Limpar Histórico
-            </button>
-          </div>
-          <div class="carousel-wrapper">
-            <button class="carousel-btn carousel-prev" onclick="window.scrollCarousel('continue', -1)">‹</button>
-            <div class="carousel-track" id="carousel-continue">
-              ${continueCardsHtml}
+            <div class="carousel-wrapper">
+              <button class="carousel-btn carousel-prev" onclick="window.scrollCarousel('watchlist', -1)">‹</button>
+              <div class="carousel-track" id="carousel-watchlist">
+                ${watchlistCardsHtml}
+              </div>
+              <button class="carousel-btn carousel-next" onclick="window.scrollCarousel('watchlist', 1)">›</button>
             </div>
-            <button class="carousel-btn carousel-next" onclick="window.scrollCarousel('continue', 1)">›</button>
-          </div>
-        </section>
-      `;
-    }
-
-    // 2. Minha Lista Carousel on Home (if items exist)
-    const watchlistMap = User.getWatchlist();
-    let watchlistArray = Object.values(watchlistMap)
-      .sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
-
-    if (state.currentType === 'movie') {
-      watchlistArray = watchlistArray.filter(item => item.type !== 'series');
-    } else if (state.currentType === 'series') {
-      watchlistArray = watchlistArray.filter(item => item.type === 'series');
-    }
-
-    if (watchlistArray.length > 0) {
-      const watchlistCardsHtml = watchlistArray.map(item => this.createMovieCard(item)).join('');
-      html += `
-        <section class="catalog-section watchlist-section" id="watchlist-section">
-          <h2 class="section-title" style="color:#facc15; display:flex; align-items:center; gap:8px;">
-            <span>⭐</span> Minha Lista / Favoritos (${watchlistArray.length})
-          </h2>
-          <div class="carousel-wrapper">
-            <button class="carousel-btn carousel-prev" onclick="window.scrollCarousel('watchlist', -1)">‹</button>
-            <div class="carousel-track" id="carousel-watchlist">
-              ${watchlistCardsHtml}
-            </div>
-            <button class="carousel-btn carousel-next" onclick="window.scrollCarousel('watchlist', 1)">›</button>
-          </div>
-        </section>
-      `;
+          </section>
+        `;
+      }
     }
 
     if (state.catalogs.popular && state.catalogs.popular.length > 0) {
@@ -1674,7 +1663,7 @@ const UI = {
     if (playerOverlay) playerOverlay.classList.remove('hidden');
     if (playerLoading) {
       playerLoading.classList.remove('hidden');
-      playerLoading.querySelector('p').textContent = '⚡ Conectando à melhor fonte Dublada PT-BR...';
+      playerLoading.querySelector('p').textContent = '⚡ Selecionando servidor ultra-rápido Dublado PT-BR...';
     }
 
     const titleText = state.currentMeta.name;
@@ -1697,14 +1686,22 @@ const UI = {
       return;
     }
 
-    // Sort streams: Dubbed PT-BR first, then highest score
+    // Advanced Ultra-Smart Server Ranking (Dubbed PT-BR + High Bandwidth CDN + Direct Video Stream)
     const sorted = [...playable].sort((a, b) => {
-      if (a.isDub && !b.isDub) return -1;
-      if (!a.isDub && b.isDub) return 1;
-      return (b.score || 0) - (a.score || 0);
+      const aDub = a.isDub ? 100 : 0;
+      const bDub = b.isDub ? 100 : 0;
+      
+      const aDirect = a.url ? 30 : 0;
+      const bDirect = b.url ? 30 : 0;
+
+      const aTotalScore = (a.score || 0) + aDub + aDirect;
+      const bTotalScore = (b.score || 0) + bDub + bDirect;
+
+      return bTotalScore - aTotalScore;
     });
 
     state.activeStreams = sorted;
+    state.currentStreamIndex = 0;
     this.updateHudStreamSelector(sorted, 0);
 
     const bestStream = sorted[0];
