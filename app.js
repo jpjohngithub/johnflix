@@ -144,10 +144,9 @@ const API = {
         return [];
       };
 
-      const [fenixStreams, frostStreams, torrentioStreams] = await Promise.all([
+      const [fenixStreams, frostStreams] = await Promise.all([
         fetchAddon('https://fenixflix.fenixhub.online'),
-        fetchAddon('https://froststream.cloutteam.com'),
-        fetchAddon('https://torrentio.strem.fun')
+        fetchAddon('https://froststream.cloutteam.com')
       ]);
 
       const streamsList = [];
@@ -190,11 +189,24 @@ const API = {
         }
       });
 
-      // Web Players (WarezCDN, VidSrc PT, AutoEmbed, VidSrc.in, 2Embed, VidLink Pro)
+      // Dedicated PT-BR Dubbed & Web Embed Players (WarezCDN, SuperFlix, EmbedFlix, MegaFlix, VidSrc PT)
       const isMovie = type === 'movie';
+
       const warezLink = isMovie 
         ? `https://warezcdn.link/embed/filme/${id}?autoplay=1`
         : `https://warezcdn.link/embed/serie/${id}/${season}/${episode}?autoplay=1`;
+
+      const superflixUrl = isMovie
+        ? `https://superflixapi.top/filme/${id}`
+        : `https://superflixapi.top/serie/${id}/${season}/${episode}`;
+
+      const embedflixUrl = isMovie
+        ? `https://embedflix.net/filme/${id}`
+        : `https://embedflix.net/serie/${id}/${season}/${episode}`;
+
+      const megaflixUrl = isMovie
+        ? `https://megaflix.cx/embed/filme/${id}`
+        : `https://megaflix.cx/embed/serie/${id}/${season}/${episode}`;
 
       const vidsrcDubUrl = isMovie 
         ? `https://vidsrc.me/embed/movie?imdb=${id}&ds_lang=pt&autoplay=1` 
@@ -223,7 +235,31 @@ const API = {
           embedUrl: warezLink,
           isDub: true,
           category: 'dubbed',
+          score: 10
+        },
+        {
+          name: '🇧🇷 Dublado PT-BR — SuperFlix HD (Rede Português BR)',
+          title: 'Servidor 100% Dublado Brasil • Full HD 1080p',
+          embedUrl: superflixUrl,
+          isDub: true,
+          category: 'dubbed',
           score: 9
+        },
+        {
+          name: '🇧🇷 Dublado PT-BR — EmbedFlix Brasil (Player HD)',
+          title: 'Servidor Alternativo Dublado PT-BR',
+          embedUrl: embedflixUrl,
+          isDub: true,
+          category: 'dubbed',
+          score: 9
+        },
+        {
+          name: '🇧🇷 Dublado PT-BR — MegaFlix HD (Áudio Português)',
+          title: 'Servidor Otimizado Áudio Dublado BR',
+          embedUrl: megaflixUrl,
+          isDub: true,
+          category: 'dubbed',
+          score: 8
         },
         {
           name: '🇧🇷 Dublado / Legendado — VidSrc PT-BR (Player Web HD)',
@@ -231,7 +267,7 @@ const API = {
           embedUrl: vidsrcDubUrl,
           isDub: true,
           category: 'dubbed',
-          score: 8
+          score: 7
         },
         {
           name: '🌐 Player Web AutoEmbed HD (Ultra-Fast 1080p)',
@@ -266,20 +302,6 @@ const API = {
           score: 3
         }
       );
-
-      // Process Torrentio Streams (Torrent / Magnet)
-      torrentioStreams.slice(0, 10).forEach(s => {
-        const rawTitle = (s.title || s.name || '').replace(/\n/g, ' | ');
-        streamsList.push({
-          name: `🧲 Torrentio Torrent — ${s.name || ''} (${rawTitle.slice(0, 45)})`,
-          title: rawTitle,
-          url: s.url || (s.infoHash ? `magnet:?xt=urn:btih:${s.infoHash}&dn=${encodeURIComponent(s.title || 'video')}` : null),
-          infoHash: s.infoHash,
-          isDub: false,
-          category: 'torrent',
-          score: 1
-        });
-      });
 
       return streamsList;
     } catch (error) {
@@ -887,7 +909,6 @@ const UI = {
     
     const dubbed = streams.filter(s => s.category === 'dubbed');
     const web = streams.filter(s => s.category === 'web');
-    const torrents = streams.filter(s => s.category === 'torrent');
 
     let html = '';
 
@@ -899,11 +920,6 @@ const UI = {
     if (web.length > 0) {
       html += '<div style="color:#3b82f6; font-weight:800; font-size:1rem; margin:1.8rem 0 0.5rem; display:flex; align-items:center; gap:6px;"><span>🔵</span> PLAYERS WEB HD DE ALTA VELOCIDADE (SERVIDORES WEB)</div>';
       html += web.map(stream => this.createStreamItem(stream)).join('');
-    }
-
-    if (torrents.length > 0) {
-      html += '<div style="color:#f59e0b; font-weight:800; font-size:1rem; margin:1.8rem 0 0.5rem; display:flex; align-items:center; gap:6px;"><span>🧲</span> FONTES TORRENTIO ULTRA HD (4K / 1080p)</div>';
-      html += torrents.map(stream => this.createStreamItem(stream)).join('');
     }
 
     streamsList.innerHTML = html;
