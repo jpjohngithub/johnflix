@@ -465,9 +465,16 @@ const UI = {
       });
     }
     
-    // Hero buttons
-    document.getElementById('hero-play-btn')?.addEventListener('click', () => {
-      if (state.heroMeta) this.openModal(state.heroMeta.id);
+    // Hero buttons & Auto-Play BR
+    document.getElementById('hero-play-btn')?.addEventListener('click', async () => {
+      if (state.heroMeta) {
+        await this.openModal(state.heroMeta.id);
+        this.autoPlayBestStream();
+      }
+    });
+
+    document.getElementById('modal-auto-play-btn')?.addEventListener('click', () => {
+      this.autoPlayBestStream();
     });
     
     document.getElementById('hero-info-btn')?.addEventListener('click', () => {
@@ -878,6 +885,46 @@ const UI = {
     if (modal) modal.classList.add('hidden');
     document.body.style.overflow = '';
     state.currentMeta = null;
+  },
+
+  async autoPlayBestStream() {
+    if (!state.currentMeta) return;
+
+    const streamsLoading = document.getElementById('streams-loading');
+    if (streamsLoading) {
+      streamsLoading.classList.remove('hidden');
+      streamsLoading.querySelector('p').textContent = '⚡ Selecionando a melhor fonte Dublada PT-BR...';
+    }
+
+    const streams = await API.fetchStreams(
+      state.currentType, 
+      state.currentMeta.id, 
+      state.currentSeason, 
+      state.currentEpisode
+    );
+
+    if (!streams || streams.length === 0) {
+      alert('Nenhum stream disponível para este título no momento.');
+      if (streamsLoading) streamsLoading.classList.add('hidden');
+      return;
+    }
+
+    // Sort streams: Dubbed PT-BR first, then highest score
+    const sorted = [...streams].sort((a, b) => {
+      if (a.isDub && !b.isDub) return -1;
+      if (!a.isDub && b.isDub) return 1;
+      return (b.score || 0) - (a.score || 0);
+    });
+
+    const bestStream = sorted[0];
+
+    if (bestStream.url) {
+      this.playStream(bestStream.url, bestStream.name);
+    } else if (bestStream.embedUrl) {
+      this.playIframe(bestStream.embedUrl, bestStream.name);
+    }
+
+    if (streamsLoading) streamsLoading.classList.add('hidden');
   },
   
   async loadStreams() {
