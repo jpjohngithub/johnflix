@@ -253,7 +253,7 @@ const User = {
 // --- State Management ---
 
 const state = {
-  currentType: 'movie', // 'movie' or 'series'
+  currentType: 'all', // 'all', 'movie', 'series', or 'watchlist'
   currentGenre: '',
   currentMeta: null,
   currentLang: 'dublado', // 'dublado', 'legendado', 'original'
@@ -548,6 +548,16 @@ const API = {
   },
   
   async searchContent(type, query) {
+    if (type === 'all') {
+      const [movs, sers] = await Promise.all([
+        this.fetchCatalog('movie', 'top', { search: query }),
+        this.fetchCatalog('series', 'top', { search: query })
+      ]).catch(() => [[], []]);
+      const map = new Map();
+      (movs || []).forEach(m => { m.type = 'movie'; map.set(m.id, m); });
+      (sers || []).forEach(s => { s.type = 'series'; map.set(s.id, s); });
+      return Array.from(map.values());
+    }
     return this.fetchCatalog(type, 'top', { search: query });
   }
 };
@@ -1035,11 +1045,32 @@ const UI = {
       }
 
       const extra = state.currentGenre ? { genre: state.currentGenre } : {};
-      
-      const [popular, featured] = await Promise.all([
-        API.fetchCatalog(state.currentType, 'top', extra),
-        API.fetchCatalog(state.currentType, 'imdbRating', extra)
-      ]).catch(() => [[], []]);
+      let popular = [];
+      let featured = [];
+
+      if (state.currentType === 'all') {
+        const [movTop, serTop, movRating, serRating] = await Promise.all([
+          API.fetchCatalog('movie', 'top', extra),
+          API.fetchCatalog('series', 'top', extra),
+          API.fetchCatalog('movie', 'imdbRating', extra),
+          API.fetchCatalog('series', 'imdbRating', extra)
+        ]).catch(() => [[], [], [], []]);
+
+        (movTop || []).forEach(m => m.type = 'movie');
+        (serTop || []).forEach(s => s.type = 'series');
+        (movRating || []).forEach(m => m.type = 'movie');
+        (serRating || []).forEach(s => s.type = 'series');
+
+        popular = this.interleaveArrays(movTop || [], serTop || []);
+        featured = this.interleaveArrays(movRating || [], serRating || []);
+      } else {
+        const [pop, feat] = await Promise.all([
+          API.fetchCatalog(state.currentType, 'top', extra),
+          API.fetchCatalog(state.currentType, 'imdbRating', extra)
+        ]).catch(() => [[], []]);
+        popular = pop;
+        featured = feat;
+      }
       
       if (popular && popular.length > 0) {
         state.catalogs.popular = popular;
@@ -1053,6 +1084,16 @@ const UI = {
     } finally {
       this.hideLoadingScreen();
     }
+  },
+
+  interleaveArrays(arr1, arr2) {
+    const result = [];
+    const maxLen = Math.max(arr1.length, arr2.length);
+    for (let i = 0; i < maxLen; i++) {
+      if (i < arr1.length) result.push(arr1[i]);
+      if (i < arr2.length) result.push(arr2[i]);
+    }
+    return result;
   },
   
   setHero(meta) {
@@ -1280,7 +1321,7 @@ const UI = {
     }
 
     // Normal Movies / Series Catalog Mode
-    const typeName = state.currentType === 'movie' ? 'Filmes' : 'Séries';
+    const typeName = state.currentType === 'all' ? 'Filmes & Séries' : (state.currentType === 'movie' ? 'Filmes' : 'Séries');
 
     // 1. Continuar Assistindo (Recent Progress)
     const allProgressMap = User.getAllProgress();
