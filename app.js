@@ -355,17 +355,53 @@ const UI = {
       });
     }
     
-    // Search input
+    // Search input (Instant 0ms local match + fast Cinemeta catalog fetch)
     if (searchInput) {
-      searchInput.addEventListener('input', debounce(async (e) => {
-        const query = e.target.value.trim();
-        if (query.length >= 3) {
-          const results = await API.searchContent(state.currentType, query);
-          this.showSearchResults(results);
-        } else if (query.length === 0) {
+      const performSearch = async (query) => {
+        const q = query.trim().toLowerCase();
+        if (q.length === 0) {
           this.hideSearchResults();
+          return;
         }
-      }, 300));
+
+        // 1. INSTANT 0ms Local Catalog Search
+        const allLocal = [...(state.catalogs.popular || []), ...(state.catalogs.featured || [])];
+        const localMatches = allLocal.filter((item, index, self) => {
+          const isUnique = self.findIndex(t => t.id === item.id) === index;
+          const nameMatch = (item.name || '').toLowerCase().includes(q);
+          const descMatch = (item.description || '').toLowerCase().includes(q);
+          return isUnique && (nameMatch || descMatch);
+        });
+
+        if (localMatches.length > 0) {
+          this.showSearchResults(localMatches);
+        }
+
+        // 2. Fetch full Cinemeta search in parallel if query length >= 2
+        if (q.length >= 2) {
+          const remoteResults = await API.searchContent(state.currentType, query.trim());
+          if (remoteResults && remoteResults.length > 0) {
+            // Merge local and remote avoiding duplicates
+            const combinedMap = new Map();
+            localMatches.forEach(item => combinedMap.set(item.id, item));
+            remoteResults.forEach(item => combinedMap.set(item.id, item));
+            this.showSearchResults(Array.from(combinedMap.values()));
+          } else if (localMatches.length === 0) {
+            this.showSearchResults([]);
+          }
+        }
+      };
+
+      const debouncedRemoteSearch = debounce(performSearch, 100);
+
+      searchInput.addEventListener('input', (e) => {
+        const val = e.target.value;
+        if (val.trim().length === 0) {
+          this.hideSearchResults();
+        } else {
+          debouncedRemoteSearch(val);
+        }
+      });
     }
     
     // Genre select
