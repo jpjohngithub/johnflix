@@ -105,6 +105,79 @@ const I18N = {
   }
 };
 
+// --- User Account & Watch Progress Engine ---
+
+function formatTime(seconds) {
+  if (!seconds || isNaN(seconds)) return '0:00';
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s < 10 ? '0' : ''}${s}`;
+}
+
+const User = {
+  getUsers() {
+    try {
+      return JSON.parse(localStorage.getItem('johnflix_users') || '{}');
+    } catch(e) { return {}; }
+  },
+
+  getCurrentUser() {
+    try {
+      return localStorage.getItem('johnflix_current_user') || null;
+    } catch(e) { return null; }
+  },
+
+  login(username, password) {
+    const users = this.getUsers();
+    const cleanUser = username.trim().toLowerCase();
+    if (!users[cleanUser]) {
+      users[cleanUser] = { password, progress: {}, createdAt: Date.now() };
+    }
+    localStorage.setItem('johnflix_users', JSON.stringify(users));
+    localStorage.setItem('johnflix_current_user', cleanUser);
+    return cleanUser;
+  },
+
+  logout() {
+    localStorage.removeItem('johnflix_current_user');
+  },
+
+  saveProgress(metaId, currentTime, duration, extra = {}) {
+    let currentUser = this.getCurrentUser();
+    if (!currentUser) {
+      currentUser = 'convidado';
+      this.login('convidado', 'guest');
+    }
+    if (!metaId || !currentTime || currentTime < 5) return;
+    
+    const users = this.getUsers();
+    if (!users[currentUser]) users[currentUser] = { progress: {} };
+    if (!users[currentUser].progress) users[currentUser].progress = {};
+
+    users[currentUser].progress[metaId] = {
+      currentTime: Math.floor(currentTime),
+      duration: Math.floor(duration || 0),
+      percentage: duration > 0 ? Math.floor((currentTime / duration) * 100) : 0,
+      title: extra.title || '',
+      season: extra.season || 1,
+      episode: extra.episode || 1,
+      updatedAt: Date.now()
+    };
+
+    localStorage.setItem('johnflix_users', JSON.stringify(users));
+  },
+
+  getProgress(metaId) {
+    let currentUser = this.getCurrentUser() || 'convidado';
+    if (!metaId) return null;
+    const users = this.getUsers();
+    if (users[currentUser] && users[currentUser].progress) {
+      return users[currentUser].progress[metaId] || null;
+    }
+    return null;
+  }
+};
+
 // --- State Management ---
 
 const state = {
@@ -158,10 +231,31 @@ const API = {
   
   async fetchMeta(type, id) {
     try {
+      const cleanId = (id || '').split(':')[0];
       const url = `https://v3-cinemeta.strem.io/meta/${type}/${id}.json`;
       const res = await fetchWithTimeout(url);
       const data = await res.json();
-      return data.meta || null;
+      let meta = data.meta || null;
+
+      if (meta && cleanId.startsWith('tt')) {
+        try {
+          const langParam = state.homeLang === 'pt-br' ? 'pt-BR' : 'en-US';
+          const tmdbRes = await fetchWithTimeout(`https://api.themoviedb.org/3/find/${cleanId}?api_key=15d2ea6d0dc1d476efbca3ecc92bfe30&external_source=imdb_id&language=${langParam}`);
+          const tmdbData = await tmdbRes.json();
+          
+          const tmdbItem = (tmdbData.movie_results && tmdbData.movie_results[0]) || (tmdbData.tv_results && tmdbData.tv_results[0]);
+          if (tmdbItem) {
+            if (tmdbItem.title || tmdbItem.name) meta.name = tmdbItem.title || tmdbItem.name;
+            if (tmdbItem.overview) meta.description = tmdbItem.overview;
+            if (tmdbItem.poster_path) meta.poster = `https://image.tmdb.org/t/p/w500${tmdbItem.poster_path}`;
+            if (tmdbItem.backdrop_path) meta.background = `https://image.tmdb.org/t/p/w1280${tmdbItem.backdrop_path}`;
+          }
+        } catch(e) {
+          console.warn('TMDB localization fetch fallback:', e);
+        }
+      }
+
+      return meta;
     } catch (error) {
       console.error('Error fetching meta:', error);
       return null;
@@ -519,6 +613,63 @@ const UI = {
       });
     });
 
+    // User Account & Login Modal
+    const userBtn = document.getElementById('user-account-btn');
+    const userLabel = document.getElementById('user-account-label');
+    const loginModal = document.getElementById('login-modal');
+    const loginOverlay = document.getElementById('login-modal-overlay');
+    const loginClose = document.getElementById('login-modal-close');
+    const loginForm = document.getElementById('login-form');
+    const userProfileSec = document.getElementById('user-profile-section');
+    const profileName = document.getElementById('profile-name');
+    const logoutBtn = document.getElementById('logout-btn');
+
+    const updateAccountUI = () => {
+      const currentUser = User.getCurrentUser();
+      if (userLabel) userLabel.textContent = currentUser ? currentUser : 'Entrar';
+      if (currentUser) {
+        if (loginForm) loginForm.classList.add('hidden');
+        if (userProfileSec) userProfileSec.classList.remove('hidden');
+        if (profileName) profileName.textContent = currentUser;
+      } else {
+        if (loginForm) loginForm.classList.remove('hidden');
+        if (userProfileSec) userProfileSec.classList.add('hidden');
+      }
+    };
+
+    updateAccountUI();
+
+    if (userBtn) {
+      userBtn.addEventListener('click', () => {
+        updateAccountUI();
+        if (loginModal) loginModal.classList.remove('hidden');
+      });
+    }
+
+    if (loginClose) loginClose.addEventListener('click', () => loginModal?.classList.add('hidden'));
+    if (loginOverlay) loginOverlay.addEventListener('click', () => loginModal?.classList.add('hidden'));
+
+    if (loginForm) {
+      loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const userInput = document.getElementById('login-username').value;
+        const passInput = document.getElementById('login-password').value;
+        if (userInput) {
+          User.login(userInput, passInput);
+          updateAccountUI();
+          loginModal?.classList.add('hidden');
+        }
+      });
+    }
+
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', () => {
+        User.logout();
+        updateAccountUI();
+        loginModal?.classList.add('hidden');
+      });
+    }
+
     // Season & Episode select for series
     const seasonSelect = document.getElementById('season-select');
     const episodeSelect = document.getElementById('episode-select');
@@ -789,8 +940,31 @@ const UI = {
       state.catalogs.popular = popular || [];
       state.catalogs.featured = featured || [];
       
-      if (popular && popular.length > 0) {
-        this.setHero(popular[0]);
+      if (state.homeLang === 'pt-br') {
+        const localizeBatch = async (items) => {
+          const promises = items.slice(0, 12).map(async (item) => {
+            const cleanId = (item.id || '').split(':')[0];
+            if (cleanId.startsWith('tt')) {
+              try {
+                const res = await fetchWithTimeout(`https://api.themoviedb.org/3/find/${cleanId}?api_key=15d2ea6d0dc1d476efbca3ecc92bfe30&external_source=imdb_id&language=pt-BR`);
+                const data = await res.json();
+                const tmdbItem = (data.movie_results && data.movie_results[0]) || (data.tv_results && data.tv_results[0]);
+                if (tmdbItem) {
+                  if (tmdbItem.title || tmdbItem.name) item.name = tmdbItem.title || tmdbItem.name;
+                  if (tmdbItem.overview) item.description = tmdbItem.overview;
+                  if (tmdbItem.poster_path) item.poster = `https://image.tmdb.org/t/p/w500${tmdbItem.poster_path}`;
+                  if (tmdbItem.backdrop_path) item.background = `https://image.tmdb.org/t/p/w1280${tmdbItem.backdrop_path}`;
+                }
+              } catch(e) {}
+            }
+          });
+          await Promise.all(promises);
+        };
+        await Promise.all([localizeBatch(state.catalogs.popular), localizeBatch(state.catalogs.featured)]);
+      }
+
+      if (state.catalogs.popular && state.catalogs.popular.length > 0) {
+        this.setHero(state.catalogs.popular[0]);
       }
       
       this.renderCatalogs();
@@ -1039,6 +1213,17 @@ const UI = {
         seriesControls.classList.remove('hidden');
       } else {
         seriesControls.classList.add('hidden');
+      }
+    }
+
+    // Check saved watch progress
+    const progress = User.getProgress(meta.id);
+    const autoPlayBtn = document.getElementById('modal-auto-play-btn');
+    if (autoPlayBtn) {
+      if (progress && progress.currentTime > 10) {
+        autoPlayBtn.innerHTML = `⚡ Continuar Assistindo (de ${formatTime(progress.currentTime)})`;
+      } else {
+        autoPlayBtn.innerHTML = `⚡ Assistir Agora (Auto-Play Dublado PT-BR)`;
       }
     }
 
@@ -1326,9 +1511,26 @@ const UI = {
       if (playerLoading) playerLoading.classList.add('hidden');
     }, 1500);
 
+    // Save progress as video plays
+    video.ontimeupdate = () => {
+      if (video.currentTime > 5 && state.currentMeta) {
+        User.saveProgress(state.currentMeta.id, video.currentTime, video.duration, {
+          title: title,
+          season: state.currentSeason,
+          episode: state.currentEpisode
+        });
+      }
+    };
+
     const onPlaySuccess = () => {
       if (playerLoading) playerLoading.classList.add('hidden');
       if (playerError) playerError.classList.add('hidden');
+      if (state.currentMeta) {
+        const savedProgress = User.getProgress(state.currentMeta.id);
+        if (savedProgress && savedProgress.currentTime > 10) {
+          try { video.currentTime = savedProgress.currentTime; } catch(e) {}
+        }
+      }
     };
 
     const triggerAutoPlay = () => {

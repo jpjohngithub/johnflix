@@ -35,6 +35,10 @@
             <option value="pt-br">🇧🇷 PT-BR</option>
             <option value="en">🇺🇸 EN-US</option>
           </select>
+          <!-- User Account / Login Button -->
+          <button id="user-account-btn" class="btn btn-secondary" style="font-size:0.85rem; padding:6px 12px; font-weight:700; border-radius:var(--radius-sm); display:flex; align-items:center; gap:6px;">
+            👤 <span id="user-account-label">Entrar</span>
+          </button>
           <select id="genre-select">
             <option value="">Todos os Gêneros</option>
             <option value="Anime">⛩️ Anime</option>
@@ -94,6 +98,38 @@
         <div class="search-grid" id="search-grid"></div>
       </div>
     </main>
+
+    <!-- User Login & Account Modal -->
+    <div id="login-modal" class="modal hidden">
+      <div class="modal-overlay" id="login-modal-overlay"></div>
+      <div class="modal-content" style="max-width:420px; padding:2rem; background:var(--bg-secondary); border-radius:16px; position:relative; box-shadow:0 12px 40px rgba(0,0,0,0.8); z-index:2001;">
+        <button class="modal-close" id="login-modal-close">&times;</button>
+        <h2 style="margin-bottom:0.5rem; font-size:1.6rem; font-weight:800; text-align:center;">👤 Minha Conta JohnFlix</h2>
+        <p style="color:var(--text-secondary); font-size:0.9rem; text-align:center; margin-bottom:1.5rem;">Crie ou entre na sua conta para salvar o progresso dos seus filmes e séries de onde parou!</p>
+        
+        <form id="login-form" style="display:flex; flex-direction:column; gap:12px;">
+          <div>
+            <label style="display:block; font-size:0.85rem; font-weight:600; margin-bottom:4px; color:var(--text-secondary);">Usuário / E-mail:</label>
+            <input type="text" id="login-username" placeholder="Digite seu usuário..." required style="width:100%; padding:10px 14px; background:var(--bg-glass); border:1px solid var(--border); border-radius:8px; color:white; font-size:0.95rem;">
+          </div>
+          <div>
+            <label style="display:block; font-size:0.85rem; font-weight:600; margin-bottom:4px; color:var(--text-secondary);">Senha:</label>
+            <input type="password" id="login-password" placeholder="Digite sua senha..." required style="width:100%; padding:10px 14px; background:var(--bg-glass); border:1px solid var(--border); border-radius:8px; color:white; font-size:0.95rem;">
+          </div>
+          <button type="submit" class="btn btn-primary" style="margin-top:8px; justify-content:center; font-weight:700; width:100%;">
+            Entrar / Criar Conta
+          </button>
+        </form>
+
+        <div id="user-profile-section" class="hidden" style="text-align:center; display:flex; flex-direction:column; gap:12px;">
+          <p style="font-size:1.1rem; font-weight:700;">Conectado como <span id="profile-name" style="color:var(--accent);"></span></p>
+          <p style="font-size:0.85rem; color:var(--text-secondary);">Seu progresso é salvo automaticamente a cada segundo de reprodução!</p>
+          <button id="logout-btn" class="btn btn-secondary" style="justify-content:center; background:rgba(239,68,68,0.2); border-color:#ef4444; color:#ef4444;">
+            Sair da Conta
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- Movie Detail Modal -->
     <div id="movie-modal" class="modal hidden">
