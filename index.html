@@ -263,8 +263,11 @@
           <p>Carregando...</p>
         </div>
         <div class="player-error hidden" id="player-error">
-          <p>Erro ao carregar o vídeo. Tente outra fonte.</p>
-          <button class="btn btn-primary" id="player-error-back">Voltar</button>
+          <p>Não foi possível reproduzir nesta fonte. Escolha outro servidor:</p>
+          <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; justify-content:center;">
+            <button class="btn btn-primary" id="player-error-next" style="background:linear-gradient(135deg, #8b5cf6, #7c3aed);">⚡ Testar Próxima Fonte</button>
+            <button class="btn btn-secondary" id="player-error-back">Voltar ao Menu</button>
+          </div>
         </div>
       </div>
     </div>

@@ -217,44 +217,49 @@ const API = {
         }
       });
 
-      // Dedicated PT-BR Dubbed & Web Embed Players (WarezCDN, SuperFlix, EmbedFlix, MegaFlix, VidSrc PT)
+      // Dedicated PT-BR Dubbed & Web Embed Players (WarezCDN, SuperFlix, EmbedFlix, MegaFlix, VidSrc, AutoEmbed, SmashyStream, 2Embed)
+      const cleanImdbId = (id || '').split(':')[0];
       const isMovie = type === 'movie';
 
       const warezLink = isMovie 
-        ? `https://warezcdn.link/embed/filme/${id}?autoplay=1`
-        : `https://warezcdn.link/embed/serie/${id}/${season}/${episode}?autoplay=1`;
+        ? `https://warezcdn.link/embed/filme/${cleanImdbId}?autoplay=1`
+        : `https://warezcdn.link/embed/serie/${cleanImdbId}/${season}/${episode}?autoplay=1`;
 
       const superflixUrl = isMovie
-        ? `https://superflixapi.top/filme/${id}`
-        : `https://superflixapi.top/serie/${id}/${season}/${episode}`;
+        ? `https://superflixapi.top/filme/${cleanImdbId}`
+        : `https://superflixapi.top/serie/${cleanImdbId}/${season}/${episode}`;
 
       const embedflixUrl = isMovie
-        ? `https://embedflix.net/filme/${id}`
-        : `https://embedflix.net/serie/${id}/${season}/${episode}`;
+        ? `https://embedflix.net/filme/${cleanImdbId}`
+        : `https://embedflix.net/serie/${cleanImdbId}/${season}/${episode}`;
 
       const megaflixUrl = isMovie
-        ? `https://megaflix.cx/embed/filme/${id}`
-        : `https://megaflix.cx/embed/serie/${id}/${season}/${episode}`;
+        ? `https://megaflix.cx/embed/filme/${cleanImdbId}`
+        : `https://megaflix.cx/embed/serie/${cleanImdbId}/${season}/${episode}`;
 
       const vidsrcDubUrl = isMovie 
-        ? `https://vidsrc.me/embed/movie?imdb=${id}&ds_lang=pt&autoplay=1` 
-        : `https://vidsrc.me/embed/tv?imdb=${id}&season=${season}&episode=${episode}&ds_lang=pt&autoplay=1`;
+        ? `https://vidsrc.me/embed/movie?imdb=${cleanImdbId}&ds_lang=pt&autoplay=1` 
+        : `https://vidsrc.me/embed/tv?imdb=${cleanImdbId}&season=${season}&episode=${episode}&ds_lang=pt&autoplay=1`;
 
       const autoembedUrl = isMovie
-        ? `https://autoembed.co/movie/imdb/${id}?autoplay=true`
-        : `https://autoembed.co/tv/imdb/${id}-${season}-${episode}?autoplay=true`;
+        ? `https://player.autoembed.cc/embed/movie/${cleanImdbId}`
+        : `https://player.autoembed.cc/embed/tv/${cleanImdbId}/${season}/${episode}`;
 
-      const vidsrcInUrl = isMovie
-        ? `https://vidsrc.in/embed/movie?imdb=${id}&autoplay=1`
-        : `https://vidsrc.in/embed/tv?imdb=${id}&season=${season}&episode=${episode}&autoplay=1`;
+      const vidsrcccUrl = isMovie
+        ? `https://vidsrc.cc/v2/embed/movie/${cleanImdbId}`
+        : `https://vidsrc.cc/v2/embed/tv/${cleanImdbId}/${season}/${episode}`;
+
+      const smashystreamUrl = isMovie
+        ? `https://embed.smashystream.com/playere.php?tmdb=${cleanImdbId}`
+        : `https://embed.smashystream.com/playere.php?tmdb=${cleanImdbId}&s=${season}&e=${episode}`;
 
       const embed2Url = isMovie
-        ? `https://2embed.cc/embed/${id}?autoplay=1`
-        : `https://2embed.cc/embedtv/${id}&s=${season}&e=${episode}&autoplay=1`;
+        ? `https://www.2embed.cc/embed/${cleanImdbId}`
+        : `https://www.2embed.cc/embedtv/${cleanImdbId}&s=${season}&e=${episode}`;
 
       const vidlinkUrl = isMovie
-        ? `https://vidlink.pro/movie/${id}?autoplay=true`
-        : `https://vidlink.pro/tv/${id}/${season}/${episode}?autoplay=true`;
+        ? `https://vidlink.pro/movie/${cleanImdbId}?autoplay=true`
+        : `https://vidlink.pro/tv/${cleanImdbId}/${season}/${episode}?autoplay=true`;
 
       streamsList.push(
         {
@@ -298,24 +303,32 @@ const API = {
           score: 7
         },
         {
-          name: '🌐 Player Web AutoEmbed HD (Ultra-Fast 1080p)',
-          title: 'Servidor HD Ultra-Rápido',
+          name: '🌐 Player Web AutoEmbed CC (Ultra-Fast 1080p)',
+          title: 'Servidor HD Ultra-Rápido Global',
           embedUrl: autoembedUrl,
           isDub: false,
           category: 'web',
           score: 6
         },
         {
-          name: '🌐 Player Web VidSrc.in (HD 1080p)',
-          title: 'Servidor 1080p Full HD',
-          embedUrl: vidsrcInUrl,
+          name: '🌐 Player Web VidSrc.cc (HD 1080p)',
+          title: 'Servidor 1080p Full HD Séries & Filmes',
+          embedUrl: vidsrcccUrl,
+          isDub: false,
+          category: 'web',
+          score: 5
+        },
+        {
+          name: '🌐 Player Web SmashyStream (Multi-Servidores)',
+          title: 'Servidor com Seleção Automática de Legendas',
+          embedUrl: smashystreamUrl,
           isDub: false,
           category: 'web',
           score: 5
         },
         {
           name: '🌐 Player Web 2Embed HD (Backup)',
-          title: 'Servidor Backup HD',
+          title: 'Servidor Backup HD Séries & Filmes',
           embedUrl: embed2Url,
           isDub: false,
           category: 'web',
@@ -513,9 +526,10 @@ const UI = {
     document.getElementById('modal-close')?.addEventListener('click', () => this.closeModal());
     document.getElementById('modal-overlay')?.addEventListener('click', () => this.closeModal());
     
-    // Player close
+    // Player close & Next source
     document.getElementById('player-close')?.addEventListener('click', () => this.closePlayer());
     document.getElementById('player-error-back')?.addEventListener('click', () => this.closePlayer());
+    document.getElementById('player-error-next')?.addEventListener('click', () => this.playNextStream());
     
     // Custom Player HUD Controls
     this.setupHudControls();
@@ -992,6 +1006,21 @@ const UI = {
       const selected = idx === activeIndex ? 'selected' : '';
       return `<option value="${idx}" ${selected}>${label}</option>`;
     }).join('');
+  },
+
+  playNextStream() {
+    if (!state.activeStreams || state.activeStreams.length === 0) return;
+    state.currentStreamIndex = ((state.currentStreamIndex || 0) + 1) % state.activeStreams.length;
+    const next = state.activeStreams[state.currentStreamIndex];
+    if (!next) return;
+
+    this.updateHudStreamSelector(state.activeStreams, state.currentStreamIndex);
+
+    if (next.url) {
+      this.playStream(next.url, next.name);
+    } else if (next.embedUrl) {
+      this.playIframe(next.embedUrl, next.name);
+    }
   },
   
   async loadStreams() {
