@@ -185,6 +185,15 @@
               <span>Voltar</span>
             </button>
             <span class="hud-title" id="hud-title">JohnFlix HD Player</span>
+
+            <!-- Quick Stream Selector Dropdown inside Player HUD -->
+            <div class="hud-stream-switcher" id="hud-stream-switcher">
+              <label for="hud-stream-select" style="font-size:0.75rem; color:#d8b4fe; font-weight:700;">📡 Trocar Fonte:</label>
+              <select id="hud-stream-select" class="hud-select" style="max-width:220px; font-size:0.8rem; background:rgba(0,0,0,0.7); border:1px solid var(--accent); color:white; border-radius:8px; padding:4px 8px; font-weight:600; cursor:pointer;">
+                <option value="">Carregando fontes...</option>
+              </select>
+            </div>
+
             <div class="hud-top-actions">
               <button class="hud-toggle-bar-btn" id="hud-toggle-top-btn" title="Ocultar/Mostrar Barra do Topo">
                 👁️ Ocultar Barra

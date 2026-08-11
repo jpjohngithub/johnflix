@@ -583,6 +583,22 @@ const UI = {
     const toggleTopBtn = document.getElementById('hud-toggle-top-btn');
     const hudTop = document.getElementById('hud-top');
 
+    // In-Player Quick Stream Switcher
+    const hudStreamSelect = document.getElementById('hud-stream-select');
+    if (hudStreamSelect) {
+      hudStreamSelect.addEventListener('change', (e) => {
+        const idx = parseInt(e.target.value, 10);
+        if (!isNaN(idx) && state.activeStreams && state.activeStreams[idx]) {
+          const s = state.activeStreams[idx];
+          if (s.url) {
+            this.playStream(s.url, s.name);
+          } else if (s.embedUrl) {
+            this.playIframe(s.embedUrl, s.name);
+          }
+        }
+      });
+    }
+
     if (toggleTopBtn && hudTop) {
       toggleTopBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -918,11 +934,21 @@ const UI = {
   async autoPlayBestStream() {
     if (!state.currentMeta) return;
 
-    const streamsLoading = document.getElementById('streams-loading');
-    if (streamsLoading) {
-      streamsLoading.classList.remove('hidden');
-      streamsLoading.querySelector('p').textContent = '⚡ Selecionando a melhor fonte Dublada PT-BR...';
+    const playerOverlay = document.getElementById('player-overlay');
+    const playerLoading = document.getElementById('player-loading');
+    const playerTitle = document.getElementById('player-title');
+    const hudTitle = document.getElementById('hud-title');
+
+    // Immediately show player overlay with quick loading status so it launches INSTANTLY
+    if (playerOverlay) playerOverlay.classList.remove('hidden');
+    if (playerLoading) {
+      playerLoading.classList.remove('hidden');
+      playerLoading.querySelector('p').textContent = '⚡ Conectando à melhor fonte Dublada PT-BR...';
     }
+
+    const titleText = state.currentMeta.name;
+    if (playerTitle) playerTitle.textContent = titleText;
+    if (hudTitle) hudTitle.textContent = titleText;
 
     const streams = await API.fetchStreams(
       state.currentType, 
@@ -933,7 +959,8 @@ const UI = {
 
     if (!streams || streams.length === 0) {
       alert('Nenhum stream disponível para este título no momento.');
-      if (streamsLoading) streamsLoading.classList.add('hidden');
+      if (playerLoading) playerLoading.classList.add('hidden');
+      this.closePlayer();
       return;
     }
 
@@ -944,6 +971,9 @@ const UI = {
       return (b.score || 0) - (a.score || 0);
     });
 
+    state.activeStreams = sorted;
+    this.updateHudStreamSelector(sorted, 0);
+
     const bestStream = sorted[0];
 
     if (bestStream.url) {
@@ -951,8 +981,17 @@ const UI = {
     } else if (bestStream.embedUrl) {
       this.playIframe(bestStream.embedUrl, bestStream.name);
     }
+  },
 
-    if (streamsLoading) streamsLoading.classList.add('hidden');
+  updateHudStreamSelector(streams, activeIndex = 0) {
+    const hudStreamSelect = document.getElementById('hud-stream-select');
+    if (!hudStreamSelect) return;
+
+    hudStreamSelect.innerHTML = streams.map((s, idx) => {
+      const label = s.name.replace(/—/g, '-');
+      const selected = idx === activeIndex ? 'selected' : '';
+      return `<option value="${idx}" ${selected}>${label}</option>`;
+    }).join('');
   },
   
   async loadStreams() {
@@ -974,6 +1013,8 @@ const UI = {
     if (streamsLoading) streamsLoading.classList.add('hidden');
     
     if (streams && streams.length > 0) {
+      state.activeStreams = streams;
+      this.updateHudStreamSelector(streams, 0);
       this.renderStreams(streams);
     }
   },
