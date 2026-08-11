@@ -1003,6 +1003,11 @@ const UI = {
     if (hudBottom) hudBottom.classList.remove('hidden');
 
     video.autoplay = true;
+    video.muted = false;
+    video.volume = 1.0;
+
+    const volumeSlider = document.getElementById('hud-volume-slider');
+    if (volumeSlider) volumeSlider.value = 1;
 
     if (playerLoading) {
       playerLoading.classList.remove('hidden');
@@ -1023,14 +1028,25 @@ const UI = {
     };
 
     const triggerAutoPlay = () => {
+      video.muted = false;
+      video.volume = 1.0;
       video.play().then(() => {
         onPlaySuccess();
       }).catch(err => {
-        console.warn('Autoplay unmuted blocked, retrying muted autoplay...', err);
+        console.warn('Autoplay unmuted blocked by browser policy, attempting muted start with auto-unmute on touch...', err);
         video.muted = true;
         video.play().then(() => {
           onPlaySuccess();
-        }).catch(e => console.error('Autoplay blocked:', e));
+          const unmuteOnInteraction = () => {
+            video.muted = false;
+            video.volume = 1.0;
+            if (volumeSlider) volumeSlider.value = 1;
+            document.removeEventListener('click', unmuteOnInteraction);
+            document.removeEventListener('touchstart', unmuteOnInteraction);
+          };
+          document.addEventListener('click', unmuteOnInteraction, { once: true });
+          document.addEventListener('touchstart', unmuteOnInteraction, { once: true });
+        }).catch(e => console.error('Autoplay fully blocked:', e));
       });
     };
 
