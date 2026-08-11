@@ -792,6 +792,63 @@ const UI = {
         }
       });
     }
+
+    // Next stream server button
+    const nextStreamBtn = document.getElementById('hud-next-stream-btn');
+    if (nextStreamBtn) {
+      nextStreamBtn.addEventListener('click', () => {
+        if (!state.activeStreams || state.activeStreams.length === 0) return;
+        const currentIdx = state.currentStreamIdx || 0;
+        const nextIdx = (currentIdx + 1) % state.activeStreams.length;
+        state.currentStreamIdx = nextIdx;
+        const nextStream = state.activeStreams[nextIdx];
+        const streamSelect = document.getElementById('hud-stream-select');
+        if (streamSelect) streamSelect.value = nextIdx;
+        const titleText = state.currentMeta ? state.currentMeta.name : 'JohnFlix HD';
+        if (nextStream.embedUrl) {
+          this.playIframe(nextStream.embedUrl, titleText);
+        } else if (nextStream.url) {
+          this.playStream(nextStream.url, titleText);
+        }
+      });
+    }
+
+    // Keyboard Shortcuts for Video Player
+    document.addEventListener('keydown', (e) => {
+      const pOverlay = document.getElementById('player-overlay');
+      if (!pOverlay || pOverlay.classList.contains('hidden')) return;
+
+      const vid = document.getElementById('video-player');
+      if (!vid || vid.classList.contains('hidden')) return;
+
+      const key = e.key.toLowerCase();
+      if (key === ' ' || key === 'k') {
+        e.preventDefault();
+        if (vid.paused) vid.play(); else vid.pause();
+      } else if (key === 'f') {
+        e.preventDefault();
+        if (!document.fullscreenElement) {
+          pOverlay.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+      } else if (key === 'm') {
+        e.preventDefault();
+        vid.muted = !vid.muted;
+      } else if (key === 'arrowleft' || key === 'j') {
+        e.preventDefault();
+        vid.currentTime = Math.max(0, vid.currentTime - 10);
+      } else if (key === 'arrowright' || key === 'l') {
+        e.preventDefault();
+        if (vid.duration) vid.currentTime = Math.min(vid.duration, vid.currentTime + 10);
+      } else if (key === 'arrowup') {
+        e.preventDefault();
+        vid.volume = Math.min(1, vid.volume + 0.1);
+      } else if (key === 'arrowdown') {
+        e.preventDefault();
+        vid.volume = Math.max(0, vid.volume - 0.1);
+      }
+    });
   },
   
   async loadInitialData() {
