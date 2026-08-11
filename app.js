@@ -64,11 +64,15 @@ const Cache = {
 };
 
 function getPosterUrl(meta) {
-  return meta.poster || (meta.id ? `https://images.metahub.space/poster/medium/${meta.id}/img` : '');
+  if (!meta) return '';
+  const cleanId = (meta.id || '').split(':')[0];
+  return meta.poster || (cleanId ? `https://images.metahub.space/poster/medium/${cleanId}/img` : '');
 }
 
 function getBackgroundUrl(meta) {
-  return meta.background || (meta.id ? `https://images.metahub.space/background/medium/${meta.id}/img` : '');
+  if (!meta) return '';
+  const cleanId = (meta.id || '').split(':')[0];
+  return meta.background || (cleanId ? `https://images.metahub.space/background/medium/${cleanId}/img` : '');
 }
 
 function openMagnet(infoHash, name) {
@@ -97,28 +101,65 @@ function formatTime(seconds) {
 const User = {
   getAllProgress() {
     try {
-      return JSON.parse(localStorage.getItem('johnflix_progress') || '{}');
+      const raw = JSON.parse(localStorage.getItem('johnflix_progress') || '{}');
+      const sanitized = {};
+      Object.keys(raw).forEach(key => {
+        const item = raw[key];
+        if (!item) return;
+        const cleanId = (item.id || key).split(':')[0];
+        if (!cleanId || !cleanId.startsWith('tt')) return;
+
+        let poster = item.poster;
+        if (!poster || poster.includes(':') || poster === '') {
+          poster = `https://images.metahub.space/poster/medium/${cleanId}/img`;
+        }
+
+        let name = item.name;
+        if (!name || name === 'Vídeo' || name.startsWith('🇧🇷') || name.startsWith('🌐')) {
+          name = item.title && !item.title.startsWith('🇧🇷') ? item.title : '';
+        }
+
+        sanitized[cleanId] = {
+          ...item,
+          id: cleanId,
+          poster: poster,
+          name: name || 'Filme / Série'
+        };
+      });
+      return sanitized;
     } catch(e) { return {}; }
   },
 
   saveProgress(metaId, currentTime, duration, extra = {}) {
     if (!metaId || !currentTime || currentTime < 5) return;
+    const cleanId = (metaId || '').split(':')[0];
     const progressMap = this.getAllProgress();
     
     let posterUrl = extra.poster || '';
-    let itemTitle = extra.title || '';
+    let itemTitle = extra.name || extra.title || '';
     let itemType = extra.type || state.currentType;
 
-    if (state.currentMeta && (state.currentMeta.id === metaId || metaId.startsWith(state.currentMeta.id))) {
-      if (!posterUrl) posterUrl = getPosterUrl(state.currentMeta);
-      if (!itemTitle) itemTitle = state.currentMeta.name;
+    if (state.currentMeta) {
+      const metaCleanId = (state.currentMeta.id || '').split(':')[0];
+      if (metaCleanId === cleanId) {
+        if (!posterUrl) posterUrl = getPosterUrl(state.currentMeta);
+        if (!itemTitle || itemTitle.startsWith('🇧🇷') || itemTitle.startsWith('🌐')) {
+          itemTitle = state.currentMeta.name;
+        }
+      }
     }
 
-    progressMap[metaId] = {
-      id: metaId,
-      name: itemTitle || (progressMap[metaId] ? progressMap[metaId].name : 'Vídeo'),
-      poster: posterUrl || (progressMap[metaId] ? progressMap[metaId].poster : ''),
-      type: itemType,
+    if (!posterUrl && cleanId) {
+      posterUrl = `https://images.metahub.space/poster/medium/${cleanId}/img`;
+    }
+
+    const existing = progressMap[cleanId] || {};
+
+    progressMap[cleanId] = {
+      id: cleanId,
+      name: itemTitle || existing.name || (state.currentMeta ? state.currentMeta.name : 'Filme / Série'),
+      poster: posterUrl || existing.poster || `https://images.metahub.space/poster/medium/${cleanId}/img`,
+      type: itemType || existing.type || 'movie',
       currentTime: Math.floor(currentTime),
       duration: Math.floor(duration || 0),
       percentage: duration > 0 ? Math.min(100, Math.floor((currentTime / duration) * 100)) : 0,
@@ -132,8 +173,9 @@ const User = {
 
   getProgress(metaId) {
     if (!metaId) return null;
+    const cleanId = metaId.split(':')[0];
     const progressMap = this.getAllProgress();
-    return progressMap[metaId] || null;
+    return progressMap[cleanId] || progressMap[metaId] || null;
   },
 
   getWatchlist() {
@@ -1071,16 +1113,17 @@ const UI = {
   },
 
   createContinueCard(item) {
-    const posterUrl = item.poster || (item.id ? `https://images.metahub.space/poster/medium/${item.id}/img` : '');
+    const cleanId = (item.id || '').split(':')[0];
+    const posterUrl = item.poster && !item.poster.includes(':') ? item.poster : `https://images.metahub.space/poster/medium/${cleanId}/img`;
+    const name = item.name && item.name !== 'Vídeo' && !item.name.startsWith('🇧🇷') ? item.name : 'Filme / Série';
     const isSeries = item.type === 'series';
     const pct = item.percentage || 0;
     const epBadge = isSeries ? `T${item.season || 1}:E${item.episode || 1}` : '';
-    const cleanId = (item.id || '').split(':')[0];
 
     return `
       <div class="movie-card continue-card" onclick="UI.openModal('${cleanId}')">
         <div class="continue-poster-wrapper">
-          <img class="movie-poster" src="${posterUrl}" alt="${item.name || ''}" onerror="this.style.background='linear-gradient(135deg, #1a1a2e, #2a2a4e)'; this.style.minHeight='270px';" loading="lazy">
+          <img class="movie-poster" src="${posterUrl}" alt="${name}" onerror="this.src='https://images.metahub.space/poster/medium/${cleanId}/img';" loading="lazy">
           ${isSeries ? `<span class="movie-card-type" style="background:rgba(139,92,246,0.95); font-weight:800;">📺 SÉRIE</span>` : '<span class="movie-card-type">🎬 FILME</span>'}
           <div class="continue-play-overlay">
             <div class="continue-play-btn-circle">▶</div>
@@ -1090,7 +1133,7 @@ const UI = {
           </div>
         </div>
         <div class="movie-card-overlay continue-card-overlay">
-          <span class="movie-card-title">${item.name || 'Vídeo'}</span>
+          <span class="movie-card-title">${name}</span>
           <span class="continue-card-meta">${epBadge ? `${epBadge} • ` : ''}${formatTime(item.currentTime)}</span>
         </div>
       </div>
