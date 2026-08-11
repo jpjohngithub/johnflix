@@ -144,9 +144,10 @@ const API = {
         return [];
       };
 
-      const [fenixStreams, frostStreams] = await Promise.all([
+      const [fenixStreams, frostStreams, brazucaStreams] = await Promise.all([
         fetchAddon('https://fenixflix.fenixhub.online'),
-        fetchAddon('https://froststream.cloutteam.com')
+        fetchAddon('https://froststream.cloutteam.com'),
+        fetchAddon('https://94c8cb9f702d-brazuca-torrents.baby-beamup.club')
       ]);
 
       const streamsList = [];
@@ -185,6 +186,33 @@ const API = {
             isDub: isDub,
             category: isDub ? 'dubbed' : 'web',
             score: (urlLower.includes('primevicio') ? 10 : 0) + (urlLower.includes('cdteam') ? 7 : 0) + (isDub ? 5 : 0)
+          });
+        }
+      });
+
+      // Process Brazuca Torrents (PT-BR Dublado)
+      brazucaStreams.forEach(s => {
+        const rawTitle = (s.title || s.name || s.description || 'Brazuca Torrents').replace(/\n/g, ' ');
+        const titleLower = rawTitle.toLowerCase();
+
+        if (s.url) {
+          streamsList.push({
+            name: `🇧🇷 Dublado PT-BR — Brazuca ${rawTitle}`,
+            title: 'Rede Brazuca Torrents • Áudio Português BR',
+            url: s.url,
+            isDub: true,
+            category: 'dubbed',
+            score: 9
+          });
+        } else if (s.infoHash) {
+          const magnetUrl = `magnet:?xt=urn:btih:${s.infoHash}&dn=${encodeURIComponent(rawTitle)}`;
+          streamsList.push({
+            name: `🇧🇷 Dublado PT-BR — Brazuca Torrents ${rawTitle}`,
+            title: 'Link Magnético Direct / Torrent Brasil',
+            url: magnetUrl,
+            isDub: true,
+            category: 'dubbed',
+            score: 7
           });
         }
       });
