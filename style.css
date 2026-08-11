@@ -21,7 +21,7 @@
   --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --header-height: 52px;
+  --header-height: 64px;
 }
 
 *, *::before, *::after {
@@ -39,8 +39,8 @@ body {
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
@@ -64,7 +64,7 @@ html {
   left: 0;
   width: 100%;
   z-index: 1000;
-  background: rgba(10, 10, 15, 0.88);
+  background: rgba(10, 10, 15, 0.85);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
   height: var(--header-height);
@@ -77,12 +77,12 @@ html {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 3%;
+  padding: 0 4%;
 }
 
 .logo {
   font-weight: 900;
-  font-size: 1.5rem;
+  font-size: 1.8rem;
   text-decoration: none;
   color: white;
 }
@@ -92,16 +92,16 @@ html {
 
 .header-nav {
   display: flex;
-  gap: 1.2rem;
+  gap: 1.5rem;
 }
 .nav-link {
   color: var(--text-secondary);
   text-decoration: none;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 1rem;
   transition: var(--transition);
   position: relative;
-  padding: 4px 0;
+  padding: 6px 0;
 }
 .nav-link:hover {
   color: white;
@@ -125,21 +125,21 @@ html {
 .hero-category-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   background: rgba(139, 92, 246, 0.2);
   border: 1px solid rgba(139, 92, 246, 0.4);
   color: #d8b4fe;
-  padding: 4px 12px;
+  padding: 6px 16px;
   border-radius: 20px;
-  font-size: 0.78rem;
+  font-size: 0.85rem;
   font-weight: 600;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.8rem;
   backdrop-filter: blur(8px);
 }
 
 .pill-dot {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: var(--success);
   box-shadow: 0 0 8px var(--success);
@@ -153,7 +153,7 @@ html {
 
 .header-actions {
   display: flex;
-  gap: 0.6rem;
+  gap: 1rem;
   align-items: center;
 }
 
@@ -166,22 +166,21 @@ html {
   background: var(--bg-glass);
   border: 1px solid var(--border);
   color: white;
-  padding: 6px 10px;
-  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  border-radius: var(--radius);
   width: 0;
   opacity: 0;
   transition: width 0.3s ease, opacity 0.3s ease;
   outline: none;
   font-family: var(--font);
-  font-size: 0.85rem;
 }
 #search-input::placeholder {
   color: var(--text-muted);
 }
 .search-container.active #search-input {
-  width: 220px;
+  width: 250px;
   opacity: 1;
-  padding-left: 32px;
+  padding-left: 36px;
 }
 .search-toggle {
   background: transparent;
@@ -189,7 +188,7 @@ html {
   border: none;
   cursor: pointer;
   position: absolute;
-  left: 6px;
+  left: 8px;
   z-index: 2;
 }
 
@@ -198,15 +197,14 @@ html {
   border: 1px solid var(--border);
   color: white;
   border-radius: var(--radius-sm);
-  padding: 6px 24px 6px 10px;
+  padding: 8px 28px 8px 12px;
   appearance: none;
   outline: none;
   font-family: var(--font);
-  font-size: 0.82rem;
   cursor: pointer;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23e5e5e5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 6px center;
+  background-position: right 8px center;
 }
 #genre-select option {
   background: var(--bg-secondary);
@@ -214,9 +212,8 @@ html {
 }
 
 #hero-section {
-  height: 48vh;
-  min-height: 320px;
-  max-height: 420px;
+  height: 85vh;
+  min-height: 500px;
   position: relative;
   overflow: hidden;
 }
@@ -232,32 +229,32 @@ html {
 .hero-gradient {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, var(--bg-primary) 0%, transparent 60%), 
-              linear-gradient(to right, rgba(10,10,15,0.85) 30%, transparent 75%);
+  background: linear-gradient(to top, var(--bg-primary) 0%, transparent 50%), 
+              linear-gradient(to right, rgba(10,10,15,0.8) 30%, transparent 70%);
 }
 
 .hero-content {
   position: absolute;
-  bottom: 8%;
-  left: 4%;
-  max-width: 520px;
+  bottom: 15%;
+  left: 5%;
+  max-width: 600px;
   z-index: 2;
 }
 
 .hero-title {
-  font-size: 2.2rem;
+  font-size: 3.5rem;
   font-weight: 800;
-  line-height: 1.15;
-  margin-bottom: 0.5rem;
-  text-shadow: 0 2px 10px rgba(0,0,0,0.6);
+  line-height: 1.1;
+  margin-bottom: 1rem;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.5);
 }
 
 .hero-meta {
   display: flex;
-  gap: 0.8rem;
-  margin-bottom: 0.6rem;
+  gap: 1rem;
+  margin-bottom: 1rem;
   color: var(--text-secondary);
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   align-items: center;
 }
 .hero-meta span.rating {
@@ -266,27 +263,26 @@ html {
 }
 
 .hero-description {
-  font-size: 0.88rem;
+  font-size: 1rem;
   color: var(--text-secondary);
-  line-height: 1.45;
-  max-height: 3.6rem;
+  line-height: 1.6;
+  max-height: 4.8rem;
   overflow: hidden;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
 }
 
 .hero-buttons {
   display: flex;
-  gap: 0.8rem;
+  gap: 1rem;
 }
 
 .btn {
-  padding: 8px 20px;
-  border-radius: var(--radius-sm);
+  padding: 12px 28px;
+  border-radius: var(--radius);
   font-weight: 600;
-  font-size: 0.88rem;
   font-size: 1rem;
   cursor: pointer;
   transition: var(--transition);
@@ -316,30 +312,30 @@ html {
 }
 
 .catalog-section {
-  margin-bottom: 1.4rem;
+  margin-bottom: 2.5rem;
   position: relative;
 }
 
 .section-title {
-  font-size: 1.15rem;
+  font-size: 1.4rem;
   font-weight: 700;
-  margin-bottom: 0.6rem;
-  padding-left: 3%;
+  margin-bottom: 1rem;
+  padding-left: 4%;
   color: white;
 }
 
 .carousel-wrapper {
   position: relative;
-  padding: 0 3%;
+  padding: 0 4%;
 }
 
 .carousel-track {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   overflow-x: auto;
   scroll-behavior: smooth;
   scrollbar-width: none;
-  padding: 6px 0;
+  padding: 10px 0;
 }
 .carousel-track::-webkit-scrollbar {
   display: none;
@@ -350,9 +346,9 @@ html {
   top: 50%;
   transform: translateY(-50%);
   z-index: 5;
-  width: 32px;
-  height: 80px;
-  background: rgba(0, 0, 0, 0.7);
+  width: 40px;
+  height: 100px;
+  background: rgba(0, 0, 0, 0.6);
   color: white;
   border: none;
   cursor: pointer;
@@ -372,16 +368,16 @@ html {
 
 .movie-card {
   flex-shrink: 0;
-  width: 140px;
+  width: 180px;
   cursor: pointer;
   transition: transform 0.3s, box-shadow 0.3s;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
   overflow: hidden;
   position: relative;
   animation: fadeIn 0.5s ease-out backwards;
 }
 .movie-card:hover {
-  transform: scale(1.06);
+  transform: scale(1.08);
   z-index: 2;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
 }
@@ -390,7 +386,7 @@ html {
   width: 100%;
   aspect-ratio: 2 / 3;
   object-fit: cover;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
   display: block;
 }
 
@@ -399,7 +395,7 @@ html {
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 8px;
+  padding: 12px;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
   opacity: 0;
   transition: opacity 0.3s ease;
@@ -409,7 +405,7 @@ html {
 }
 
 .movie-card-title {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
@@ -417,19 +413,19 @@ html {
   color: white;
 }
 .movie-card-year {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
 }
 .movie-card-type {
   position: absolute;
-  top: 6px;
-  left: 6px;
+  top: 8px;
+  left: 8px;
   background: rgba(10, 10, 15, 0.85);
   color: white;
-  font-size: 0.6rem;
+  font-size: 0.65rem;
   font-weight: 800;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(6px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
@@ -438,14 +434,14 @@ html {
 
 .movie-card-rating {
   position: absolute;
-  top: 6px;
-  right: 6px;
+  top: 8px;
+  right: 8px;
   background: rgba(0, 0, 0, 0.7);
   color: var(--success);
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  padding: 2px 5px;
-  border-radius: 4px;
+  padding: 3px 7px;
+  border-radius: 6px;
   backdrop-filter: blur(4px);
   z-index: 2;
 }

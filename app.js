@@ -44,27 +44,11 @@ function fetchWithTimeout(url, options = {}) {
     });
 }
 
-function getItemTitle(meta) {
-  if (!meta) return '';
-  if (state && state.homeLang === 'pt-br' && meta.name_pt) return meta.name_pt;
-  return meta.name || '';
-}
-
-function getItemDescription(meta) {
-  if (!meta) return '';
-  if (state && state.homeLang === 'pt-br' && meta.description_pt) return meta.description_pt;
-  return meta.description || '';
-}
-
 function getPosterUrl(meta) {
-  if (!meta) return '';
-  if (state && state.homeLang === 'pt-br' && meta.poster_pt) return meta.poster_pt;
   return meta.poster || (meta.id ? `https://images.metahub.space/poster/medium/${meta.id}/img` : '');
 }
 
 function getBackgroundUrl(meta) {
-  if (!meta) return '';
-  if (state && state.homeLang === 'pt-br' && meta.background_pt) return meta.background_pt;
   return meta.background || (meta.id ? `https://images.metahub.space/background/medium/${meta.id}/img` : '');
 }
 
@@ -81,45 +65,6 @@ function openMagnet(infoHash, name) {
 }
 
 
-
-// --- Internationalization (I18N) Dictionary ---
-
-const I18N = {
-  'pt-br': {
-    movies: 'Filmes 🎬',
-    series: 'Séries 📺',
-    searchPlaceholder: 'Buscar filmes e séries...',
-    allGenres: 'Todos os Gêneros',
-    popularMovies: 'Filmes Populares',
-    featuredMovies: 'Filmes em Destaque',
-    popularSeries: 'Séries Populares',
-    featuredSeries: 'Séries em Destaque',
-    watch: 'Assistir',
-    moreInfo: 'Mais Info',
-    autoPlayBr: '⚡ Assistir Agora (Auto-Play Dublado PT-BR)',
-    sourcesTitle: 'Todas as Fontes Disponíveis (Dublado / Legendado / HD)',
-    searchResults: 'Resultados da Busca',
-    noResults: 'Nenhum resultado encontrado.',
-    changeSource: '📡 Trocar Fonte:'
-  },
-  'en': {
-    movies: 'Movies 🎬',
-    series: 'TV Series 📺',
-    searchPlaceholder: 'Search movies & series...',
-    allGenres: 'All Genres',
-    popularMovies: 'Popular Movies',
-    featuredMovies: 'Top Featured Movies',
-    popularSeries: 'Popular TV Series',
-    featuredSeries: 'Top Featured TV Series',
-    watch: 'Watch Now',
-    moreInfo: 'More Info',
-    autoPlayBr: '⚡ Watch Now (Smart Auto-Play)',
-    sourcesTitle: 'All Available Stream Sources (HD / Multi-Audio)',
-    searchResults: 'Search Results',
-    noResults: 'No results found.',
-    changeSource: '📡 Change Stream:'
-  }
-};
 
 // --- Automatic Watch Progress Engine (No Account Required) ---
 
@@ -166,7 +111,6 @@ const state = {
   currentGenre: '',
   currentMeta: null,
   currentLang: 'dublado', // 'dublado', 'legendado', 'original'
-  homeLang: 'pt-br', // 'pt-br' or 'en'
   currentSeason: 1,
   currentEpisode: 1,
   catalogs: {
@@ -212,31 +156,10 @@ const API = {
   
   async fetchMeta(type, id) {
     try {
-      const cleanId = (id || '').split(':')[0];
       const url = `https://v3-cinemeta.strem.io/meta/${type}/${id}.json`;
       const res = await fetchWithTimeout(url);
       const data = await res.json();
-      let meta = data.meta || null;
-
-      if (meta && cleanId.startsWith('tt')) {
-        try {
-          const langParam = state.homeLang === 'pt-br' ? 'pt-BR' : 'en-US';
-          const tmdbRes = await fetchWithTimeout(`https://api.themoviedb.org/3/find/${cleanId}?api_key=15d2ea6d0dc1d476efbca3ecc92bfe30&external_source=imdb_id&language=${langParam}`);
-          const tmdbData = await tmdbRes.json();
-          
-          const tmdbItem = (tmdbData.movie_results && tmdbData.movie_results[0]) || (tmdbData.tv_results && tmdbData.tv_results[0]);
-          if (tmdbItem) {
-            if (tmdbItem.title || tmdbItem.name) meta.name = tmdbItem.title || tmdbItem.name;
-            if (tmdbItem.overview) meta.description = tmdbItem.overview;
-            if (tmdbItem.poster_path) meta.poster = `https://image.tmdb.org/t/p/w500${tmdbItem.poster_path}`;
-            if (tmdbItem.backdrop_path) meta.background = `https://image.tmdb.org/t/p/w1280${tmdbItem.backdrop_path}`;
-          }
-        } catch(e) {
-          console.warn('TMDB localization fetch fallback:', e);
-        }
-      }
-
-      return meta;
+      return data.meta || null;
     } catch (error) {
       console.error('Error fetching meta:', error);
       return null;
@@ -864,40 +787,10 @@ const UI = {
       state.catalogs.popular = popular || [];
       state.catalogs.featured = featured || [];
       
-      // Render initial cards immediately
-      if (state.catalogs.popular && state.catalogs.popular.length > 0) {
-        this.setHero(state.catalogs.popular[0]);
+      if (popular && popular.length > 0) {
+        this.setHero(popular[0]);
       }
-      this.renderCatalogs();
-
-      // Fetch Portuguese Brazilian translations (titles, descriptions, backdrops, and posters) in background
-      const allItems = [...(state.catalogs.popular || []), ...(state.catalogs.featured || [])];
-      const localizeBatch = async (items) => {
-        const promises = items.map(async (item) => {
-          const cleanId = (item.id || '').split(':')[0];
-          if (cleanId.startsWith('tt')) {
-            try {
-              const res = await fetchWithTimeout(`https://api.themoviedb.org/3/find/${cleanId}?api_key=15d2ea6d0dc1d476efbca3ecc92bfe30&external_source=imdb_id&language=pt-BR`);
-              const data = await res.json();
-              const tmdbItem = (data.movie_results && data.movie_results[0]) || (data.tv_results && data.tv_results[0]);
-              if (tmdbItem) {
-                if (tmdbItem.title || tmdbItem.name) item.name_pt = tmdbItem.title || tmdbItem.name;
-                if (tmdbItem.overview) item.description_pt = tmdbItem.overview;
-                if (tmdbItem.poster_path) item.poster_pt = `https://image.tmdb.org/t/p/w500${tmdbItem.poster_path}`;
-                if (tmdbItem.backdrop_path) item.background_pt = `https://image.tmdb.org/t/p/w1280${tmdbItem.backdrop_path}`;
-              }
-            } catch(e) {}
-          }
-        });
-        await Promise.all(promises);
-      };
       
-      await localizeBatch(allItems);
-
-      // Re-render hero & catalog with Portuguese posters & titles
-      if (state.catalogs.popular && state.catalogs.popular.length > 0) {
-        this.setHero(state.catalogs.popular[0]);
-      }
       this.renderCatalogs();
     } catch (err) {
       console.error('Error in loadInitialData:', err);
@@ -908,6 +801,7 @@ const UI = {
   
   setHero(meta) {
     state.heroMeta = meta;
+    const heroSection = document.getElementById('hero-section');
     const heroBackdrop = document.getElementById('hero-backdrop');
     const heroTitle = document.getElementById('hero-title');
     const heroMeta = document.getElementById('hero-meta');
@@ -922,7 +816,7 @@ const UI = {
         const bgUrl = getBackgroundUrl(meta);
         heroBackdrop.style.backgroundImage = `url('${bgUrl}')`;
     }
-    if (heroTitle) heroTitle.textContent = getItemTitle(meta);
+    if (heroTitle) heroTitle.textContent = meta.name;
     if (heroMeta) {
       const year = meta.year || meta.releaseInfo || '';
       const rating = meta.imdbRating ? `<span class="rating">⭐ ${meta.imdbRating}</span>` : '';
@@ -930,21 +824,20 @@ const UI = {
       heroMeta.innerHTML = [year, rating, runtime].filter(Boolean).join(' &nbsp;|&nbsp; ');
     }
     if (heroDescription) {
-        heroDescription.textContent = getItemDescription(meta) || meta.description || 'Sem descrição disponível.';
+        heroDescription.textContent = meta.description || 'Sem descrição disponível.';
     }
   },
   
   createMovieCard(item) {
     const posterUrl = getPosterUrl(item);
-    const title = getItemTitle(item);
     const isSeries = (item.type === 'series') || (state.currentType === 'series');
     return `
       <div class="movie-card" onclick="UI.openModal('${item.id}')">
-        <img class="movie-poster" src="${posterUrl}" alt="${title}" onerror="this.style.background='linear-gradient(135deg, #1a1a2e, #2a2a4e)'; this.style.minHeight='270px';" loading="lazy">
+        <img class="movie-poster" src="${posterUrl}" alt="${item.name}" onerror="this.style.background='linear-gradient(135deg, #1a1a2e, #2a2a4e)'; this.style.minHeight='270px';" loading="lazy">
         <span class="movie-card-type">${isSeries ? '📺 SÉRIE' : '🎬 FILME'}</span>
         ${item.imdbRating ? `<span class="movie-card-rating">⭐ ${item.imdbRating}</span>` : ''}
         <div class="movie-card-overlay">
-          <span class="movie-card-title">${title}</span>
+          <span class="movie-card-title">${item.name}</span>
           <span class="movie-card-year">${item.year || ''}</span>
         </div>
       </div>
@@ -1014,8 +907,6 @@ const UI = {
     if (activeQuery.length > 0) {
       this.performSearch(activeQuery);
     } else {
-      if (state.heroMeta) this.setHero(state.heroMeta);
-      this.renderCatalogs();
       this.loadInitialData();
     }
   },
