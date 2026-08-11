@@ -1447,21 +1447,16 @@ const UI = {
     if (cast) cast.textContent = meta.cast ? `Elenco: ${meta.cast.slice(0, 6).join(', ')}` : '';
     
     // Show/hide series controls based on content type
-    const seriesControls = document.getElementById('series-controls');
-    if (seriesControls) {
-      if (state.currentType === 'series') {
-        seriesControls.classList.remove('hidden');
-      } else {
-        seriesControls.classList.add('hidden');
-      }
-    }
+    // Dynamic Series Seasons & Episodes Controls
+    this.setupSeriesControls(meta);
 
     // Check saved watch progress
     const progress = User.getProgress(meta.id);
     const autoPlayBtn = document.getElementById('modal-auto-play-btn');
     if (autoPlayBtn) {
       if (progress && progress.currentTime > 10) {
-        autoPlayBtn.innerHTML = `⚡ Continuar Assistindo (de ${formatTime(progress.currentTime)})`;
+        const epInfo = (meta.type === 'series' || state.currentType === 'series') ? ` [T${state.currentSeason}:E${state.currentEpisode}]` : '';
+        autoPlayBtn.innerHTML = `⚡ Continuar Assistindo${epInfo} (de ${formatTime(progress.currentTime)})`;
       } else {
         autoPlayBtn.innerHTML = `⚡ Assistir Agora (Auto-Play Dublado PT-BR)`;
       }
@@ -1493,16 +1488,81 @@ const UI = {
       };
     }
 
-    // Reset season/episode to 1
-    state.currentSeason = 1;
-    state.currentEpisode = 1;
-    const seasonSelect = document.getElementById('season-select');
-    const episodeSelect = document.getElementById('episode-select');
-    if (seasonSelect) seasonSelect.value = '1';
-    if (episodeSelect) episodeSelect.value = '1';
-
     // Load streams
     this.loadStreams();
+  },
+
+  setupSeriesControls(meta) {
+    const seriesControls = document.getElementById('series-controls');
+    const seasonSelect = document.getElementById('season-select');
+    const episodeSelect = document.getElementById('episode-select');
+
+    if (!seriesControls || !seasonSelect || !episodeSelect) return;
+
+    const isSeries = (state.currentType === 'series') || (meta && meta.type === 'series');
+    if (!isSeries) {
+      seriesControls.classList.add('hidden');
+      return;
+    }
+
+    seriesControls.classList.remove('hidden');
+
+    // Extract episodes from meta.videos
+    const videos = meta.videos || [];
+    let seasons = [];
+    if (videos.length > 0) {
+      seasons = [...new Set(videos.map(v => v.season).filter(s => typeof s === 'number'))].sort((a, b) => a - b);
+    }
+    if (seasons.length === 0) {
+      seasons = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    }
+
+    // Populate Season dropdown
+    seasonSelect.innerHTML = seasons.map(s => `<option value="${s}">Temporada ${s}</option>`).join('');
+
+    // Restore saved watch progress season & episode if available
+    const progress = User.getProgress(meta.id);
+    let targetSeason = progress && progress.season ? progress.season : 1;
+    let targetEpisode = progress && progress.episode ? progress.episode : 1;
+
+    if (!seasons.includes(targetSeason)) targetSeason = seasons[0] || 1;
+
+    seasonSelect.value = String(targetSeason);
+    state.currentSeason = targetSeason;
+
+    const populateEpisodes = (seasonNum) => {
+      let seasonVids = videos.filter(v => v.season === seasonNum);
+      if (seasonVids.length === 0) {
+        seasonVids = Array.from({ length: 30 }, (_, i) => ({ episode: i + 1, name: `Episódio ${i + 1}` }));
+      }
+
+      episodeSelect.innerHTML = seasonVids.map(v => {
+        const epNum = v.episode;
+        const titleStr = (v.name || v.title) ? ` - ${v.name || v.title}` : '';
+        return `<option value="${epNum}">Episódio ${epNum}${titleStr}</option>`;
+      }).join('');
+
+      let validEp = seasonVids.some(v => v.episode === targetEpisode) ? targetEpisode : (seasonVids[0] ? seasonVids[0].episode : 1);
+      episodeSelect.value = String(validEp);
+      state.currentEpisode = validEp;
+    };
+
+    populateEpisodes(targetSeason);
+
+    // Bind change listeners dynamically
+    seasonSelect.onchange = (e) => {
+      const s = parseInt(e.target.value, 10) || 1;
+      state.currentSeason = s;
+      targetEpisode = 1;
+      populateEpisodes(s);
+      if (state.currentMeta) this.loadStreams();
+    };
+
+    episodeSelect.onchange = (e) => {
+      const ep = parseInt(e.target.value, 10) || 1;
+      state.currentEpisode = ep;
+      if (state.currentMeta) this.loadStreams();
+    };
   },
   
   closeModal() {
@@ -1729,6 +1789,12 @@ const UI = {
     let finalUrl = embedUrl;
     if (state.currentMeta) {
       const savedProgress = User.getProgress(state.currentMeta.id);
+      const currentTime = (savedProgress && savedProgress.currentTime > 10) ? savedProgress.currentTime : 10;
+      User.saveProgress(state.currentMeta.id, currentTime, savedProgress ? savedProgress.duration : 3600, {
+        title: state.currentMeta.name,
+        season: state.currentSeason,
+        episode: state.currentEpisode
+      });
       if (savedProgress && savedProgress.currentTime > 10) {
         const startSec = Math.floor(savedProgress.currentTime);
         if (!finalUrl.includes('start=') && !finalUrl.includes('#t=')) {
