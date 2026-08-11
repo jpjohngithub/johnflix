@@ -105,7 +105,7 @@ const I18N = {
   }
 };
 
-// --- User Account & Watch Progress Engine ---
+// --- Automatic Watch Progress Engine (No Account Required) ---
 
 function formatTime(seconds) {
   if (!seconds || isNaN(seconds)) return '0:00';
@@ -115,46 +115,16 @@ function formatTime(seconds) {
 }
 
 const User = {
-  getUsers() {
+  getAllProgress() {
     try {
-      return JSON.parse(localStorage.getItem('johnflix_users') || '{}');
+      return JSON.parse(localStorage.getItem('johnflix_progress') || '{}');
     } catch(e) { return {}; }
   },
 
-  getCurrentUser() {
-    try {
-      return localStorage.getItem('johnflix_current_user') || null;
-    } catch(e) { return null; }
-  },
-
-  login(username, password) {
-    const users = this.getUsers();
-    const cleanUser = username.trim().toLowerCase();
-    if (!users[cleanUser]) {
-      users[cleanUser] = { password, progress: {}, createdAt: Date.now() };
-    }
-    localStorage.setItem('johnflix_users', JSON.stringify(users));
-    localStorage.setItem('johnflix_current_user', cleanUser);
-    return cleanUser;
-  },
-
-  logout() {
-    localStorage.removeItem('johnflix_current_user');
-  },
-
   saveProgress(metaId, currentTime, duration, extra = {}) {
-    let currentUser = this.getCurrentUser();
-    if (!currentUser) {
-      currentUser = 'convidado';
-      this.login('convidado', 'guest');
-    }
     if (!metaId || !currentTime || currentTime < 5) return;
-    
-    const users = this.getUsers();
-    if (!users[currentUser]) users[currentUser] = { progress: {} };
-    if (!users[currentUser].progress) users[currentUser].progress = {};
-
-    users[currentUser].progress[metaId] = {
+    const progressMap = this.getAllProgress();
+    progressMap[metaId] = {
       currentTime: Math.floor(currentTime),
       duration: Math.floor(duration || 0),
       percentage: duration > 0 ? Math.floor((currentTime / duration) * 100) : 0,
@@ -163,18 +133,13 @@ const User = {
       episode: extra.episode || 1,
       updatedAt: Date.now()
     };
-
-    localStorage.setItem('johnflix_users', JSON.stringify(users));
+    localStorage.setItem('johnflix_progress', JSON.stringify(progressMap));
   },
 
   getProgress(metaId) {
-    let currentUser = this.getCurrentUser() || 'convidado';
     if (!metaId) return null;
-    const users = this.getUsers();
-    if (users[currentUser] && users[currentUser].progress) {
-      return users[currentUser].progress[metaId] || null;
-    }
-    return null;
+    const progressMap = this.getAllProgress();
+    return progressMap[metaId] || null;
   }
 };
 
@@ -612,63 +577,6 @@ const UI = {
         }
       });
     });
-
-    // User Account & Login Modal
-    const userBtn = document.getElementById('user-account-btn');
-    const userLabel = document.getElementById('user-account-label');
-    const loginModal = document.getElementById('login-modal');
-    const loginOverlay = document.getElementById('login-modal-overlay');
-    const loginClose = document.getElementById('login-modal-close');
-    const loginForm = document.getElementById('login-form');
-    const userProfileSec = document.getElementById('user-profile-section');
-    const profileName = document.getElementById('profile-name');
-    const logoutBtn = document.getElementById('logout-btn');
-
-    const updateAccountUI = () => {
-      const currentUser = User.getCurrentUser();
-      if (userLabel) userLabel.textContent = currentUser ? currentUser : 'Entrar';
-      if (currentUser) {
-        if (loginForm) loginForm.classList.add('hidden');
-        if (userProfileSec) userProfileSec.classList.remove('hidden');
-        if (profileName) profileName.textContent = currentUser;
-      } else {
-        if (loginForm) loginForm.classList.remove('hidden');
-        if (userProfileSec) userProfileSec.classList.add('hidden');
-      }
-    };
-
-    updateAccountUI();
-
-    if (userBtn) {
-      userBtn.addEventListener('click', () => {
-        updateAccountUI();
-        if (loginModal) loginModal.classList.remove('hidden');
-      });
-    }
-
-    if (loginClose) loginClose.addEventListener('click', () => loginModal?.classList.add('hidden'));
-    if (loginOverlay) loginOverlay.addEventListener('click', () => loginModal?.classList.add('hidden'));
-
-    if (loginForm) {
-      loginForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const userInput = document.getElementById('login-username').value;
-        const passInput = document.getElementById('login-password').value;
-        if (userInput) {
-          User.login(userInput, passInput);
-          updateAccountUI();
-          loginModal?.classList.add('hidden');
-        }
-      });
-    }
-
-    if (logoutBtn) {
-      logoutBtn.addEventListener('click', () => {
-        User.logout();
-        updateAccountUI();
-        loginModal?.classList.add('hidden');
-      });
-    }
 
     // Season & Episode select for series
     const seasonSelect = document.getElementById('season-select');
