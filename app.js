@@ -702,10 +702,15 @@ const UI = {
 
     // Play / Pause toggle
     if (playBtn) {
-      playBtn.addEventListener('click', () => {
+      playBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
         if (!video || video.classList.contains('hidden')) return;
         if (video.paused) {
-          video.play();
+          video.play().catch(err => {
+            console.warn("Unmuted play blocked on resume, falling back to muted play...", err);
+            video.muted = true;
+            video.play();
+          });
         } else {
           video.pause();
         }
@@ -1371,7 +1376,19 @@ const UI = {
     if (hudTitle) hudTitle.textContent = title;
     
     iframe.setAttribute('referrerpolicy', 'no-referrer');
-    iframe.src = embedUrl;
+    
+    let finalUrl = embedUrl;
+    if (state.currentMeta) {
+      const savedProgress = User.getProgress(state.currentMeta.id);
+      if (savedProgress && savedProgress.currentTime > 10) {
+        const startSec = Math.floor(savedProgress.currentTime);
+        if (!finalUrl.includes('start=') && !finalUrl.includes('#t=')) {
+          finalUrl += (finalUrl.includes('?') ? '&' : '?') + `start=${startSec}&t=${startSec}`;
+        }
+      }
+    }
+
+    iframe.src = finalUrl;
     
     // Auto-hide loading spinner quickly so iframe is 100% visible and ready for interaction
     setTimeout(() => {
@@ -1437,12 +1454,6 @@ const UI = {
     const onPlaySuccess = () => {
       if (playerLoading) playerLoading.classList.add('hidden');
       if (playerError) playerError.classList.add('hidden');
-      if (state.currentMeta) {
-        const savedProgress = User.getProgress(state.currentMeta.id);
-        if (savedProgress && savedProgress.currentTime > 10) {
-          try { video.currentTime = savedProgress.currentTime; } catch(e) {}
-        }
-      }
     };
 
     const triggerAutoPlay = () => {
@@ -1471,6 +1482,16 @@ const UI = {
     video.onloadedmetadata = () => {
       const durationEl = document.getElementById('hud-duration');
       if (durationEl) durationEl.textContent = formatTime(video.duration);
+      
+      if (state.currentMeta) {
+        const savedProgress = User.getProgress(state.currentMeta.id);
+        if (savedProgress && savedProgress.currentTime > 10 && savedProgress.currentTime < (video.duration - 10)) {
+          try {
+            video.currentTime = savedProgress.currentTime;
+          } catch(e) { console.warn('Resume seek error:', e); }
+        }
+      }
+
       triggerAutoPlay();
     };
 
