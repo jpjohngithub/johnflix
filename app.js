@@ -129,16 +129,20 @@ const API = {
   async fetchCatalog(type, catalogId, extra = {}) {
     try {
       let url = '';
+      let genreParam = extra.genre;
+      if (genreParam === 'Anime') genreParam = 'Animation';
+      if (genreParam === 'Dorama') genreParam = 'Drama';
+
       if (extra.search) {
         url = `https://v3-cinemeta.strem.io/catalog/${type}/top/search=${encodeURIComponent(extra.search)}.json`;
       } else if (catalogId === 'imdbRating') {
         url = `https://cinemeta-catalogs.strem.io/imdbRating/catalog/${type}/imdbRating`;
-        if (extra.genre) url += `/genre=${encodeURIComponent(extra.genre)}`;
+        if (genreParam) url += `/genre=${encodeURIComponent(genreParam)}`;
         if (extra.skip) url += `/skip=${extra.skip}`;
         url += '.json';
       } else {
         url = `https://cinemeta-catalogs.strem.io/top/catalog/${type}/top`;
-        if (extra.genre) url += `/genre=${encodeURIComponent(extra.genre)}`;
+        if (genreParam) url += `/genre=${encodeURIComponent(genreParam)}`;
         if (extra.skip) url += `/skip=${extra.skip}`;
         url += '.json';
       }
