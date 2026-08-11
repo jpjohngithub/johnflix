@@ -350,11 +350,11 @@ const API = {
   async fetchStreams(type, id, season = 1, episode = 1) {
     try {
       const streamId = type === 'series' ? `${id}:${season}:${episode}` : id;
-      const cacheKey = `st_v4_${streamId}`;
+      const cacheKey = `st_v5_${streamId}`;
       const cached = Cache.get(cacheKey);
       if (cached && cached.length > 0) return cached;
 
-      // Helper: fetch from a Stremio-protocol addon with timeout + CORS fallback
+      // Helper: fetch from a Stremio-protocol addon with timeout + dual CORS proxy fallback
       const fetchAddon = async (baseUrl, timeoutMs = 8000) => {
         const tryFetch = async (url) => {
           const controller = new AbortController();
@@ -379,9 +379,14 @@ const API = {
         let result = await tryFetch(directUrl);
         if (result && result.length > 0) return result;
 
-        // CORS proxy fallback
-        const proxyUrl = `https://corsproxy.io/?url=${encodeURIComponent(directUrl)}`;
-        result = await tryFetch(proxyUrl);
+        // Primary CORS proxy fallback
+        const proxy1 = `https://corsproxy.io/?url=${encodeURIComponent(directUrl)}`;
+        result = await tryFetch(proxy1);
+        if (result && result.length > 0) return result;
+
+        // Secondary CORS proxy fallback
+        const proxy2 = `https://api.allorigins.win/raw?url=${encodeURIComponent(directUrl)}`;
+        result = await tryFetch(proxy2);
         return result || [];
       };
 
@@ -599,6 +604,14 @@ const API = {
         ? `https://vidlink.pro/movie/${cleanImdbId}?autoplay=true`
         : `https://vidlink.pro/tv/${cleanImdbId}/${season}/${episode}?autoplay=true`;
 
+      const primecineUrl = isMovie
+        ? `https://primecine.top/embed/filme/${cleanImdbId}`
+        : `https://primecine.top/embed/serie/${cleanImdbId}/${season}/${episode}`;
+
+      const flixapiUrl = isMovie
+        ? `https://flixapi.org/embed/filme/${cleanImdbId}`
+        : `https://flixapi.org/embed/serie/${cleanImdbId}/${season}/${episode}`;
+
       streamsList.push(
         {
           name: '🇧🇷 Dublado PT-BR — WarezCDN Brasil (Player Web HD)',
@@ -623,6 +636,22 @@ const API = {
           isDub: true,
           category: 'dubbed',
           score: 9
+        },
+        {
+          name: '🇧🇷 Dublado PT-BR — PrimeCine BR (Player HD)',
+          title: 'Servidor Dedicado Brasil • Dublado & Legendado',
+          embedUrl: primecineUrl,
+          isDub: true,
+          category: 'dubbed',
+          score: 8
+        },
+        {
+          name: '🇧🇷 Dublado PT-BR — FlixAPI Brasil (Player HD)',
+          title: 'Servidor Nativo Português BR • Séries & Filmes',
+          embedUrl: flixapiUrl,
+          isDub: true,
+          category: 'dubbed',
+          score: 8
         },
         {
           name: '🇧🇷 Dublado PT-BR — MegaFlix HD (Áudio Português)',
