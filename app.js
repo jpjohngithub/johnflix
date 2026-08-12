@@ -350,44 +350,29 @@ const API = {
   async fetchStreams(type, id, season = 1, episode = 1) {
     try {
       const streamId = type === 'series' ? `${id}:${season}:${episode}` : id;
-      const cacheKey = `st_v5_${streamId}`;
+      const cacheKey = `st_v6_${streamId}`;
       const cached = Cache.get(cacheKey);
       if (cached && cached.length > 0) return cached;
 
-      // Helper: fetch from a Stremio-protocol addon with timeout + dual CORS proxy fallback
+      // Helper: fetch directly from Stremio addon APIs
       const fetchAddon = async (baseUrl, timeoutMs = 8000) => {
-        const tryFetch = async (url) => {
-          const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort(), timeoutMs);
-          try {
-            const res = await fetch(url, { 
-              signal: controller.signal,
-              headers: { 'Accept': 'application/json' }
-            });
-            clearTimeout(timer);
-            if (res.ok) {
-              const data = await res.json();
-              return data.streams || [];
-            }
-          } catch (e) {
-            clearTimeout(timer);
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+          const directUrl = `${baseUrl}/stream/${type}/${streamId}.json`;
+          const res = await fetch(directUrl, { 
+            signal: controller.signal,
+            headers: { 'Accept': 'application/json' }
+          });
+          clearTimeout(timer);
+          if (res.ok) {
+            const data = await res.json();
+            return data.streams || [];
           }
-          return null;
-        };
-
-        const directUrl = `${baseUrl}/stream/${type}/${streamId}.json`;
-        let result = await tryFetch(directUrl);
-        if (result && result.length > 0) return result;
-
-        // Primary CORS proxy fallback
-        const proxy1 = `https://corsproxy.io/?url=${encodeURIComponent(directUrl)}`;
-        result = await tryFetch(proxy1);
-        if (result && result.length > 0) return result;
-
-        // Secondary CORS proxy fallback
-        const proxy2 = `https://api.allorigins.win/raw?url=${encodeURIComponent(directUrl)}`;
-        result = await tryFetch(proxy2);
-        return result || [];
+        } catch (e) {
+          clearTimeout(timer);
+        }
+        return [];
       };
 
       const [fenixRes, frostRes, brazucaRes, torrentioRes] = await Promise.allSettled([
