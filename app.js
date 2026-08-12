@@ -2317,7 +2317,7 @@ const UI = {
     playerOverlay.classList.remove('hidden');
     iframe.classList.remove('hidden');
     if (video) video.classList.add('hidden');
-    if (hudBottom) hudBottom.classList.add('hidden');
+    if (hudBottom) hudBottom.classList.remove('hidden');
     
     if (openTabBtn) {
       openTabBtn.href = embedUrl;
