@@ -356,7 +356,7 @@ const API = {
         : type;
 
       const streamId = realType === 'series' ? `${cleanId}:${season}:${episode}` : cleanId;
-      const cacheKey = `st_v9_${streamId}`;
+      const cacheKey = `st_v11_${streamId}`;
       const cached = Cache.get(cacheKey);
       if (cached && cached.length > 0) return cached;
 
@@ -524,11 +524,15 @@ const API = {
         if (combinedText.includes('4k') || combinedText.includes('2160p')) quality = '4K';
         else if (combinedText.includes('1080p')) quality = '1080P';
 
+        const infoHash = s.infoHash;
+        const magnetUrl = s.url ? null : (infoHash ? `magnet:?xt=urn:btih:${infoHash}&dn=${encodeURIComponent(titleRaw)}` : null);
+
         streamsList.push({
           name: `🦁 Mico-Leão Dublado 🇧🇷 ${quality} ${isDub ? '(Dublado PT-BR)' : ''}`,
           title: titleRaw,
           url: s.url || null,
-          infoHash: s.infoHash || null,
+          infoHash: infoHash || null,
+          magnetUrl: magnetUrl,
           isDub: isDub,
           category: 'dubbed',
           score: 12 + (quality === '4K' ? 4 : (quality === '1080P' ? 2 : 0))
@@ -2006,23 +2010,25 @@ const UI = {
     const qualityDetails = detailRaw.replace(/\n/g, ' • ').slice(0, 120);
     const name = stream.name;
 
-    // 🧲 Torrent / Magnet (Brazuca / Torrentio)
-    if (stream.magnetUrl) {
-      const escapedMagnet = stream.magnetUrl.replace(/"/g, '&quot;');
+    // 🧲 Torrent / Magnet (Mico-Leão / Brazuca / Torrentio)
+    const magnetUrl = stream.magnetUrl || (stream.infoHash ? `magnet:?xt=urn:btih:${stream.infoHash}&dn=${encodeURIComponent(name)}` : null);
+    if (magnetUrl) {
+      const escapedMagnet = magnetUrl.replace(/"/g, '&quot;');
+      const isMico = name.includes('Mico-Leão');
       const isBrazuca = name.includes('Brazuca');
-      const accentColor = isBrazuca ? '#f59e0b' : '#3b82f6';
-      const sourceBadge = isBrazuca ? '🧲 Brazuca Torrents' : '⚡ Torrentio';
+      const accentColor = isMico ? '#eab308' : isBrazuca ? '#f59e0b' : '#3b82f6';
+      const sourceBadge = isMico ? '🦁 Mico-Leão Dublado' : isBrazuca ? '🧲 Brazuca Torrents' : '⚡ Torrentio';
 
       return `
         <div class="stream-item" style="border-left: 4px solid ${accentColor};">
           <div class="stream-info">
             <span class="stream-name" style="font-weight:700;">${name}</span>
-            <span class="stream-details" style="color:${accentColor};">${sourceBadge} • ${qualityDetails || 'Abrir com BitTorrent/uTorrent'}</span>
+            <span class="stream-details" style="color:${accentColor}; font-weight:600;">${sourceBadge} • ${qualityDetails || 'Abrir com BitTorrent/uTorrent'}</span>
           </div>
           <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
             <a href="${escapedMagnet}" class="stream-play-btn" style="background:${accentColor}; color:#000; font-weight:700; text-decoration:none;">🧲 Abrir Magnet</a>
             <button class="stream-play-btn" style="background:rgba(255,255,255,0.1); border:1px solid ${accentColor}; color:white;"
-              onclick="navigator.clipboard.writeText('${escapedMagnet.replace(/'/g, "\\'").slice(0,200)}').then(()=>this.textContent='✅ Copiado!').catch(()=>{})">📋 Copiar</button>
+              onclick="navigator.clipboard.writeText('${escapedMagnet.replace(/'/g, "\\'")}').then(()=>this.textContent='✅ Copiado!').catch(()=>{})">📋 Copiar</button>
           </div>
         </div>
       `;
