@@ -1952,8 +1952,14 @@ const UI = {
 
     let html = '';
 
+    if (mico.length > 0) {
+      html += '<div style="color:#eab308; font-weight:800; font-size:1.05rem; margin:1rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(234,179,8,0.15); padding:10px 14px; border-radius:8px; border-left:4px solid #eab308; box-shadow:0 0 15px rgba(234,179,8,0.2);">'
+        + '<span>🦁</span> MICO-LEÃO DUBLADO 🇧🇷 (TORRENTS DUBLADOS & DUAL ÁUDIO PT-BR)</div>';
+      html += mico.map(stream => this.createStreamItem(stream)).join('');
+    }
+
     if (fenix.length > 0) {
-      html += '<div style="color:#ef4444; font-weight:800; font-size:1.05rem; margin:1rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(239,68,68,0.1); padding:8px 14px; border-radius:8px; border-left:4px solid #ef4444;">'
+      html += '<div style="color:#ef4444; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(239,68,68,0.1); padding:8px 14px; border-radius:8px; border-left:4px solid #ef4444;">'
         + '<span>🔥</span> FENIXFLIX (STREAMS DIRETO MP4 DUBLADO PT-BR)</div>';
       html += fenix.map(stream => this.createStreamItem(stream)).join('');
     }
@@ -1962,12 +1968,6 @@ const UI = {
       html += '<div style="color:#06b6d4; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(6,182,212,0.1); padding:8px 14px; border-radius:8px; border-left:4px solid #06b6d4;">'
         + '<span>❄️</span> FROSTSTREAM (STREAMS IPTV DIRETO REDEFLIX / CDMOVIES)</div>';
       html += frost.map(stream => this.createStreamItem(stream)).join('');
-    }
-
-    if (mico.length > 0) {
-      html += '<div style="color:#eab308; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(234,179,8,0.1); padding:8px 14px; border-radius:8px; border-left:4px solid #eab308;">'
-        + '<span>🦁</span> MICO-LEÃO DUBLADO (TORRENTS DUBLADOS & DUAL ÁUDIO PT-BR)</div>';
-      html += mico.map(stream => this.createStreamItem(stream)).join('');
     }
 
     if (brazuca.length > 0) {
