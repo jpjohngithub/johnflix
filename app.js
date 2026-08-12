@@ -2012,11 +2012,10 @@ const UI = {
     const playerTitle = document.getElementById('player-title');
     const hudTitle = document.getElementById('hud-title');
 
-    // Immediately show player overlay with quick loading status so it launches INSTANTLY
     if (playerOverlay) playerOverlay.classList.remove('hidden');
     if (playerLoading) {
       playerLoading.classList.remove('hidden');
-      playerLoading.querySelector('p').textContent = '⚡ Selecionando servidor ultra-rápido Dublado PT-BR...';
+      playerLoading.querySelector('p').textContent = '⚡ Testando servidores ultra-rápidos (Dublado PT-BR)...';
     }
 
     const titleText = state.currentMeta.name;
@@ -2030,40 +2029,79 @@ const UI = {
       state.currentEpisode
     );
 
-    // Filter playable video streams only for Auto-Play
-    const playable = streams.filter(s => (s.url && !s.url.startsWith('magnet:')) || s.embedUrl);
+    // Map all available streams (Direct MP4/HLS, Web Embeds, WebTorrent Gateways for Mico-Leão, Brazuca, FrostStream, Torrentio)
+    const playable = (streams || []).map(s => {
+      if (s.url && !s.url.startsWith('magnet:')) return s;
+      if (s.embedUrl) return s;
+      if (s.magnetUrl || s.infoHash) {
+        const mag = s.magnetUrl || `magnet:?xt=urn:btih:${s.infoHash}&dn=${encodeURIComponent(s.name)}`;
+        return {
+          ...s,
+          embedUrl: `https://webtor.io/show?magnet=${encodeURIComponent(mag)}`
+        };
+      }
+      return null;
+    }).filter(Boolean);
+
     if (!playable || playable.length === 0) {
-      alert('Nenhum player web direto disponível para este título no momento.');
+      alert('Nenhum servidor disponível para este título no momento.');
       if (playerLoading) playerLoading.classList.add('hidden');
       this.closePlayer();
       return;
     }
 
-    // Advanced Ultra-Smart Server Ranking (Dubbed PT-BR + High Bandwidth CDN + Direct Video Stream)
+    // Rank candidate streams: Dubbed PT-BR > Direct Video Streams > Web Embeds
     const sorted = [...playable].sort((a, b) => {
       const aDub = a.isDub ? 100 : 0;
       const bDub = b.isDub ? 100 : 0;
-      
       const aDirect = a.url ? 30 : 0;
       const bDirect = b.url ? 30 : 0;
-
-      const aTotalScore = (a.score || 0) + aDub + aDirect;
-      const bTotalScore = (b.score || 0) + bDub + bDirect;
-
-      return bTotalScore - aTotalScore;
+      return (b.score || 0) + bDub + bDirect - ((a.score || 0) + aDub + aDirect);
     });
 
     state.activeStreams = sorted;
     state.currentStreamIndex = 0;
     this.updateHudStreamSelector(sorted, 0);
 
-    const bestStream = sorted[0];
+    // Launch Smart Auto-Tester starting at index 0
+    this.testAndPlayStreamIndex(0);
+  },
 
-    if (bestStream.url) {
-      this.playStream(bestStream.url, bestStream.name);
-    } else if (bestStream.embedUrl) {
-      this.playIframe(bestStream.embedUrl, bestStream.name);
+  async testAndPlayStreamIndex(index) {
+    if (!state.activeStreams || index >= state.activeStreams.length) {
+      this.showPlayerError();
+      return;
     }
+
+    state.currentStreamIndex = index;
+    this.updateHudStreamSelector(state.activeStreams, index);
+
+    const stream = state.activeStreams[index];
+    const playerLoading = document.getElementById('player-loading');
+    if (playerLoading) {
+      playerLoading.classList.remove('hidden');
+      playerLoading.querySelector('p').textContent = `⚡ Testando e Conectando ao Servidor ${index + 1}/${state.activeStreams.length} (${stream.name})...`;
+    }
+
+    if (stream.url) {
+      this.playStream(stream.url, stream.name);
+    } else if (stream.embedUrl) {
+      this.playIframe(stream.embedUrl, stream.name);
+    }
+
+    // Auto-tester fallback timer: If server fails or stalls > 4s, automatically test next server!
+    if (this.autoTestTimer) clearTimeout(this.autoTestTimer);
+    this.autoTestTimer = setTimeout(() => {
+      const video = document.getElementById('video-player');
+      const iframe = document.getElementById('iframe-player');
+      const isVideoPlaying = video && !video.paused && video.currentTime > 0.1 && video.readyState >= 2;
+      const isIframeVisible = iframe && !iframe.classList.contains('hidden');
+
+      if (!isVideoPlaying && !isIframeVisible && index + 1 < state.activeStreams.length) {
+        console.log(`Server ${index + 1} timed out, testing server ${index + 2}...`);
+        this.testAndPlayStreamIndex(index + 1);
+      }
+    }, 4000);
   },
 
   updateHudStreamSelector(streams, activeIndex = 0) {
@@ -2189,7 +2227,7 @@ const UI = {
     const qualityDetails = detailRaw.replace(/\n/g, ' • ').slice(0, 120);
     const name = stream.name;
 
-    // 🧲 Torrent / Magnet (Mico-Leão / Brazuca / Torrentio)
+    // 🧲 Torrent / Magnet (Mico-Leão / Brazuca / Torrentio / FrostStream)
     const magnetUrl = stream.magnetUrl || (stream.infoHash ? `magnet:?xt=urn:btih:${stream.infoHash}&dn=${encodeURIComponent(name)}` : null);
     if (magnetUrl) {
       const escapedMagnet = magnetUrl.replace(/"/g, '&quot;');
@@ -2197,15 +2235,18 @@ const UI = {
       const isBrazuca = name.includes('Brazuca');
       const accentColor = isMico ? '#eab308' : isBrazuca ? '#f59e0b' : '#3b82f6';
       const sourceBadge = isMico ? '🦁 Mico-Leão Dublado' : isBrazuca ? '🧲 Brazuca Torrents' : '⚡ Torrentio';
+      const webEmbedUrl = `https://webtor.io/show?magnet=${encodeURIComponent(magnetUrl)}`;
 
       return `
         <div class="stream-item" style="border-left: 4px solid ${accentColor};">
           <div class="stream-info">
             <span class="stream-name" style="font-weight:700;">${name}</span>
-            <span class="stream-details" style="color:${accentColor}; font-weight:600;">${sourceBadge} • ${qualityDetails || 'Abrir com BitTorrent/uTorrent'}</span>
+            <span class="stream-details" style="color:${accentColor}; font-weight:600;">${sourceBadge} • ${qualityDetails || 'Assistir no Navegador ou App Magnet'}</span>
           </div>
           <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-            <a href="${escapedMagnet}" class="stream-play-btn" style="background:${accentColor}; color:#000; font-weight:700; text-decoration:none;">🧲 Abrir Magnet</a>
+            <button class="stream-play-btn" style="background:linear-gradient(135deg, ${accentColor}, #d97706); color:#000; font-weight:800;"
+              onclick="UI.playIframe('${webEmbedUrl.replace(/'/g, "\\'")}', '${name.replace(/'/g, "\\'")}')">▶ Assistir no Player</button>
+            <a href="${escapedMagnet}" class="stream-play-btn" style="background:rgba(255,255,255,0.1); border:1px solid ${accentColor}; color:white; font-weight:700; text-decoration:none;">🧲 Magnet App</a>
             <button class="stream-play-btn" style="background:rgba(255,255,255,0.1); border:1px solid ${accentColor}; color:white;"
               onclick="navigator.clipboard.writeText('${escapedMagnet.replace(/'/g, "\\'")}').then(()=>this.textContent='✅ Copiado!').catch(()=>{})">📋 Copiar</button>
           </div>

@@ -1825,6 +1825,67 @@ html {
   }
 }
 
+/* --- Fullscreen & Aspect Ratio Fixes --- */
+:fullscreen,
+::backdrop,
+:root:fullscreen {
+  background-color: #000000 !important;
+}
+
+#player-overlay:fullscreen,
+#player-overlay:-webkit-full-screen,
+#player-overlay:-moz-full-screen,
+#player-overlay:-ms-fullscreen {
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  background: #000000 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+.player-container:fullscreen,
+.player-container:-webkit-full-screen {
+  width: 100vw !important;
+  height: 100vh !important;
+  background: #000000 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+#video-player:fullscreen,
+#video-player:-webkit-full-screen,
+video:fullscreen,
+video:-webkit-full-screen {
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  object-fit: contain !important; /* Preserves 16:9 / 21:9 original video aspect ratio without distortion! */
+  background: #000000 !important;
+}
+
+#iframe-player:fullscreen,
+#iframe-player:-webkit-full-screen,
+iframe:fullscreen,
+iframe:-webkit-full-screen {
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  object-fit: contain !important;
+  background: #000000 !important;
+  border: none !important;
+}
+
 
 
 
