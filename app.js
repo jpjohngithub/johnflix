@@ -355,12 +355,125 @@ const API = {
         : type;
 
       const streamId = realType === 'series' ? `${cleanId}:${season}:${episode}` : cleanId;
-      const cacheKey = `st_v7_${streamId}`;
+      const cacheKey = `st_v8_${streamId}`;
       const cached = Cache.get(cacheKey);
       if (cached && cached.length > 0) return cached;
 
-      // Helper: fetch directly from Stremio addon APIs
-      const fetchAddon = async (baseUrl, timeoutMs = 8000) => {
+      // 1. Generate Instant Web Embed Streams (0ms delay)
+      const isMovie = realType === 'movie';
+      const warezLink = isMovie 
+        ? `https://warezcdn.link/embed/filme/${cleanId}?autoplay=1`
+        : `https://warezcdn.link/embed/serie/${cleanId}/${season}/${episode}?autoplay=1`;
+
+      const superflixUrl = isMovie
+        ? `https://superflixapi.top/filme/${cleanId}`
+        : `https://superflixapi.top/serie/${cleanId}/${season}/${episode}`;
+
+      const embedflixUrl = isMovie
+        ? `https://embedflix.net/filme/${cleanId}`
+        : `https://embedflix.net/serie/${cleanId}/${season}/${episode}`;
+
+      const megaflixUrl = isMovie
+        ? `https://megaflix.cx/embed/filme/${cleanId}`
+        : `https://megaflix.cx/embed/serie/${cleanId}/${season}/${episode}`;
+
+      const vidsrcDubUrl = isMovie 
+        ? `https://vidsrc.me/embed/movie?imdb=${cleanId}&ds_lang=pt&autoplay=1` 
+        : `https://vidsrc.me/embed/tv?imdb=${cleanId}&season=${season}&episode=${episode}&ds_lang=pt&autoplay=1`;
+
+      const primecineUrl = isMovie
+        ? `https://primecine.top/embed/filme/${cleanId}`
+        : `https://primecine.top/embed/serie/${cleanId}/${season}/${episode}`;
+
+      const flixapiUrl = isMovie
+        ? `https://flixapi.org/embed/filme/${cleanId}`
+        : `https://flixapi.org/embed/serie/${cleanId}/${season}/${episode}`;
+
+      const autoembedUrl = isMovie
+        ? `https://player.autoembed.cc/embed/movie/${cleanId}`
+        : `https://player.autoembed.cc/embed/tv/${cleanId}/${season}/${episode}`;
+
+      const vidsrcccUrl = isMovie
+        ? `https://vidsrc.cc/v2/embed/movie/${cleanId}`
+        : `https://vidsrc.cc/v2/embed/tv/${cleanId}/${season}/${episode}`;
+
+      const instantWebStreams = [
+        {
+          name: '🇧🇷 Dublado PT-BR — WarezCDN Brasil (Player Web HD)',
+          title: 'Servidor Web Dedicado ao Brasil • Áudio Dublado PT-BR',
+          embedUrl: warezLink,
+          isDub: true,
+          category: 'dubbed',
+          score: 10
+        },
+        {
+          name: '🇧🇷 Dublado PT-BR — SuperFlix HD (Rede Português BR)',
+          title: 'Servidor 100% Dublado Brasil • Full HD 1080p',
+          embedUrl: superflixUrl,
+          isDub: true,
+          category: 'dubbed',
+          score: 9
+        },
+        {
+          name: '🇧🇷 Dublado PT-BR — EmbedFlix Brasil (Player HD)',
+          title: 'Servidor Alternativo Dublado PT-BR',
+          embedUrl: embedflixUrl,
+          isDub: true,
+          category: 'dubbed',
+          score: 9
+        },
+        {
+          name: '🇧🇷 Dublado PT-BR — PrimeCine BR (Player HD)',
+          title: 'Servidor Dedicado Brasil • Dublado & Legendado',
+          embedUrl: primecineUrl,
+          isDub: true,
+          category: 'dubbed',
+          score: 8
+        },
+        {
+          name: '🇧🇷 Dublado PT-BR — FlixAPI Brasil (Player HD)',
+          title: 'Servidor Nativo Português BR • Séries & Filmes',
+          embedUrl: flixapiUrl,
+          isDub: true,
+          category: 'dubbed',
+          score: 8
+        },
+        {
+          name: '🇧🇷 Dublado PT-BR — MegaFlix HD (Áudio Português)',
+          title: 'Servidor Otimizado Áudio Dublado BR',
+          embedUrl: megaflixUrl,
+          isDub: true,
+          category: 'dubbed',
+          score: 8
+        },
+        {
+          name: '🇧🇷 Dublado / Legendado — VidSrc PT-BR (Player Web HD)',
+          title: 'Servidor Legendado/Dublado PT-BR',
+          embedUrl: vidsrcDubUrl,
+          isDub: true,
+          category: 'dubbed',
+          score: 7
+        },
+        {
+          name: '🌐 Player Web AutoEmbed CC (Ultra-Fast 1080p)',
+          title: 'Servidor HD Ultra-Rápido Global',
+          embedUrl: autoembedUrl,
+          isDub: false,
+          category: 'web',
+          score: 6
+        },
+        {
+          name: '🌐 Player Web VidSrc.cc (HD 1080p)',
+          title: 'Servidor 1080p Full HD Séries & Filmes',
+          embedUrl: vidsrcccUrl,
+          isDub: false,
+          category: 'web',
+          score: 5
+        }
+      ];
+
+      // Helper: fetch directly from Stremio addon APIs with 5s timeout
+      const fetchAddon = async (baseUrl, timeoutMs = 5000) => {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), timeoutMs);
         try {
@@ -550,155 +663,8 @@ const API = {
         });
       });
 
-      // Dedicated PT-BR Dubbed & Web Embed Players (WarezCDN, SuperFlix, EmbedFlix, MegaFlix, VidSrc, AutoEmbed, SmashyStream, 2Embed)
-      const isMovie = realType === 'movie';
-
-      const warezLink = isMovie 
-        ? `https://warezcdn.link/embed/filme/${cleanImdbId}?autoplay=1`
-        : `https://warezcdn.link/embed/serie/${cleanImdbId}/${season}/${episode}?autoplay=1`;
-
-      const superflixUrl = isMovie
-        ? `https://superflixapi.top/filme/${cleanImdbId}`
-        : `https://superflixapi.top/serie/${cleanImdbId}/${season}/${episode}`;
-
-      const embedflixUrl = isMovie
-        ? `https://embedflix.net/filme/${cleanImdbId}`
-        : `https://embedflix.net/serie/${cleanImdbId}/${season}/${episode}`;
-
-      const megaflixUrl = isMovie
-        ? `https://megaflix.cx/embed/filme/${cleanImdbId}`
-        : `https://megaflix.cx/embed/serie/${cleanImdbId}/${season}/${episode}`;
-
-      const vidsrcDubUrl = isMovie 
-        ? `https://vidsrc.me/embed/movie?imdb=${cleanImdbId}&ds_lang=pt&autoplay=1` 
-        : `https://vidsrc.me/embed/tv?imdb=${cleanImdbId}&season=${season}&episode=${episode}&ds_lang=pt&autoplay=1`;
-
-      const autoembedUrl = isMovie
-        ? `https://player.autoembed.cc/embed/movie/${cleanImdbId}`
-        : `https://player.autoembed.cc/embed/tv/${cleanImdbId}/${season}/${episode}`;
-
-      const vidsrcccUrl = isMovie
-        ? `https://vidsrc.cc/v2/embed/movie/${cleanImdbId}`
-        : `https://vidsrc.cc/v2/embed/tv/${cleanImdbId}/${season}/${episode}`;
-
-      const smashystreamUrl = isMovie
-        ? `https://embed.smashystream.com/playere.php?tmdb=${cleanImdbId}`
-        : `https://embed.smashystream.com/playere.php?tmdb=${cleanImdbId}&s=${season}&e=${episode}`;
-
-      const embed2Url = isMovie
-        ? `https://www.2embed.cc/embed/${cleanImdbId}`
-        : `https://www.2embed.cc/embedtv/${cleanImdbId}&s=${season}&e=${episode}`;
-
-      const vidlinkUrl = isMovie
-        ? `https://vidlink.pro/movie/${cleanImdbId}?autoplay=true`
-        : `https://vidlink.pro/tv/${cleanImdbId}/${season}/${episode}?autoplay=true`;
-
-      const primecineUrl = isMovie
-        ? `https://primecine.top/embed/filme/${cleanImdbId}`
-        : `https://primecine.top/embed/serie/${cleanImdbId}/${season}/${episode}`;
-
-      const flixapiUrl = isMovie
-        ? `https://flixapi.org/embed/filme/${cleanImdbId}`
-        : `https://flixapi.org/embed/serie/${cleanImdbId}/${season}/${episode}`;
-
-      streamsList.push(
-        {
-          name: '🇧🇷 Dublado PT-BR — WarezCDN Brasil (Player Web HD)',
-          title: 'Servidor Web Dedicado ao Brasil • Áudio Dublado PT-BR',
-          embedUrl: warezLink,
-          isDub: true,
-          category: 'dubbed',
-          score: 10
-        },
-        {
-          name: '🇧🇷 Dublado PT-BR — SuperFlix HD (Rede Português BR)',
-          title: 'Servidor 100% Dublado Brasil • Full HD 1080p',
-          embedUrl: superflixUrl,
-          isDub: true,
-          category: 'dubbed',
-          score: 9
-        },
-        {
-          name: '🇧🇷 Dublado PT-BR — EmbedFlix Brasil (Player HD)',
-          title: 'Servidor Alternativo Dublado PT-BR',
-          embedUrl: embedflixUrl,
-          isDub: true,
-          category: 'dubbed',
-          score: 9
-        },
-        {
-          name: '🇧🇷 Dublado PT-BR — PrimeCine BR (Player HD)',
-          title: 'Servidor Dedicado Brasil • Dublado & Legendado',
-          embedUrl: primecineUrl,
-          isDub: true,
-          category: 'dubbed',
-          score: 8
-        },
-        {
-          name: '🇧🇷 Dublado PT-BR — FlixAPI Brasil (Player HD)',
-          title: 'Servidor Nativo Português BR • Séries & Filmes',
-          embedUrl: flixapiUrl,
-          isDub: true,
-          category: 'dubbed',
-          score: 8
-        },
-        {
-          name: '🇧🇷 Dublado PT-BR — MegaFlix HD (Áudio Português)',
-          title: 'Servidor Otimizado Áudio Dublado BR',
-          embedUrl: megaflixUrl,
-          isDub: true,
-          category: 'dubbed',
-          score: 8
-        },
-        {
-          name: '🇧🇷 Dublado / Legendado — VidSrc PT-BR (Player Web HD)',
-          title: 'Servidor Legendado/Dublado PT-BR',
-          embedUrl: vidsrcDubUrl,
-          isDub: true,
-          category: 'dubbed',
-          score: 7
-        },
-        {
-          name: '🌐 Player Web AutoEmbed CC (Ultra-Fast 1080p)',
-          title: 'Servidor HD Ultra-Rápido Global',
-          embedUrl: autoembedUrl,
-          isDub: false,
-          category: 'web',
-          score: 6
-        },
-        {
-          name: '🌐 Player Web VidSrc.cc (HD 1080p)',
-          title: 'Servidor 1080p Full HD Séries & Filmes',
-          embedUrl: vidsrcccUrl,
-          isDub: false,
-          category: 'web',
-          score: 5
-        },
-        {
-          name: '🌐 Player Web SmashyStream (Multi-Servidores)',
-          title: 'Servidor com Seleção Automática de Legendas',
-          embedUrl: smashystreamUrl,
-          isDub: false,
-          category: 'web',
-          score: 5
-        },
-        {
-          name: '🌐 Player Web 2Embed HD (Backup)',
-          title: 'Servidor Backup HD Séries & Filmes',
-          embedUrl: embed2Url,
-          isDub: false,
-          category: 'web',
-          score: 4
-        },
-        {
-          name: '🌐 Player Web VidLink Pro (HD)',
-          title: 'Servidor Otimizado para Celular e TV',
-          embedUrl: vidlinkUrl,
-          isDub: false,
-          category: 'web',
-          score: 3
-        }
-      );
+      // Append instant web embed streams
+      streamsList.push(...instantWebStreams);
 
       Cache.set(cacheKey, streamsList);
       return streamsList;
