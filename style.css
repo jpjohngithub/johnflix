@@ -604,23 +604,26 @@ html {
   position: absolute;
   top: 16px;
   right: 16px;
-  z-index: 10;
-  background: rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  background: rgba(239, 68, 68, 0.9);
   color: white;
-  border: none;
-  font-size: 1.5rem;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  font-size: 0.95rem;
+  font-weight: 800;
+  padding: 8px 18px;
+  border-radius: 30px;
   cursor: pointer;
-  backdrop-filter: blur(4px);
-  transition: var(--transition);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 6px;
 }
-.modal-close:hover {
-  background: rgba(0, 0, 0, 0.8);
+.modal-close:hover, .modal-close:active {
+  background: var(--danger);
+  border-color: white;
+  transform: scale(1.06);
 }
 
 .modal-backdrop-container {
@@ -1510,14 +1513,18 @@ html {
 
   /* Hero Section */
   #hero-section {
-    height: 65vh;
-    min-height: 440px;
-    max-height: 520px;
+    height: auto;
+    min-height: 480px;
+    padding-bottom: 2rem;
+    position: relative;
   }
   .hero-content {
-    left: 4%;
-    right: 4%;
-    bottom: 6%;
+    position: relative;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin-top: 130px;
+    padding: 0 4%;
     max-width: 100%;
   }
   .hero-title {
@@ -1554,7 +1561,7 @@ html {
 
   /* Catalog Container & Carousels */
   #catalog-container {
-    margin-top: -2.5rem;
+    margin-top: 1.5rem;
     padding-bottom: 3rem;
   }
   .catalog-section {
@@ -1622,11 +1629,15 @@ html {
     border: none;
   }
   .modal-close {
-    top: 12px;
-    right: 12px;
-    width: 34px;
-    height: 34px;
-    font-size: 1.2rem;
+    top: 14px;
+    right: 14px;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    font-weight: 800;
+    z-index: 100;
+    background: rgba(239, 68, 68, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.8);
   }
   .modal-backdrop-container {
     height: 210px;
