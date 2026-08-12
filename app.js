@@ -727,6 +727,7 @@ const Subtitles = {
   cache: {},
   activeCues: [],
   currentLang: 'pob',
+  syncOffset: 0,
 
   async fetchList(imdbId, type, season = 1, episode = 1, lang = 'pob') {
     const cleanId = (imdbId || '').replace('tt', '').padStart(7, '0');
@@ -743,8 +744,23 @@ const Subtitles = {
       if (res.ok) {
         const data = await res.json();
         const list = Array.isArray(data) ? data : [];
-        this.cache[cacheKey] = list;
-        return list;
+        
+        // Strict movie title & year filtering
+        const movieName = state.currentMeta ? state.currentMeta.name : '';
+        const movieYear = state.currentMeta ? state.currentMeta.year : '';
+        const cleanTitle = (movieName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+        const filtered = list.filter(s => {
+          if (!s.SubDownloadLink || (s.SubFormat !== 'srt' && s.SubFormat !== 'vtt')) return false;
+          if (type === 'series') return true;
+          const subName = ((s.MovieName || '') + ' ' + (s.SubFileName || '')).toLowerCase().replace(/[^a-z0-9]/g, '');
+          const yearMatch = !movieYear || !s.MovieYear || s.MovieYear == movieYear;
+          return (subName.includes(cleanTitle.slice(0, 10)) || cleanTitle.includes(subName.slice(0, 10))) && yearMatch;
+        }).sort((a, b) => (parseInt(b.SubDownloadsCnt) || 0) - (parseInt(a.SubDownloadsCnt) || 0));
+
+        const finalResult = filtered.length > 0 ? filtered : list;
+        this.cache[cacheKey] = finalResult;
+        return finalResult;
       }
     } catch(e) {}
     return [];
@@ -771,6 +787,13 @@ const Subtitles = {
       return 0;
     };
 
+    const isSpamLine = (txt) => {
+      const l = txt.toLowerCase();
+      return l.includes('opensubtitles') || l.includes('getray.app') || l.includes('tryray.app') 
+          || l.includes('osdb.link') || l.includes('legendas por') || l.includes('ansado de procurar')
+          || l.includes('watch online movies');
+    };
+
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
       if (line.includes('-->')) {
@@ -781,17 +804,19 @@ const Subtitles = {
           text: ''
         };
       } else if (currentCue && line !== '' && !line.startsWith('WEBVTT') && isNaN(line)) {
-        currentCue.text += (currentCue.text ? '\n' : '') + line;
+        if (!isSpamLine(line)) {
+          currentCue.text += (currentCue.text ? '\n' : '') + line;
+        }
       } else if (currentCue && line === '') {
-        cues.push(currentCue);
+        if (currentCue.text.trim()) cues.push(currentCue);
         currentCue = null;
       }
     }
-    if (currentCue) cues.push(currentCue);
+    if (currentCue && currentCue.text.trim()) cues.push(currentCue);
     return cues;
   },
 
-  async applySubtitles(lang, imdbId, type, season, episode) {
+  async applySubtitles(lang, imdbId, type, season, episode, chosenIndex = 0) {
     const overlay = document.getElementById('custom-subtitles-overlay');
     const subText = document.getElementById('custom-subtitles-text');
     const video = document.getElementById('video-player');
@@ -817,7 +842,8 @@ const Subtitles = {
       return;
     }
 
-    await this.downloadAndAttach(subs[0], video, lang === 'pob' ? 'Português (BR)' : lang === 'eng' ? 'English' : 'Español');
+    const subObj = subs[chosenIndex] || subs[0];
+    await this.downloadAndAttach(subObj, video, lang === 'pob' ? 'Português (BR)' : lang === 'eng' ? 'English' : 'Español');
   },
 
   async downloadAndAttach(subObj, video, langName) {
@@ -828,13 +854,22 @@ const Subtitles = {
       const res = await fetch(dlUrl, { headers: { 'User-Agent': 'TemporaryUserAgent' } });
       if (!res.ok) return;
 
+      const buffer = new Uint8Array(await res.arrayBuffer());
+      let uint8Data = buffer;
+
+      if (buffer[0] === 0x1f && buffer[1] === 0x8b) {
+        if (typeof DecompressionStream !== 'undefined') {
+          const ds = new DecompressionStream('gzip');
+          const decompressedStream = new Response(buffer).body.pipeThrough(ds);
+          uint8Data = new Uint8Array(await new Response(decompressedStream).arrayBuffer());
+        }
+      }
+
       let rawSrt = '';
-      if (typeof DecompressionStream !== 'undefined') {
-        const ds = new DecompressionStream('gzip');
-        const decompressedStream = res.body.pipeThrough(ds);
-        rawSrt = await new Response(decompressedStream).text();
-      } else {
-        rawSrt = await res.text();
+      try {
+        rawSrt = new TextDecoder('utf-8', { fatal: true }).decode(uint8Data);
+      } catch(e) {
+        rawSrt = new TextDecoder('iso-8859-1').decode(uint8Data);
       }
 
       if (!rawSrt || rawSrt.length === 0) return;
@@ -873,7 +908,9 @@ const Subtitles = {
       return;
     }
 
-    const currentCue = this.activeCues.find(c => currentTime >= c.start && currentTime <= c.end);
+    const adjustedTime = currentTime + (this.syncOffset || 0);
+    const currentCue = this.activeCues.find(c => adjustedTime >= c.start && adjustedTime <= c.end);
+
     if (currentCue && currentCue.text) {
       if (subText) subText.innerText = currentCue.text;
       if (overlay) overlay.classList.remove('hidden');
@@ -1002,6 +1039,25 @@ const UI = {
         }
       });
     }
+
+    // HUD Subtitle Sync Adjustment Buttons
+    document.getElementById('hud-sub-delay-minus')?.addEventListener('click', () => {
+      Subtitles.syncOffset -= 1.0;
+      const btn = document.getElementById('hud-sub-delay-reset');
+      if (btn) btn.textContent = `${Subtitles.syncOffset > 0 ? '+' : ''}${Subtitles.syncOffset.toFixed(0)}s`;
+    });
+
+    document.getElementById('hud-sub-delay-reset')?.addEventListener('click', () => {
+      Subtitles.syncOffset = 0;
+      const btn = document.getElementById('hud-sub-delay-reset');
+      if (btn) btn.textContent = '⚡0s';
+    });
+
+    document.getElementById('hud-sub-delay-plus')?.addEventListener('click', () => {
+      Subtitles.syncOffset += 1.0;
+      const btn = document.getElementById('hud-sub-delay-reset');
+      if (btn) btn.textContent = `${Subtitles.syncOffset > 0 ? '+' : ''}${Subtitles.syncOffset.toFixed(0)}s`;
+    });
 
     // Language selector
     document.querySelectorAll('.lang-btn[data-lang]').forEach(btn => {

@@ -1788,40 +1788,41 @@ html {
 /* --- Custom Subtitles Overlay Styling --- */
 .custom-subtitles-overlay {
   position: absolute;
-  bottom: 80px;
+  bottom: 90px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 99;
   pointer-events: none;
   text-align: center;
   width: 90%;
-  max-width: 900px;
+  max-width: 950px;
   transition: all 0.2s ease;
 }
 
 #custom-subtitles-text {
-  background: rgba(0, 0, 0, 0.75);
-  color: #fef08a; /* Netflix Yellow Subtitles */
-  font-family: 'Inter', -apple-system, sans-serif;
-  font-size: 1.35rem;
-  font-weight: 700;
-  padding: 6px 16px;
+  background: rgba(0, 0, 0, 0.85);
+  color: #ffffff;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 1.4rem;
+  font-weight: 800;
+  padding: 8px 20px;
   border-radius: 8px;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9), 0 0 12px rgba(0, 0, 0, 0.8);
-  line-height: 1.4;
+  text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 4px 12px rgba(0,0,0,0.95);
+  letter-spacing: 0.3px;
+  line-height: 1.45;
   display: inline-block;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(6px);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.8);
 }
 
 @media (max-width: 768px) {
   .custom-subtitles-overlay {
-    bottom: 60px;
+    bottom: 75px;
   }
   #custom-subtitles-text {
-    font-size: 1rem;
-    padding: 4px 10px;
+    font-size: 1.05rem;
+    padding: 6px 12px;
   }
 }
 

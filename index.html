@@ -306,7 +306,7 @@
               </div>
 
               <div class="hud-right-controls">
-                <!-- Subtitle Selector -->
+                <!-- Subtitle Selector & Sync Controls -->
                 <div class="hud-subtitle-group" id="hud-subtitle-group" style="display:flex; align-items:center; gap:6px;">
                   <label for="hud-subtitle-select" style="font-size:0.75rem; color:#fef08a; font-weight:700;">💬 Legendas:</label>
                   <select id="hud-subtitle-select" class="hud-select" style="max-width:145px; font-size:0.8rem; background:rgba(0,0,0,0.85); border:1px solid #eab308; color:#fef08a; border-radius:8px; padding:4px 8px; font-weight:700; cursor:pointer;">
@@ -315,6 +315,11 @@
                     <option value="spa">🇪🇸 Español</option>
                     <option value="off">🚫 Desativado</option>
                   </select>
+                  <div style="display:flex; gap:3px;">
+                    <button class="hud-btn" id="hud-sub-delay-minus" style="width:26px; height:26px; font-size:0.7rem; font-weight:800; background:rgba(234,179,8,0.2); border:1px solid #eab308; color:#fef08a; padding:0;" title="Atrasar Legenda (-1s)">-1s</button>
+                    <button class="hud-btn" id="hud-sub-delay-reset" style="width:34px; height:26px; font-size:0.7rem; font-weight:800; background:rgba(234,179,8,0.2); border:1px solid #eab308; color:#fef08a; padding:0;" title="Zerar Sincronia (0s)">⚡0s</button>
+                    <button class="hud-btn" id="hud-sub-delay-plus" style="width:26px; height:26px; font-size:0.7rem; font-weight:800; background:rgba(234,179,8,0.2); border:1px solid #eab308; color:#fef08a; padding:0;" title="Adiantar Legenda (+1s)">+1s</button>
+                  </div>
                 </div>
 
                 <!-- Speed Selector -->
