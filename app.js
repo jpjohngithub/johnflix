@@ -1166,9 +1166,10 @@ const UI = {
       if (cached && cached.popular && cached.popular.length > 0) {
         state.catalogs.popular = cached.popular;
         state.catalogs.featured = cached.featured || [];
-        this.setHero(cached.popular[0]);
+        this.setRandomHero(cached.popular);
         this.renderCatalogs();
         this.hideLoadingScreen();
+        this.startHeroAutoRotation();
       }
 
       const extra = state.currentGenre ? { genre: state.currentGenre } : {};
@@ -1203,8 +1204,9 @@ const UI = {
         state.catalogs.popular = popular;
         state.catalogs.featured = featured || [];
         Cache.set(cacheKey, { popular: state.catalogs.popular, featured: state.catalogs.featured });
-        this.setHero(popular[0]);
+        this.setRandomHero(popular);
         this.renderCatalogs();
+        this.startHeroAutoRotation();
       }
     } catch (err) {
       console.error('Error in loadInitialData:', err);
@@ -1222,33 +1224,81 @@ const UI = {
     }
     return result;
   },
+
+  setRandomHero(list) {
+    const items = (list && list.length > 0) ? list : (state.catalogs.popular || []);
+    if (!items || items.length === 0) return;
+
+    // Filter top 15 items and pick one that wasn't the last hero
+    const candidates = items.slice(0, 15).filter(item => item.id !== state.lastHeroId);
+    const pool = candidates.length > 0 ? candidates : items;
+    const randomIndex = Math.floor(Math.random() * pool.length);
+    const selected = pool[randomIndex];
+
+    state.lastHeroId = selected.id;
+    this.setHero(selected, true);
+  },
+
+  startHeroAutoRotation() {
+    if (state.heroInterval) clearInterval(state.heroInterval);
+
+    state.heroInterval = setInterval(() => {
+      // Don't rotate if modal is open or if user is searching or playing video
+      const modalOpen = !document.getElementById('movie-modal')?.classList.contains('hidden');
+      const playerOpen = !document.getElementById('player-overlay')?.classList.contains('hidden');
+      const searchActive = !document.getElementById('search-results')?.classList.contains('hidden');
+
+      if (!modalOpen && !playerOpen && !searchActive && state.catalogs.popular && state.catalogs.popular.length > 0) {
+        this.setRandomHero(state.catalogs.popular);
+      }
+    }, 12000); // Rotate every 12 seconds
+  },
   
-  setHero(meta) {
+  setHero(meta, animate = false) {
+    if (!meta) return;
     state.heroMeta = meta;
-    const heroSection = document.getElementById('hero-section');
+
     const heroBackdrop = document.getElementById('hero-backdrop');
+    const heroContent = document.querySelector('.hero-content');
     const heroTitle = document.getElementById('hero-title');
     const heroMeta = document.getElementById('hero-meta');
     const heroDescription = document.getElementById('hero-description');
     const heroTypeName = document.getElementById('hero-type-name');
 
-    if (heroTypeName) {
-      heroTypeName.textContent = state.currentType === 'movie' ? 'Filmes 🎬' : 'Séries 📺';
-    }
-    
-    if (heroBackdrop) {
+    const updateDOM = () => {
+      const itemType = meta.type || (state.currentType === 'series' ? 'series' : 'movie');
+      if (heroTypeName) {
+        heroTypeName.textContent = itemType === 'series' ? 'Série 📺' : 'Filme 🎬';
+      }
+      
+      if (heroBackdrop) {
         const bgUrl = getBackgroundUrl(meta);
         heroBackdrop.style.backgroundImage = `url('${bgUrl}')`;
-    }
-    if (heroTitle) heroTitle.textContent = meta.name;
-    if (heroMeta) {
-      const year = meta.year || meta.releaseInfo || '';
-      const rating = meta.imdbRating ? `<span class="rating">⭐ ${meta.imdbRating}</span>` : '';
-      const runtime = meta.runtime ? `⏱ ${meta.runtime}` : '';
-      heroMeta.innerHTML = [year, rating, runtime].filter(Boolean).join(' &nbsp;|&nbsp; ');
-    }
-    if (heroDescription) {
+      }
+      if (heroTitle) heroTitle.textContent = meta.name;
+      if (heroMeta) {
+        const year = meta.year || meta.releaseInfo || '';
+        const rating = meta.imdbRating ? `<span class="rating">⭐ ${meta.imdbRating}</span>` : '';
+        const runtime = meta.runtime ? `⏱ ${meta.runtime}` : '';
+        heroMeta.innerHTML = [year, rating, runtime].filter(Boolean).join(' &nbsp;|&nbsp; ');
+      }
+      if (heroDescription) {
         heroDescription.textContent = meta.description || 'Sem descrição disponível.';
+      }
+    };
+
+    if (animate && heroContent && heroBackdrop) {
+      heroContent.style.opacity = '0';
+      heroBackdrop.style.opacity = '0.3';
+      setTimeout(() => {
+        updateDOM();
+        heroContent.style.opacity = '1';
+        heroBackdrop.style.opacity = '1';
+      }, 350);
+    } else {
+      updateDOM();
+      if (heroContent) heroContent.style.opacity = '1';
+      if (heroBackdrop) heroBackdrop.style.opacity = '1';
     }
   },
   

@@ -239,6 +239,7 @@ html {
   left: 5%;
   max-width: 600px;
   z-index: 2;
+  transition: opacity 0.5s ease-in-out;
 }
 
 .hero-title {
