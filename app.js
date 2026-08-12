@@ -349,8 +349,13 @@ const API = {
   
   async fetchStreams(type, id, season = 1, episode = 1) {
     try {
-      const streamId = type === 'series' ? `${id}:${season}:${episode}` : id;
-      const cacheKey = `st_v6_${streamId}`;
+      const cleanId = (id || '').split(':')[0];
+      const realType = (type === 'all' || !type) 
+        ? (state.currentMeta?.type || (id?.includes(':') ? 'series' : 'movie')) 
+        : type;
+
+      const streamId = realType === 'series' ? `${cleanId}:${season}:${episode}` : cleanId;
+      const cacheKey = `st_v7_${streamId}`;
       const cached = Cache.get(cacheKey);
       if (cached && cached.length > 0) return cached;
 
@@ -359,7 +364,7 @@ const API = {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), timeoutMs);
         try {
-          const directUrl = `${baseUrl}/stream/${type}/${streamId}.json`;
+          const directUrl = `${baseUrl}/stream/${realType}/${streamId}.json`;
           const res = await fetch(directUrl, { 
             signal: controller.signal,
             headers: { 'Accept': 'application/json' }
@@ -546,8 +551,7 @@ const API = {
       });
 
       // Dedicated PT-BR Dubbed & Web Embed Players (WarezCDN, SuperFlix, EmbedFlix, MegaFlix, VidSrc, AutoEmbed, SmashyStream, 2Embed)
-      const cleanImdbId = (id || '').split(':')[0];
-      const isMovie = type === 'movie';
+      const isMovie = realType === 'movie';
 
       const warezLink = isMovie 
         ? `https://warezcdn.link/embed/filme/${cleanImdbId}?autoplay=1`
