@@ -721,6 +721,168 @@ const API = {
   }
 };
 
+// --- Subtitles Engine ---
+
+const Subtitles = {
+  cache: {},
+  activeCues: [],
+  currentLang: 'pob',
+
+  async fetchList(imdbId, type, season = 1, episode = 1, lang = 'pob') {
+    const cleanId = (imdbId || '').replace('tt', '').padStart(7, '0');
+    const cacheKey = `sub_${cleanId}_${type}_${season}_${episode}_${lang}`;
+    if (this.cache[cacheKey]) return this.cache[cacheKey];
+
+    let url = `https://rest.opensubtitles.org/search/imdbid-${cleanId}/sublanguageid-${lang}`;
+    if (type === 'series') {
+      url = `https://rest.opensubtitles.org/search/episode-${episode}/imdbid-${cleanId}/season-${season}/sublanguageid-${lang}`;
+    }
+
+    try {
+      const res = await fetch(url, { headers: { 'User-Agent': 'TemporaryUserAgent' } });
+      if (res.ok) {
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : [];
+        this.cache[cacheKey] = list;
+        return list;
+      }
+    } catch(e) {}
+    return [];
+  },
+
+  srtToVtt(srtText) {
+    return 'WEBVTT\n\n' + srtText
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
+      .replace(/(\d\d:\d\d:\d\d),(\d\d\d)/g, '$1.$2');
+  },
+
+  parseVttCues(vttText) {
+    const lines = vttText.split('\n');
+    const cues = [];
+    let currentCue = null;
+
+    const timeToSeconds = (tStr) => {
+      const parts = (tStr || '').trim().split(':');
+      if (parts.length === 3) {
+        const secsParts = parts[2].split('.');
+        return parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseInt(secsParts[0]) + (parseInt(secsParts[1] || '0') / 1000);
+      }
+      return 0;
+    };
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line.includes('-->')) {
+        const [start, end] = line.split('-->');
+        currentCue = {
+          start: timeToSeconds(start),
+          end: timeToSeconds(end),
+          text: ''
+        };
+      } else if (currentCue && line !== '' && !line.startsWith('WEBVTT') && isNaN(line)) {
+        currentCue.text += (currentCue.text ? '\n' : '') + line;
+      } else if (currentCue && line === '') {
+        cues.push(currentCue);
+        currentCue = null;
+      }
+    }
+    if (currentCue) cues.push(currentCue);
+    return cues;
+  },
+
+  async applySubtitles(lang, imdbId, type, season, episode) {
+    const overlay = document.getElementById('custom-subtitles-overlay');
+    const subText = document.getElementById('custom-subtitles-text');
+    const video = document.getElementById('video-player');
+
+    this.currentLang = lang;
+    this.activeCues = [];
+    if (subText) subText.textContent = '';
+    if (overlay) overlay.classList.add('hidden');
+
+    if (lang === 'off') {
+      if (video) {
+        Array.from(video.querySelectorAll('track')).forEach(t => t.remove());
+      }
+      return;
+    }
+
+    const subs = await this.fetchList(imdbId, type, season, episode, lang);
+    if (!subs || subs.length === 0) {
+      if (lang === 'pob') {
+        const enSubs = await this.fetchList(imdbId, type, season, episode, 'eng');
+        if (enSubs && enSubs.length > 0) return this.downloadAndAttach(enSubs[0], video, 'English');
+      }
+      return;
+    }
+
+    await this.downloadAndAttach(subs[0], video, lang === 'pob' ? 'Português (BR)' : lang === 'eng' ? 'English' : 'Español');
+  },
+
+  async downloadAndAttach(subObj, video, langName) {
+    if (!subObj || !subObj.SubDownloadLink) return;
+
+    try {
+      const dlUrl = subObj.SubDownloadLink;
+      const res = await fetch(dlUrl, { headers: { 'User-Agent': 'TemporaryUserAgent' } });
+      if (!res.ok) return;
+
+      let rawSrt = '';
+      if (typeof DecompressionStream !== 'undefined') {
+        const ds = new DecompressionStream('gzip');
+        const decompressedStream = res.body.pipeThrough(ds);
+        rawSrt = await new Response(decompressedStream).text();
+      } else {
+        rawSrt = await res.text();
+      }
+
+      if (!rawSrt || rawSrt.length === 0) return;
+
+      const vtt = this.srtToVtt(rawSrt);
+      this.activeCues = this.parseVttCues(vtt);
+
+      if (video) {
+        Array.from(video.querySelectorAll('track')).forEach(t => t.remove());
+        const blob = new Blob([vtt], { type: 'text/vtt' });
+        const blobUrl = URL.createObjectURL(blob);
+
+        const track = document.createElement('track');
+        track.kind = 'subtitles';
+        track.label = langName;
+        track.srclang = subObj.SubLanguageID || 'pt';
+        track.src = blobUrl;
+        track.default = true;
+
+        video.appendChild(track);
+        if (video.textTracks && video.textTracks[0]) {
+          video.textTracks[0].mode = 'showing';
+        }
+      }
+    } catch(e) {
+      console.error('Error applying subtitles:', e);
+    }
+  },
+
+  syncOverlay(currentTime) {
+    const overlay = document.getElementById('custom-subtitles-overlay');
+    const subText = document.getElementById('custom-subtitles-text');
+
+    if (this.currentLang === 'off' || !this.activeCues || this.activeCues.length === 0) {
+      if (overlay) overlay.classList.add('hidden');
+      return;
+    }
+
+    const currentCue = this.activeCues.find(c => currentTime >= c.start && currentTime <= c.end);
+    if (currentCue && currentCue.text) {
+      if (subText) subText.innerText = currentCue.text;
+      if (overlay) overlay.classList.remove('hidden');
+    } else {
+      if (overlay) overlay.classList.add('hidden');
+    }
+  }
+};
+
 // --- UI Module ---
 
 const UI = {
@@ -821,6 +983,23 @@ const UI = {
       homeLangSelect.addEventListener('change', (e) => {
         state.homeLang = e.target.value;
         this.updateLanguage();
+      });
+    }
+
+    // HUD Subtitle Selector
+    const hudSubSelect = document.getElementById('hud-subtitle-select');
+    if (hudSubSelect) {
+      hudSubSelect.addEventListener('change', (e) => {
+        const lang = e.target.value;
+        if (state.currentMeta) {
+          Subtitles.applySubtitles(
+            lang, 
+            state.currentMeta.id, 
+            state.currentType, 
+            state.currentSeason, 
+            state.currentEpisode
+          );
+        }
       });
     }
 
@@ -2011,12 +2190,9 @@ const UI = {
     const name = stream.name;
 
     // 🧲 Torrent / Magnet (Mico-Leão / Brazuca / Torrentio)
-    const infoHashOrMagnet = stream.infoHash || stream.magnetUrl;
-    if (infoHashOrMagnet) {
-      const magnetUrl = stream.magnetUrl || `magnet:?xt=urn:btih:${stream.infoHash}&dn=${encodeURIComponent(name)}`;
+    const magnetUrl = stream.magnetUrl || (stream.infoHash ? `magnet:?xt=urn:btih:${stream.infoHash}&dn=${encodeURIComponent(name)}` : null);
+    if (magnetUrl) {
       const escapedMagnet = magnetUrl.replace(/"/g, '&quot;');
-      const escapedMagnetJs = magnetUrl.replace(/'/g, "\\'");
-      const escapedTitle = name.replace(/'/g, "\\'");
       const isMico = name.includes('Mico-Leão');
       const isBrazuca = name.includes('Brazuca');
       const accentColor = isMico ? '#eab308' : isBrazuca ? '#f59e0b' : '#3b82f6';
@@ -2026,13 +2202,12 @@ const UI = {
         <div class="stream-item" style="border-left: 4px solid ${accentColor};">
           <div class="stream-info">
             <span class="stream-name" style="font-weight:700;">${name}</span>
-            <span class="stream-details" style="color:${accentColor}; font-weight:600;">${sourceBadge} • ${qualityDetails || 'Reproduzir via WebTorrent ou Client'}</span>
+            <span class="stream-details" style="color:${accentColor}; font-weight:600;">${sourceBadge} • ${qualityDetails || 'Abrir com BitTorrent/uTorrent'}</span>
           </div>
           <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-            <button class="stream-play-btn" style="background:${accentColor}; color:#000; font-weight:800;" onclick="UI.playTorrent('${escapedMagnetJs}', '${escapedTitle}')">▶ Assistir no Navegador</button>
-            <a href="${escapedMagnet}" class="stream-play-btn" style="background:rgba(255,255,255,0.1); border:1px solid ${accentColor}; color:white; font-weight:600; text-decoration:none;">🧲 Magnet App</a>
-            <button class="stream-play-btn" style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.2); color:white;"
-              onclick="navigator.clipboard.writeText('${escapedMagnetJs}').then(()=>this.textContent='✅ Copiado!').catch(()=>{})">📋 Copiar</button>
+            <a href="${escapedMagnet}" class="stream-play-btn" style="background:${accentColor}; color:#000; font-weight:700; text-decoration:none;">🧲 Abrir Magnet</a>
+            <button class="stream-play-btn" style="background:rgba(255,255,255,0.1); border:1px solid ${accentColor}; color:white;"
+              onclick="navigator.clipboard.writeText('${escapedMagnet.replace(/'/g, "\\'")}').then(()=>this.textContent='✅ Copiado!').catch(()=>{})">📋 Copiar</button>
           </div>
         </div>
       `;
@@ -2186,8 +2361,22 @@ const UI = {
       if (playerLoading) playerLoading.classList.add('hidden');
     }, 1500);
 
-    // Save progress as video plays
+    // Automatically fetch and load subtitles
+    if (state.currentMeta) {
+      const subSelect = document.getElementById('hud-subtitle-select');
+      const lang = subSelect ? subSelect.value : 'pob';
+      Subtitles.applySubtitles(
+        lang, 
+        state.currentMeta.id, 
+        state.currentType, 
+        state.currentSeason, 
+        state.currentEpisode
+      );
+    }
+
+    // Save progress & sync subtitles as video plays
     video.ontimeupdate = () => {
+      Subtitles.syncOverlay(video.currentTime);
       if (video.currentTime > 5 && state.currentMeta) {
         User.saveProgress(state.currentMeta.id, video.currentTime, video.duration, {
           title: title,

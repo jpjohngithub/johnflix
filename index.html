@@ -180,12 +180,66 @@
       </div>
     </div>
 
+    <!-- Secret Private Vault Modal -->
+    <div id="vault-modal" class="modal hidden">
+      <div class="modal-overlay" onclick="UI.closeVaultModal()"></div>
+      <div class="modal-content" style="max-width: 650px;">
+        <button class="modal-close" onclick="UI.closeVaultModal()">✕ Fechar</button>
+        <div style="padding: 2.5rem 1.5rem 1.5rem; text-align: center;">
+          <h2 style="font-size: 1.8rem; font-weight: 800; color: var(--accent); margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 10px;">
+            🔒 Cofre Privado Pessoal
+          </h2>
+          <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.5rem;">
+            Guarde e assista seus vídeos/links pessoais protegidos por senha.
+          </p>
+
+          <!-- Auth Gate -->
+          <div id="vault-auth-section" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: var(--radius); padding: 2rem 1.5rem; max-width: 400px; margin: 0 auto;">
+            <p style="font-weight: 600; margin-bottom: 1rem; color: white;">Digite a Senha do Cofre:</p>
+            <div style="display: flex; gap: 8px; margin-bottom: 1rem;">
+              <input type="password" id="vault-pin-input" placeholder="Senha do Cofre..." style="flex:1; padding: 12px 14px; background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: var(--radius-sm); color: white; font-size: 1rem; text-align: center;">
+              <button class="btn btn-primary" onclick="UI.unlockVault()" style="padding: 12px 20px;">Entrar</button>
+            </div>
+            <p id="vault-auth-error" style="color: var(--danger); font-size: 0.85rem; display: none;">Senha incorreta. Tente novamente.</p>
+          </div>
+
+          <!-- Unlocked Content & Add Form -->
+          <div id="vault-content-section" class="hidden" style="text-align: left;">
+            <div style="background: rgba(139, 92, 246, 0.1); border: 1px solid var(--accent); border-radius: var(--radius); padding: 1.2rem; margin-bottom: 1.5rem;">
+              <h3 style="font-size: 1rem; font-weight: 700; color: white; margin-bottom: 0.8rem;">➕ Adicionar Novo Vídeo / Link Privado</h3>
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <input type="text" id="vault-title-input" placeholder="Título do Vídeo (ex: Meu Vídeo Caseiro)" style="padding: 10px 12px; background: rgba(0,0,0,0.5); border: 1px solid var(--border); border-radius: var(--radius-sm); color: white; font-size: 0.9rem;">
+                <input type="url" id="vault-url-input" placeholder="Link do Vídeo (MP4, HLS/m3u8, Embed ou Magnet)" style="padding: 10px 12px; background: rgba(0,0,0,0.5); border: 1px solid var(--border); border-radius: var(--radius-sm); color: white; font-size: 0.9rem;">
+                <input type="url" id="vault-poster-input" placeholder="Link da Capa/Imagem (Opcional)" style="padding: 10px 12px; background: rgba(0,0,0,0.5); border: 1px solid var(--border); border-radius: var(--radius-sm); color: white; font-size: 0.9rem;">
+                <button class="btn btn-primary" onclick="UI.addVaultItem()" style="padding: 10px 16px; align-self: flex-end; font-weight: 700;">💾 Salvar no Cofre</button>
+              </div>
+            </div>
+
+            <h3 style="font-size: 1.1rem; font-weight: 700; color: white; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between;">
+              <span>📁 Meus Conteúdos Salvos</span>
+              <button class="btn btn-secondary" onclick="UI.lockVault()" style="font-size: 0.75rem; padding: 4px 10px; border-radius: 6px;">🔒 Bloquear Cofre</button>
+            </h3>
+
+            <div id="vault-items-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; max-height: 320px; overflow-y: auto; padding-right: 4px;">
+              <!-- Dynamic Vault Cards -->
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
     <!-- Video Player Overlay -->
     <div id="player-overlay" class="player-overlay hidden">
       <div class="player-container" id="player-container">
         <iframe id="iframe-player" class="hidden" allowfullscreen allow="autoplay; fullscreen; encrypted-media; picture-in-picture; accelerometer; gyroscope" referrerpolicy="no-referrer" frameborder="0" style="width:100%; height:100%; border:none; position:absolute; inset:0; z-index:1;"></iframe>
         <video id="video-player" controls autoplay></video>
         
+        <!-- Custom Subtitles Display Overlay -->
+        <div id="custom-subtitles-overlay" class="custom-subtitles-overlay hidden">
+          <span id="custom-subtitles-text"></span>
+        </div>
+
         <!-- Custom Player HUD Controls -->
         <div id="player-hud" class="player-hud">
           <!-- Top Bar -->
@@ -252,6 +306,17 @@
               </div>
 
               <div class="hud-right-controls">
+                <!-- Subtitle Selector -->
+                <div class="hud-subtitle-group" id="hud-subtitle-group" style="display:flex; align-items:center; gap:6px;">
+                  <label for="hud-subtitle-select" style="font-size:0.75rem; color:#fef08a; font-weight:700;">💬 Legendas:</label>
+                  <select id="hud-subtitle-select" class="hud-select" style="max-width:145px; font-size:0.8rem; background:rgba(0,0,0,0.85); border:1px solid #eab308; color:#fef08a; border-radius:8px; padding:4px 8px; font-weight:700; cursor:pointer;">
+                    <option value="pob" selected>🇧🇷 Português</option>
+                    <option value="eng">🇺🇸 English</option>
+                    <option value="spa">🇪🇸 Español</option>
+                    <option value="off">🚫 Desativado</option>
+                  </select>
+                </div>
+
                 <!-- Speed Selector -->
                 <div class="hud-speed-group">
                   <label for="hud-speed-select">Velocidade:</label>
