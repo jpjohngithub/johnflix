@@ -46,7 +46,7 @@ const Cache = {
       const item = localStorage.getItem('jf_cache_' + key);
       if (!item) return null;
       const parsed = JSON.parse(item);
-      if (Date.now() - parsed.time < 30 * 60 * 1000) {
+      if (Date.now() - parsed.time < 15 * 60 * 1000) {
         return parsed.data;
       }
     } catch(e) {}
