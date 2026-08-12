@@ -1887,6 +1887,38 @@ iframe:-webkit-full-screen {
   border: none !important;
 }
 
+/* --- Fullscreen Responsive Interface Scaling --- */
+:fullscreen .player-hud,
+:-webkit-full-screen .player-hud {
+  padding: clamp(0.8rem, 2vw, 1.8rem) !important;
+}
+
+:fullscreen .hud-top,
+:-webkit-full-screen .hud-top {
+  padding: clamp(0.5rem, 1.5vw, 1.2rem) clamp(1rem, 2.5vw, 2rem) !important;
+}
+
+:fullscreen .hud-title,
+:-webkit-full-screen .hud-title {
+  font-size: clamp(1rem, 1.8vw, 1.5rem) !important;
+}
+
+:fullscreen .hud-btn,
+:-webkit-full-screen .hud-btn {
+  transform: scale(1.1);
+}
+
+:fullscreen .custom-subtitles-overlay,
+:-webkit-full-screen .custom-subtitles-overlay {
+  bottom: clamp(70px, 9vh, 120px) !important;
+}
+
+:fullscreen #custom-subtitles-text,
+:-webkit-full-screen #custom-subtitles-text {
+  font-size: clamp(1.2rem, 2.4vw, 2rem) !important;
+  padding: 10px 24px !important;
+}
+
 
 
 

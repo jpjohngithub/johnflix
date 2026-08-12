@@ -1342,15 +1342,31 @@ const UI = {
       });
     }
 
-    // Fullscreen Toggle
+    // Fullscreen Toggle & Auto-Resize Handler
     if (fullscreenBtn) {
       fullscreenBtn.addEventListener('click', () => {
         const container = document.getElementById('player-overlay') || document.documentElement;
-        if (!document.fullscreenElement) {
-          container.requestFullscreen().catch(err => console.warn('Fullscreen error:', err));
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+          if (container.requestFullscreen) {
+            container.requestFullscreen().catch(err => console.warn('Fullscreen error:', err));
+          } else if (container.webkitRequestFullscreen) {
+            container.webkitRequestFullscreen();
+          }
         } else {
-          document.exitFullscreen().catch(err => console.warn('Exit Fullscreen error:', err));
+          if (document.exitFullscreen) {
+            document.exitFullscreen().catch(err => console.warn('Exit Fullscreen error:', err));
+          } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+          }
         }
+      });
+
+      // Handle screen resize & orientation change during Fullscreen
+      document.addEventListener('fullscreenchange', () => {
+        if (video) Subtitles.syncOverlay(video.currentTime);
+      });
+      document.addEventListener('webkitfullscreenchange', () => {
+        if (video) Subtitles.syncOverlay(video.currentTime);
       });
     }
 
