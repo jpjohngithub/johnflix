@@ -2011,9 +2011,12 @@ const UI = {
     const name = stream.name;
 
     // 🧲 Torrent / Magnet (Mico-Leão / Brazuca / Torrentio)
-    const magnetUrl = stream.magnetUrl || (stream.infoHash ? `magnet:?xt=urn:btih:${stream.infoHash}&dn=${encodeURIComponent(name)}` : null);
-    if (magnetUrl) {
+    const infoHashOrMagnet = stream.infoHash || stream.magnetUrl;
+    if (infoHashOrMagnet) {
+      const magnetUrl = stream.magnetUrl || `magnet:?xt=urn:btih:${stream.infoHash}&dn=${encodeURIComponent(name)}`;
       const escapedMagnet = magnetUrl.replace(/"/g, '&quot;');
+      const escapedMagnetJs = magnetUrl.replace(/'/g, "\\'");
+      const escapedTitle = name.replace(/'/g, "\\'");
       const isMico = name.includes('Mico-Leão');
       const isBrazuca = name.includes('Brazuca');
       const accentColor = isMico ? '#eab308' : isBrazuca ? '#f59e0b' : '#3b82f6';
@@ -2023,12 +2026,13 @@ const UI = {
         <div class="stream-item" style="border-left: 4px solid ${accentColor};">
           <div class="stream-info">
             <span class="stream-name" style="font-weight:700;">${name}</span>
-            <span class="stream-details" style="color:${accentColor}; font-weight:600;">${sourceBadge} • ${qualityDetails || 'Abrir com BitTorrent/uTorrent'}</span>
+            <span class="stream-details" style="color:${accentColor}; font-weight:600;">${sourceBadge} • ${qualityDetails || 'Reproduzir via WebTorrent ou Client'}</span>
           </div>
           <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-            <a href="${escapedMagnet}" class="stream-play-btn" style="background:${accentColor}; color:#000; font-weight:700; text-decoration:none;">🧲 Abrir Magnet</a>
-            <button class="stream-play-btn" style="background:rgba(255,255,255,0.1); border:1px solid ${accentColor}; color:white;"
-              onclick="navigator.clipboard.writeText('${escapedMagnet.replace(/'/g, "\\'")}').then(()=>this.textContent='✅ Copiado!').catch(()=>{})">📋 Copiar</button>
+            <button class="stream-play-btn" style="background:${accentColor}; color:#000; font-weight:800;" onclick="UI.playTorrent('${escapedMagnetJs}', '${escapedTitle}')">▶ Assistir no Navegador</button>
+            <a href="${escapedMagnet}" class="stream-play-btn" style="background:rgba(255,255,255,0.1); border:1px solid ${accentColor}; color:white; font-weight:600; text-decoration:none;">🧲 Magnet App</a>
+            <button class="stream-play-btn" style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.2); color:white;"
+              onclick="navigator.clipboard.writeText('${escapedMagnetJs}').then(()=>this.textContent='✅ Copiado!').catch(()=>{})">📋 Copiar</button>
           </div>
         </div>
       `;
