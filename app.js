@@ -1890,28 +1890,53 @@ const UI = {
     const streamsList = document.getElementById('streams-list');
     if (!streamsList) return;
 
-    const dubbed = streams.filter(s => s.category === 'dubbed');
-    const web = streams.filter(s => s.category === 'web');
-    const torrents = streams.filter(s => s.category === 'torrent');
+    const fenix = streams.filter(s => s.name.includes('FenixFlix') || (s.title && s.title.includes('FenixFlix')));
+    const frost = streams.filter(s => s.name.includes('FrostStream') || (s.title && s.title.includes('FrostStream')));
+    const brazuca = streams.filter(s => s.name.includes('Brazuca') || (s.title && s.title.includes('Brazuca')));
+    const torrentio = streams.filter(s => s.name.includes('Torrentio') || (s.title && s.title.includes('Torrentio')));
+    
+    // Web embeds (WarezCDN, SuperFlix, EmbedFlix, PrimeCine, FlixAPI, MegaFlix, VidSrc, etc.)
+    const web = streams.filter(s => s.embedUrl && !fenix.includes(s) && !frost.includes(s));
+    
+    // Remaining unclassified
+    const other = streams.filter(s => !fenix.includes(s) && !frost.includes(s) && !brazuca.includes(s) && !torrentio.includes(s) && !web.includes(s));
 
     let html = '';
 
-    if (dubbed.length > 0) {
-      html += '<div style="color:#22c55e; font-weight:800; font-size:1rem; margin:1rem 0 0.5rem; display:flex; align-items:center; gap:6px;">'
-        + '<span>🟢</span> FONTES DUBLADAS PT-BR (ÁUDIO BRASIL)</div>';
-      html += dubbed.map(stream => this.createStreamItem(stream)).join('');
+    if (fenix.length > 0) {
+      html += '<div style="color:#ef4444; font-weight:800; font-size:1.05rem; margin:1rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(239,68,68,0.1); padding:8px 14px; border-radius:8px; border-left:4px solid #ef4444;">'
+        + '<span>🔥</span> FENIXFLIX (STREAMS DIRETO MP4 DUBLADO PT-BR)</div>';
+      html += fenix.map(stream => this.createStreamItem(stream)).join('');
+    }
+
+    if (frost.length > 0) {
+      html += '<div style="color:#06b6d4; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(6,182,212,0.1); padding:8px 14px; border-radius:8px; border-left:4px solid #06b6d4;">'
+        + '<span>❄️</span> FROSTSTREAM (STREAMS IPTV DIRETO REDEFLIX / CDMOVIES)</div>';
+      html += frost.map(stream => this.createStreamItem(stream)).join('');
+    }
+
+    if (brazuca.length > 0) {
+      html += '<div style="color:#f59e0b; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(245,158,11,0.1); padding:8px 14px; border-radius:8px; border-left:4px solid #f59e0b;">'
+        + '<span>🧲</span> BRAZUCA TORRENTS (LINKS MAGNÉTICOS DUBLADOS PT-BR)</div>';
+      html += brazuca.map(stream => this.createStreamItem(stream)).join('');
     }
 
     if (web.length > 0) {
-      html += '<div style="color:#3b82f6; font-weight:800; font-size:1rem; margin:1.8rem 0 0.5rem; display:flex; align-items:center; gap:6px;">'
-        + '<span>🔵</span> PLAYERS WEB HD (SERVIDORES WEB)</div>';
+      html += '<div style="color:#8b5cf6; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(139,92,246,0.1); padding:8px 14px; border-radius:8px; border-left:4px solid #8b5cf6;">'
+        + '<span>🌐</span> PLAYERS WEB HD (WAREZCDN, SUPERFLIX, EMBEDFLIX, PRIMECINE)</div>';
       html += web.map(stream => this.createStreamItem(stream)).join('');
     }
 
-    if (torrents.length > 0) {
-      html += '<div style="color:#f59e0b; font-weight:800; font-size:1rem; margin:1.8rem 0 0.5rem; display:flex; align-items:center; gap:6px;">'
-        + '<span>🧲</span> BRAZUCA TORRENTS PT-BR (ABRIR COM CLIENTE TORRENT)</div>';
-      html += torrents.map(stream => this.createStreamItem(stream)).join('');
+    if (torrentio.length > 0) {
+      html += '<div style="color:#3b82f6; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(59,130,246,0.1); padding:8px 14px; border-radius:8px; border-left:4px solid #3b82f6;">'
+        + '<span>⚡</span> TORRENTIO (BACKUP TORRENTS HIGH SEEDS)</div>';
+      html += torrentio.map(stream => this.createStreamItem(stream)).join('');
+    }
+
+    if (other.length > 0) {
+      html += '<div style="color:#a0a0b0; font-weight:800; font-size:1rem; margin:1.5rem 0 0.5rem;">'
+        + '<span>🎬</span> OUTRAS FONTES</div>';
+      html += other.map(stream => this.createStreamItem(stream)).join('');
     }
 
     if (html === '') {
@@ -1926,58 +1951,64 @@ const UI = {
     const qualityDetails = detailRaw.replace(/\n/g, ' • ').slice(0, 120);
     const name = stream.name;
 
-    // 🧲 Brazuca Torrent — show magnet link with copy button
+    // 🧲 Torrent / Magnet (Brazuca / Torrentio)
     if (stream.magnetUrl) {
       const escapedMagnet = stream.magnetUrl.replace(/"/g, '&quot;');
-      const escapedName = name.replace(/'/g, "\\'");
+      const isBrazuca = name.includes('Brazuca');
+      const accentColor = isBrazuca ? '#f59e0b' : '#3b82f6';
+      const sourceBadge = isBrazuca ? '🧲 Brazuca Torrents' : '⚡ Torrentio';
+
       return `
-        <div class="stream-item" style="border-left: 3px solid #f59e0b;">
+        <div class="stream-item" style="border-left: 4px solid ${accentColor};">
           <div class="stream-info">
-            <span class="stream-name">${name}</span>
-            <span class="stream-details" style="color:#f59e0b;">${qualityDetails || '🧲 Abrir com cliente torrent (uTorrent, BitTorrent, qBittorrent)'}</span>
+            <span class="stream-name" style="font-weight:700;">${name}</span>
+            <span class="stream-details" style="color:${accentColor};">${sourceBadge} • ${qualityDetails || 'Abrir com BitTorrent/uTorrent'}</span>
           </div>
           <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-            <a href="${escapedMagnet}" class="stream-play-btn" style="background:#f59e0b; color:#000; font-weight:700; text-decoration:none;">🧲 Abrir Magnet</a>
-            <button class="stream-play-btn" style="background:rgba(245,158,11,0.2); border:1px solid #f59e0b; color:#f59e0b;"
-              onclick="navigator.clipboard.writeText('${escapedMagnet.replace(/'/g, "\\'").slice(0,200)}').then(()=>this.textContent='✅ Copiado!').catch(()=>{})">📋 Copiar Link</button>
+            <a href="${escapedMagnet}" class="stream-play-btn" style="background:${accentColor}; color:#000; font-weight:700; text-decoration:none;">🧲 Abrir Magnet</a>
+            <button class="stream-play-btn" style="background:rgba(255,255,255,0.1); border:1px solid ${accentColor}; color:white;"
+              onclick="navigator.clipboard.writeText('${escapedMagnet.replace(/'/g, "\\'").slice(0,200)}').then(()=>this.textContent='✅ Copiado!').catch(()=>{})">📋 Copiar</button>
           </div>
         </div>
       `;
     }
 
-    // 🎬 FenixFlix / FrostStream — direct MP4/IPTV stream URL
+    // 🎬 Direct HTTP MP4 / IPTV Video Streams (FenixFlix / FrostStream)
     if (stream.url) {
       const escapedUrl = stream.url.replace(/'/g, "\\'");
       const escapedTitle = name.replace(/'/g, "\\'");
-      const borderColor = stream.isDub ? '#22c55e' : '#3b82f6';
-      const sourceLabel = name.includes('FenixFlix') ? '🔥 FenixFlix' : name.includes('FrostStream') ? '❄️ FrostStream' : '🎬 Stream Direto';
+      const isFenix = name.includes('FenixFlix');
+      const isFrost = name.includes('FrostStream');
+      const accentColor = isFenix ? '#ef4444' : isFrost ? '#06b6d4' : '#22c55e';
+      const sourceBadge = isFenix ? '🔥 FenixFlix MP4' : isFrost ? '❄️ FrostStream IPTV' : '🎬 Stream Direto';
+
       return `
-        <div class="stream-item" style="border-left: 3px solid ${borderColor};">
+        <div class="stream-item" style="border-left: 4px solid ${accentColor};">
           <div class="stream-info">
-            <span class="stream-name">${name}</span>
-            <span class="stream-details">${sourceLabel} • ${qualityDetails}</span>
+            <span class="stream-name" style="font-weight:700;">${name}</span>
+            <span class="stream-details" style="color:${accentColor}; font-weight:600;">${sourceBadge} • ${qualityDetails}</span>
           </div>
           <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-            <button class="stream-play-btn" onclick="UI.playStream('${escapedUrl}', '${escapedTitle}')">▶ Assistir</button>
+            <button class="stream-play-btn" style="background:${accentColor}; color:#fff;" onclick="UI.playStream('${escapedUrl}', '${escapedTitle}')">▶ Assistir Agora</button>
             <a href="${stream.url}" target="_blank" rel="noopener" class="stream-play-btn" style="background:rgba(255,255,255,0.1); text-decoration:none;">🔗 Nova Aba</a>
           </div>
         </div>
       `;
     }
 
-    // 🖥️ Embed players (WarezCDN, SuperFlix, VidSrc, etc.)
+    // 🖥️ Web Embed Players (WarezCDN, SuperFlix, EmbedFlix, PrimeCine, FlixAPI, etc.)
     if (stream.embedUrl) {
       const escapedEmbed = stream.embedUrl.replace(/'/g, "\\'");
       const escapedTitle = name.replace(/'/g, "\\'");
       const borderColor = stream.isDub ? '#8b5cf6' : '#6366f1';
       return `
-        <div class="stream-item" style="border-left: 3px solid ${borderColor};">
+        <div class="stream-item" style="border-left: 4px solid ${borderColor};">
           <div class="stream-info">
-            <span class="stream-name">${name}</span>
+            <span class="stream-name" style="font-weight:700;">${name}</span>
             <span class="stream-details">${qualityDetails}</span>
           </div>
           <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-            <button class="stream-play-btn" onclick="UI.playIframe('${escapedEmbed}', '${escapedTitle}')">▶ Assistir</button>
+            <button class="stream-play-btn" style="background:${borderColor}; color:#fff;" onclick="UI.playIframe('${escapedEmbed}', '${escapedTitle}')">▶ Assistir</button>
             <a href="${stream.embedUrl}" target="_blank" rel="noopener" class="stream-play-btn" style="background:rgba(255,255,255,0.1); text-decoration:none;">🔗 Nova Aba</a>
           </div>
         </div>
