@@ -2452,8 +2452,18 @@ const UI = {
     if (playerTitle) playerTitle.textContent = title;
     if (hudTitle) hudTitle.textContent = title;
     
+    iframe.removeAttribute('sandbox');
     iframe.setAttribute('referrerpolicy', 'no-referrer');
-    iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock allow-downloads');
+    
+    // JS Navigation Shield: trap window location hijack attempts & popups during player playback
+    if (!window.rawWindowOpen) window.rawWindowOpen = window.open;
+    window.open = function(url, target, features) {
+      if (url && (url.includes('http') || url.startsWith('//'))) {
+        console.log('Intercepted popup redirect attempt:', url);
+        return null;
+      }
+      return window.rawWindowOpen ? window.rawWindowOpen(url, target, features) : null;
+    };
     
     let finalUrl = embedUrl;
     if (state.currentMeta) {
@@ -2734,6 +2744,7 @@ const UI = {
       window.currentTorrent = null;
     }
     if (iframe) {
+      iframe.removeAttribute('sandbox');
       iframe.src = 'about:blank';
       iframe.classList.add('hidden');
     }
@@ -2741,6 +2752,10 @@ const UI = {
       video.pause();
       video.src = '';
       video.classList.remove('hidden');
+    }
+
+    if (window.rawWindowOpen) {
+      window.open = window.rawWindowOpen;
     }
     
     // Refresh Continue Watching carousel
