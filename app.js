@@ -275,9 +275,33 @@ const API = {
   async fetchCatalog(type, catalogId, extra = {}) {
     try {
       let url = '';
-      let genreParam = extra.genre;
-      if (genreParam === 'Anime') genreParam = 'Animation';
-      if (genreParam === 'Dorama') genreParam = 'Drama';
+      const genreParam = extra.genre;
+
+      // Handle custom Anime genre query
+      if (genreParam === 'Anime') {
+        const terms = ['naruto', 'attack on titan', 'one piece', 'demon slayer', 'jujutsu kaisen', 'solo leveling', 'my hero academia', 'dragon ball', 'death note', 'chainsaw man', 'bleach', 'hunter x hunter', 'spy x family', 'tokyo ghoul'];
+        const results = await Promise.all(terms.slice(0, 8).map(q => 
+          fetchWithTimeout(`https://v3-cinemeta.strem.io/catalog/${type === 'movie' ? 'movie' : 'series'}/top/search=${encodeURIComponent(q)}.json`)
+            .then(r => r.json())
+            .then(d => (d.metas || []))
+            .catch(() => [])
+        ));
+        const merged = results.flat().filter((item, idx, self) => self.findIndex(t => t.id === item.id) === idx);
+        if (merged.length > 0) return merged;
+      }
+
+      // Handle custom Dorama / K-Drama genre query
+      if (genreParam === 'Dorama') {
+        const terms = ['squid game', 'all of us are dead', 'crash landing on you', 'the glory', 'vincenzo', 'sweet home', 'kingdom', 'extraordinary attorney woo', 'business proposal', 'true beauty', 'goblin', 'itaewon class'];
+        const results = await Promise.all(terms.slice(0, 8).map(q => 
+          fetchWithTimeout(`https://v3-cinemeta.strem.io/catalog/${type === 'movie' ? 'movie' : 'series'}/top/search=${encodeURIComponent(q)}.json`)
+            .then(r => r.json())
+            .then(d => (d.metas || []))
+            .catch(() => [])
+        ));
+        const merged = results.flat().filter((item, idx, self) => self.findIndex(t => t.id === item.id) === idx);
+        if (merged.length > 0) return merged;
+      }
 
       if (extra.search) {
         url = `https://v3-cinemeta.strem.io/catalog/${type}/top/search=${encodeURIComponent(extra.search)}.json`;
@@ -1447,7 +1471,7 @@ const UI = {
       const cacheKey = `cat_${state.currentType}_${state.currentGenre || 'all'}`;
       const cached = Cache.get(cacheKey);
       
-      if (cached && cached.popular && cached.popular.length > 0) {
+      if (!state.currentGenre && cached && cached.popular && cached.popular.length > 0) {
         state.catalogs.popular = cached.popular;
         state.catalogs.featured = cached.featured || [];
         this.setRandomHero(cached.popular);
