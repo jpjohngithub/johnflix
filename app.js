@@ -555,15 +555,29 @@ const API = {
         });
       });
 
-      // Guaranteed FrostStream 4K / 1080P Player
-      const frostFallbackLink = isMovie 
+      // Option 1: FrostStream Diamond 4K / 1080P (VidSrc.in Ultra-Fast Engine)
+      const frostInLink = isMovie 
+        ? `https://vidsrc.in/embed/movie/${cleanId}`
+        : `https://vidsrc.in/embed/tv/${cleanId}/${season}/${episode}`;
+
+      streamsList.push({
+        name: '✨ ❄️ FrostStream Diamond 4K (Servidor VidSrc.in Otimizado)',
+        title: '❄️ FrostStream Diamond • Servidor VidSrc.in 4K Ultra HD / 1080p Ultra-Rápido',
+        embedUrl: frostInLink,
+        isDub: true,
+        category: 'dubbed',
+        score: 45
+      });
+
+      // Option 2: FrostStream Dourado 1080P (VidSrc.pm Ultra-Fast Engine)
+      const frostPmLink = isMovie 
         ? `https://vidsrc.pm/embed/movie/${cleanId}`
         : `https://vidsrc.pm/embed/tv/${cleanId}/${season}/${episode}`;
 
       streamsList.push({
-        name: '✨ ❄️ FrostStream 4K / 1080P (Áudio Original & Dublado)',
-        title: '❄️ FrostStream • Servidor 4K Ultra HD / 1080p Otimizado',
-        embedUrl: frostFallbackLink,
+        name: '❄️ FrostStream Dourado 1080P (Servidor VidSrc.pm Otimizado)',
+        title: '❄️ FrostStream Dourado • Servidor VidSrc.pm 1080p Full HD',
+        embedUrl: frostPmLink,
         isDub: true,
         category: 'dubbed',
         score: 40
@@ -2382,8 +2396,8 @@ const UI = {
 
     const cleanId = (state.currentMeta?.id || '').split(':')[0].replace('tt', '');
     const fallbackEmbedUrl = state.currentType === 'series'
-      ? `https://vidsrc.pm/embed/tv/${cleanId}/${state.currentSeason}/${state.currentEpisode}`
-      : `https://vidsrc.pm/embed/movie/${cleanId}`;
+      ? `https://vidsrc.in/embed/tv/${cleanId}/${state.currentSeason}/${state.currentEpisode}`
+      : `https://vidsrc.in/embed/movie/${cleanId}`;
 
     let resolved = false;
 
