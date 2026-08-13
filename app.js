@@ -2306,18 +2306,14 @@ const UI = {
   },
   
   createStreamItem(stream) {
-    const detailRaw = (stream.title || stream.description || '');
-    const qualityDetails = detailRaw.replace(/\n/g, ' • ').slice(0, 120);
     const name = stream.name;
 
-    // 🧲 Torrent / Magnet (Mico-Leão / Brazuca / Torrentio / FrostStream)
+    // 🧲 Torrent / Magnet (Brazuca / FrostStream)
     const magnetUrl = stream.magnetUrl || (stream.infoHash ? `magnet:?xt=urn:btih:${stream.infoHash}&dn=${encodeURIComponent(name)}` : null);
     if (magnetUrl) {
       const escapedMagnet = magnetUrl.replace(/"/g, '&quot;');
-      const isMico = name.includes('Mico-Leão');
       const isBrazuca = name.includes('Brazuca');
-      const accentColor = isMico ? '#eab308' : isBrazuca ? '#f59e0b' : '#3b82f6';
-      const sourceBadge = isMico ? '🦁 Mico-Leão Dublado' : isBrazuca ? '🧲 Brazuca Torrents' : '⚡ Torrentio';
+      const accentColor = isBrazuca ? '#f59e0b' : '#3b82f6';
       const webEmbedUrl = `https://webtor.io/show?magnet=${encodeURIComponent(magnetUrl)}`;
       const instantExternalUrl = stream.infoHash ? `https://instant.io/#${stream.infoHash}` : webEmbedUrl;
 
@@ -2325,7 +2321,6 @@ const UI = {
         <div class="stream-item" style="border-left: 4px solid ${accentColor};">
           <div class="stream-info">
             <span class="stream-name" style="font-weight:700;">${name}</span>
-            <span class="stream-details" style="color:${accentColor}; font-weight:600;">${sourceBadge} • ${qualityDetails || 'Abrir com App Stremio / Torrent ou Web Player'}</span>
           </div>
           <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
             <a href="${escapedMagnet}" class="stream-play-btn" style="background:${accentColor}; color:#000; font-weight:800; text-decoration:none;">🧲 Abrir no App Stremio</a>
@@ -2346,13 +2341,11 @@ const UI = {
       const isFenix = name.includes('FenixFlix');
       const isFrost = name.includes('FrostStream');
       const accentColor = isFenix ? '#ef4444' : isFrost ? '#06b6d4' : '#22c55e';
-      const sourceBadge = isFenix ? '🔥 FenixFlix MP4' : isFrost ? '❄️ FrostStream IPTV' : '🎬 Stream Direto';
 
       return `
         <div class="stream-item" style="border-left: 4px solid ${accentColor};">
           <div class="stream-info">
             <span class="stream-name" style="font-weight:700;">${name}</span>
-            <span class="stream-details" style="color:${accentColor}; font-weight:600;">${sourceBadge} • ${qualityDetails}</span>
           </div>
           <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
             <button class="stream-play-btn" style="background:${accentColor}; color:#fff;" onclick="UI.playStream('${escapedUrl}', '${escapedTitle}')">▶ Assistir Agora</button>
@@ -2371,7 +2364,6 @@ const UI = {
         <div class="stream-item" style="border-left: 4px solid ${borderColor};">
           <div class="stream-info">
             <span class="stream-name" style="font-weight:700;">${name}</span>
-            <span class="stream-details">${qualityDetails}</span>
           </div>
           <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
             <button class="stream-play-btn" style="background:${borderColor}; color:#fff;" onclick="UI.playIframe('${escapedEmbed}', '${escapedTitle}')">▶ Assistir</button>
