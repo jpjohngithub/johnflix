@@ -44,7 +44,7 @@ function fetchWithTimeout(url, options = {}, timeoutMs = 3500) {
 const Cache = {
   get(key) {
     try {
-      const item = localStorage.getItem('jf_cache_v11_' + key);
+      const item = localStorage.getItem('jf_cache_v12_' + key);
       if (!item) return null;
       const parsed = JSON.parse(item);
       if (Date.now() - parsed.time < 15 * 60 * 1000) {
@@ -56,7 +56,7 @@ const Cache = {
   set(key, data) {
     try {
       if (!data) return;
-      localStorage.setItem('jf_cache_v11_' + key, JSON.stringify({
+      localStorage.setItem('jf_cache_v12_' + key, JSON.stringify({
         time: Date.now(),
         data: data
       }));
@@ -428,23 +428,23 @@ const API = {
 
       const instantWebStreams = [
         {
-          name: '✨ 4K Ultra HD 2160p — VidSrc 4K (Áudio Original / Inglês 🇺🇸)',
-          title: 'Servidor 4K Ultra HD 2160p Inglês / Áudio Original',
+          name: '✨ VidSrc Ultra (Áudio Original / Inglês 🇺🇸)',
+          title: 'Servidor Inglês / Áudio Original',
           embedUrl: vidsrc4kUrl,
           isDub: false,
           category: 'web',
           score: 50
         },
         {
-          name: '🌐 Player Web English 4K (VidSrc.in)',
-          title: 'Servidor English Original Audio HD 1080p / 4K',
+          name: '🌐 Player Web VidSrc (English 🇺🇸)',
+          title: 'Servidor English Original Audio',
           embedUrl: vidsrcEnUrl,
           isDub: false,
           category: 'web',
           score: 35
         },
         {
-          name: '🇧🇷 Dublado / Dual — VidSrc PT-BR (Player Web HD)',
+          name: '🇧🇷 VidSrc PT-BR (Dublado / Dual)',
           title: 'Servidor PT-BR / Dual Áudio',
           embedUrl: vidsrcDubUrl,
           isDub: true,
@@ -511,7 +511,7 @@ const API = {
         const qualScore = is4k ? 45 : quality === '1080P' ? 25 : quality === '720P' ? 15 : 5;
 
         streamsList.push({
-          name: `${is4k ? '✨ 4K Ultra HD' : isDub ? '🇧🇷 Dublado PT-BR' : '🇺🇸 Inglês / Dual'} — FenixFlix ${quality}`,
+          name: `${isDub ? '🇧🇷 Dublado PT-BR' : '🇺🇸 Inglês / Dual'} — FenixFlix`,
           title: `🔥 FenixFlix • ${descRaw.slice(0, 80)}`,
           url: s.url,
           isDub: isDub,
@@ -521,31 +521,31 @@ const API = {
       });
 
       // ══════════════════════════════════════════════
-      // ❄️ FrostStream — Exclusivos Platinum 4K e Titanium 1080P
+      // ❄️ FrostStream — Exclusivos Platinum e Titanium
       // ══════════════════════════════════════════════
       
-      // 1. FrostStream Platinum 4K Dublado PT-BR
+      // 1. FrostStream Platinum Dublado PT-BR
       const frostPlatinumLink = isMovie 
         ? `https://vidsrc.me/embed/movie?imdb=${cleanId}&ds_lang=pt` 
         : `https://vidsrc.me/embed/tv?imdb=${cleanId}&season=${season}&episode=${episode}&ds_lang=pt`;
 
       streamsList.push({
-        name: '✨ 🏆 🇧🇷 ❄️ FrostStream Platinum 4K (Dublado PT-BR)',
-        title: '❄️ FrostStream Platinum • Servidor 4K Ultra HD Dublado Português BR',
+        name: '✨ 🏆 🇧🇷 ❄️ FrostStream Platinum (Dublado PT-BR)',
+        title: '❄️ FrostStream Platinum • Servidor Dublado Português BR',
         embedUrl: frostPlatinumLink,
         isDub: true,
         category: 'dubbed',
         score: 60
       });
 
-      // 2. FrostStream Titanium 1080P Dublado PT-BR
+      // 2. FrostStream Titanium Dublado PT-BR
       const frostTitaniumLink = isMovie 
         ? `https://autoembed.co/movie/imdb/${cleanId}`
         : `https://autoembed.co/tv/imdb/${cleanId}/${season}/${episode}`;
 
       streamsList.push({
-        name: '🟢 ❄️ FrostStream Titanium 1080P (Servidor AutoEmbed PT-BR)',
-        title: '❄️ FrostStream Titanium • Servidor AutoEmbed 1080p Full HD Dublado',
+        name: '🟢 ❄️ FrostStream Titanium (Servidor AutoEmbed PT-BR)',
+        title: '❄️ FrostStream Titanium • Servidor AutoEmbed Dublado',
         embedUrl: frostTitaniumLink,
         isDub: true,
         category: 'dubbed',
@@ -553,7 +553,7 @@ const API = {
       });
 
       // ══════════════════════════════════════════════
-      // 🧲 Brazuca Torrents — Torrent 4K & 1080p PT-BR / Dual / English
+      // 🧲 Brazuca Torrents — Torrent PT-BR / Dual / English
       // ══════════════════════════════════════════════
       brazucaStreams.forEach(s => {
         const hash = s.infoHash;
@@ -586,7 +586,7 @@ const API = {
         const magnetUrl = `magnet:?xt=urn:btih:${hash}&dn=${encodeURIComponent(filename)}&${trackers.map(t => `tr=${encodeURIComponent(t)}`).join('&')}`;
 
         streamsList.push({
-          name: `🧲 ${is4k ? '✨ Brazuca 4K 2160p' : isDub ? '🇧🇷 Brazuca' : '🇺🇸 Brazuca English'} Torrent ${quality} ${isDub ? '(Dual/Dub)' : isEn ? '(Inglês 🇺🇸)' : ''}`,
+          name: `🧲 ${isDub ? '🇧🇷 Brazuca' : '🇺🇸 Brazuca English'} Torrent ${isDub ? '(Dual/Dub)' : isEn ? '(Inglês 🇺🇸)' : ''}`,
           title: `🇧🇷 Brazuca Torrents • ${titleRaw.slice(0, 100)}`,
           magnetUrl: magnetUrl,
           infoHash: hash,
