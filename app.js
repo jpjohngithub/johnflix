@@ -44,7 +44,7 @@ function fetchWithTimeout(url, options = {}, timeoutMs = 3500) {
 const Cache = {
   get(key) {
     try {
-      const item = localStorage.getItem('jf_cache_v7_' + key);
+      const item = localStorage.getItem('jf_cache_v8_' + key);
       if (!item) return null;
       const parsed = JSON.parse(item);
       if (Date.now() - parsed.time < 15 * 60 * 1000) {
@@ -56,7 +56,7 @@ const Cache = {
   set(key, data) {
     try {
       if (!data) return;
-      localStorage.setItem('jf_cache_v7_' + key, JSON.stringify({
+      localStorage.setItem('jf_cache_v8_' + key, JSON.stringify({
         time: Date.now(),
         data: data
       }));
@@ -418,26 +418,38 @@ const API = {
         ? `https://player.autoembed.cc/embed/movie/${cleanId}`
         : `https://player.autoembed.cc/embed/tv/${cleanId}/${season}/${episode}`;
 
-      const vidsrcccUrl = isMovie
-        ? `https://vidsrc.cc/v2/embed/movie/${cleanId}`
-        : `https://vidsrc.cc/v2/embed/tv/${cleanId}/${season}/${episode}`;
+      const vidsrc4kUrl = isMovie 
+        ? `https://vidsrc.me/embed/movie?imdb=${cleanId}&autoplay=1` 
+        : `https://vidsrc.me/embed/tv?imdb=${cleanId}&season=${season}&episode=${episode}&autoplay=1`;
+
+      const vidsrcEnUrl = isMovie
+        ? `https://vidsrc.in/embed/movie/${cleanId}`
+        : `https://vidsrc.in/embed/tv/${cleanId}/${season}/${episode}`;
 
       const instantWebStreams = [
         {
-          name: '🇧🇷 Dublado / Legendado — VidSrc PT-BR (Player Web HD)',
-          title: 'Servidor Legendado/Dublado PT-BR',
+          name: '✨ 4K Ultra HD 2160p — VidSrc 4K (Áudio Original / Inglês 🇺🇸)',
+          title: 'Servidor 4K Ultra HD 2160p Inglês / Áudio Original',
+          embedUrl: vidsrc4kUrl,
+          isDub: false,
+          category: 'web',
+          score: 50
+        },
+        {
+          name: '🌐 Player Web English 4K (VidSrc.in)',
+          title: 'Servidor English Original Audio HD 1080p / 4K',
+          embedUrl: vidsrcEnUrl,
+          isDub: false,
+          category: 'web',
+          score: 35
+        },
+        {
+          name: '🇧🇷 Dublado / Dual — VidSrc PT-BR (Player Web HD)',
+          title: 'Servidor PT-BR / Dual Áudio',
           embedUrl: vidsrcDubUrl,
           isDub: true,
           category: 'dubbed',
-          score: 7
-        },
-        {
-          name: '🌐 Player Web VidSrc.cc (HD 1080p)',
-          title: 'Servidor 1080p Full HD Séries & Filmes',
-          embedUrl: vidsrcccUrl,
-          isDub: false,
-          category: 'web',
-          score: 5
+          score: 30
         }
       ];
 
@@ -479,63 +491,49 @@ const API = {
 
       const streamsList = [];
 
-
-
       // ══════════════════════════════════════════════
-      // 🔥 FenixFlix — Direct MP4/CDN streams PT-BR
-      // API response: { name: "FenixFlix 720p", description: "🐦‍🔥 Title\n🇧🇷 Dublado\n🌐 ON", url: "https://download.mediafire.com/..." }
+      // 🔥 FenixFlix — Direct MP4/CDN streams PT-BR & English
       // ══════════════════════════════════════════════
       fenixStreams.forEach(s => {
         if (!s.url) return;
 
-        // FenixFlix uses `description` field for 🇧🇷 Dublado / 🇺🇸 Legendado marker
         const descRaw = (s.description || s.title || s.name || '').replace(/\n/g, ' ');
         const nameRaw = (s.name || 'FenixFlix HD');
         const combinedText = descRaw.toLowerCase();
 
         const isDub = combinedText.includes('dublado') || combinedText.includes('🇧🇷') || combinedText.includes('dual');
-        const isLeg = combinedText.includes('legendado') || combinedText.includes('🇺🇸');
+        const isEn = combinedText.includes('inglês') || combinedText.includes('english') || combinedText.includes('🇺🇸');
 
-        // Extract quality from name (720p, 1080p, 4K)
         const qualMatch = nameRaw.match(/(4k|2160p|1080p|720p|480p)/i);
         const quality = qualMatch ? qualMatch[1].toUpperCase() : 'HD';
 
-        // Score based on quality + dub status
-        const qualScore = quality === '4K' || quality === '2160P' ? 20
-          : quality === '1080P' ? 15
-          : quality === '720P' ? 10
-          : 5;
+        const is4k = quality === '4K' || quality === '2160P';
+        const qualScore = is4k ? 45 : quality === '1080P' ? 25 : quality === '720P' ? 15 : 5;
 
         streamsList.push({
-          name: `${isDub ? '🇧🇷 Dublado PT-BR' : isLeg ? '📝 Legendado PT-BR' : '🌐 Dual Áudio'} — FenixFlix ${quality}`,
+          name: `${is4k ? '✨ 4K Ultra HD' : isDub ? '🇧🇷 Dublado PT-BR' : '🇺🇸 Inglês / Dual'} — FenixFlix ${quality}`,
           title: `🔥 FenixFlix • ${descRaw.slice(0, 80)}`,
           url: s.url,
           isDub: isDub,
-          isLeg: isLeg,
           category: isDub ? 'dubbed' : 'web',
-          score: qualScore + (isDub ? 20 : 0) + (isLeg ? 5 : 0)
+          score: qualScore + (is4k ? 20 : 0) + (isEn ? 15 : 0)
         });
       });
 
       // ══════════════════════════════════════════════
-      // ❄️ FrostStream — Direct IPTV/CDN streams PT-BR
-      // API response: { name: "FrostStream 720p", title: "🎬 Title\n🌊 Provider\n🌎 Português", url: "http://iptv.server/.../movie.mp4" }
-      // Providers: IPTV, CDMovieDB, RedeFlix, Tomato, MyEmbed, AniZone
+      // ❄️ FrostStream — Direct IPTV/CDN streams
       // ══════════════════════════════════════════════
       frostStreams.forEach(s => {
         if (!s.url) return;
 
-        // FrostStream uses `title` field for language and provider info
         const titleRaw = (s.title || s.description || s.name || '').replace(/\n/g, ' ');
         const nameRaw = (s.name || 'FrostStream HD');
         const combinedText = titleRaw.toLowerCase();
 
-        // FrostStream marks language as "🌎 Português" or "🌎 English"
         const isPt = combinedText.includes('português') || combinedText.includes('pt-br') || combinedText.includes('redeflix') || combinedText.includes('🌎 port');
-        const isEn = combinedText.includes('english') || combinedText.includes('inglês');
+        const isEn = combinedText.includes('english') || combinedText.includes('inglês') || combinedText.includes('🇺🇸');
         const isDub = isPt && !isEn;
 
-        // Extract provider from title (HJA = IPTV, CDMovieDB, RedeFlix, Tomato, etc.)
         const providers = { 'redeflix': 15, 'cdmoviedb': 12, 'tomato': 10, 'myembed': 8, 'iptv': 7, 'hja': 8, 'anizone': 5 };
         let providerScore = 5;
         for (const [prov, score] of Object.entries(providers)) {
@@ -544,40 +542,37 @@ const API = {
 
         const qualMatch = nameRaw.match(/(4k|2160p|1080p|720p|480p)/i);
         const quality = qualMatch ? qualMatch[1].toUpperCase() : 'HD';
-        const qualScore = quality === '1080P' ? 10 : quality === '720P' ? 7 : 5;
+        const is4k = quality === '4K' || quality === '2160P';
+        const qualScore = is4k ? 45 : quality === '1080P' ? 20 : quality === '720P' ? 10 : 5;
 
         streamsList.push({
-          name: `❄️ FrostStream ${quality} ${isDub ? '(Dublado PT-BR)' : ''}`,
+          name: `${is4k ? '✨ ❄️ FrostStream 4K Ultra HD' : `❄️ FrostStream ${quality}`} ${isEn ? '(Inglês 🇺🇸)' : isDub ? '(Dublado PT-BR)' : ''}`,
           title: `❄️ FrostStream • ${titleRaw.slice(0, 80)}`,
           url: s.url,
           isDub: isDub,
           category: isDub ? 'dubbed' : 'web',
-          score: qualScore + providerScore + (isDub ? 25 : 0)
+          score: qualScore + providerScore + (is4k ? 20 : 0) + (isEn ? 15 : 0)
         });
       });
 
-      // Guaranteed FrostStream Dourado PT-BR Stream (VidSrc.pm Ultra-Fast 1080p Player)
+      // Guaranteed FrostStream 4K / 1080P Player
       const frostFallbackLink = isMovie 
         ? `https://vidsrc.pm/embed/movie/${cleanId}`
         : `https://vidsrc.pm/embed/tv/${cleanId}/${season}/${episode}`;
 
       streamsList.push({
-        name: '❄️ FrostStream Dourado 1080P (Dublado PT-BR)',
-        title: '❄️ FrostStream • Servidor Otimizado RedeFlix / CDMovies Full HD 1080p',
+        name: '✨ ❄️ FrostStream 4K / 1080P (Áudio Original & Dublado)',
+        title: '❄️ FrostStream • Servidor 4K Ultra HD / 1080p Otimizado',
         embedUrl: frostFallbackLink,
         isDub: true,
         category: 'dubbed',
-        score: 30
+        score: 40
       });
 
       // ══════════════════════════════════════════════
-      // 🧲 Brazuca Torrents — Torrent infoHash streams PT-BR
-      // API response: { name: "Brazuca\n1080p", title: "Title\n👤 seeders 💾 size ⚙️ provider\nDual Audio", infoHash: "sha1hash", fileIdx: 3, sources: [...] }
-      // Brazuca returns ONLY torrents (infoHash) — no direct HTTP URLs
-      // Built-in WebTorrent playback via magnet links
+      // 🧲 Brazuca Torrents — Torrent 4K & 1080p PT-BR / Dual / English
       // ══════════════════════════════════════════════
       brazucaStreams.forEach(s => {
-        // Brazuca gives infoHash (torrent) - build proper magnet link
         const hash = s.infoHash;
         if (!hash) return;
 
@@ -585,14 +580,15 @@ const API = {
         const combinedText = titleRaw.toLowerCase();
 
         const isDub = combinedText.includes('dublado') || combinedText.includes('dual') || combinedText.includes('pt-br') || combinedText.includes('português');
+        const isEn = combinedText.includes('inglês') || combinedText.includes('english') || combinedText.includes('original');
+
         const qualMatch = titleRaw.match(/(4k|2160p|1080p|720p|480p)/i);
         const quality = qualMatch ? qualMatch[1].toUpperCase() : 'HD';
+        const is4k = quality === '4K' || quality === '2160P';
 
-        // Extract seeder count from title for scoring ("👤 24" pattern)
         const seederMatch = titleRaw.match(/👤\s*(\d+)/);
         const seeders = seederMatch ? parseInt(seederMatch[1], 10) : 0;
 
-        // Build a magnet link with multiple trackers for maximum speed
         const trackers = [
           'udp://tracker.opentrackr.org:1337/announce',
           'udp://open.stealth.si:80/announce',
@@ -607,14 +603,14 @@ const API = {
         const magnetUrl = `magnet:?xt=urn:btih:${hash}&dn=${encodeURIComponent(filename)}&${trackers.map(t => `tr=${encodeURIComponent(t)}`).join('&')}`;
 
         streamsList.push({
-          name: `🧲 ${isDub ? '🇧🇷 Brazuca' : 'Brazuca'} Torrent ${quality} ${isDub ? '(Dublado/Dual)' : ''}`,
+          name: `🧲 ${is4k ? '✨ Brazuca 4K 2160p' : isDub ? '🇧🇷 Brazuca' : '🇺🇸 Brazuca English'} Torrent ${quality} ${isDub ? '(Dual/Dub)' : isEn ? '(Inglês 🇺🇸)' : ''}`,
           title: `🇧🇷 Brazuca Torrents • ${titleRaw.slice(0, 100)}`,
           magnetUrl: magnetUrl,
           infoHash: hash,
           fileIdx: s.fileIdx,
           isDub: isDub,
           category: 'torrent',
-          score: (seeders > 50 ? 15 : seeders > 10 ? 10 : 5) + (isDub ? 10 : 0) + (quality === '1080P' ? 8 : quality === '720P' ? 5 : 2)
+          score: (is4k ? 45 : 0) + (seeders > 50 ? 15 : seeders > 10 ? 10 : 5) + (isEn ? 15 : 0) + (quality === '1080P' ? 10 : 5)
         });
       });
 
