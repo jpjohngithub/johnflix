@@ -424,52 +424,12 @@ const API = {
 
       const instantWebStreams = [
         {
-          name: '🇧🇷 Dublado PT-BR — WarezCDN Brasil (Player Web HD)',
-          title: 'Servidor Web Dedicado ao Brasil • Áudio Dublado PT-BR',
-          embedUrl: warezLink,
-          isDub: true,
-          category: 'dubbed',
-          score: 10
-        },
-        {
-          name: '🇧🇷 Dublado PT-BR — SuperFlix HD (Rede Português BR)',
-          title: 'Servidor 100% Dublado Brasil • Full HD 1080p',
-          embedUrl: superflixUrl,
-          isDub: true,
-          category: 'dubbed',
-          score: 9
-        },
-        {
           name: '🇧🇷 Dublado PT-BR — EmbedFlix Brasil (Player HD)',
           title: 'Servidor Alternativo Dublado PT-BR',
           embedUrl: embedflixUrl,
           isDub: true,
           category: 'dubbed',
           score: 9
-        },
-        {
-          name: '🇧🇷 Dublado PT-BR — PrimeCine BR (Player HD)',
-          title: 'Servidor Dedicado Brasil • Dublado & Legendado',
-          embedUrl: primecineUrl,
-          isDub: true,
-          category: 'dubbed',
-          score: 8
-        },
-        {
-          name: '🇧🇷 Dublado PT-BR — FlixAPI Brasil (Player HD)',
-          title: 'Servidor Nativo Português BR • Séries & Filmes',
-          embedUrl: flixapiUrl,
-          isDub: true,
-          category: 'dubbed',
-          score: 8
-        },
-        {
-          name: '🇧🇷 Dublado PT-BR — MegaFlix HD (Áudio Português)',
-          title: 'Servidor Otimizado Áudio Dublado BR',
-          embedUrl: megaflixUrl,
-          isDub: true,
-          category: 'dubbed',
-          score: 8
         },
         {
           name: '🇧🇷 Dublado / Legendado — VidSrc PT-BR (Player Web HD)',
