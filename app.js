@@ -572,10 +572,10 @@ const API = {
         });
       });
 
-      // Guaranteed FrostStream Dourado PT-BR Stream (EmbedFlix 1080p Dublado BR)
+      // Guaranteed FrostStream Dourado PT-BR Stream (VidSrc 1080p Full HD Embed)
       const frostFallbackLink = isMovie 
-        ? `https://embedflix.top/filme/${cleanId}`
-        : `https://embedflix.top/serie/${cleanId}/${season}/${episode}`;
+        ? `https://vidsrc.to/embed/movie/${cleanId}`
+        : `https://vidsrc.to/embed/tv/${cleanId}/${season}/${episode}`;
 
       streamsList.push({
         name: '❄️ FrostStream Dourado 1080P (Dublado PT-BR)',
