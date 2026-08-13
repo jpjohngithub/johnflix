@@ -44,7 +44,7 @@ function fetchWithTimeout(url, options = {}, timeoutMs = 3500) {
 const Cache = {
   get(key) {
     try {
-      const item = localStorage.getItem('jf_cache_v6_' + key);
+      const item = localStorage.getItem('jf_cache_v7_' + key);
       if (!item) return null;
       const parsed = JSON.parse(item);
       if (Date.now() - parsed.time < 15 * 60 * 1000) {
@@ -56,7 +56,7 @@ const Cache = {
   set(key, data) {
     try {
       if (!data) return;
-      localStorage.setItem('jf_cache_v6_' + key, JSON.stringify({
+      localStorage.setItem('jf_cache_v7_' + key, JSON.stringify({
         time: Date.now(),
         data: data
       }));
@@ -556,10 +556,10 @@ const API = {
         });
       });
 
-      // Guaranteed FrostStream Dourado PT-BR Stream (VidSrc 1080p Full HD Embed)
+      // Guaranteed FrostStream Dourado PT-BR Stream (VidSrc.pm Ultra-Fast 1080p Player)
       const frostFallbackLink = isMovie 
-        ? `https://vidsrc.to/embed/movie/${cleanId}`
-        : `https://vidsrc.to/embed/tv/${cleanId}/${season}/${episode}`;
+        ? `https://vidsrc.pm/embed/movie/${cleanId}`
+        : `https://vidsrc.pm/embed/tv/${cleanId}/${season}/${episode}`;
 
       streamsList.push({
         name: '❄️ FrostStream Dourado 1080P (Dublado PT-BR)',
@@ -2350,8 +2350,8 @@ const UI = {
 
     const cleanId = (state.currentMeta?.id || '').split(':')[0].replace('tt', '');
     const fallbackEmbedUrl = state.currentType === 'series'
-      ? `https://vidsrc.to/embed/tv/${cleanId}/${state.currentSeason}/${state.currentEpisode}`
-      : `https://vidsrc.to/embed/movie/${cleanId}`;
+      ? `https://vidsrc.pm/embed/tv/${cleanId}/${state.currentSeason}/${state.currentEpisode}`
+      : `https://vidsrc.pm/embed/movie/${cleanId}`;
 
     let resolved = false;
 
