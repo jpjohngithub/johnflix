@@ -855,6 +855,42 @@ const UI = {
   },
   
   bindEvents() {
+    // Logo Click — Reset to Initial Home Tab (Like F5 / Home)
+    document.querySelectorAll('.logo').forEach(logo => {
+      logo.addEventListener('click', (e) => {
+        e.preventDefault();
+
+        // Reset state
+        state.currentType = 'all';
+        state.currentGenre = '';
+
+        // Reset search input
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) searchInput.value = '';
+        this.hideSearchResults();
+
+        // Reset genre dropdown
+        const genreSelect = document.getElementById('genre-select');
+        if (genreSelect) genreSelect.value = '';
+
+        // Reset nav links active state to "Todos"
+        document.querySelectorAll('[data-type]').forEach(b => {
+          if (b.dataset.type === 'all') b.classList.add('active');
+          else b.classList.remove('active');
+        });
+
+        // Close any active player or modal
+        this.closePlayer();
+        this.closeModal();
+
+        // Smooth scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        // Reload initial catalog home data
+        this.loadInitialData();
+      });
+    });
+
     // Navigation (Desktop links + Mobile bottom bar)
     document.querySelectorAll('[data-type]').forEach(btn => {
       btn.addEventListener('click', (e) => {
