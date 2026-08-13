@@ -2381,18 +2381,19 @@ const UI = {
       const accentColor = isMico ? '#eab308' : isBrazuca ? '#f59e0b' : '#3b82f6';
       const sourceBadge = isMico ? '🦁 Mico-Leão Dublado' : isBrazuca ? '🧲 Brazuca Torrents' : '⚡ Torrentio';
       const webEmbedUrl = `https://webtor.io/show?magnet=${encodeURIComponent(magnetUrl)}`;
-      const instantEmbedUrl = stream.infoHash ? `https://instant.io/#${stream.infoHash}` : webEmbedUrl;
+      const instantExternalUrl = stream.infoHash ? `https://instant.io/#${stream.infoHash}` : webEmbedUrl;
 
       return `
         <div class="stream-item" style="border-left: 4px solid ${accentColor};">
           <div class="stream-info">
             <span class="stream-name" style="font-weight:700;">${name}</span>
-            <span class="stream-details" style="color:${accentColor}; font-weight:600;">${sourceBadge} • ${qualityDetails || 'Abrir com App Stremio / uTorrent ou Web Player'}</span>
+            <span class="stream-details" style="color:${accentColor}; font-weight:600;">${sourceBadge} • ${qualityDetails || 'Abrir com App Stremio / Torrent ou Web Player'}</span>
           </div>
           <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
             <a href="${escapedMagnet}" class="stream-play-btn" style="background:${accentColor}; color:#000; font-weight:800; text-decoration:none;">🧲 Abrir no App Stremio</a>
             <button class="stream-play-btn" style="background:rgba(255,255,255,0.15); border:1px solid ${accentColor}; color:white; font-weight:700;"
-              onclick="UI.playIframe('${instantEmbedUrl.replace(/'/g, "\\'")}', '${name.replace(/'/g, "\\'")}')">⚡ Player Web Instant.io</button>
+              onclick="UI.playIframe('${webEmbedUrl.replace(/'/g, "\\'")}', '${name.replace(/'/g, "\\'")}')">▶ Web Player</button>
+            <a href="${instantExternalUrl}" target="_blank" rel="noopener" class="stream-play-btn" style="background:rgba(255,255,255,0.1); border:1px solid ${accentColor}; color:white; text-decoration:none;">🔗 Instant.io Aba</a>
             <button class="stream-play-btn" style="background:rgba(255,255,255,0.1); border:1px solid ${accentColor}; color:white;"
               onclick="navigator.clipboard.writeText('${escapedMagnet.replace(/'/g, "\\'")}').then(()=>this.textContent='✅ Copiado!').catch(()=>{})">📋 Copiar Link</button>
           </div>
