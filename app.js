@@ -2417,7 +2417,10 @@ const UI = {
     playerOverlay.classList.remove('hidden');
     iframe.classList.remove('hidden');
     if (video) video.classList.add('hidden');
-    if (hudBottom) hudBottom.classList.remove('hidden');
+    if (hudBottom) hudBottom.classList.add('hidden'); // Hide dummy bottom HUD so iframe native controls are 100% unblocked and clickable!
+    
+    const customSubOverlay = document.getElementById('custom-subtitles-overlay');
+    if (customSubOverlay) customSubOverlay.classList.add('hidden');
     
     if (openTabBtn) {
       openTabBtn.href = embedUrl;
@@ -2518,6 +2521,15 @@ const UI = {
     // Save progress & sync subtitles as video plays or seeks
     video.ontimeupdate = () => {
       Subtitles.syncOverlay(video.currentTime);
+
+      const currentTimeEl = document.getElementById('hud-current-time');
+      const durationEl = document.getElementById('hud-duration');
+      const seekBar = document.getElementById('hud-seek-bar');
+
+      if (currentTimeEl) currentTimeEl.textContent = formatTime(video.currentTime);
+      if (durationEl && video.duration && !isNaN(video.duration)) durationEl.textContent = formatTime(video.duration);
+      if (seekBar && video.duration && !isNaN(video.duration)) seekBar.value = (video.currentTime / video.duration) * 100;
+
       if (video.currentTime > 5 && state.currentMeta) {
         User.saveProgress(state.currentMeta.id, video.currentTime, video.duration, {
           title: title,
