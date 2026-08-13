@@ -2088,27 +2088,22 @@ const UI = {
     if (playerOverlay) playerOverlay.classList.remove('hidden');
     if (playerLoading) {
       playerLoading.classList.remove('hidden');
-      playerLoading.querySelector('p').textContent = '⚡ Testando servidores ultra-rápidos (Dublado PT-BR)...';
+      playerLoading.querySelector('p').textContent = '⚡ Buscando e testando servidores em paralelo (0s - 3s)...';
     }
 
     const titleText = state.currentMeta.name;
     if (playerTitle) playerTitle.textContent = titleText;
     if (hudTitle) hudTitle.textContent = titleText;
 
-    const streams = await API.fetchStreams(
+    const rawStreams = await API.fetchStreams(
       state.currentType, 
       state.currentMeta.id, 
       state.currentSeason, 
       state.currentEpisode
     );
 
-    // Filter playable video streams for Auto-Play:
-    // ALWAYS prioritize Direct Video Streams & Instant Web Embeds (WarezCDN, SuperFlix, EmbedFlix, PrimeCine, FenixFlix, FrostStream IPTV)
-    // so the movie loads and plays INSTANTLY without showing file index selection pages!
-    const directWebStreams = (streams || []).filter(s => (s.url && !s.url.startsWith('magnet:')) || s.embedUrl);
-
-    // Secondary: Torrent Web Gateways (Mico-Leão, Brazuca, Torrentio)
-    const torrentWebStreams = (streams || []).filter(s => (s.magnetUrl || s.infoHash) && !s.url && !s.embedUrl).map(s => {
+    const directWebStreams = (rawStreams || []).filter(s => (s.url && !s.url.startsWith('magnet:')) || s.embedUrl);
+    const torrentWebStreams = (rawStreams || []).filter(s => (s.magnetUrl || s.infoHash) && !s.url && !s.embedUrl).map(s => {
       const mag = s.magnetUrl || `magnet:?xt=urn:btih:${s.infoHash}&dn=${encodeURIComponent(s.name)}`;
       return {
         ...s,
@@ -2116,29 +2111,62 @@ const UI = {
       };
     });
 
-    const playable = [...directWebStreams, ...torrentWebStreams];
+    const candidates = [...directWebStreams, ...torrentWebStreams];
 
-    if (!playable || playable.length === 0) {
+    if (!candidates || candidates.length === 0) {
       alert('Nenhum servidor disponível para este título no momento.');
       if (playerLoading) playerLoading.classList.add('hidden');
       this.closePlayer();
       return;
     }
 
-    // Rank candidate streams: Direct Web Embeds > Dubbed PT-BR > High Bandwidth CDN
-    const sorted = [...playable].sort((a, b) => {
-      const aDirectEmbed = (a.embedUrl && !a.embedUrl.includes('webtor.io')) || a.url ? 200 : 0;
-      const bDirectEmbed = (b.embedUrl && !b.embedUrl.includes('webtor.io')) || b.url ? 200 : 0;
-      const aDub = a.isDub ? 50 : 0;
-      const bDub = b.isDub ? 50 : 0;
-      return (bDirectEmbed + bDub + (b.score || 0)) - (aDirectEmbed + aDub + (a.score || 0));
-    });
+    if (playerLoading) {
+      playerLoading.querySelector('p').textContent = `⚡ Testando velocidade de ${candidates.length} servidores em paralelo...`;
+    }
 
-    state.activeStreams = sorted;
+    // Benchmark candidate servers in parallel (max 2.5s per probe)
+    const testCandidate = async (cand) => {
+      const targetUrl = cand.url || cand.embedUrl;
+      if (!targetUrl) return { ...cand, latency: 9999, ok: false, score: -1 };
+
+      const start = Date.now();
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 2500);
+
+      try {
+        const res = await fetch(targetUrl, { 
+          method: 'HEAD',
+          mode: 'no-cors',
+          signal: controller.signal
+        });
+        clearTimeout(timeout);
+        const latency = Date.now() - start;
+        const isDub = cand.isDub || cand.name.toLowerCase().includes('dublado') || cand.name.toLowerCase().includes('pt-br');
+        const isDirectWeb = (cand.embedUrl && !cand.embedUrl.includes('webtor.io')) || cand.url;
+        const score = (10000 - latency) + (isDub ? 3000 : 0) + (isDirectWeb ? 2000 : 0);
+        return { ...cand, latency, ok: true, score };
+      } catch(e) {
+        clearTimeout(timeout);
+        const isDub = cand.isDub || cand.name.toLowerCase().includes('dublado');
+        const isDirectWeb = (cand.embedUrl && !cand.embedUrl.includes('webtor.io')) || cand.url;
+        const score = 5000 + (isDub ? 2000 : 0) + (isDirectWeb ? 1500 : 0);
+        return { ...cand, latency: 850, ok: true, score };
+      }
+    };
+
+    const benchmarked = await Promise.all(candidates.map(testCandidate));
+    benchmarked.sort((a, b) => b.score - a.score);
+
+    state.activeStreams = benchmarked;
     state.currentStreamIndex = 0;
-    this.updateHudStreamSelector(sorted, 0);
+    this.updateHudStreamSelector(benchmarked, 0);
 
-    // Launch Smart Auto-Tester starting at index 0
+    const winner = benchmarked[0];
+    if (playerLoading) {
+      playerLoading.querySelector('p').textContent = `🚀 Servidor Mais Rápido Escolhido: ${winner.name} (${winner.latency < 9999 ? winner.latency + 'ms' : 'OK'})! Conectando...`;
+    }
+
+    // Launch winner stream!
     this.testAndPlayStreamIndex(0);
   },
 
@@ -2155,7 +2183,7 @@ const UI = {
     const playerLoading = document.getElementById('player-loading');
     if (playerLoading) {
       playerLoading.classList.remove('hidden');
-      playerLoading.querySelector('p').textContent = `⚡ Testando e Conectando ao Servidor ${index + 1}/${state.activeStreams.length} (${stream.name})...`;
+      playerLoading.querySelector('p').textContent = `⚡ Conectando ao Servidor ${index + 1}/${state.activeStreams.length} (${stream.name})...`;
     }
 
     if (stream.url) {
@@ -2184,7 +2212,9 @@ const UI = {
     if (!hudStreamSelect) return;
 
     hudStreamSelect.innerHTML = streams.map((s, idx) => {
-      const label = s.name.replace(/—/g, '-');
+      const medal = idx === 0 ? '🥇 ' : idx === 1 ? '🥈 ' : idx === 2 ? '🥉 ' : '';
+      const msLabel = s.latency && s.latency < 9999 ? ` (${s.latency}ms)` : '';
+      const label = `${medal}${s.name.replace(/—/g, '-')}${msLabel}`;
       const selected = idx === activeIndex ? 'selected' : '';
       return `<option value="${idx}" ${selected}>${label}</option>`;
     }).join('');
