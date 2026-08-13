@@ -44,7 +44,7 @@ function fetchWithTimeout(url, options = {}, timeoutMs = 3500) {
 const Cache = {
   get(key) {
     try {
-      const item = localStorage.getItem('jf_cache_v5_' + key);
+      const item = localStorage.getItem('jf_cache_v6_' + key);
       if (!item) return null;
       const parsed = JSON.parse(item);
       if (Date.now() - parsed.time < 15 * 60 * 1000) {
@@ -56,7 +56,7 @@ const Cache = {
   set(key, data) {
     try {
       if (!data) return;
-      localStorage.setItem('jf_cache_v5_' + key, JSON.stringify({
+      localStorage.setItem('jf_cache_v6_' + key, JSON.stringify({
         time: Date.now(),
         data: data
       }));
