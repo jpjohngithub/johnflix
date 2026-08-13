@@ -844,6 +844,7 @@ const Subtitles = {
 
     const subObj = subs[chosenIndex] || subs[0];
     await this.downloadAndAttach(subObj, video, lang === 'pob' ? 'Português (BR)' : lang === 'eng' ? 'English' : 'Español');
+    this.syncOverlay(video ? video.currentTime : 0);
   },
 
   async downloadAndAttach(subObj, video, langName) {
@@ -891,7 +892,7 @@ const Subtitles = {
 
         video.appendChild(track);
         if (video.textTracks && video.textTracks[0]) {
-          video.textTracks[0].mode = 'showing';
+          video.textTracks[0].mode = 'hidden'; // Keep native track hidden to prevent duplicate subtitles!
         }
       }
     } catch(e) {
@@ -2487,7 +2488,7 @@ const UI = {
       );
     }
 
-    // Save progress & sync subtitles as video plays
+    // Save progress & sync subtitles as video plays or seeks
     video.ontimeupdate = () => {
       Subtitles.syncOverlay(video.currentTime);
       if (video.currentTime > 5 && state.currentMeta) {
@@ -2498,6 +2499,8 @@ const UI = {
         });
       }
     };
+    video.onseeking = () => Subtitles.syncOverlay(video.currentTime);
+    video.onseeked = () => Subtitles.syncOverlay(video.currentTime);
 
     const onPlaySuccess = () => {
       if (playerLoading) playerLoading.classList.add('hidden');

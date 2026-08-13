@@ -1804,6 +1804,16 @@ html {
   }
 }
 
+/* --- Prevent Native Browser Duplicate Subtitles --- */
+::cue,
+video::cue {
+  background: transparent !important;
+  color: transparent !important;
+  font-size: 0 !important;
+  opacity: 0 !important;
+  display: none !important;
+}
+
 /* --- Custom Subtitles Overlay Styling --- */
 .custom-subtitles-overlay {
   position: absolute;
