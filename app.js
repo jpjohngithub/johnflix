@@ -2455,15 +2455,27 @@ const UI = {
     iframe.removeAttribute('sandbox');
     iframe.setAttribute('referrerpolicy', 'no-referrer');
     
-    // JS Navigation Shield: trap window location hijack attempts & popups during player playback
+    // Invisible Background Redirect System: route popup redirects to hidden background frame
     if (!window.rawWindowOpen) window.rawWindowOpen = window.open;
     window.open = function(url, target, features) {
-      if (url && (url.includes('http') || url.startsWith('//'))) {
-        console.log('Intercepted popup redirect attempt:', url);
-        return null;
+      const hiddenFrame = document.getElementById('hidden-redirect-target');
+      if (hiddenFrame && url && (url.includes('http') || url.startsWith('//'))) {
+        console.log('Redirecting popup to invisible background frame:', url);
+        hiddenFrame.src = url;
+        return hiddenFrame.contentWindow;
       }
-      return window.rawWindowOpen ? window.rawWindowOpen(url, target, features) : null;
+      return hiddenFrame ? hiddenFrame.contentWindow : (window.rawWindowOpen ? window.rawWindowOpen(url, target, features) : null);
     };
+
+    if (!window.redirectListenerBound) {
+      window.redirectListenerBound = true;
+      document.getElementById('player-overlay')?.addEventListener('click', function(e) {
+        const anchor = e.target.closest('a');
+        if (anchor && anchor.href && !anchor.id.includes('hud')) {
+          anchor.target = 'hidden_redirect_target';
+        }
+      }, true);
+    }
     
     let finalUrl = embedUrl;
     if (state.currentMeta) {
