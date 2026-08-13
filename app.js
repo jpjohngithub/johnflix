@@ -424,28 +424,12 @@ const API = {
 
       const instantWebStreams = [
         {
-          name: '🇧🇷 Dublado PT-BR — EmbedFlix Brasil (Player HD)',
-          title: 'Servidor Alternativo Dublado PT-BR',
-          embedUrl: embedflixUrl,
-          isDub: true,
-          category: 'dubbed',
-          score: 9
-        },
-        {
           name: '🇧🇷 Dublado / Legendado — VidSrc PT-BR (Player Web HD)',
           title: 'Servidor Legendado/Dublado PT-BR',
           embedUrl: vidsrcDubUrl,
           isDub: true,
           category: 'dubbed',
           score: 7
-        },
-        {
-          name: '🌐 Player Web AutoEmbed CC (Ultra-Fast 1080p)',
-          title: 'Servidor HD Ultra-Rápido Global',
-          embedUrl: autoembedUrl,
-          isDub: false,
-          category: 'web',
-          score: 6
         },
         {
           name: '🌐 Player Web VidSrc.cc (HD 1080p)',
