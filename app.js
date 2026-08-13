@@ -518,17 +518,15 @@ const API = {
         return [];
       };
 
-      const [fenixRes, frostRes, brazucaRes, torrentioRes] = await Promise.allSettled([
+      const [fenixRes, frostRes, brazucaRes] = await Promise.allSettled([
         fetchAddon('https://fenixflix.fenixhub.online'),
         fetchAddon('https://froststream.cloutteam.com'),
-        fetchAddon('https://94c8cb9f702d-brazuca-torrents.baby-beamup.club'),
-        fetchAddon('https://torrentio.strem.fun')
+        fetchAddon('https://94c8cb9f702d-brazuca-torrents.baby-beamup.club')
       ]);
 
       const fenixStreams = fenixRes.status === 'fulfilled' ? fenixRes.value : [];
       const frostStreams = frostRes.status === 'fulfilled' ? frostRes.value : [];
       const brazucaStreams = brazucaRes.status === 'fulfilled' ? brazucaRes.value : [];
-      const torrentioStreams = torrentioRes.status === 'fulfilled' ? torrentioRes.value : [];
 
       const streamsList = [];
 
@@ -657,38 +655,7 @@ const API = {
         });
       });
 
-      // ══════════════════════════════════════════════
-      // 🧲 Torrentio — High Seeders Torrent Backup
-      // ══════════════════════════════════════════════
-      (torrentioStreams || []).slice(0, 5).forEach(s => {
-        const hash = s.infoHash;
-        if (!hash) return;
 
-        const titleRaw = (s.title || s.name || 'Torrentio HD').replace(/\n/g, ' ');
-        const combinedText = titleRaw.toLowerCase();
-        const isDub = combinedText.includes('dublado') || combinedText.includes('dual') || combinedText.includes('pt-br') || combinedText.includes('português');
-        const qualMatch = titleRaw.match(/(4k|2160p|1080p|720p|480p)/i);
-        const quality = qualMatch ? qualMatch[1].toUpperCase() : 'HD';
-
-        const trackers = [
-          'udp://tracker.opentrackr.org:1337/announce',
-          'udp://open.stealth.si:80/announce',
-          'udp://tracker.torrent.eu.org:451/announce'
-        ];
-        const filename = s.behaviorHints?.filename || titleRaw;
-        const magnetUrl = `magnet:?xt=urn:btih:${hash}&dn=${encodeURIComponent(filename)}&${trackers.map(t => `tr=${encodeURIComponent(t)}`).join('&')}`;
-
-        streamsList.push({
-          name: `🧲 Torrentio Magnet ${quality} ${isDub ? '(Dublado PT-BR)' : ''}`,
-          title: `⚡ Torrentio • ${titleRaw.slice(0, 100)}`,
-          magnetUrl: magnetUrl,
-          infoHash: hash,
-          fileIdx: s.fileIdx,
-          isDub: isDub,
-          category: 'torrent',
-          score: (isDub ? 12 : 3) + (quality === '1080P' ? 5 : 2)
-        });
-      });
 
       // Append instant web embed streams
       streamsList.push(...instantWebStreams);
@@ -2278,13 +2245,12 @@ const UI = {
     const frost = streams.filter(s => s.name.includes('FrostStream') || (s.title && s.title.includes('FrostStream')));
     const fenix = streams.filter(s => s.name.includes('FenixFlix') || (s.title && s.title.includes('FenixFlix')));
     const brazuca = streams.filter(s => s.name.includes('Brazuca') || (s.title && s.title.includes('Brazuca')));
-    const torrentio = streams.filter(s => s.name.includes('Torrentio') || (s.title && s.title.includes('Torrentio')));
     
     // Web embeds (WarezCDN, SuperFlix, EmbedFlix, PrimeCine, FlixAPI, MegaFlix, VidSrc, etc.)
     const web = streams.filter(s => s.embedUrl && !fenix.includes(s) && !frost.includes(s));
     
     // Remaining unclassified
-    const other = streams.filter(s => !fenix.includes(s) && !frost.includes(s) && !brazuca.includes(s) && !torrentio.includes(s) && !web.includes(s));
+    const other = streams.filter(s => !fenix.includes(s) && !frost.includes(s) && !brazuca.includes(s) && !web.includes(s));
 
     let html = '';
 
@@ -2310,12 +2276,6 @@ const UI = {
       html += '<div style="color:#8b5cf6; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(139,92,246,0.1); padding:8px 14px; border-radius:8px; border-left:4px solid #8b5cf6;">'
         + '<span>🌐</span> PLAYERS WEB HD (WAREZCDN, SUPERFLIX, EMBEDFLIX, PRIMECINE)</div>';
       html += web.map(stream => this.createStreamItem(stream)).join('');
-    }
-
-    if (torrentio.length > 0) {
-      html += '<div style="color:#3b82f6; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(59,130,246,0.1); padding:8px 14px; border-radius:8px; border-left:4px solid #3b82f6;">'
-        + '<span>⚡</span> TORRENTIO (BACKUP TORRENTS HIGH SEEDS)</div>';
-      html += torrentio.map(stream => this.createStreamItem(stream)).join('');
     }
 
     if (other.length > 0) {
