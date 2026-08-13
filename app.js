@@ -2314,7 +2314,6 @@ const UI = {
           </div>
           <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
             <button class="stream-play-btn" style="background:${accentColor}; color:#fff;" onclick="UI.playStream('${escapedUrl}', '${escapedTitle}')">▶ Assistir Agora</button>
-            <a href="${stream.url}" target="_blank" rel="noopener" class="stream-play-btn" style="background:rgba(255,255,255,0.1); text-decoration:none;">🔗 Nova Aba</a>
           </div>
         </div>
       `;
@@ -2332,7 +2331,6 @@ const UI = {
           </div>
           <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
             <button class="stream-play-btn" style="background:${borderColor}; color:#fff;" onclick="UI.playIframe('${escapedEmbed}', '${escapedTitle}')">▶ Assistir</button>
-            <a href="${stream.embedUrl}" target="_blank" rel="noopener" class="stream-play-btn" style="background:rgba(255,255,255,0.1); text-decoration:none;">🔗 Nova Aba</a>
           </div>
         </div>
       `;
