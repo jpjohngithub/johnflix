@@ -44,7 +44,7 @@ function fetchWithTimeout(url, options = {}, timeoutMs = 3500) {
 const Cache = {
   get(key) {
     try {
-      const item = localStorage.getItem('jf_cache_v10_' + key);
+      const item = localStorage.getItem('jf_cache_v11_' + key);
       if (!item) return null;
       const parsed = JSON.parse(item);
       if (Date.now() - parsed.time < 15 * 60 * 1000) {
@@ -56,7 +56,7 @@ const Cache = {
   set(key, data) {
     try {
       if (!data) return;
-      localStorage.setItem('jf_cache_v10_' + key, JSON.stringify({
+      localStorage.setItem('jf_cache_v11_' + key, JSON.stringify({
         time: Date.now(),
         data: data
       }));
@@ -521,55 +521,10 @@ const API = {
       });
 
       // ══════════════════════════════════════════════
-      // ❄️ FrostStream — Direct IPTV/CDN streams
+      // ❄️ FrostStream — Exclusivos Platinum 4K e Titanium 1080P
       // ══════════════════════════════════════════════
-      frostStreams.forEach(s => {
-        if (!s.url) return;
-
-        const titleRaw = (s.title || s.description || s.name || '').replace(/\n/g, ' ');
-        const nameRaw = (s.name || 'FrostStream HD');
-        const combinedText = titleRaw.toLowerCase();
-
-        const isPt = combinedText.includes('português') || combinedText.includes('pt-br') || combinedText.includes('redeflix') || combinedText.includes('🌎 port');
-        const isEn = combinedText.includes('english') || combinedText.includes('inglês') || combinedText.includes('🇺🇸');
-        const isDub = isPt && !isEn;
-
-        const providers = { 'redeflix': 15, 'cdmoviedb': 12, 'tomato': 10, 'myembed': 8, 'iptv': 7, 'hja': 8, 'anizone': 5 };
-        let providerScore = 5;
-        for (const [prov, score] of Object.entries(providers)) {
-          if (combinedText.includes(prov)) { providerScore = score; break; }
-        }
-
-        const qualMatch = nameRaw.match(/(4k|2160p|1080p|720p|480p)/i);
-        const quality = qualMatch ? qualMatch[1].toUpperCase() : 'HD';
-        const is4k = quality === '4K' || quality === '2160P';
-        const qualScore = is4k ? 45 : quality === '1080P' ? 20 : quality === '720P' ? 10 : 5;
-
-        streamsList.push({
-          name: `${is4k ? '✨ ❄️ FrostStream 4K Ultra HD' : `❄️ FrostStream ${quality}`} ${isEn ? '(Inglês 🇺🇸)' : isDub ? '(Dublado PT-BR)' : ''}`,
-          title: `❄️ FrostStream • ${titleRaw.slice(0, 80)}`,
-          url: s.url,
-          isDub: isDub,
-          category: isDub ? 'dubbed' : 'web',
-          score: qualScore + providerScore + (is4k ? 20 : 0) + (isEn ? 15 : 0)
-        });
-      });
-
-      // Tier 1: FrostStream Diamond 4K (VidSrc.in Engine)
-      const frostDiamondLink = isMovie 
-        ? `https://vidsrc.in/embed/movie/${cleanId}`
-        : `https://vidsrc.in/embed/tv/${cleanId}/${season}/${episode}`;
-
-      streamsList.push({
-        name: '✨ 💎 ❄️ FrostStream Diamond 4K (Servidor VidSrc.in 4K)',
-        title: '❄️ FrostStream Diamond • Servidor 4K Ultra HD / 1080p Ultra-Rápido',
-        embedUrl: frostDiamondLink,
-        isDub: true,
-        category: 'dubbed',
-        score: 60
-      });
-
-      // Tier 2: FrostStream Platinum 4K Dublado PT-BR (VidSrc.me PT)
+      
+      // 1. FrostStream Platinum 4K Dublado PT-BR
       const frostPlatinumLink = isMovie 
         ? `https://vidsrc.me/embed/movie?imdb=${cleanId}&ds_lang=pt` 
         : `https://vidsrc.me/embed/tv?imdb=${cleanId}&season=${season}&episode=${episode}&ds_lang=pt`;
@@ -580,24 +535,10 @@ const API = {
         embedUrl: frostPlatinumLink,
         isDub: true,
         category: 'dubbed',
-        score: 55
+        score: 60
       });
 
-      // Tier 3: FrostStream Gold 1080P (VidSrc.pm Engine)
-      const frostGoldLink = isMovie 
-        ? `https://vidsrc.pm/embed/movie/${cleanId}`
-        : `https://vidsrc.pm/embed/tv/${cleanId}/${season}/${episode}`;
-
-      streamsList.push({
-        name: '🥇 ❄️ FrostStream Gold 1080P (Servidor VidSrc.pm Full HD)',
-        title: '❄️ FrostStream Gold • Servidor VidSrc.pm 1080p Full HD Otimizado',
-        embedUrl: frostGoldLink,
-        isDub: true,
-        category: 'dubbed',
-        score: 50
-      });
-
-      // Tier 4: FrostStream Titanium 1080P (AutoEmbed Engine)
+      // 2. FrostStream Titanium 1080P Dublado PT-BR
       const frostTitaniumLink = isMovie 
         ? `https://autoembed.co/movie/imdb/${cleanId}`
         : `https://autoembed.co/tv/imdb/${cleanId}/${season}/${episode}`;
@@ -608,21 +549,7 @@ const API = {
         embedUrl: frostTitaniumLink,
         isDub: true,
         category: 'dubbed',
-        score: 45
-      });
-
-      // Tier 5: FrostStream Emerald 1080P (2Embed Engine)
-      const frostEmeraldLink = isMovie 
-        ? `https://2embed.skin/embed/movie/${cleanId}`
-        : `https://2embed.skin/embed/tv/${cleanId}/${season}/${episode}`;
-
-      streamsList.push({
-        name: '⚡ ❄️ FrostStream Emerald 1080P (Servidor 2Embed HD)',
-        title: '❄️ FrostStream Emerald • Servidor 2Embed 1080p HD',
-        embedUrl: frostEmeraldLink,
-        isDub: true,
-        category: 'dubbed',
-        score: 42
+        score: 55
       });
 
       // ══════════════════════════════════════════════
