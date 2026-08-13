@@ -2453,6 +2453,7 @@ const UI = {
     if (hudTitle) hudTitle.textContent = title;
     
     iframe.setAttribute('referrerpolicy', 'no-referrer');
+    iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation allow-pointer-lock allow-downloads');
     
     let finalUrl = embedUrl;
     if (state.currentMeta) {
