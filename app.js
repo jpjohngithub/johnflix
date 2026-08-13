@@ -598,13 +598,27 @@ const API = {
         const qualScore = quality === '1080P' ? 10 : quality === '720P' ? 7 : 5;
 
         streamsList.push({
-          name: `${isDub ? '🇧🇷 Dublado PT-BR' : '🌐 Stream Internacional'} — FrostStream ${quality}`,
+          name: `❄️ FrostStream ${quality} ${isDub ? '(Dublado PT-BR)' : ''}`,
           title: `❄️ FrostStream • ${titleRaw.slice(0, 80)}`,
           url: s.url,
           isDub: isDub,
           category: isDub ? 'dubbed' : 'web',
-          score: qualScore + providerScore + (isDub ? 15 : 0)
+          score: qualScore + providerScore + (isDub ? 25 : 0)
         });
+      });
+
+      // Guaranteed FrostStream Dourado PT-BR Stream
+      const frostFallbackLink = isMovie 
+        ? `https://superflixapi.top/filme/${cleanId}`
+        : `https://superflixapi.top/serie/${cleanId}/${season}/${episode}`;
+
+      streamsList.push({
+        name: '❄️ FrostStream Dourado 1080P (Dublado PT-BR)',
+        title: '❄️ FrostStream • Servidor Otimizado RedeFlix / CDMovies Full HD 1080p',
+        embedUrl: frostFallbackLink,
+        isDub: true,
+        category: 'dubbed',
+        score: 30
       });
 
       // ══════════════════════════════════════════════
