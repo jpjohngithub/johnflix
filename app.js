@@ -2261,10 +2261,8 @@ const UI = {
     const magnetUrl = stream.magnetUrl || (stream.infoHash ? `magnet:?xt=urn:btih:${stream.infoHash}&dn=${encodeURIComponent(name)}` : null);
     if (magnetUrl) {
       const escapedMagnet = magnetUrl.replace(/"/g, '&quot;');
-      const isBrazuca = name.includes('Brazuca');
-      const accentColor = isBrazuca ? '#f59e0b' : '#3b82f6';
-      const webEmbedUrl = `https://webtor.io/show?magnet=${encodeURIComponent(magnetUrl)}`;
-      const instantExternalUrl = stream.infoHash ? `https://instant.io/#${stream.infoHash}` : webEmbedUrl;
+      const escapedTitle = name.replace(/'/g, "\\'");
+      const accentColor = '#f59e0b';
 
       return `
         <div class="stream-item" style="border-left: 4px solid ${accentColor};">
@@ -2272,12 +2270,9 @@ const UI = {
             <span class="stream-name" style="font-weight:700;">${name}</span>
           </div>
           <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-            <a href="${escapedMagnet}" class="stream-play-btn" style="background:${accentColor}; color:#000; font-weight:800; text-decoration:none;">🧲 Abrir no App Stremio</a>
-            <button class="stream-play-btn" style="background:rgba(255,255,255,0.15); border:1px solid ${accentColor}; color:white; font-weight:700;"
-              onclick="UI.playIframe('${webEmbedUrl.replace(/'/g, "\\'")}', '${name.replace(/'/g, "\\'")}')">▶ Web Player</button>
-            <a href="${instantExternalUrl}" target="_blank" rel="noopener" class="stream-play-btn" style="background:rgba(255,255,255,0.1); border:1px solid ${accentColor}; color:white; text-decoration:none;">🔗 Instant.io Aba</a>
-            <button class="stream-play-btn" style="background:rgba(255,255,255,0.1); border:1px solid ${accentColor}; color:white;"
-              onclick="navigator.clipboard.writeText('${escapedMagnet.replace(/'/g, "\\'")}').then(()=>this.textContent='✅ Copiado!').catch(()=>{})">📋 Copiar Link</button>
+            <button class="stream-play-btn" style="background:${accentColor}; color:#000; font-weight:800;"
+              onclick="UI.playTorrent('${escapedMagnet.replace(/'/g, "\\'")}', '${escapedTitle}')">▶ Assistir Agora</button>
+            <a href="${escapedMagnet}" class="stream-play-btn" style="background:rgba(255,255,255,0.1); color:white; font-weight:600; text-decoration:none;">🧲 App Stremio</a>
           </div>
         </div>
       `;
@@ -2321,6 +2316,87 @@ const UI = {
     }
 
     return '';
+  },
+
+  playTorrent(magnetUrl, title) {
+    const video = document.getElementById('video-player');
+    const iframe = document.getElementById('iframe-player');
+    const playerOverlay = document.getElementById('player-overlay');
+    const playerLoading = document.getElementById('player-loading');
+    const playerTitle = document.getElementById('player-title');
+    const hudTitle = document.getElementById('hud-title');
+    const hudBottom = document.querySelector('.hud-bottom');
+
+    if (!playerOverlay || !video) return;
+
+    this.closePlayer();
+
+    playerOverlay.classList.remove('hidden');
+    video.classList.remove('hidden');
+    if (iframe) iframe.classList.add('hidden');
+    if (hudBottom) hudBottom.classList.remove('hidden');
+    if (playerTitle) playerTitle.textContent = title;
+    if (hudTitle) hudTitle.textContent = title;
+
+    if (playerLoading) {
+      playerLoading.classList.remove('hidden');
+      playerLoading.querySelector('p').textContent = 'Conectando ao Brazuca Torrent (P2P Player)...';
+    }
+
+    if (window.activeWtTorrent) {
+      try { window.activeWtTorrent.destroy(); } catch(e) {}
+      window.activeWtTorrent = null;
+    }
+
+    const cleanId = (state.currentMeta?.id || '').split(':')[0].replace('tt', '');
+    const fallbackEmbedUrl = state.currentType === 'series'
+      ? `https://vidsrc.to/embed/tv/${cleanId}/${state.currentSeason}/${state.currentEpisode}`
+      : `https://vidsrc.to/embed/movie/${cleanId}`;
+
+    let resolved = false;
+
+    const fallbackTimer = setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        console.log('WebTorrent P2P slow, falling back to direct video stream');
+        this.playIframe(fallbackEmbedUrl, title);
+      }
+    }, 4500);
+
+    if (window.WebTorrent) {
+      try {
+        const client = window.wtClient || new WebTorrent();
+        window.wtClient = client;
+
+        client.add(magnetUrl, (torrent) => {
+          window.activeWtTorrent = torrent;
+          const file = torrent.files.find(f => 
+            f.name.endsWith('.mp4') || f.name.endsWith('.mkv') || f.name.endsWith('.avi') || f.name.endsWith('.webm')
+          ) || torrent.files[0];
+
+          if (file && !resolved) {
+            resolved = true;
+            clearTimeout(fallbackTimer);
+            file.renderTo(video, { autoplay: true }, (err) => {
+              if (playerLoading) playerLoading.classList.add('hidden');
+              video.play().catch(() => {});
+            });
+          }
+        });
+      } catch (err) {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(fallbackTimer);
+          this.playIframe(fallbackEmbedUrl, title);
+        }
+      }
+    } else {
+      if (!resolved) {
+        resolved = true;
+        clearTimeout(fallbackTimer);
+        this.playIframe(fallbackEmbedUrl, title);
+      }
+    }
   },
 
   playIframe(embedUrl, title) {
