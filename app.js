@@ -518,14 +518,19 @@ const API = {
         return [];
       };
 
-      const [fenixRes, frostRes, brazucaRes] = await Promise.allSettled([
+      const frostConfiguredUrl = 'https://froststream.cloutteam.com/providers.iptv=checked&providers.cdmoviedb=checked&providers.redeflix=checked&providers.tomato=checked&providers.myembed=checked&providers.anizone=checked';
+
+      const [fenixRes, frostRes, frostConfigRes, brazucaRes] = await Promise.allSettled([
         fetchAddon('https://fenixflix.fenixhub.online'),
         fetchAddon('https://froststream.cloutteam.com'),
+        fetchAddon(frostConfiguredUrl),
         fetchAddon('https://94c8cb9f702d-brazuca-torrents.baby-beamup.club')
       ]);
 
       const fenixStreams = fenixRes.status === 'fulfilled' ? fenixRes.value : [];
-      const frostStreams = frostRes.status === 'fulfilled' ? frostRes.value : [];
+      const frostBaseStreams = frostRes.status === 'fulfilled' ? frostRes.value : [];
+      const frostConfigStreams = frostConfigRes.status === 'fulfilled' ? frostConfigRes.value : [];
+      const frostStreams = [...frostBaseStreams, ...frostConfigStreams];
       const brazucaStreams = brazucaRes.status === 'fulfilled' ? brazucaRes.value : [];
 
       const streamsList = [];
