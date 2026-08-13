@@ -1838,6 +1838,22 @@ const UI = {
       }
     }
 
+    // 3. 🔥 Lançamentos Recentes Carousel (Filmes e Séries Recentes)
+    const allItems = [...(state.catalogs.popular || []), ...(state.catalogs.featured || [])];
+    const recentItems = allItems
+      .filter((item, index, self) => self.findIndex(t => t.id === item.id) === index)
+      .filter(item => {
+        const yr = parseInt(item.year, 10);
+        return !isNaN(yr) && yr >= 2024;
+      })
+      .sort((a, b) => (parseInt(b.year, 10) || 0) - (parseInt(a.year, 10) || 0));
+
+    const finalRecents = recentItems.length >= 6 ? recentItems : allItems.slice(0, 18);
+
+    if (finalRecents && finalRecents.length > 0) {
+      html += this.createCarousel(`🔥 Lançamentos Recentes (2025 / 2026)`, finalRecents, 'recents');
+    }
+
     if (state.catalogs.popular && state.catalogs.popular.length > 0) {
       html += this.createCarousel(`${typeName} Populares`, state.catalogs.popular, 'popular');
     }
