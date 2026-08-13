@@ -44,7 +44,7 @@ function fetchWithTimeout(url, options = {}, timeoutMs = 3500) {
 const Cache = {
   get(key) {
     try {
-      const item = localStorage.getItem('jf_cache_v9_' + key);
+      const item = localStorage.getItem('jf_cache_v10_' + key);
       if (!item) return null;
       const parsed = JSON.parse(item);
       if (Date.now() - parsed.time < 15 * 60 * 1000) {
@@ -56,7 +56,7 @@ const Cache = {
   set(key, data) {
     try {
       if (!data) return;
-      localStorage.setItem('jf_cache_v9_' + key, JSON.stringify({
+      localStorage.setItem('jf_cache_v10_' + key, JSON.stringify({
         time: Date.now(),
         data: data
       }));
@@ -555,60 +555,74 @@ const API = {
         });
       });
 
-      // Option 1: FrostStream Platinum 4K Dublado PT-BR
-      const frostPtLink = isMovie 
+      // Tier 1: FrostStream Diamond 4K (VidSrc.in Engine)
+      const frostDiamondLink = isMovie 
+        ? `https://vidsrc.in/embed/movie/${cleanId}`
+        : `https://vidsrc.in/embed/tv/${cleanId}/${season}/${episode}`;
+
+      streamsList.push({
+        name: '✨ 💎 ❄️ FrostStream Diamond 4K (Servidor VidSrc.in 4K)',
+        title: '❄️ FrostStream Diamond • Servidor 4K Ultra HD / 1080p Ultra-Rápido',
+        embedUrl: frostDiamondLink,
+        isDub: true,
+        category: 'dubbed',
+        score: 60
+      });
+
+      // Tier 2: FrostStream Platinum 4K Dublado PT-BR (VidSrc.me PT)
+      const frostPlatinumLink = isMovie 
         ? `https://vidsrc.me/embed/movie?imdb=${cleanId}&ds_lang=pt` 
         : `https://vidsrc.me/embed/tv?imdb=${cleanId}&season=${season}&episode=${episode}&ds_lang=pt`;
 
       streamsList.push({
-        name: '✨ 🇧🇷 ❄️ FrostStream Platinum 4K (Dublado PT-BR)',
+        name: '✨ 🏆 🇧🇷 ❄️ FrostStream Platinum 4K (Dublado PT-BR)',
         title: '❄️ FrostStream Platinum • Servidor 4K Ultra HD Dublado Português BR',
-        embedUrl: frostPtLink,
+        embedUrl: frostPlatinumLink,
         isDub: true,
         category: 'dubbed',
         score: 55
       });
 
-      // Option 2: FrostStream Diamond 4K (VidSrc.in Engine)
-      const frostInLink = isMovie 
-        ? `https://vidsrc.in/embed/movie/${cleanId}`
-        : `https://vidsrc.in/embed/tv/${cleanId}/${season}/${episode}`;
+      // Tier 3: FrostStream Gold 1080P (VidSrc.pm Engine)
+      const frostGoldLink = isMovie 
+        ? `https://vidsrc.pm/embed/movie/${cleanId}`
+        : `https://vidsrc.pm/embed/tv/${cleanId}/${season}/${episode}`;
 
       streamsList.push({
-        name: '✨ ❄️ FrostStream Diamond 4K (Servidor VidSrc.in 4K)',
-        title: '❄️ FrostStream Diamond • Servidor VidSrc.in 4K Ultra HD / 1080p Ultra-Rápido',
-        embedUrl: frostInLink,
+        name: '🥇 ❄️ FrostStream Gold 1080P (Servidor VidSrc.pm Full HD)',
+        title: '❄️ FrostStream Gold • Servidor VidSrc.pm 1080p Full HD Otimizado',
+        embedUrl: frostGoldLink,
         isDub: true,
         category: 'dubbed',
         score: 50
       });
 
-      // Option 3: FrostStream Titanium 1080P Dublado PT-BR (AutoEmbed)
-      const frostAutoLink = isMovie 
+      // Tier 4: FrostStream Titanium 1080P (AutoEmbed Engine)
+      const frostTitaniumLink = isMovie 
         ? `https://autoembed.co/movie/imdb/${cleanId}`
         : `https://autoembed.co/tv/imdb/${cleanId}/${season}/${episode}`;
 
       streamsList.push({
-        name: '🇧🇷 ❄️ FrostStream Titanium 1080P (Dublado PT-BR)',
+        name: '🟢 ❄️ FrostStream Titanium 1080P (Servidor AutoEmbed PT-BR)',
         title: '❄️ FrostStream Titanium • Servidor AutoEmbed 1080p Full HD Dublado',
-        embedUrl: frostAutoLink,
+        embedUrl: frostTitaniumLink,
         isDub: true,
         category: 'dubbed',
         score: 45
       });
 
-      // Option 4: FrostStream Dourado 1080P (VidSrc.pm Engine)
-      const frostPmLink = isMovie 
-        ? `https://vidsrc.pm/embed/movie/${cleanId}`
-        : `https://vidsrc.pm/embed/tv/${cleanId}/${season}/${episode}`;
+      // Tier 5: FrostStream Emerald 1080P (2Embed Engine)
+      const frostEmeraldLink = isMovie 
+        ? `https://2embed.skin/embed/movie/${cleanId}`
+        : `https://2embed.skin/embed/tv/${cleanId}/${season}/${episode}`;
 
       streamsList.push({
-        name: '❄️ FrostStream Dourado 1080P (Servidor VidSrc.pm Otimizado)',
-        title: '❄️ FrostStream Dourado • Servidor VidSrc.pm 1080p Full HD',
-        embedUrl: frostPmLink,
+        name: '⚡ ❄️ FrostStream Emerald 1080P (Servidor 2Embed HD)',
+        title: '❄️ FrostStream Emerald • Servidor 2Embed 1080p HD',
+        embedUrl: frostEmeraldLink,
         isDub: true,
         category: 'dubbed',
-        score: 40
+        score: 42
       });
 
       // ══════════════════════════════════════════════
