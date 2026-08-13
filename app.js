@@ -2102,19 +2102,21 @@ const UI = {
       state.currentEpisode
     );
 
-    // Map all available streams (Direct MP4/HLS, Web Embeds, WebTorrent Gateways for Mico-Leão, Brazuca, FrostStream, Torrentio)
-    const playable = (streams || []).map(s => {
-      if (s.url && !s.url.startsWith('magnet:')) return s;
-      if (s.embedUrl) return s;
-      if (s.magnetUrl || s.infoHash) {
-        const mag = s.magnetUrl || `magnet:?xt=urn:btih:${s.infoHash}&dn=${encodeURIComponent(s.name)}`;
-        return {
-          ...s,
-          embedUrl: `https://webtor.io/show?magnet=${encodeURIComponent(mag)}`
-        };
-      }
-      return null;
-    }).filter(Boolean);
+    // Filter playable video streams for Auto-Play:
+    // ALWAYS prioritize Direct Video Streams & Instant Web Embeds (WarezCDN, SuperFlix, EmbedFlix, PrimeCine, FenixFlix, FrostStream IPTV)
+    // so the movie loads and plays INSTANTLY without showing file index selection pages!
+    const directWebStreams = (streams || []).filter(s => (s.url && !s.url.startsWith('magnet:')) || s.embedUrl);
+
+    // Secondary: Torrent Web Gateways (Mico-Leão, Brazuca, Torrentio)
+    const torrentWebStreams = (streams || []).filter(s => (s.magnetUrl || s.infoHash) && !s.url && !s.embedUrl).map(s => {
+      const mag = s.magnetUrl || `magnet:?xt=urn:btih:${s.infoHash}&dn=${encodeURIComponent(s.name)}`;
+      return {
+        ...s,
+        embedUrl: `https://webtor.io/show?magnet=${encodeURIComponent(mag)}`
+      };
+    });
+
+    const playable = [...directWebStreams, ...torrentWebStreams];
 
     if (!playable || playable.length === 0) {
       alert('Nenhum servidor disponível para este título no momento.');
@@ -2123,13 +2125,13 @@ const UI = {
       return;
     }
 
-    // Rank candidate streams: Dubbed PT-BR > Direct Video Streams > Web Embeds
+    // Rank candidate streams: Direct Web Embeds > Dubbed PT-BR > High Bandwidth CDN
     const sorted = [...playable].sort((a, b) => {
-      const aDub = a.isDub ? 100 : 0;
-      const bDub = b.isDub ? 100 : 0;
-      const aDirect = a.url ? 30 : 0;
-      const bDirect = b.url ? 30 : 0;
-      return (b.score || 0) + bDub + bDirect - ((a.score || 0) + aDub + aDirect);
+      const aDirectEmbed = (a.embedUrl && !a.embedUrl.includes('webtor.io')) || a.url ? 200 : 0;
+      const bDirectEmbed = (b.embedUrl && !b.embedUrl.includes('webtor.io')) || b.url ? 200 : 0;
+      const aDub = a.isDub ? 50 : 0;
+      const bDub = b.isDub ? 50 : 0;
+      return (bDirectEmbed + bDub + (b.score || 0)) - (aDirectEmbed + aDub + (a.score || 0));
     });
 
     state.activeStreams = sorted;
@@ -2309,19 +2311,20 @@ const UI = {
       const accentColor = isMico ? '#eab308' : isBrazuca ? '#f59e0b' : '#3b82f6';
       const sourceBadge = isMico ? '🦁 Mico-Leão Dublado' : isBrazuca ? '🧲 Brazuca Torrents' : '⚡ Torrentio';
       const webEmbedUrl = `https://webtor.io/show?magnet=${encodeURIComponent(magnetUrl)}`;
+      const instantEmbedUrl = stream.infoHash ? `https://instant.io/#${stream.infoHash}` : webEmbedUrl;
 
       return `
         <div class="stream-item" style="border-left: 4px solid ${accentColor};">
           <div class="stream-info">
             <span class="stream-name" style="font-weight:700;">${name}</span>
-            <span class="stream-details" style="color:${accentColor}; font-weight:600;">${sourceBadge} • ${qualityDetails || 'Assistir no Navegador ou App Magnet'}</span>
+            <span class="stream-details" style="color:${accentColor}; font-weight:600;">${sourceBadge} • ${qualityDetails || 'Abrir com App Stremio / uTorrent ou Web Player'}</span>
           </div>
           <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-            <button class="stream-play-btn" style="background:linear-gradient(135deg, ${accentColor}, #d97706); color:#000; font-weight:800;"
-              onclick="UI.playIframe('${webEmbedUrl.replace(/'/g, "\\'")}', '${name.replace(/'/g, "\\'")}')">▶ Assistir no Player</button>
-            <a href="${escapedMagnet}" class="stream-play-btn" style="background:rgba(255,255,255,0.1); border:1px solid ${accentColor}; color:white; font-weight:700; text-decoration:none;">🧲 Magnet App</a>
+            <a href="${escapedMagnet}" class="stream-play-btn" style="background:${accentColor}; color:#000; font-weight:800; text-decoration:none;">🧲 Abrir no App Stremio</a>
+            <button class="stream-play-btn" style="background:rgba(255,255,255,0.15); border:1px solid ${accentColor}; color:white; font-weight:700;"
+              onclick="UI.playIframe('${instantEmbedUrl.replace(/'/g, "\\'")}', '${name.replace(/'/g, "\\'")}')">⚡ Player Web Instant.io</button>
             <button class="stream-play-btn" style="background:rgba(255,255,255,0.1); border:1px solid ${accentColor}; color:white;"
-              onclick="navigator.clipboard.writeText('${escapedMagnet.replace(/'/g, "\\'")}').then(()=>this.textContent='✅ Copiado!').catch(()=>{})">📋 Copiar</button>
+              onclick="navigator.clipboard.writeText('${escapedMagnet.replace(/'/g, "\\'")}').then(()=>this.textContent='✅ Copiado!').catch(()=>{})">📋 Copiar Link</button>
           </div>
         </div>
       `;
