@@ -572,10 +572,10 @@ const API = {
         });
       });
 
-      // Guaranteed FrostStream Dourado PT-BR Stream
+      // Guaranteed FrostStream Dourado PT-BR Stream (EmbedFlix 1080p Dublado BR)
       const frostFallbackLink = isMovie 
-        ? `https://superflixapi.top/filme/${cleanId}`
-        : `https://superflixapi.top/serie/${cleanId}/${season}/${episode}`;
+        ? `https://embedflix.top/filme/${cleanId}`
+        : `https://embedflix.top/serie/${cleanId}/${season}/${episode}`;
 
       streamsList.push({
         name: '❄️ FrostStream Dourado 1080P (Dublado PT-BR)',

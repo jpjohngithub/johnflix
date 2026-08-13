@@ -1,22 +1,32 @@
-async function testTorrentGateways() {
-  const hash = 'e7edc59ebbd7fb729ab4b0c660467f616279e8a8';
-  const magnet = `magnet:?xt=urn:btih:${hash}`;
+async function testEmbedGateways() {
+  console.log('--- Testing FrostStream Embed Gateways ---');
 
+  const testMovies = ['tt10872600', 'tt1877830', 'tt1630029', 'tt0111161'];
   const gateways = [
-    `https://webtor.io/show?magnet=${encodeURIComponent(magnet)}`,
-    `https://instant.io/#${hash}`,
-    `https://btor.strem.fun/${hash}/0`,
-    `https://torrentio.strem.fun/stream/movie/tt0111161.json`
+    { name: 'SuperFlix.net', build: id => `https://superflixapi.net/filme/${id}` },
+    { name: 'WarezCDN.link', build: id => `https://embed.warezcdn.link/filme/${id}` },
+    { name: 'EmbedFlix.top', build: id => `https://embedflix.top/filme/${id}` },
+    { name: 'FlixAPI.org', build: id => `https://flixapi.org/embed/movie/${id}` },
+    { name: 'AutoEmbed.cc', build: id => `https://autoembed.cc/embed/movie/${id}` },
+    { name: 'VidSrc.pro', build: id => `https://vidsrc.pro/embed/movie/${id}` },
+    { name: 'VidSrc.to', build: id => `https://vidsrc.to/embed/movie/${id}` }
   ];
 
-  for (const g of gateways) {
-    try {
-      const res = await fetch(g, { method: 'HEAD' });
-      console.log(`[${res.status}] ${g}`);
-    } catch(e) {
-      console.log(`[ERR] ${g}: ${e.message}`);
+  for (const id of testMovies) {
+    console.log(`\nTesting IMDb: ${id}`);
+    for (const gw of gateways) {
+      const url = gw.build(id);
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 3500);
+        const res = await fetch(url, { signal: controller.signal });
+        clearTimeout(timer);
+        console.log(` [${res.status}] ${gw.name} -> ${url}`);
+      } catch(e) {
+        console.log(` [ERR] ${gw.name} -> ${e.message}`);
+      }
     }
   }
 }
 
-testTorrentGateways();
+testEmbedGateways();
