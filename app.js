@@ -518,50 +518,21 @@ const API = {
         return [];
       };
 
-      const [fenixRes, frostRes, micoRes, brazucaRes, torrentioRes] = await Promise.allSettled([
+      const [fenixRes, frostRes, brazucaRes, torrentioRes] = await Promise.allSettled([
         fetchAddon('https://fenixflix.fenixhub.online'),
         fetchAddon('https://froststream.cloutteam.com'),
-        fetchAddon('https://27a5b2bfe3c0-stremio-brazilian-addon.baby-beamup.club'),
         fetchAddon('https://94c8cb9f702d-brazuca-torrents.baby-beamup.club'),
         fetchAddon('https://torrentio.strem.fun')
       ]);
 
       const fenixStreams = fenixRes.status === 'fulfilled' ? fenixRes.value : [];
       const frostStreams = frostRes.status === 'fulfilled' ? frostRes.value : [];
-      const micoStreams = micoRes.status === 'fulfilled' ? micoRes.value : [];
       const brazucaStreams = brazucaRes.status === 'fulfilled' ? brazucaRes.value : [];
       const torrentioStreams = torrentioRes.status === 'fulfilled' ? torrentioRes.value : [];
 
       const streamsList = [];
 
-      // ══════════════════════════════════════════════
-      // 🦁 Mico-Leão Dublado 🇧🇷 — Torrents Dublados & Dual Áudio
-      // ══════════════════════════════════════════════
-      (micoStreams || []).forEach(s => {
-        if (!s.infoHash && !s.url) return;
 
-        const titleRaw = (s.title || s.name || '').replace(/\n/g, ' ');
-        const combinedText = titleRaw.toLowerCase();
-        const isDub = combinedText.includes('dublado') || combinedText.includes('dual') || combinedText.includes('pt-br') || combinedText.includes('português');
-
-        let quality = '720P';
-        if (combinedText.includes('4k') || combinedText.includes('2160p')) quality = '4K';
-        else if (combinedText.includes('1080p')) quality = '1080P';
-
-        const infoHash = s.infoHash;
-        const magnetUrl = s.url ? null : (infoHash ? `magnet:?xt=urn:btih:${infoHash}&dn=${encodeURIComponent(titleRaw)}` : null);
-
-        streamsList.push({
-          name: `🦁 Mico-Leão Dublado 🇧🇷 ${quality} ${isDub ? '(Dublado PT-BR)' : ''}`,
-          title: titleRaw,
-          url: s.url || null,
-          infoHash: infoHash || null,
-          magnetUrl: magnetUrl,
-          isDub: isDub,
-          category: 'dubbed',
-          score: 12 + (quality === '4K' ? 4 : (quality === '1080P' ? 2 : 0))
-        });
-      });
 
       // ══════════════════════════════════════════════
       // 🔥 FenixFlix — Direct MP4/CDN streams PT-BR
@@ -2304,36 +2275,29 @@ const UI = {
     const streamsList = document.getElementById('streams-list');
     if (!streamsList) return;
 
-    const fenix = streams.filter(s => s.name.includes('FenixFlix') || (s.title && s.title.includes('FenixFlix')));
     const frost = streams.filter(s => s.name.includes('FrostStream') || (s.title && s.title.includes('FrostStream')));
-    const mico = streams.filter(s => s.name.includes('Mico-Leão') || (s.title && s.title.includes('Mico-Leão')));
+    const fenix = streams.filter(s => s.name.includes('FenixFlix') || (s.title && s.title.includes('FenixFlix')));
     const brazuca = streams.filter(s => s.name.includes('Brazuca') || (s.title && s.title.includes('Brazuca')));
     const torrentio = streams.filter(s => s.name.includes('Torrentio') || (s.title && s.title.includes('Torrentio')));
     
     // Web embeds (WarezCDN, SuperFlix, EmbedFlix, PrimeCine, FlixAPI, MegaFlix, VidSrc, etc.)
-    const web = streams.filter(s => s.embedUrl && !fenix.includes(s) && !frost.includes(s) && !mico.includes(s));
+    const web = streams.filter(s => s.embedUrl && !fenix.includes(s) && !frost.includes(s));
     
     // Remaining unclassified
-    const other = streams.filter(s => !fenix.includes(s) && !frost.includes(s) && !mico.includes(s) && !brazuca.includes(s) && !torrentio.includes(s) && !web.includes(s));
+    const other = streams.filter(s => !fenix.includes(s) && !frost.includes(s) && !brazuca.includes(s) && !torrentio.includes(s) && !web.includes(s));
 
     let html = '';
 
-    if (mico.length > 0) {
-      html += '<div style="color:#eab308; font-weight:800; font-size:1.05rem; margin:1rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(234,179,8,0.15); padding:10px 14px; border-radius:8px; border-left:4px solid #eab308; box-shadow:0 0 15px rgba(234,179,8,0.2);">'
-        + '<span>🦁</span> MICO-LEÃO DUBLADO 🇧🇷 (TORRENTS DUBLADOS & DUAL ÁUDIO PT-BR)</div>';
-      html += mico.map(stream => this.createStreamItem(stream)).join('');
+    if (frost.length > 0) {
+      html += '<div style="color:#06b6d4; font-weight:800; font-size:1.05rem; margin:1rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(6,182,212,0.15); padding:10px 14px; border-radius:8px; border-left:4px solid #06b6d4; box-shadow:0 0 15px rgba(6,182,212,0.2);">'
+        + '<span>❄️</span> FROSTSTREAM (STREAMS IPTV DIRETO REDEFLIX / CDMOVIES)</div>';
+      html += frost.map(stream => this.createStreamItem(stream)).join('');
     }
 
     if (fenix.length > 0) {
       html += '<div style="color:#ef4444; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(239,68,68,0.1); padding:8px 14px; border-radius:8px; border-left:4px solid #ef4444;">'
         + '<span>🔥</span> FENIXFLIX (STREAMS DIRETO MP4 DUBLADO PT-BR)</div>';
       html += fenix.map(stream => this.createStreamItem(stream)).join('');
-    }
-
-    if (frost.length > 0) {
-      html += '<div style="color:#06b6d4; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(6,182,212,0.1); padding:8px 14px; border-radius:8px; border-left:4px solid #06b6d4;">'
-        + '<span>❄️</span> FROSTSTREAM (STREAMS IPTV DIRETO REDEFLIX / CDMOVIES)</div>';
-      html += frost.map(stream => this.createStreamItem(stream)).join('');
     }
 
     if (brazuca.length > 0) {
