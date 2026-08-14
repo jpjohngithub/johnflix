@@ -44,7 +44,7 @@ function fetchWithTimeout(url, options = {}, timeoutMs = 3500) {
 const Cache = {
   get(key) {
     try {
-      const item = localStorage.getItem('jf_cache_v12_' + key);
+      const item = localStorage.getItem('jf_cache_v30_' + key);
       if (!item) return null;
       const parsed = JSON.parse(item);
       if (Date.now() - parsed.time < 15 * 60 * 1000) {
@@ -56,7 +56,7 @@ const Cache = {
   set(key, data) {
     try {
       if (!data) return;
-      localStorage.setItem('jf_cache_v12_' + key, JSON.stringify({
+      localStorage.setItem('jf_cache_v30_' + key, JSON.stringify({
         time: Date.now(),
         data: data
       }));
@@ -492,31 +492,32 @@ const API = {
       const streamsList = [];
 
       // ══════════════════════════════════════════════
-      // 🔥 FenixFlix — Direct MP4/CDN streams PT-BR & English
+      // 🔥 FenixFlix — Direct MP4/CDN streams PT-BR & English (Player Nativo)
       // ══════════════════════════════════════════════
-      fenixStreams.forEach(s => {
+      const directVideoSources = [...fenixStreams, ...frostStreams.filter(s => s.url)];
+      directVideoSources.forEach(s => {
         if (!s.url) return;
 
         const descRaw = (s.description || s.title || s.name || '').replace(/\n/g, ' ');
         const nameRaw = (s.name || 'FenixFlix HD');
-        const combinedText = descRaw.toLowerCase();
+        const combinedText = (nameRaw + ' ' + descRaw).toLowerCase();
 
-        const isDub = combinedText.includes('dublado') || combinedText.includes('🇧🇷') || combinedText.includes('dual');
+        const isDub = combinedText.includes('dublado') || combinedText.includes('🇧🇷') || combinedText.includes('dual') || combinedText.includes('pt-br');
         const isEn = combinedText.includes('inglês') || combinedText.includes('english') || combinedText.includes('🇺🇸');
 
-        const qualMatch = nameRaw.match(/(4k|2160p|1080p|720p|480p)/i);
+        const qualMatch = (nameRaw + ' ' + descRaw).match(/(4k|2160p|1080p|720p|480p)/i);
         const quality = qualMatch ? qualMatch[1].toUpperCase() : 'HD';
 
         const is4k = quality === '4K' || quality === '2160P';
-        const qualScore = is4k ? 45 : quality === '1080P' ? 25 : quality === '720P' ? 15 : 5;
+        const qualScore = is4k ? 50 : quality === '1080P' ? 35 : quality === '720P' ? 20 : 10;
 
         streamsList.push({
-          name: `${isDub ? '🇧🇷 Dublado PT-BR' : '🇺🇸 Inglês / Dual'} — FenixFlix`,
-          title: `🔥 FenixFlix • ${descRaw.slice(0, 80)}`,
+          name: `🔥 ${isDub ? '🇧🇷 Dublado PT-BR' : '🇺🇸 Inglês / Dual'} — FenixFlix ${quality}`,
+          title: `🔥 FenixFlix • ${descRaw.slice(0, 80) || (quality + ' Direct MP4')}`,
           url: s.url,
           isDub: isDub,
-          category: isDub ? 'dubbed' : 'web',
-          score: qualScore + (is4k ? 20 : 0) + (isEn ? 15 : 0)
+          category: 'fenix',
+          score: qualScore + (is4k ? 20 : 0) + (isDub ? 30 : 10)
         });
       });
 
@@ -2235,16 +2236,16 @@ const UI = {
 
     let html = '';
 
-    if (frost.length > 0) {
-      html += '<div style="color:#06b6d4; font-weight:800; font-size:1.05rem; margin:1rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(6,182,212,0.15); padding:10px 14px; border-radius:8px; border-left:4px solid #06b6d4; box-shadow:0 0 15px rgba(6,182,212,0.2);">'
-        + '<span>❄️</span> FROSTSTREAM (STREAMS IPTV DIRETO REDEFLIX / CDMOVIES)</div>';
-      html += frost.map(stream => this.createStreamItem(stream)).join('');
+    if (fenix.length > 0) {
+      html += '<div style="color:#ef4444; font-weight:800; font-size:1.05rem; margin:1rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(239,68,68,0.15); padding:10px 14px; border-radius:8px; border-left:4px solid #ef4444; box-shadow:0 0 15px rgba(239,68,68,0.2);">'
+        + '<span>🔥</span> FENIXFLIX (STREAMS DIRETO MP4 DUBLADO PT-BR - PLAYER NATIVO)</div>';
+      html += fenix.map(stream => this.createStreamItem(stream)).join('');
     }
 
-    if (fenix.length > 0) {
-      html += '<div style="color:#ef4444; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(239,68,68,0.1); padding:8px 14px; border-radius:8px; border-left:4px solid #ef4444;">'
-        + '<span>🔥</span> FENIXFLIX (STREAMS DIRETO MP4 DUBLADO PT-BR)</div>';
-      html += fenix.map(stream => this.createStreamItem(stream)).join('');
+    if (frost.length > 0) {
+      html += '<div style="color:#06b6d4; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(6,182,212,0.15); padding:10px 14px; border-radius:8px; border-left:4px solid #06b6d4; box-shadow:0 0 15px rgba(6,182,212,0.2);">'
+        + '<span>❄️</span> FROSTSTREAM (STREAMS IPTV DIRETO REDEFLIX / CDMOVIES)</div>';
+      html += frost.map(stream => this.createStreamItem(stream)).join('');
     }
 
     if (brazuca.length > 0) {
