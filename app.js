@@ -44,7 +44,7 @@ function fetchWithTimeout(url, options = {}, timeoutMs = 3500) {
 const Cache = {
   get(key) {
     try {
-      const item = localStorage.getItem('jf_cache_v30_' + key);
+      const item = localStorage.getItem('jf_cache_v50_' + key);
       if (!item) return null;
       const parsed = JSON.parse(item);
       if (Date.now() - parsed.time < 15 * 60 * 1000) {
@@ -56,7 +56,7 @@ const Cache = {
   set(key, data) {
     try {
       if (!data) return;
-      localStorage.setItem('jf_cache_v30_' + key, JSON.stringify({
+      localStorage.setItem('jf_cache_v50_' + key, JSON.stringify({
         time: Date.now(),
         data: data
       }));
@@ -2062,7 +2062,9 @@ const UI = {
       state.currentEpisode
     );
 
-    const directWebStreams = (rawStreams || []).filter(s => (s.url && !s.url.startsWith('magnet:')) || s.embedUrl);
+    const fenixDirect = (rawStreams || []).filter(s => s.url && (s.name.includes('Fenix') || (s.title && s.title.includes('Fenix')) || s.category === 'fenix'));
+    const otherDirect = (rawStreams || []).filter(s => s.url && !fenixDirect.includes(s));
+    const webEmbeds = (rawStreams || []).filter(s => s.embedUrl);
     const torrentWebStreams = (rawStreams || []).filter(s => (s.magnetUrl || s.infoHash) && !s.url && !s.embedUrl).map(s => {
       const mag = s.magnetUrl || `magnet:?xt=urn:btih:${s.infoHash}&dn=${encodeURIComponent(s.name)}`;
       return {
@@ -2071,7 +2073,16 @@ const UI = {
       };
     });
 
-    const candidates = [...directWebStreams, ...torrentWebStreams];
+    // Sort FenixFlix direct streams: 720p working stream first, then 1080p, then 4K
+    fenixDirect.sort((a, b) => {
+      const aIs720 = a.name.includes('720') || (a.title && a.title.includes('720'));
+      const bIs720 = b.name.includes('720') || (b.title && b.title.includes('720'));
+      if (aIs720 && !bIs720) return -1;
+      if (!aIs720 && bIs720) return 1;
+      return (b.score || 0) - (a.score || 0);
+    });
+
+    const candidates = [...fenixDirect, ...otherDirect, ...webEmbeds, ...torrentWebStreams];
 
     if (!candidates || candidates.length === 0) {
       alert('Nenhum servidor disponível para este título no momento.');
@@ -2080,53 +2091,17 @@ const UI = {
       return;
     }
 
-    if (playerLoading) {
-      playerLoading.querySelector('p').textContent = `⚡ Testando velocidade de ${candidates.length} servidores em paralelo...`;
-    }
-
-    // Benchmark candidate servers in parallel (max 2.5s per probe)
-    const testCandidate = async (cand) => {
-      const targetUrl = cand.url || cand.embedUrl;
-      if (!targetUrl) return { ...cand, latency: 9999, ok: false, score: -1 };
-
-      const start = Date.now();
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 2500);
-
-      try {
-        const res = await fetch(targetUrl, { 
-          method: 'HEAD',
-          mode: 'no-cors',
-          signal: controller.signal
-        });
-        clearTimeout(timeout);
-        const latency = Date.now() - start;
-        const isDub = cand.isDub || cand.name.toLowerCase().includes('dublado') || cand.name.toLowerCase().includes('pt-br');
-        const isDirectWeb = (cand.embedUrl && !cand.embedUrl.includes('webtor.io')) || cand.url;
-        const score = (10000 - latency) + (isDub ? 3000 : 0) + (isDirectWeb ? 2000 : 0);
-        return { ...cand, latency, ok: true, score };
-      } catch(e) {
-        clearTimeout(timeout);
-        const isDub = cand.isDub || cand.name.toLowerCase().includes('dublado');
-        const isDirectWeb = (cand.embedUrl && !cand.embedUrl.includes('webtor.io')) || cand.url;
-        const score = 5000 + (isDub ? 2000 : 0) + (isDirectWeb ? 1500 : 0);
-        return { ...cand, latency: 850, ok: true, score };
-      }
-    };
-
-    const benchmarked = await Promise.all(candidates.map(testCandidate));
-    benchmarked.sort((a, b) => b.score - a.score);
-
-    state.activeStreams = benchmarked;
+    // Always prioritize FenixFlix as winner candidate 0
+    state.activeStreams = candidates;
     state.currentStreamIndex = 0;
-    this.updateHudStreamSelector(benchmarked, 0);
+    this.updateHudStreamSelector(candidates, 0);
 
-    const winner = benchmarked[0];
+    const winner = candidates[0];
     if (playerLoading) {
-      playerLoading.querySelector('p').textContent = `🚀 Servidor Mais Rápido Escolhido: ${winner.name} (${winner.latency < 9999 ? winner.latency + 'ms' : 'OK'})! Conectando...`;
+      playerLoading.querySelector('p').textContent = `🚀 Iniciando com ${winner.name}...`;
     }
 
-    // Launch winner stream!
+    // Launch winner stream immediately!
     this.testAndPlayStreamIndex(0);
   },
 
@@ -2641,13 +2616,31 @@ const UI = {
     };
 
     video.onerror = () => {
-      console.warn('Direct video error, attempting fallback...');
-      if (!url.includes('allorigins') && url.startsWith('http:')) {
-        const fallbackUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
-        video.src = fallbackUrl;
+      console.warn('Direct video error on stream:', url);
+      if (!video.dataset.triedProxy && !url.includes('corsproxy') && !url.includes('allorigins')) {
+        video.dataset.triedProxy = '1';
+        const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(url);
+        video.src = proxyUrl;
         triggerAutoPlay();
+        return;
+      }
+      video.dataset.triedProxy = '';
+      if (typeof this.playNextStream === 'function') {
+        console.log('Auto-advancing to next working stream...');
+        this.playNextStream();
       }
     };
+
+    // 3.5s stall watchdog: auto advance if stream doesn't start
+    if (this.streamWatchdogTimer) clearTimeout(this.streamWatchdogTimer);
+    this.streamWatchdogTimer = setTimeout(() => {
+      if (video && video.readyState < 2 && video.paused && !playerOverlay.classList.contains('hidden')) {
+        console.warn('Stream stall detected (>3.5s), auto-falling back to next stream...');
+        if (typeof this.playNextStream === 'function') {
+          this.playNextStream();
+        }
+      }
+    }, 3500);
 
     if (url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
       const hls = new Hls();
@@ -2657,7 +2650,10 @@ const UI = {
         triggerAutoPlay();
       });
       hls.on(Hls.Events.ERROR, (event, data) => {
-        if (data.fatal) console.warn('HLS error:', data);
+        if (data.fatal) {
+          console.warn('HLS error:', data);
+          if (typeof this.playNextStream === 'function') this.playNextStream();
+        }
       });
       window.currentHls = hls;
     } else {
