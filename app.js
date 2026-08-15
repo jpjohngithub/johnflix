@@ -1947,14 +1947,15 @@ const UI = {
     const cleanId = item.id.split(':')[0];
     const posterUrl = `https://images.metahub.space/poster/medium/${cleanId}/img`;
     const num = index + 1;
+    const formattedNum = num < 10 ? `#0${num}` : `#${num}`;
     return `
       <div class="movie-card cinema-card" onclick="UI.openModal('${cleanId}', 'movie')">
-        <div class="cinema-card-badge" style="background:${accent};">#${num}</div>
+        <div class="cinema-card-badge" style="background:${accent};">${formattedNum}</div>
+        <div class="cinema-card-year">${item.year}</div>
         <img class="movie-poster" src="${posterUrl}" alt="${item.name}" onerror="this.style.background='linear-gradient(135deg, #1a1a2e, #2a2a4e)'; this.style.minHeight='270px';" loading="lazy">
-        <span class="movie-card-type" style="background:rgba(0,0,0,0.88); color:#fff; font-size:0.68rem; font-weight:700;">${item.timeline || item.year}</span>
         <div class="movie-card-overlay">
           <span class="movie-card-title">${item.name}</span>
-          <span class="movie-card-year">${item.year} • Filme #${num}</span>
+          <span class="movie-card-year">${item.timeline || `${item.year} • Capítulo ${num}`}</span>
         </div>
       </div>
     `;
@@ -2161,10 +2162,12 @@ const UI = {
         html += `
           <section class="catalog-section cinema-saga-section" id="saga-${saga.id}">
             <div class="cinema-saga-header">
-              <h2 class="cinema-saga-title" style="color:${saga.accent};">
-                ${saga.title}
-              </h2>
-              <span class="cinema-saga-count-badge">${sortedItems.length} Filmes • Ordem Cronológica</span>
+              <div class="cinema-saga-title-wrap">
+                <span class="cinema-saga-indicator" style="background:${saga.accent}; color:${saga.accent};"></span>
+                <h2 class="cinema-saga-title">
+                  ${saga.title}
+                </h2>
+              </div>
             </div>
             <div class="carousel-wrapper">
               <button class="carousel-btn carousel-prev" onclick="window.scrollCarousel('saga-${saga.id}', -1)">‹</button>

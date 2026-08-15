@@ -1851,102 +1851,137 @@ button, a, input, select, .movie-card, .stream-item, .mobile-nav-item {
   }
 }
 
-/* --- Seção Cinema: Unique Cinematic Design System --- */
+/* --- Seção Cinema: Luxury Cinematic Design System --- */
 .cinema-saga-section {
   position: relative;
-  margin-bottom: 2.8rem;
-  padding-bottom: 0.5rem;
+  margin-bottom: 3.2rem;
+  padding: 0;
 }
 
 .cinema-saga-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 4% 0.8rem;
-  flex-wrap: wrap;
-  gap: 10px;
+  padding: 0 4% 1rem;
+  gap: 14px;
+}
+
+.cinema-saga-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cinema-saga-indicator {
+  width: 4px;
+  height: 28px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  box-shadow: 0 0 16px currentColor;
 }
 
 .cinema-saga-title {
-  font-size: 1.35rem;
+  font-size: 1.45rem;
   font-weight: 800;
-  letter-spacing: -0.3px;
+  letter-spacing: -0.4px;
   display: flex;
   align-items: center;
   gap: 10px;
   margin: 0;
+  color: #ffffff;
 }
 
-.cinema-saga-count-badge {
-  font-size: 0.76rem;
-  font-weight: 700;
-  padding: 4px 12px;
-  border-radius: 20px;
+.cinema-saga-tag {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 3px 10px;
+  border-radius: 6px;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  color: #d1d5db;
-  letter-spacing: 0.3px;
+  color: #e5e7eb;
 }
 
 .cinema-card {
   position: relative;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.35s ease;
+  background: #12121a;
 }
 
 .cinema-card:hover {
-  transform: scale(1.08) translateY(-4px);
-  z-index: 5;
+  transform: scale(1.09) translateY(-6px);
+  z-index: 10;
 }
 
 .cinema-card-badge {
   position: absolute;
-  top: 10px;
-  left: 10px;
+  top: 9px;
+  left: 9px;
   z-index: 10;
   color: #ffffff;
   font-family: var(--font);
   font-weight: 900;
-  font-size: 0.82rem;
-  padding: 4px 9px;
-  border-radius: 8px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  font-size: 0.8rem;
+  padding: 4px 8px;
+  border-radius: 7px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.35);
   letter-spacing: 0.5px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.cinema-card-year {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  z-index: 10;
+  color: #e5e7eb;
+  font-family: var(--font);
+  font-weight: 800;
+  font-size: 0.72rem;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  letter-spacing: 0.3px;
 }
 
 .cinema-chip-nav {
   display: flex;
   gap: 10px;
   overflow-x: auto;
-  padding: 15px 4% 20px;
+  padding: 15px 4% 24px;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
 }
 
 .cinema-chip-btn {
-  padding: 8px 16px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  border-radius: 24px;
+  padding: 9px 18px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  border-radius: 30px;
   white-space: nowrap;
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: #f3f4f6;
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #e2e8f0;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .cinema-chip-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.12);
   transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.35);
   color: #ffffff;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
 /* --- Prevent Native Browser Duplicate Subtitles --- */
