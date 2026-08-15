@@ -1848,6 +1848,29 @@ const UI = {
     document.getElementById('hero-info-btn')?.addEventListener('click', () => {
       if (state.heroMeta) this.openModal(state.heroMeta.id);
     });
+
+    document.getElementById('hero-watchlist-btn')?.addEventListener('click', () => {
+      if (state.heroMeta) {
+        const added = User.toggleWatchlist(state.heroMeta);
+        this.updateHeroWatchlistBtn();
+        Toast.show(added ? '⭐ Adicionado à Minha Lista!' : 'Removido da Minha Lista', added ? 'success' : 'info');
+      }
+    });
+
+    document.getElementById('hero-prev-btn')?.addEventListener('click', () => {
+      this.cycleHero(-1);
+    });
+
+    document.getElementById('hero-next-btn')?.addEventListener('click', () => {
+      this.cycleHero(1);
+    });
+
+    document.querySelectorAll('.hero-prog-dot').forEach((dot) => {
+      dot.addEventListener('click', (e) => {
+        const idx = parseInt(e.currentTarget.dataset.index, 10) || 0;
+        this.setHeroByIndex(idx);
+      });
+    });
     
     // Modal
     document.getElementById('modal-close')?.addEventListener('click', () => this.closeModal());
@@ -2373,14 +2396,71 @@ const UI = {
     const items = (list && list.length > 0) ? list : (state.catalogs.popular || []);
     if (!items || items.length === 0) return;
 
-    // Filter top 15 items and pick one that wasn't the last hero
-    const candidates = items.slice(0, 15).filter(item => item.id !== state.lastHeroId);
-    const pool = candidates.length > 0 ? candidates : items;
+    // Filter top 5 spotlight items
+    const pool = items.slice(0, 5);
+    state.heroSpotlightItems = pool;
+
     const randomIndex = Math.floor(Math.random() * pool.length);
+    state.heroSpotlightIndex = randomIndex;
     const selected = pool[randomIndex];
 
     state.lastHeroId = selected.id;
     this.setHero(selected, true);
+  },
+
+  cycleHero(direction) {
+    const pool = state.heroSpotlightItems && state.heroSpotlightItems.length > 0 
+      ? state.heroSpotlightItems 
+      : (state.catalogs.popular ? state.catalogs.popular.slice(0, 5) : []);
+    if (!pool || pool.length === 0) return;
+
+    state.heroSpotlightItems = pool;
+    let newIndex = (state.heroSpotlightIndex || 0) + direction;
+    if (newIndex < 0) newIndex = pool.length - 1;
+    if (newIndex >= pool.length) newIndex = 0;
+
+    state.heroSpotlightIndex = newIndex;
+    const selected = pool[newIndex];
+    state.lastHeroId = selected.id;
+    this.setHero(selected, true);
+  },
+
+  setHeroByIndex(index) {
+    const pool = state.heroSpotlightItems && state.heroSpotlightItems.length > 0 
+      ? state.heroSpotlightItems 
+      : (state.catalogs.popular ? state.catalogs.popular.slice(0, 5) : []);
+    if (!pool || !pool[index]) return;
+
+    state.heroSpotlightIndex = index;
+    const selected = pool[index];
+    state.lastHeroId = selected.id;
+    this.setHero(selected, true);
+  },
+
+  updateHeroWatchlistBtn() {
+    const btn = document.getElementById('hero-watchlist-btn');
+    const icon = document.getElementById('hero-wl-icon');
+    const text = document.getElementById('hero-wl-text');
+    if (!btn || !state.heroMeta) return;
+
+    const inList = User.isInWatchlist(state.heroMeta.id);
+    if (icon) icon.textContent = inList ? '⭐' : '➕';
+    if (text) text.textContent = inList ? 'Salvo ✓' : 'Salvar';
+    if (inList) {
+      btn.style.background = 'rgba(139, 92, 246, 0.35)';
+      btn.style.borderColor = 'var(--accent)';
+    } else {
+      btn.style.background = '';
+      btn.style.borderColor = '';
+    }
+  },
+
+  updateHeroDots() {
+    const activeIdx = state.heroSpotlightIndex || 0;
+    document.querySelectorAll('.hero-prog-dot').forEach((dot, idx) => {
+      if (idx === activeIdx) dot.classList.add('active');
+      else dot.classList.remove('active');
+    });
   },
 
   startHeroAutoRotation() {
@@ -2393,7 +2473,7 @@ const UI = {
       const searchActive = !document.getElementById('search-results')?.classList.contains('hidden');
 
       if (!modalOpen && !playerOpen && !searchActive && state.catalogs.popular && state.catalogs.popular.length > 0) {
-        this.setRandomHero(state.catalogs.popular);
+        this.cycleHero(1);
       }
     }, 12000); // Rotate every 12 seconds
   },
@@ -2408,11 +2488,16 @@ const UI = {
     const heroMeta = document.getElementById('hero-meta');
     const heroDescription = document.getElementById('hero-description');
     const heroTypeName = document.getElementById('hero-type-name');
+    const heroPillLabel = document.getElementById('hero-pill-label');
 
     const updateDOM = () => {
       const itemType = meta.type || (state.currentType === 'series' ? 'series' : 'movie');
       if (heroTypeName) {
-        heroTypeName.textContent = state.currentType === 'cinema' ? '🏛️ Seção Cinema' : (itemType === 'series' ? 'Série 📺' : 'Filme 🎬');
+        heroTypeName.textContent = state.currentType === 'cinema' ? '🏛️ Seção Cinema' : (itemType === 'series' ? 'Séries' : 'Filmes');
+      }
+      if (heroPillLabel) {
+        const isHighRated = meta.imdbRating && parseFloat(meta.imdbRating) >= 8.0;
+        heroPillLabel.textContent = isHighRated ? 'EM ALTA HOJE 🔥' : 'RECOMENDADO ⭐';
       }
       
       if (heroBackdrop) {
@@ -2435,6 +2520,9 @@ const UI = {
       if (heroDescription) {
         heroDescription.innerHTML = `<span class="kinetic-desc">${meta.description || 'Sem descrição disponível.'}</span>`;
       }
+
+      this.updateHeroWatchlistBtn();
+      this.updateHeroDots();
     };
 
     const playHeroIn = () => {

@@ -58,7 +58,7 @@
         <div class="hero-gradient"></div>
         <div class="hero-content">
           <div class="hero-category-pill" id="hero-category-pill">
-            <span class="pill-dot"></span> Exibindo <strong id="hero-type-name">Filmes</strong>
+            <span class="pill-dot"></span> <span id="hero-pill-label">EM DESTAQUE</span> • <strong id="hero-type-name">Filmes</strong>
           </div>
           <h1 class="hero-title" id="hero-title"></h1>
           <div class="hero-meta" id="hero-meta"></div>
@@ -68,9 +68,23 @@
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Assistir
             </button>
             <button class="btn btn-secondary hero-info-btn" id="hero-info-btn">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg> Mais Info
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg> Detalhes
+            </button>
+            <button class="btn btn-secondary hero-watchlist-btn" id="hero-watchlist-btn">
+              <span id="hero-wl-icon">⭐</span> <span id="hero-wl-text">Salvar</span>
             </button>
           </div>
+        </div>
+        <div class="hero-spotlight-nav" id="hero-spotlight-nav">
+          <button class="hero-nav-arrow hero-nav-prev" id="hero-prev-btn" aria-label="Recomendação Anterior">‹</button>
+          <div class="hero-progress-bars" id="hero-progress-bars">
+            <span class="hero-prog-dot active" data-index="0"></span>
+            <span class="hero-prog-dot" data-index="1"></span>
+            <span class="hero-prog-dot" data-index="2"></span>
+            <span class="hero-prog-dot" data-index="3"></span>
+            <span class="hero-prog-dot" data-index="4"></span>
+          </div>
+          <button class="hero-nav-arrow hero-nav-next" id="hero-next-btn" aria-label="Próxima Recomendação">›</button>
         </div>
       </section>
 
