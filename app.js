@@ -2928,23 +2928,19 @@ const UI = {
 
     if (this.feedbackTimer) clearTimeout(this.feedbackTimer);
 
-    // Show prompt 1.8s after connection
-    this.feedbackTimer = setTimeout(() => {
-      const overlay = document.getElementById('player-overlay');
-      if (!state.isPlayerActive || !overlay || overlay.classList.contains('hidden')) return;
+    const msInfo = stream?.latency && stream.latency < 9999 ? ` (${stream.latency}ms ⚡)` : '';
+    if (serverBadge) {
+      serverBadge.textContent = `⚡ ${stream?.name || 'Servidor Atual'}${msInfo}`;
+    }
+    
+    // Show instantly (0ms) as soon as movie starts
+    feedbackPrompt.classList.remove('hidden');
 
-      const msInfo = stream?.latency && stream.latency < 9999 ? ` (${stream.latency}ms ⚡)` : '';
-      if (serverBadge) {
-        serverBadge.textContent = `⚡ ${stream?.name || 'Servidor Atual'}${msInfo}`;
-      }
-      feedbackPrompt.classList.remove('hidden');
-
-      // Auto-hide after 12s if user doesn't interact so it doesn't disturb viewing
-      if (this.feedbackAutoHideTimer) clearTimeout(this.feedbackAutoHideTimer);
-      this.feedbackAutoHideTimer = setTimeout(() => {
-        feedbackPrompt.classList.add('hidden');
-      }, 12000);
-    }, 1800);
+    // Auto-hide after 12s if user doesn't interact so it doesn't disturb viewing
+    if (this.feedbackAutoHideTimer) clearTimeout(this.feedbackAutoHideTimer);
+    this.feedbackAutoHideTimer = setTimeout(() => {
+      feedbackPrompt.classList.add('hidden');
+    }, 12000);
   },
 
   updateHudStreamSelector(streams, activeIndex = 0) {
@@ -3556,6 +3552,17 @@ const UI = {
       clearTimeout(this.streamLoadWatchdog);
       this.streamLoadWatchdog = null;
     }
+    if (this.feedbackTimer) {
+      clearTimeout(this.feedbackTimer);
+      this.feedbackTimer = null;
+    }
+    if (this.feedbackAutoHideTimer) {
+      clearTimeout(this.feedbackAutoHideTimer);
+      this.feedbackAutoHideTimer = null;
+    }
+
+    const feedbackPrompt = document.getElementById('hud-source-feedback');
+    if (feedbackPrompt) feedbackPrompt.classList.add('hidden');
 
     if (playerOverlay) playerOverlay.classList.add('hidden');
     
