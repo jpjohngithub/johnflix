@@ -833,21 +833,9 @@ const API = {
       // 1. Generate Clean, Fast & Reliable Web Embed Sources
       const isMovie = realType === 'movie';
 
-      const warezCdnUrl = isMovie
-        ? `https://embed.warezcdn.net/filme/${cleanId}`
-        : `https://embed.warezcdn.net/serie/${cleanId}/${season}/${episode}`;
-
-      const embedderNetUrl = isMovie
-        ? `https://embedder.net/e/movie?imdb=${cleanId}`
-        : `https://embedder.net/e/tv?imdb=${cleanId}&season=${season}&episode=${episode}`;
-
       const multiembedUrl = isMovie
         ? `https://multiembed.mov/?video_id=${cleanId}&tmdb=1`
         : `https://multiembed.mov/?video_id=${cleanId}&s=${season}&e=${episode}`;
-
-      const autoEmbedUrl = isMovie
-        ? `https://autoembed.co/movie/imdb/${cleanId}`
-        : `https://autoembed.co/tv/imdb/${cleanId}/${season}/${episode}`;
 
       const vidlinkUrl = isMovie
         ? `https://vidlink.pro/movie/${cleanId}`
@@ -875,20 +863,6 @@ const API = {
 
       const newWebStreams = [
         {
-          provider: 'WarezCDN',
-          embedUrl: warezCdnUrl,
-          category: 'web',
-          isDub: true,
-          score: 95
-        },
-        {
-          provider: 'EmbedderNet',
-          embedUrl: embedderNetUrl,
-          category: 'web',
-          isDub: true,
-          score: 90
-        },
-        {
           provider: 'VidSrc',
           embedUrl: vidsrcDubUrl,
           category: 'web',
@@ -901,13 +875,6 @@ const API = {
           category: 'web',
           isDub: true,
           score: 80
-        },
-        {
-          provider: 'AutoEmbed',
-          embedUrl: autoEmbedUrl,
-          category: 'web',
-          isDub: true,
-          score: 78
         },
         {
           provider: 'VidLink',
@@ -967,17 +934,14 @@ const API = {
         return [];
       };
 
-      const frostConfiguredUrl = 'https://froststream.cloutteam.com/providers.iptv=checked&providers.cdmoviedb=checked&providers.redeflix=checked&providers.tomato=checked&providers.myembed=checked&providers.anizone=checked&providers.superflix=checked&providers.overflix=checked';
-      const torrentioPtBrUrl = 'https://torrentio.strem.fun/sort=qualitysize|providers=yts,eztv,rarbg,1337x,thepiratebay,kickasstorrents,torrentgalaxy,bludv,meustorrents,commandotorrents';
+      const frostConfiguredUrl = 'https://froststream.cloutteam.com/providers.iptv=checked&providers.cdmoviedb=checked&providers.redeflix=checked&providers.tomato=checked&providers.myembed=checked&providers.anizone=checked';
 
-      const [fenixRes, frostRes, frostConfigRes, brazucaRes, torrentioRes, torrentioPtBrRes, tpbPlusRes] = await Promise.allSettled([
+      const [fenixRes, frostRes, frostConfigRes, brazucaRes, torrentioRes] = await Promise.allSettled([
         fetchAddon('https://fenixflix.fenixhub.online'),
         fetchAddon('https://froststream.cloutteam.com'),
         fetchAddon(frostConfiguredUrl),
         fetchAddon('https://94c8cb9f702d-brazuca-torrents.baby-beamup.club'),
-        fetchAddon('https://torrentio.strem.fun'),
-        fetchAddon(torrentioPtBrUrl),
-        fetchAddon('https://thepiratebay-plus.strem.fun')
+        fetchAddon('https://torrentio.strem.fun')
       ]);
 
       const fenixStreams = fenixRes.status === 'fulfilled' ? fenixRes.value : [];
@@ -986,8 +950,6 @@ const API = {
       const frostStreams = [...frostBaseStreams, ...frostConfigStreams];
       const brazucaStreams = brazucaRes.status === 'fulfilled' ? brazucaRes.value : [];
       const torrentioStreams = torrentioRes.status === 'fulfilled' ? torrentioRes.value : [];
-      const torrentioPtBrStreams = torrentioPtBrRes.status === 'fulfilled' ? torrentioPtBrRes.value : [];
-      const tpbPlusStreams = tpbPlusRes.status === 'fulfilled' ? tpbPlusRes.value : [];
 
       const streamsList = [];
 
@@ -1004,7 +966,7 @@ const API = {
 
         const provider = s.customProvider || (s.name?.includes('Fenix') ? 'FenixFlix' : 'FrostStream');
         const descRaw = (s.description || s.title || s.name || '').toLowerCase();
-        const isDub = descRaw.includes('dublado') || descRaw.includes('🇧🇷') || descRaw.includes('dual') || descRaw.includes('pt-br') || descRaw.includes('pt br') || descRaw.includes('português') || descRaw.includes('portugues') || descRaw.includes('brazuca') || descRaw.includes('bludv') || descRaw.includes('comando') || descRaw.includes('nacional');
+        const isDub = descRaw.includes('dublado') || descRaw.includes('🇧🇷') || descRaw.includes('dual') || descRaw.includes('pt-br') || descRaw.includes('português');
         const is720 = descRaw.includes('720');
 
         streamsList.push({
@@ -1012,7 +974,7 @@ const API = {
           url: s.url,
           isDub: isDub,
           category: provider === 'FenixFlix' ? 'fenix' : 'frost',
-          score: (provider === 'FenixFlix' ? 100 : 90) + (is720 ? 30 : 10) + (isDub ? 30 : 0)
+          score: (provider === 'FenixFlix' ? 100 : 90) + (is720 ? 30 : 10) + (isDub ? 25 : 0)
         });
       });
 
@@ -1021,9 +983,7 @@ const API = {
       // ══════════════════════════════════════════════
       const torrentSources = [
         ...brazucaStreams.map(s => ({ ...s, customProvider: 'Brazuca' })),
-        ...torrentioPtBrStreams.map(s => ({ ...s, customProvider: 'Torrentio PT-BR' })),
-        ...torrentioStreams.slice(0, 15).map(s => ({ ...s, customProvider: 'Torrentio' })),
-        ...tpbPlusStreams.slice(0, 10).map(s => ({ ...s, customProvider: 'ThePirateBay' }))
+        ...torrentioStreams.slice(0, 15).map(s => ({ ...s, customProvider: 'Torrentio' }))
       ];
 
       torrentSources.forEach(s => {
@@ -1031,7 +991,7 @@ const API = {
         if (!hash) return;
 
         const titleRaw = (s.title || s.name || '').toLowerCase();
-        const isDub = titleRaw.includes('dublado') || titleRaw.includes('dual') || titleRaw.includes('pt-br') || titleRaw.includes('pt br') || titleRaw.includes('português') || titleRaw.includes('portugues') || titleRaw.includes('brazuca') || titleRaw.includes('bludv') || titleRaw.includes('comando') || titleRaw.includes('nacional');
+        const isDub = titleRaw.includes('dublado') || titleRaw.includes('dual') || titleRaw.includes('pt-br') || titleRaw.includes('português') || titleRaw.includes('brazuca');
         const trackers = [
           'udp://tracker.opentrackr.org:1337/announce',
           'udp://open.stealth.si:80/announce',
@@ -1046,7 +1006,7 @@ const API = {
           infoHash: hash,
           isDub: isDub,
           category: 'torrent',
-          score: (s.customProvider === 'Brazuca' ? 65 : s.customProvider === 'Torrentio PT-BR' ? 60 : 40) + (isDub ? 30 : 0)
+          score: (s.customProvider === 'Brazuca' ? 60 : 40) + (isDub ? 25 : 0)
         });
       });
 
@@ -1062,7 +1022,7 @@ const API = {
         return (b.score || 0) - (a.score || 0);
       });
 
-      // Assign Clean, Simple Numbered Names (e.g. FenixFlix Nativo 01, FrostStream 01, Brazuca 01, WarezCDN 01, VidSrc 01)
+      // Assign Clean, Simple Numbered Names (e.g. FenixFlix Nativo 01, FrostStream 01, Brazuca 01, VidSrc 01)
       const providerCounters = {};
       streamsList.forEach(s => {
         let prov = s.provider || 'Servidor';
@@ -1158,21 +1118,19 @@ const API = {
   }
 };
 
-// --- Subtitles Engine (High-Performance 60 FPS Sync & Binary Search) ---
+// --- Subtitles Engine ---
 
 const Subtitles = {
   cache: {},
   activeCues: [],
   currentLang: 'pob',
   syncOffset: 0,
-  _rafId: null,
-  _lastRenderedText: '',
 
   async fetchList(imdbId, type, season = 1, episode = 1, lang = 'pob') {
     const cleanId = (imdbId || '').split(':')[0];
     const realType = (type === 'series' || cleanId.includes(':') || (season && episode && type !== 'movie')) ? 'series' : 'movie';
     const subKey = realType === 'series' ? `${cleanId}:${season}:${episode}` : cleanId;
-    const cacheKey = `sub_v4_${subKey}_${lang}`;
+    const cacheKey = `sub_v3_${subKey}_${lang}`;
     if (this.cache[cacheKey]) return this.cache[cacheKey];
 
     const results = [];
@@ -1233,33 +1191,6 @@ const Subtitles = {
     return results;
   },
 
-  cleanSubtitleText(raw) {
-    if (!raw) return '';
-    return raw
-      .replace(/<font[^>]*>/gi, '')
-      .replace(/<\/font>/gi, '')
-      .replace(/<[^>]+>/g, '') // remove HTML formatting tags
-      .replace(/\{[^\}]+\}/g, '') // remove ASS/SSA positioning tags
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'")
-      .trim();
-  },
-
-  timeToSeconds(tStr) {
-    if (!tStr) return 0;
-    const clean = tStr.trim().replace(',', '.');
-    const parts = clean.split(':');
-    if (parts.length === 3) {
-      return parseFloat(parts[0]) * 3600 + parseFloat(parts[1]) * 60 + parseFloat(parts[2]);
-    } else if (parts.length === 2) {
-      return parseFloat(parts[0]) * 60 + parseFloat(parts[1]);
-    }
-    return parseFloat(clean) || 0;
-  },
-
   srtToVtt(srtText) {
     return 'WEBVTT\n\n' + srtText
       .replace(/\r\n/g, '\n')
@@ -1272,81 +1203,42 @@ const Subtitles = {
     const cues = [];
     let currentCue = null;
 
+    const timeToSeconds = (tStr) => {
+      const parts = (tStr || '').trim().split(':');
+      if (parts.length === 3) {
+        const secsParts = parts[2].split('.');
+        return parseInt(parts[0], 10) * 3600 + parseInt(parts[1], 10) * 60 + parseInt(secsParts[0], 10) + (parseInt(secsParts[1] || '0', 10) / 1000);
+      }
+      return 0;
+    };
+
     const isSpamLine = (txt) => {
       const l = txt.toLowerCase();
       return l.includes('opensubtitles') || l.includes('getray.app') || l.includes('tryray.app') 
           || l.includes('osdb.link') || l.includes('legendas por') || l.includes('ansado de procurar')
-          || l.includes('watch online movies') || l.includes('subtitles by') || l.includes('sincronizado por');
+          || l.includes('watch online movies');
     };
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
       if (line.includes('-->')) {
-        const [startStr, endStr] = line.split('-->');
+        const [start, end] = line.split('-->');
         currentCue = {
-          start: this.timeToSeconds(startStr),
-          end: this.timeToSeconds(endStr),
+          start: timeToSeconds(start),
+          end: timeToSeconds(end),
           text: ''
         };
       } else if (currentCue && line !== '' && !line.startsWith('WEBVTT') && isNaN(line)) {
         if (!isSpamLine(line)) {
-          const cleanText = this.cleanSubtitleText(line);
-          if (cleanText) {
-            currentCue.text += (currentCue.text ? '\n' : '') + cleanText;
-          }
+          currentCue.text += (currentCue.text ? '\n' : '') + line;
         }
       } else if (currentCue && line === '') {
-        if (currentCue.text.trim() && currentCue.end > currentCue.start) {
-          cues.push(currentCue);
-        }
+        if (currentCue.text.trim()) cues.push(currentCue);
         currentCue = null;
       }
     }
-    if (currentCue && currentCue.text.trim() && currentCue.end > currentCue.start) {
-      cues.push(currentCue);
-    }
-
-    // Sort ascending by start time for instant binary search
-    cues.sort((a, b) => a.start - b.start);
+    if (currentCue && currentCue.text.trim()) cues.push(currentCue);
     return cues;
-  },
-
-  findCue(time) {
-    if (!this.activeCues || this.activeCues.length === 0) return null;
-    let low = 0;
-    let high = this.activeCues.length - 1;
-    while (low <= high) {
-      const mid = (low + high) >> 1;
-      const cue = this.activeCues[mid];
-      if (time < cue.start) {
-        high = mid - 1;
-      } else if (time > cue.end) {
-        low = mid + 1;
-      } else {
-        return cue;
-      }
-    }
-    return null;
-  },
-
-  startClockSync(video) {
-    if (this._rafId) cancelAnimationFrame(this._rafId);
-    if (!video) return;
-
-    const renderFrame = () => {
-      if (!video.paused && !video.ended && this.currentLang !== 'off') {
-        this.syncOverlay(video.currentTime);
-        this._rafId = requestAnimationFrame(renderFrame);
-      }
-    };
-    this._rafId = requestAnimationFrame(renderFrame);
-  },
-
-  stopClockSync() {
-    if (this._rafId) {
-      cancelAnimationFrame(this._rafId);
-      this._rafId = null;
-    }
   },
 
   async applySubtitles(lang, imdbId, type, season = 1, episode = 1, chosenIndex = 0) {
@@ -1356,12 +1248,10 @@ const Subtitles = {
 
     this.currentLang = lang;
     this.activeCues = [];
-    this._lastRenderedText = '';
     if (subText) subText.textContent = '';
     if (overlay) overlay.classList.add('hidden');
 
     if (lang === 'off') {
-      this.stopClockSync();
       if (video) {
         Array.from(video.querySelectorAll('track')).forEach(t => t.remove());
       }
@@ -1379,12 +1269,7 @@ const Subtitles = {
 
     const subObj = subs[chosenIndex] || subs[0];
     await this.downloadAndAttach(subObj, video, lang === 'pob' ? 'Português (BR)' : lang === 'eng' ? 'English' : 'Español');
-    
-    if (video && !video.paused) {
-      this.startClockSync(video);
-    } else {
-      this.syncOverlay(video ? video.currentTime : 0);
-    }
+    this.syncOverlay(video ? video.currentTime : 0);
   },
 
   async downloadAndAttach(subObj, video, langName) {
@@ -1442,7 +1327,7 @@ const Subtitles = {
 
         video.appendChild(track);
         if (video.textTracks && video.textTracks[0]) {
-          video.textTracks[0].mode = 'hidden'; // Custom high-contrast overlay renders text
+          video.textTracks[0].mode = 'hidden'; // Custom overlay renders text
         }
       }
     } catch(e) {
@@ -1451,10 +1336,8 @@ const Subtitles = {
   },
 
   clear() {
-    this.stopClockSync();
     this.activeCues = [];
     this.syncOffset = 0;
-    this._lastRenderedText = '';
     const overlay = document.getElementById('custom-subtitles-overlay');
     const subText = document.getElementById('custom-subtitles-text');
     if (subText) subText.textContent = '';
@@ -1519,21 +1402,13 @@ const Subtitles = {
     }
 
     const adjustedTime = currentTime + (this.syncOffset || 0);
-    const currentCue = this.findCue(adjustedTime);
+    const currentCue = this.activeCues.find(c => adjustedTime >= c.start && adjustedTime <= c.end);
 
     if (currentCue && currentCue.text) {
-      if (this._lastRenderedText !== currentCue.text) {
-        this._lastRenderedText = currentCue.text;
-        if (subText) subText.innerText = currentCue.text;
-      }
-      if (overlay && overlay.classList.contains('hidden')) {
-        overlay.classList.remove('hidden');
-      }
+      if (subText) subText.innerText = currentCue.text;
+      if (overlay) overlay.classList.remove('hidden');
     } else {
-      this._lastRenderedText = '';
-      if (overlay && !overlay.classList.contains('hidden')) {
-        overlay.classList.add('hidden');
-      }
+      if (overlay) overlay.classList.add('hidden');
     }
   }
 };
@@ -3919,27 +3794,16 @@ const UI = {
       if (playerError) playerError.classList.add('hidden');
     };
 
-    video.onplay = () => {
-      onPlaySuccess();
-      Subtitles.startClockSync(video);
-    };
-    video.onpause = () => {
-      Subtitles.stopClockSync();
-      Subtitles.syncOverlay(video.currentTime);
-    };
-
     const triggerAutoPlay = () => {
       video.muted = false;
       video.volume = 1.0;
       video.play().then(() => {
         onPlaySuccess();
-        Subtitles.startClockSync(video);
       }).catch(err => {
         console.warn('Autoplay unmuted blocked by browser policy, attempting muted start with auto-unmute on touch...', err);
         video.muted = true;
         video.play().then(() => {
           onPlaySuccess();
-          Subtitles.startClockSync(video);
           const unmuteOnInteraction = () => {
             video.muted = false;
             video.volume = 1.0;
@@ -4117,8 +3981,6 @@ const UI = {
     // Stop all auto-play and watchdog timers immediately
     state.isPlayerActive = false;
     state.autoPlaySessionId++;
-    Subtitles.stopClockSync();
-    Subtitles.clear();
     if (this.autoTestTimer) {
       clearTimeout(this.autoTestTimer);
       this.autoTestTimer = null;
@@ -4140,8 +4002,6 @@ const UI = {
       this.feedbackAutoHideTimer = null;
     }
 
-    const playerLoading = document.getElementById('player-loading');
-    if (playerLoading) playerLoading.classList.add('hidden');
     const feedbackPrompt = document.getElementById('hud-source-feedback');
     if (feedbackPrompt) feedbackPrompt.classList.add('hidden');
 

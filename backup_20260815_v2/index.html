@@ -223,12 +223,6 @@
 
     <!-- Video Player Overlay -->
     <div id="player-overlay" class="player-overlay hidden">
-      <!-- Modern Top Auto-Play & Stream Tester Status Pill (Centered, Luxury, Never Bugs) -->
-      <div class="player-loading hidden" id="player-loading">
-        <div class="spinner"></div>
-        <p>Carregando...</p>
-      </div>
-
       <!-- Floating Source Health Check & Auto-Play Toast (Luxury Centered Glass Pill) -->
       <div id="hud-source-feedback" class="hud-source-feedback hidden">
         <div class="hud-feedback-content">
@@ -242,16 +236,6 @@
               <span>🔄</span> Trocar
             </button>
           </div>
-        </div>
-      </div>
-
-      <!-- Modern Player Error Overlay -->
-      <div class="player-error hidden" id="player-error">
-        <div class="player-error-icon">⚠️</div>
-        <p>Não foi possível reproduzir nesta fonte. Escolha outro servidor:</p>
-        <div class="player-error-buttons">
-          <button class="btn btn-primary" id="player-error-next" style="background:linear-gradient(135deg, #8b5cf6, #7c3aed);">⚡ Testar Próxima Fonte</button>
-          <button class="btn btn-secondary" id="player-error-back">Voltar ao Menu</button>
         </div>
       </div>
 
@@ -361,6 +345,18 @@
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+
+        <div class="player-loading" id="player-loading">
+          <div class="spinner large"></div>
+          <p>Carregando...</p>
+        </div>
+        <div class="player-error hidden" id="player-error">
+          <p>Não foi possível reproduzir nesta fonte. Escolha outro servidor:</p>
+          <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; justify-content:center;">
+            <button class="btn btn-primary" id="player-error-next" style="background:linear-gradient(135deg, #8b5cf6, #7c3aed);">⚡ Testar Próxima Fonte</button>
+            <button class="btn btn-secondary" id="player-error-back">Voltar ao Menu</button>
           </div>
         </div>
       </div>
