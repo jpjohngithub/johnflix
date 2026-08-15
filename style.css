@@ -23,12 +23,13 @@
   --text-muted: #64748b;
   --text-dim: #475569;
 
-  /* Accent & Brand Colors */
-  --brand-red: #e50914;
-  --brand-red-glow: rgba(229, 9, 20, 0.4);
+  /* Accent & Brand Colors (Signature Royal Purple Theme) */
+  --brand-purple: #8b5cf6;
+  --brand-purple-glow: rgba(139, 92, 246, 0.45);
   --accent: #8b5cf6;
   --accent-hover: #7c3aed;
-  --accent-glow: rgba(139, 92, 246, 0.35);
+  --accent-glow: rgba(139, 92, 246, 0.4);
+  --accent-light: #a78bfa;
   --accent-cyan: #06b6d4;
   --accent-gold: #f59e0b;
   --accent-gold-glow: rgba(245, 158, 11, 0.3);
@@ -169,9 +170,9 @@ body {
 }
 
 .logo span {
-  color: var(--brand-red);
+  color: var(--accent);
   font-weight: 900;
-  text-shadow: 0 0 20px var(--brand-red-glow);
+  text-shadow: 0 0 20px var(--accent-glow);
 }
 
 /* Desktop Navigation Menu */
@@ -226,8 +227,8 @@ body {
   right: 20%;
   height: 2.5px;
   border-radius: var(--radius-full);
-  background: linear-gradient(90deg, var(--brand-red), var(--accent));
-  box-shadow: 0 0 10px var(--brand-red-glow);
+  background: linear-gradient(90deg, var(--accent), var(--accent-light));
+  box-shadow: 0 0 10px var(--accent-glow);
 }
 
 /* Header Actions (Search & Genre Dropdown) */
@@ -392,8 +393,8 @@ body {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--brand-red);
-  box-shadow: 0 0 8px var(--brand-red);
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
 }
 
 .hero-title {
@@ -547,8 +548,8 @@ body {
   width: 4px;
   height: 20px;
   border-radius: var(--radius-full);
-  background: var(--brand-red);
-  box-shadow: 0 0 10px var(--brand-red-glow);
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
 }
 
 .section-title {
@@ -856,8 +857,8 @@ body {
 
 .continue-progress-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--brand-red), var(--accent));
-  box-shadow: 0 0 8px var(--brand-red-glow);
+  background: linear-gradient(90deg, var(--accent), #c084fc);
+  box-shadow: 0 0 8px var(--accent-glow);
 }
 
 .continue-card-delete {
@@ -1020,8 +1021,8 @@ body {
 }
 
 .modal-close:hover {
-  background: var(--brand-red);
-  border-color: var(--brand-red);
+  background: var(--accent);
+  border-color: var(--accent);
   transform: scale(1.05);
 }
 
@@ -1217,7 +1218,7 @@ body {
 .stream-play-btn {
   padding: 8px 18px;
   border-radius: var(--radius-sm);
-  background: var(--brand-red);
+  background: var(--accent);
   color: #ffffff;
   font-size: 0.82rem;
   font-weight: 700;
@@ -1227,7 +1228,7 @@ body {
 }
 
 .stream-play-btn:hover {
-  background: #ff1f2d;
+  background: var(--accent-hover);
   transform: scale(1.05);
 }
 
@@ -1325,8 +1326,8 @@ body {
 }
 
 .hud-back-btn:hover {
-  background: var(--brand-red);
-  border-color: var(--brand-red);
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 .hud-title {
@@ -1392,8 +1393,8 @@ body {
 }
 
 .hud-icon-btn:hover {
-  background: var(--brand-red);
-  border-color: var(--brand-red);
+  background: var(--accent);
+  border-color: var(--accent);
   transform: scale(1.08);
 }
 
@@ -1435,9 +1436,9 @@ body {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: var(--brand-red);
+  background: var(--accent);
   cursor: pointer;
-  box-shadow: 0 0 10px var(--brand-red-glow);
+  box-shadow: 0 0 10px var(--accent-glow);
 }
 
 .hud-time-display {
@@ -1728,14 +1729,14 @@ body {
 }
 
 .loading-logo span {
-  color: var(--brand-red);
+  color: var(--accent);
 }
 
 .spinner {
   width: 36px;
   height: 36px;
   border: 3px solid rgba(255, 255, 255, 0.15);
-  border-top-color: var(--brand-red);
+  border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -1904,7 +1905,7 @@ body {
   }
 
   .mobile-nav-item.active .mobile-nav-label {
-    color: var(--brand-red);
+    color: var(--accent);
     font-weight: 700;
   }
 
