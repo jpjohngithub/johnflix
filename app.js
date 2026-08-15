@@ -266,7 +266,9 @@ const state = {
     featured: []
   },
   isLoading: false,
-  heroMeta: null
+  heroMeta: null,
+  isPlayerActive: false,
+  autoPlaySessionId: 0
 };
 
 // --- API Module ---
@@ -2035,10 +2037,17 @@ const UI = {
     if (modal) modal.classList.add('hidden');
     document.body.style.overflow = '';
     state.currentMeta = null;
+    state.isPlayerActive = false;
+    state.autoPlaySessionId++;
+    if (this.autoTestTimer) { clearTimeout(this.autoTestTimer); this.autoTestTimer = null; }
+    if (this.streamWatchdogTimer) { clearTimeout(this.streamWatchdogTimer); this.streamWatchdogTimer = null; }
   },
 
   async autoPlayBestStream() {
     if (!state.currentMeta) return;
+
+    state.isPlayerActive = true;
+    const sessionId = ++state.autoPlaySessionId;
 
     const playerOverlay = document.getElementById('player-overlay');
     const playerLoading = document.getElementById('player-loading');
@@ -2061,6 +2070,12 @@ const UI = {
       state.currentSeason, 
       state.currentEpisode
     );
+
+    // If user closed player or modal while fetching, STOP immediately!
+    if (!state.isPlayerActive || sessionId !== state.autoPlaySessionId) {
+      console.log('Playback cancelled by user, aborting auto-play.');
+      return;
+    }
 
     const fenixDirect = (rawStreams || []).filter(s => s.url && (s.name.includes('Fenix') || (s.title && s.title.includes('Fenix')) || s.category === 'fenix'));
     const otherDirect = (rawStreams || []).filter(s => s.url && !fenixDirect.includes(s));
@@ -2106,6 +2121,7 @@ const UI = {
   },
 
   async testAndPlayStreamIndex(index) {
+    if (!state.isPlayerActive) return;
     if (!state.activeStreams || index >= state.activeStreams.length) {
       this.showPlayerError();
       return;
@@ -2127,9 +2143,12 @@ const UI = {
       this.playIframe(stream.embedUrl, stream.name);
     }
 
-    // Auto-tester fallback timer: If server fails or stalls > 4s, automatically test next server!
+    // Auto-tester fallback timer: If server fails or stalls > 4s, automatically test next server only if player is still OPEN!
     if (this.autoTestTimer) clearTimeout(this.autoTestTimer);
     this.autoTestTimer = setTimeout(() => {
+      const playerOverlay = document.getElementById('player-overlay');
+      if (!state.isPlayerActive || !playerOverlay || playerOverlay.classList.contains('hidden')) return;
+
       const video = document.getElementById('video-player');
       const iframe = document.getElementById('iframe-player');
       const isVideoPlaying = video && !video.paused && video.currentTime > 0.1 && video.readyState >= 2;
@@ -2740,6 +2759,22 @@ const UI = {
     const video = document.getElementById('video-player');
     const iframe = document.getElementById('iframe-player');
     
+    // Stop all auto-play and watchdog timers immediately
+    state.isPlayerActive = false;
+    state.autoPlaySessionId++;
+    if (this.autoTestTimer) {
+      clearTimeout(this.autoTestTimer);
+      this.autoTestTimer = null;
+    }
+    if (this.streamWatchdogTimer) {
+      clearTimeout(this.streamWatchdogTimer);
+      this.streamWatchdogTimer = null;
+    }
+    if (this.streamLoadWatchdog) {
+      clearTimeout(this.streamLoadWatchdog);
+      this.streamLoadWatchdog = null;
+    }
+
     if (playerOverlay) playerOverlay.classList.add('hidden');
     
     if (window.currentHls) {
