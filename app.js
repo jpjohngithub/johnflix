@@ -295,7 +295,8 @@ const CINEMA_SAGAS = [
       { id: 'tt5108870', name: 'Morbius', year: '2022', timeline: 'Universo Aranha (Sony)', type: 'movie' },
       { id: 'tt9362722', name: 'Homem-Aranha: Através do Aranhaverso', year: '2023', timeline: 'Aranhaverso 2', type: 'movie' },
       { id: 'tt11057302', name: 'Madame Teia', year: '2024', timeline: 'Universo Aranha (Sony)', type: 'movie' },
-      { id: 'tt16366836', name: 'Venom: A Última Rodada', year: '2024', timeline: 'Universo Aranha (Sony)', type: 'movie' }
+      { id: 'tt16366836', name: 'Venom: A Última Rodada', year: '2024', timeline: 'Universo Aranha (Sony)', type: 'movie' },
+      { id: 'tt22084616', name: 'Homem-Aranha: Brand New Day (Spider-Man 4)', year: '2026', timeline: '4º MCU (Novo Capítulo)', type: 'movie' }
     ]
   },
   {
