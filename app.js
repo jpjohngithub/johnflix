@@ -1579,7 +1579,7 @@ const Motion = {
     }
     main.classList.remove('page-enter');
     main.classList.add('is-leaving');
-    setTimeout(() => { if (typeof next === 'function') next(); }, 280);
+    setTimeout(() => { if (typeof next === 'function') next(); }, 260);
   },
   pageEnter() {
     const main = document.getElementById('main-content');
@@ -1589,43 +1589,17 @@ const Motion = {
     void main.offsetWidth;
     main.classList.add('page-enter');
   },
-  esc(s) {
-    return String(s)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
-  },
-  appleText(el, text) {
+  fadeBlock(el) {
     if (!el) return;
-    const full = text == null ? '' : String(text);
-    if (!full) {
-      el.textContent = '';
-      return;
-    }
-    const parts = full.split(/(\s+)/);
-    let delay = 0;
-    el.innerHTML = parts.map((part) => {
-      if (!part) return '';
-      if (/^\s+$/.test(part)) return part;
-      const html = `<span class="apple-word" style="--d:${delay}ms">${this.esc(part)}</span>`;
-      delay += 48;
-      return html;
-    }).join('');
+    el.classList.remove('soft-in');
+    void el.offsetWidth;
+    el.classList.add('soft-in');
   },
   reveal(root) {
     if (!root) return;
     root.querySelectorAll('.section-title, .explore-title, .cinema-saga-title').forEach((el, i) => {
-      const t = (el.textContent || '').replace(/\s+/g, ' ').trim();
-      if (!t) return;
-      setTimeout(() => this.appleText(el, t), i * 70);
-    });
-    const cards = root.querySelectorAll('.movie-card');
-    cards.forEach((card, i) => {
-      card.classList.remove('card-in');
-      card.style.setProperty('--in-delay', `${Math.min(i % 14, 13) * 42}ms`);
-      void card.offsetWidth;
-      card.classList.add('card-in');
+      el.style.setProperty('--in-delay', `${i * 55}ms`);
+      this.fadeBlock(el);
     });
   }
 };
@@ -2467,7 +2441,7 @@ const UI = {
         const bgUrl = getBackgroundUrl(meta);
         heroBackdrop.style.backgroundImage = `url('${bgUrl}')`;
       }
-      if (heroTitle) Motion.appleText(heroTitle, meta.name);
+      if (heroTitle) heroTitle.textContent = meta.name || '';
       if (heroMeta) {
         const year = meta.year || meta.releaseInfo || '';
         const rating = meta.imdbRating ? `<span class="hero-meta-badge imdb">★ ${meta.imdbRating}</span>` : '<span class="hero-meta-badge imdb">★ 8.6</span>';
@@ -2496,16 +2470,9 @@ const UI = {
         heroBackdrop.classList.add('hero-bg-in');
         heroBackdrop.style.opacity = '1';
       }
-      if (heroDescription) {
-        const desc = heroDescription.textContent || '';
-        if (desc) Motion.appleText(heroDescription, desc);
-      }
-      if (heroMeta) {
-        heroMeta.querySelectorAll(':scope > *').forEach((chip, i) => {
-          chip.classList.add('chip-in');
-          chip.style.setProperty('--in-delay', `${120 + i * 60}ms`);
-        });
-      }
+      if (heroTitle) Motion.fadeBlock(heroTitle);
+      if (heroDescription) Motion.fadeBlock(heroDescription);
+      if (heroMeta) Motion.fadeBlock(heroMeta);
     };
     if (heroContent && heroBackdrop) {
       heroContent.style.opacity = '0';
