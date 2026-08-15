@@ -775,48 +775,90 @@ const API = {
         : type;
 
       const streamId = realType === 'series' ? `${cleanId}:${season}:${episode}` : cleanId;
-      const cacheKey = `st_v50_${streamId}`;
+      const cacheKey = `st_v60_${streamId}`;
       const cached = Cache.get(cacheKey);
       if (cached && cached.length > 0) return cached;
 
-      // 1. Generate Clean Web Player Embed Streams (VidSrc)
+      // 1. Generate Clean, Fast & Reliable Web Embed Sources
       const isMovie = realType === 'movie';
+
+      const multiembedUrl = isMovie
+        ? `https://multiembed.mov/?video_id=${cleanId}&tmdb=1`
+        : `https://multiembed.mov/?video_id=${cleanId}&s=${season}&e=${episode}`;
+
+      const vidlinkUrl = isMovie
+        ? `https://vidlink.pro/movie/${cleanId}`
+        : `https://vidlink.pro/tv/${cleanId}/${season}/${episode}`;
+
+      const smashyUrl = isMovie
+        ? `https://embed.smashystream.com/playere.php?imdb=${cleanId}`
+        : `https://embed.smashystream.com/playere.php?imdb=${cleanId}&season=${season}&episode=${episode}`;
+
+      const cinestreamUrl = isMovie
+        ? `https://moviesapi.club/movie/${cleanId}`
+        : `https://moviesapi.club/tv/${cleanId}-${season}-${episode}`;
+
+      const twoembedUrl = isMovie
+        ? `https://www.2embed.cc/embed/${cleanId}`
+        : `https://www.2embed.cc/embedtv/${cleanId}&s=${season}&e=${episode}`;
+
       const vidsrcDubUrl = isMovie 
         ? `https://vidsrc.me/embed/movie?imdb=${cleanId}&ds_lang=pt&autoplay=1` 
         : `https://vidsrc.me/embed/tv?imdb=${cleanId}&season=${season}&episode=${episode}&ds_lang=pt&autoplay=1`;
-
-      const vidsrc4kUrl = isMovie 
-        ? `https://vidsrc.me/embed/movie?imdb=${cleanId}&autoplay=1` 
-        : `https://vidsrc.me/embed/tv?imdb=${cleanId}&season=${season}&episode=${episode}&autoplay=1`;
 
       const vidsrcEnUrl = isMovie
         ? `https://vidsrc.in/embed/movie/${cleanId}`
         : `https://vidsrc.in/embed/tv/${cleanId}/${season}/${episode}`;
 
-      const instantWebStreams = [
+      const newWebStreams = [
         {
-          name: '🇧🇷 VidSrc Brasil (Dublado / Dual)',
-          title: '⚡ Servidor VidSrc PT-BR',
+          provider: 'VidSrc',
           embedUrl: vidsrcDubUrl,
+          category: 'web',
           isDub: true,
-          category: 'dubbed',
+          score: 85
+        },
+        {
+          provider: 'MultiEmbed',
+          embedUrl: multiembedUrl,
+          category: 'web',
+          isDub: true,
           score: 80
         },
         {
-          name: '✨ VidSrc Ultra (Áudio Original / Inglês 🇺🇸)',
-          title: 'Servidor Inglês / Áudio Original',
-          embedUrl: vidsrc4kUrl,
-          isDub: false,
+          provider: 'VidLink',
+          embedUrl: vidlinkUrl,
           category: 'web',
+          isDub: true,
+          score: 75
+        },
+        {
+          provider: 'SmashyStream',
+          embedUrl: smashyUrl,
+          category: 'web',
+          isDub: false,
+          score: 70
+        },
+        {
+          provider: 'CineStream',
+          embedUrl: cinestreamUrl,
+          category: 'web',
+          isDub: false,
+          score: 65
+        },
+        {
+          provider: '2Embed',
+          embedUrl: twoembedUrl,
+          category: 'web',
+          isDub: false,
           score: 60
         },
         {
-          name: '🌐 Player Web VidSrc (English 🇺🇸)',
-          title: 'Servidor English Original Audio',
+          provider: 'VidSrc',
           embedUrl: vidsrcEnUrl,
-          isDub: false,
           category: 'web',
-          score: 40
+          isDub: false,
+          score: 55
         }
       ];
 
@@ -857,51 +899,46 @@ const API = {
       const streamsList = [];
 
       // ══════════════════════════════════════════════
-      // 🔥 FenixFlix & FrostStream — Direct MP4/CDN streams (Player Nativo HTML5)
+      // Direct MP4 / CDN Native Video Streams
       // ══════════════════════════════════════════════
       const directVideoSources = [...fenixStreams, ...frostStreams.filter(s => s.url)];
       directVideoSources.forEach(s => {
         if (!s.url) return;
 
-        const descRaw = (s.description || s.title || s.name || '').replace(/\n/g, ' ');
-        const nameRaw = (s.name || 'FenixFlix HD');
-        const combinedText = (nameRaw + ' ' + descRaw).toLowerCase();
+        const isFenix = s.name?.includes('Fenix') || s.title?.includes('Fenix') || s.url?.includes('fenix');
+        const provider = isFenix ? 'FenixFlix' : 'FrostStream';
 
-        const isDub = combinedText.includes('dublado') || combinedText.includes('🇧🇷') || combinedText.includes('dual') || combinedText.includes('pt-br') || combinedText.includes('português');
-        const isEn = combinedText.includes('inglês') || combinedText.includes('english') || combinedText.includes('🇺🇸');
-
-        const qualMatch = (nameRaw + ' ' + descRaw).match(/(4k|2160p|1080p|720p|480p)/i);
-        const quality = qualMatch ? qualMatch[1].toUpperCase() : '720P';
-
-        const is720 = quality === '720P';
-        const is1080 = quality === '1080P';
-        const is4k = quality === '4K' || quality === '2160P';
-
-        // 720p is awarded top reliability score to ensure fast, stutter-free instant play:
-        const qualScore = is720 ? 100 : is1080 ? 75 : is4k ? 60 : 40;
-
-        const displayName = is720 
-          ? `⚡ ${isDub ? '🇧🇷 Dublado PT-BR' : '🇺🇸 Inglês / Dual'} — FenixFlix 720p (Ultra Rápido & Estável - Player Nativo)` 
-          : `🔥 ${isDub ? '🇧🇷 Dublado PT-BR' : '🇺🇸 Inglês / Dual'} — FenixFlix ${quality} (Player Nativo)`;
+        const descRaw = (s.description || s.title || s.name || '').toLowerCase();
+        const isDub = descRaw.includes('dublado') || descRaw.includes('🇧🇷') || descRaw.includes('dual') || descRaw.includes('pt-br') || descRaw.includes('português');
+        const is720 = descRaw.includes('720');
 
         streamsList.push({
-          name: displayName,
-          title: `🔥 FenixFlix • ${descRaw.slice(0, 80) || (quality + ' Direct MP4 - Player Nativo')}`,
+          provider: provider,
           url: s.url,
           isDub: isDub,
-          category: 'fenix',
-          score: qualScore + (isDub ? 40 : 10)
+          category: isFenix ? 'fenix' : 'frost',
+          score: (isFenix ? 100 : 80) + (is720 ? 30 : 10) + (isDub ? 20 : 0)
         });
       });
 
-      // Append clean web player streams
-      streamsList.push(...instantWebStreams);
+      // Append new web embed streams
+      streamsList.push(...newWebStreams);
 
-      // Sort all streams: Dublado PT-BR / 720p first, then score
+      // Sort all streams by priority score
       streamsList.sort((a, b) => {
         if (a.isDub && !b.isDub) return -1;
         if (!a.isDub && b.isDub) return 1;
         return (b.score || 0) - (a.score || 0);
+      });
+
+      // Assign Clean, Simple Numbered Names (e.g. FenixFlix 01, VidSrc 01, MultiEmbed 01)
+      const providerCounters = {};
+      streamsList.forEach(s => {
+        const prov = s.provider || 'Servidor';
+        providerCounters[prov] = (providerCounters[prov] || 0) + 1;
+        const numPad = String(providerCounters[prov]).padStart(2, '0');
+        s.name = `${prov} ${numPad}`;
+        s.title = `${prov} ${numPad}`;
       });
 
       Cache.set(cacheKey, streamsList);
@@ -2841,50 +2878,33 @@ const UI = {
     const streamsList = document.getElementById('streams-list');
     if (!streamsList) return;
 
-    const frost = streams.filter(s => s.name.includes('FrostStream') || (s.title && s.title.includes('FrostStream')));
-    const fenix = streams.filter(s => s.name.includes('FenixFlix') || (s.title && s.title.includes('FenixFlix')));
-    const brazuca = streams.filter(s => s.name.includes('Brazuca') || (s.title && s.title.includes('Brazuca')));
-    
-    // Web embeds (WarezCDN, SuperFlix, EmbedFlix, PrimeCine, FlixAPI, MegaFlix, VidSrc, etc.)
-    const web = streams.filter(s => s.embedUrl && !fenix.includes(s) && !frost.includes(s));
-    
-    // Remaining unclassified
-    const other = streams.filter(s => !fenix.includes(s) && !frost.includes(s) && !brazuca.includes(s) && !web.includes(s));
+    if (!streams || streams.length === 0) {
+      streamsList.innerHTML = '<p style="color:#a0a0b0; text-align:center; padding:2rem;">Nenhuma fonte disponível no momento. Tente novamente em instantes.</p>';
+      return;
+    }
+
+    const fenix = streams.filter(s => s.name.startsWith('FenixFlix'));
+    const frost = streams.filter(s => s.name.startsWith('FrostStream'));
+    const web = streams.filter(s => !fenix.includes(s) && !frost.includes(s));
 
     let html = '';
 
     if (fenix.length > 0) {
-      html += '<div style="color:#ef4444; font-weight:800; font-size:1.05rem; margin:1rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(239,68,68,0.15); padding:10px 14px; border-radius:8px; border-left:4px solid #ef4444; box-shadow:0 0 15px rgba(239,68,68,0.2);">'
-        + '<span>🔥</span> FENIXFLIX (STREAMS DIRETO MP4 DUBLADO PT-BR - PLAYER NATIVO)</div>';
+      html += '<div style="color:#ef4444; font-weight:800; font-size:1.05rem; margin:1rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(239,68,68,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #ef4444;">'
+        + '<span>🔥</span> FenixFlix</div>';
       html += fenix.map(stream => this.createStreamItem(stream)).join('');
     }
 
     if (frost.length > 0) {
-      html += '<div style="color:#06b6d4; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(6,182,212,0.15); padding:10px 14px; border-radius:8px; border-left:4px solid #06b6d4; box-shadow:0 0 15px rgba(6,182,212,0.2);">'
-        + '<span>❄️</span> FROSTSTREAM (STREAMS IPTV DIRETO REDEFLIX / CDMOVIES)</div>';
+      html += '<div style="color:#06b6d4; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(6,182,212,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #06b6d4;">'
+        + '<span>❄️</span> FrostStream</div>';
       html += frost.map(stream => this.createStreamItem(stream)).join('');
     }
 
-    if (brazuca.length > 0) {
-      html += '<div style="color:#f59e0b; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(245,158,11,0.1); padding:8px 14px; border-radius:8px; border-left:4px solid #f59e0b;">'
-        + '<span>🧲</span> BRAZUCA TORRENTS (LINKS MAGNÉTICOS DUBLADOS PT-BR)</div>';
-      html += brazuca.map(stream => this.createStreamItem(stream)).join('');
-    }
-
     if (web.length > 0) {
-      html += '<div style="color:#8b5cf6; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(139,92,246,0.1); padding:8px 14px; border-radius:8px; border-left:4px solid #8b5cf6;">'
-        + '<span>🌐</span> PLAYERS WEB HD (WAREZCDN, SUPERFLIX, EMBEDFLIX, PRIMECINE)</div>';
+      html += '<div style="color:#8b5cf6; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(139,92,246,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #8b5cf6;">'
+        + '<span>🌐</span> Servidores Web</div>';
       html += web.map(stream => this.createStreamItem(stream)).join('');
-    }
-
-    if (other.length > 0) {
-      html += '<div style="color:#a0a0b0; font-weight:800; font-size:1rem; margin:1.5rem 0 0.5rem;">'
-        + '<span>🎬</span> OUTRAS FONTES</div>';
-      html += other.map(stream => this.createStreamItem(stream)).join('');
-    }
-
-    if (html === '') {
-      html = '<p style="color:#a0a0b0; text-align:center; padding:2rem;">Nenhuma fonte disponível no momento. Tente novamente em instantes.</p>';
     }
 
     streamsList.innerHTML = html;
@@ -2893,60 +2913,37 @@ const UI = {
   createStreamItem(stream) {
     const name = stream.name;
 
-    // 🧲 Torrent / Magnet (Brazuca / FrostStream)
-    const magnetUrl = stream.magnetUrl || (stream.infoHash ? `magnet:?xt=urn:btih:${stream.infoHash}&dn=${encodeURIComponent(name)}` : null);
-    if (magnetUrl) {
-      const escapedMagnet = magnetUrl.replace(/"/g, '&quot;');
-      const escapedTitle = name.replace(/'/g, "\\'");
-      const accentColor = '#f59e0b';
-
-      return `
-        <div class="stream-item" style="border-left: 4px solid ${accentColor};">
-          <div class="stream-info">
-            <span class="stream-name" style="font-weight:700;">${name}</span>
-          </div>
-          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-            <button class="stream-play-btn" style="background:${accentColor}; color:#000; font-weight:800;"
-              onclick="UI.playTorrent('${escapedMagnet.replace(/'/g, "\\'")}', '${escapedTitle}')">▶ Assistir Agora</button>
-            <a href="${escapedMagnet}" class="stream-play-btn" style="background:rgba(255,255,255,0.1); color:white; font-weight:600; text-decoration:none;">🧲 App Stremio</a>
-          </div>
-        </div>
-      `;
-    }
-
-    // 🎬 Direct HTTP MP4 / IPTV Video Streams (FenixFlix / FrostStream)
+    // Direct HTTP MP4 Video Streams (FenixFlix / FrostStream)
     if (stream.url) {
       const escapedUrl = stream.url.replace(/'/g, "\\'");
       const escapedTitle = name.replace(/'/g, "\\'");
       const isFenix = name.includes('FenixFlix');
-      const isFrost = name.includes('FrostStream');
-      const accentColor = isFenix ? '#ef4444' : isFrost ? '#06b6d4' : '#22c55e';
+      const accentColor = isFenix ? '#ef4444' : '#06b6d4';
 
       return `
-        <div class="stream-item" style="border-left: 4px solid ${accentColor};">
+        <div class="stream-item" style="border-left: 4px solid ${accentColor}; cursor: pointer;" onclick="UI.playStream('${escapedUrl}', '${escapedTitle}')">
           <div class="stream-info">
             <span class="stream-name" style="font-weight:700;">${name}</span>
           </div>
-          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-            <button class="stream-play-btn" style="background:${accentColor}; color:#fff;" onclick="UI.playStream('${escapedUrl}', '${escapedTitle}')">▶ Assistir Agora</button>
-          </div>
+          <button class="stream-play-btn" style="background:${accentColor}; color:white; font-weight:800;"
+            onclick="event.stopPropagation(); UI.playStream('${escapedUrl}', '${escapedTitle}')">▶ Assistir</button>
         </div>
       `;
     }
 
-    // 🖥️ Web Embed Players (WarezCDN, SuperFlix, EmbedFlix, PrimeCine, FlixAPI, etc.)
+    // Web Embed Players (VidSrc, MultiEmbed, VidLink, SmashyStream, CineStream, 2Embed)
     if (stream.embedUrl) {
       const escapedEmbed = stream.embedUrl.replace(/'/g, "\\'");
       const escapedTitle = name.replace(/'/g, "\\'");
-      const borderColor = stream.isDub ? '#8b5cf6' : '#6366f1';
+      const accentColor = '#8b5cf6';
+
       return `
-        <div class="stream-item" style="border-left: 4px solid ${borderColor};">
+        <div class="stream-item" style="border-left: 4px solid ${accentColor}; cursor: pointer;" onclick="UI.playIframe('${escapedEmbed}', '${escapedTitle}')">
           <div class="stream-info">
             <span class="stream-name" style="font-weight:700;">${name}</span>
           </div>
-          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-            <button class="stream-play-btn" style="background:${borderColor}; color:#fff;" onclick="UI.playIframe('${escapedEmbed}', '${escapedTitle}')">▶ Assistir</button>
-          </div>
+          <button class="stream-play-btn" style="background:${accentColor}; color:white; font-weight:800;"
+            onclick="event.stopPropagation(); UI.playIframe('${escapedEmbed}', '${escapedTitle}')">▶ Assistir</button>
         </div>
       `;
     }
