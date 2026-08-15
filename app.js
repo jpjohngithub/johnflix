@@ -2026,13 +2026,23 @@ const UI = {
     const feedbackPrompt = document.getElementById('hud-source-feedback');
     const feedbackYesBtn = document.getElementById('hud-feedback-yes-btn');
     const feedbackNoBtn = document.getElementById('hud-feedback-no-btn');
+    const feedbackCloseBtn = document.getElementById('hud-feedback-close-btn');
     const nextStreamBtn = document.getElementById('hud-next-stream-btn');
 
     if (feedbackYesBtn) {
       feedbackYesBtn.addEventListener('click', (e) => {
         e.stopPropagation();
+        state.feedbackConfirmed = true;
         this.dismissFeedbackPrompt();
         this.showPlayerToast('✅ Fonte confirmada!', 1400);
+      });
+    }
+
+    if (feedbackCloseBtn) {
+      feedbackCloseBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        state.feedbackConfirmed = true;
+        this.dismissFeedbackPrompt();
       });
     }
 
@@ -2040,7 +2050,7 @@ const UI = {
       feedbackNoBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         this.dismissFeedbackPrompt();
-        this.showPlayerToast('⚡ Trocando de servidor...', 1400);
+        this.showPlayerToast('⚡ Trocando servidor...', 1200);
         this.playNextStream();
       });
     }
@@ -3192,6 +3202,7 @@ const UI = {
     }
     
     state.currentMeta = meta;
+    state.feedbackConfirmed = false;
     
     const backdropImg = document.getElementById('modal-backdrop-img');
     const poster = document.getElementById('modal-poster');
@@ -3436,6 +3447,7 @@ const UI = {
   },
 
   showSourceFeedbackPrompt(stream) {
+    if (state.feedbackConfirmed) return;
     const feedbackPrompt = document.getElementById('hud-source-feedback');
     const serverBadge = document.getElementById('hud-feedback-server-badge');
     const playerOverlay = document.getElementById('player-overlay');
@@ -3447,10 +3459,10 @@ const UI = {
     }
 
     if (serverBadge) {
-      serverBadge.textContent = `⚡ Servidor: ${stream?.name || 'Atual'}`;
+      serverBadge.textContent = `⚡ ${stream?.name || 'Servidor'}`;
     }
     
-    // Show on screen and KEEP IT VISIBLE until user clicks Sim / Trocar
+    // Show on screen and KEEP IT VISIBLE until user clicks Sim / Trocar / Close
     feedbackPrompt.classList.remove('hidden');
     feedbackPrompt.classList.remove('show');
     void feedbackPrompt.offsetWidth;
@@ -3467,7 +3479,7 @@ const UI = {
     feedbackPrompt.classList.remove('show');
     setTimeout(() => {
       feedbackPrompt.classList.add('hidden');
-    }, 300);
+    }, 250);
   },
 
   updateHudStreamSelector(streams, activeIndex = 0) {
