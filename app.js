@@ -2119,29 +2119,32 @@ const UI = {
     if (feedbackYesBtn) {
       feedbackYesBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (feedbackPrompt) {
-          feedbackPrompt.classList.remove('show');
-          setTimeout(() => feedbackPrompt.classList.add('hidden'), 350);
-        }
-        this.showPlayerToast('✅ Fonte confirmada!', 1800);
+        this.dismissFeedbackPrompt();
+        this.showPlayerToast('✅ Fonte confirmada!', 1400);
       });
     }
 
     if (feedbackNoBtn) {
       feedbackNoBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (feedbackPrompt) {
-          feedbackPrompt.classList.remove('show');
-          setTimeout(() => feedbackPrompt.classList.add('hidden'), 350);
-        }
-        this.showPlayerToast('⚡ Trocando de servidor...', 1800);
+        this.dismissFeedbackPrompt();
+        this.showPlayerToast('⚡ Trocando de servidor...', 1400);
         this.playNextStream();
+      });
+    }
+
+    if (feedbackPrompt) {
+      feedbackPrompt.addEventListener('click', (e) => {
+        if (!e.target.closest('button')) {
+          this.dismissFeedbackPrompt();
+        }
       });
     }
 
     if (nextStreamBtn) {
       nextStreamBtn.addEventListener('click', (e) => {
         e.stopPropagation();
+        this.dismissFeedbackPrompt();
         this.playNextStream();
       });
     }
@@ -3526,7 +3529,10 @@ const UI = {
     const playerOverlay = document.getElementById('player-overlay');
     if (!feedbackPrompt || !playerOverlay || playerOverlay.classList.contains('hidden')) return;
 
-    if (this.feedbackTimer) clearTimeout(this.feedbackTimer);
+    if (this.feedbackAutoHideTimer) {
+      clearTimeout(this.feedbackAutoHideTimer);
+      this.feedbackAutoHideTimer = null;
+    }
 
     if (serverBadge) {
       serverBadge.textContent = `⚡ Servidor: ${stream?.name || 'Atual'}`;
@@ -3538,14 +3544,23 @@ const UI = {
     void feedbackPrompt.offsetWidth;
     feedbackPrompt.classList.add('show');
 
-    // Auto-hide smoothly after 10s
-    if (this.feedbackAutoHideTimer) clearTimeout(this.feedbackAutoHideTimer);
+    // Auto-hide smoothly after 3.5s so it never stays stuck on screen!
     this.feedbackAutoHideTimer = setTimeout(() => {
-      feedbackPrompt.classList.remove('show');
-      setTimeout(() => {
-        feedbackPrompt.classList.add('hidden');
-      }, 350);
-    }, 10000);
+      this.dismissFeedbackPrompt();
+    }, 3500);
+  },
+
+  dismissFeedbackPrompt() {
+    const feedbackPrompt = document.getElementById('hud-source-feedback');
+    if (!feedbackPrompt) return;
+    if (this.feedbackAutoHideTimer) {
+      clearTimeout(this.feedbackAutoHideTimer);
+      this.feedbackAutoHideTimer = null;
+    }
+    feedbackPrompt.classList.remove('show');
+    setTimeout(() => {
+      feedbackPrompt.classList.add('hidden');
+    }, 300);
   },
 
   updateHudStreamSelector(streams, activeIndex = 0) {
