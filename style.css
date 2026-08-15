@@ -3076,21 +3076,46 @@ body {
   letter-spacing: -1px;
   text-shadow: 0 8px 36px rgba(0, 0, 0, 0.95), 0 2px 10px rgba(0, 0, 0, 0.8);
 }
-.soft-in {
-  animation: softIn 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
-  animation-delay: var(--in-delay, 0ms);
-}
-@keyframes softIn {
-  from { opacity: 0; transform: translate3d(0, 12px, 0); }
-  to   { opacity: 1; transform: translate3d(0, 0, 0); }
-}
-.hero-category-pill { animation: softIn 560ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-.hero-buttons .btn { animation: softIn 560ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-.hero-buttons .btn:nth-child(1) { animation-delay: 70ms; }
-.hero-buttons .btn:nth-child(2) { animation-delay: 130ms; }
 
-/* Hero CTAs */
-.hero-buttons { gap: 14px; margin-top: 0.65rem; }
+@keyframes heroTextFluidIn {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 22px, 0);
+    filter: blur(8px);
+  }
+  50% {
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    filter: blur(0);
+  }
+}
+
+.hero-content.hero-in #hero-category-pill,
+.hero-content.hero-in .hero-category-pill {
+  animation: heroTextFluidIn 0.58s cubic-bezier(0.16, 1, 0.3, 1) 0.04s both;
+}
+
+.hero-content.hero-in #hero-title,
+.hero-content.hero-in .hero-title {
+  animation: heroTextFluidIn 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.10s both;
+}
+
+.hero-content.hero-in #hero-meta,
+.hero-content.hero-in .hero-meta {
+  animation: heroTextFluidIn 0.68s cubic-bezier(0.16, 1, 0.3, 1) 0.18s both;
+}
+
+.hero-content.hero-in #hero-description,
+.hero-content.hero-in .hero-description {
+  animation: heroTextFluidIn 0.72s cubic-bezier(0.16, 1, 0.3, 1) 0.26s both;
+}
+
+.hero-content.hero-in .hero-buttons {
+  animation: heroTextFluidIn 0.76s cubic-bezier(0.16, 1, 0.3, 1) 0.34s both;
+}
 #hero-play-btn,
 .hero-play-btn {
   padding: 16px 40px;
@@ -3232,9 +3257,10 @@ body {
   scroll-snap-align: start;
   transform: translateZ(0);
   will-change: transform;
-  transition: transform 260ms var(--ease-ios), opacity 260ms var(--ease-ios), box-shadow 260ms var(--ease-ios);
+  transition: transform 450ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 450ms cubic-bezier(0.16, 1, 0.3, 1), border-color 350ms ease, opacity 260ms var(--ease-ios);
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
   z-index: 1;
+  transform: translateZ(0);
 }
 .movie-card::before { display: block; }
 .movie-poster-wrap {
@@ -3246,39 +3272,43 @@ body {
   height: 100%;
   object-fit: cover;
   transform: translateZ(0) scale(1);
-  transition: transform 420ms var(--ease-ios);
+  transition: transform 550ms cubic-bezier(0.16, 1, 0.3, 1), filter 400ms ease;
   will-change: transform;
 }
 .movie-card-overlay {
   opacity: 0;
-  background: linear-gradient(180deg, transparent 32%, rgba(7, 7, 10, 0.55) 62%, rgba(7, 7, 10, 0.96) 100%);
-  transition: opacity 240ms var(--ease-ios);
+  transform: translateY(6px);
+  background: linear-gradient(180deg, transparent 32%, rgba(7, 7, 10, 0.65) 62%, rgba(7, 7, 10, 0.98) 100%);
+  transition: opacity 300ms cubic-bezier(0.16, 1, 0.3, 1), transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
   padding: 14px 12px 12px;
 }
 
 @media (hover: hover) {
   .movie-card {
-    transition: transform 0.38s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.38s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.3s ease;
+    transition: transform 450ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 450ms cubic-bezier(0.16, 1, 0.3, 1), border-color 350ms ease;
     will-change: transform, box-shadow;
+    transform: translateZ(0);
   }
   .movie-card:hover {
-    transform: translateY(-10px) scale(1.06);
+    transform: translateY(-8px) scale(1.055);
     z-index: 25;
-    border-color: rgba(139, 92, 246, 0.55);
-    box-shadow: 0 24px 50px rgba(0, 0, 0, 0.95), 0 0 32px rgba(139, 92, 246, 0.4);
+    border-color: rgba(167, 139, 250, 0.65);
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.88), 0 0 24px rgba(139, 92, 246, 0.42), inset 0 0 0 1px rgba(167, 139, 250, 0.45);
   }
   .movie-card:hover .movie-poster {
-    transform: scale(1.08);
-    filter: brightness(1.06);
+    transform: scale(1.09);
+    filter: brightness(1.07) contrast(1.04);
   }
   .movie-card:hover .movie-card-overlay {
     opacity: 1;
+    transform: translateY(0);
   }
 }
 
 @media (hover: none) {
   .movie-card-overlay {
     opacity: 1;
+    transform: translateY(0);
     background: linear-gradient(180deg, transparent 48%, rgba(7, 7, 10, 0.94) 100%);
   }
   .movie-card-actions { display: none; }
@@ -3290,24 +3320,24 @@ body {
 }
 .search-grid .movie-card { width: 100%; }
 
-/* Tab continuity — iOS style */
+/* Tab continuity — Fluid iOS style */
 #main-content {
   transform-origin: 50% 12%;
 }
 #main-content.is-leaving {
-  animation: pageLeave 320ms var(--ease-ios) forwards;
+  animation: pageLeave 260ms var(--ease-ios) forwards;
   pointer-events: none;
 }
 #main-content.page-enter {
-  animation: pageEnter 520ms var(--ease-ios) both;
+  animation: pageEnter 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 @keyframes pageLeave {
   from { opacity: 1; transform: translate3d(0, 0, 0); }
   to   { opacity: 0; transform: translate3d(0, 10px, 0); }
 }
 @keyframes pageEnter {
-  from { opacity: 0; transform: translate3d(0, 16px, 0); }
-  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+  from { opacity: 0; transform: translate3d(0, 18px, 0); filter: blur(4px); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); filter: blur(0); }
 }
 .hero-content.hero-in {
   animation: heroIn 560ms var(--ease-ios) both;
