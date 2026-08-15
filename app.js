@@ -873,79 +873,6 @@ const API = {
         ? `https://vidsrc.in/embed/movie/${cleanId}`
         : `https://vidsrc.in/embed/tv/${cleanId}/${season}/${episode}`;
 
-      const newWebStreams = [
-        {
-          provider: 'WarezCDN',
-          embedUrl: warezCdnUrl,
-          category: 'web',
-          isDub: true,
-          score: 95
-        },
-        {
-          provider: 'EmbedderNet',
-          embedUrl: embedderNetUrl,
-          category: 'web',
-          isDub: true,
-          score: 90
-        },
-        {
-          provider: 'VidSrc',
-          embedUrl: vidsrcDubUrl,
-          category: 'web',
-          isDub: true,
-          score: 85
-        },
-        {
-          provider: 'MultiEmbed',
-          embedUrl: multiembedUrl,
-          category: 'web',
-          isDub: true,
-          score: 80
-        },
-        {
-          provider: 'AutoEmbed',
-          embedUrl: autoEmbedUrl,
-          category: 'web',
-          isDub: true,
-          score: 78
-        },
-        {
-          provider: 'VidLink',
-          embedUrl: vidlinkUrl,
-          category: 'web',
-          isDub: true,
-          score: 75
-        },
-        {
-          provider: 'SmashyStream',
-          embedUrl: smashyUrl,
-          category: 'web',
-          isDub: false,
-          score: 70
-        },
-        {
-          provider: 'CineStream',
-          embedUrl: cinestreamUrl,
-          category: 'web',
-          isDub: false,
-          score: 65
-        },
-        {
-          provider: '2Embed',
-          embedUrl: twoembedUrl,
-          category: 'web',
-          isDub: false,
-          score: 60
-        },
-        {
-          provider: 'VidSrc',
-          embedUrl: vidsrcEnUrl,
-          category: 'web',
-          isDub: false,
-          score: 55
-        }
-      ];
-
       // Helper: fetch directly from Stremio addon APIs with 5s timeout
       const fetchAddon = async (baseUrl, timeoutMs = 5000) => {
         const controller = new AbortController();
@@ -992,72 +919,150 @@ const API = {
       const streamsList = [];
 
       // ══════════════════════════════════════════════
-      // 1. Direct MP4 / CDN Native Video Streams (FenixFlix & FrostStream)
+      // 1. Direct MP4 / CDN Native Video Streams (FrostStream & FenixFlix)
       // ══════════════════════════════════════════════
-      const frostDirect = frostStreams.filter(s => s.url).map(s => ({
-        ...s,
-        customProvider: s.name?.includes('Fenix') ? 'FenixFlix' : 'FrostStream'
-      }));
+      const directVideoSources = [];
 
-      const directVideoSources = [
-        ...fenixStreams.map(s => ({ ...s, customProvider: 'FenixFlix' })),
-        ...frostDirect
-      ];
-
-      directVideoSources.forEach(s => {
+      frostStreams.forEach(s => {
         if (!s.url) return;
+        const rawInfo = `${s.name || ''} ${s.title || ''}`.toLowerCase();
+        const isDub = rawInfo.includes('dublado') || rawInfo.includes('🇧🇷') || rawInfo.includes('português') || rawInfo.includes('portugues') || rawInfo.includes('pt-br') || rawInfo.includes('dual');
+        let quality = 'HD';
+        if (rawInfo.includes('4k') || rawInfo.includes('2160')) quality = '4K';
+        else if (rawInfo.includes('1080')) quality = '1080p';
+        else if (rawInfo.includes('720')) quality = '720p';
 
-        const provider = s.customProvider || (s.name?.includes('Fenix') ? 'FenixFlix' : 'FrostStream');
-        const descRaw = (s.description || s.title || s.name || '').toLowerCase();
-        const isDub = descRaw.includes('dublado') || descRaw.includes('🇧🇷') || descRaw.includes('dual') || descRaw.includes('pt-br') || descRaw.includes('pt br') || descRaw.includes('português') || descRaw.includes('portugues') || descRaw.includes('brazuca') || descRaw.includes('bludv') || descRaw.includes('comando') || descRaw.includes('nacional');
-        const is720 = descRaw.includes('720');
-
-        streamsList.push({
-          provider: provider,
+        directVideoSources.push({
+          provider: 'FrostStream',
+          name: `❄️ FrostStream ${quality}${isDub ? ' (Dublado PT-BR)' : ''}`,
+          title: s.title || `FrostStream ${quality}`,
           url: s.url,
           isDub: isDub,
-          category: provider === 'FenixFlix' ? 'fenix' : 'frost',
-          score: (provider === 'FenixFlix' ? 100 : 90) + (is720 ? 30 : 10) + (isDub ? 30 : 0)
+          category: 'frost',
+          score: 100 + (quality === '4K' ? 30 : quality === '1080p' ? 20 : 10) + (isDub ? 40 : 0)
         });
       });
 
-      // ❄️ GUARANTEE: FrostStream is ALWAYS present for 100% of all movies and series
-      const existingFrostCount = streamsList.filter(s => s.provider === 'FrostStream' || s.category === 'frost').length;
-      if (existingFrostCount === 0) {
-        streamsList.push(
-          {
-            provider: 'FrostStream',
-            embedUrl: warezCdnUrl,
-            isDub: true,
-            category: 'frost',
-            score: 95
-          },
-          {
-            provider: 'FrostStream',
-            embedUrl: embedderNetUrl,
-            isDub: true,
-            category: 'frost',
-            score: 92
-          },
-          {
-            provider: 'FrostStream',
-            embedUrl: multiembedUrl,
-            isDub: true,
-            category: 'frost',
-            score: 89
-          },
-          {
-            provider: 'FrostStream',
-            embedUrl: vidsrcDubUrl,
-            isDub: true,
-            category: 'frost',
-            score: 87
-          }
-        );
-      }
+      fenixStreams.forEach(s => {
+        if (!s.url) return;
+        const rawInfo = `${s.name || ''} ${s.title || ''}`.toLowerCase();
+        const isDub = rawInfo.includes('dublado') || rawInfo.includes('🇧🇷') || rawInfo.includes('português') || rawInfo.includes('portugues') || rawInfo.includes('pt-br') || rawInfo.includes('dual');
+        let quality = 'HD';
+        if (rawInfo.includes('4k') || rawInfo.includes('2160')) quality = '4K';
+        else if (rawInfo.includes('1080')) quality = '1080p';
+        else if (rawInfo.includes('720')) quality = '720p';
+
+        directVideoSources.push({
+          provider: 'FenixFlix',
+          name: `🔥 FenixFlix ${quality}${isDub ? ' (Dublado PT-BR)' : ''}`,
+          title: s.title || `FenixFlix ${quality}`,
+          url: s.url,
+          isDub: isDub,
+          category: 'fenix',
+          score: 90 + (quality === '4K' ? 30 : quality === '1080p' ? 20 : 10) + (isDub ? 40 : 0)
+        });
+      });
+
+      streamsList.push(...directVideoSources);
 
       // ══════════════════════════════════════════════
-      // 2. Brazuca & Torrentio Torrents
+      // 2. Web Embed Players (WarezCDN, EmbedderNet, VidSrc, MultiEmbed, AutoEmbed, etc.)
+      // ══════════════════════════════════════════════
+      const webEmbedItems = [
+        {
+          provider: 'WarezCDN',
+          name: '🌐 WarezCDN (Dublado PT-BR)',
+          title: 'WarezCDN HD Player',
+          embedUrl: warezCdnUrl,
+          category: 'web',
+          isDub: true,
+          score: 85
+        },
+        {
+          provider: 'EmbedderNet',
+          name: '🌐 EmbedderNet (Dublado PT-BR)',
+          title: 'EmbedderNet HD Player',
+          embedUrl: embedderNetUrl,
+          category: 'web',
+          isDub: true,
+          score: 84
+        },
+        {
+          provider: 'VidSrc',
+          name: '🌐 VidSrc (Dublado PT-BR)',
+          title: 'VidSrc Player HD',
+          embedUrl: vidsrcDubUrl,
+          category: 'web',
+          isDub: true,
+          score: 82
+        },
+        {
+          provider: 'MultiEmbed',
+          name: '🌐 MultiEmbed HD',
+          title: 'MultiEmbed Fast Player',
+          embedUrl: multiembedUrl,
+          category: 'web',
+          isDub: true,
+          score: 80
+        },
+        {
+          provider: 'AutoEmbed',
+          name: '🌐 AutoEmbed HD',
+          title: 'AutoEmbed Player',
+          embedUrl: autoEmbedUrl,
+          category: 'web',
+          isDub: true,
+          score: 78
+        },
+        {
+          provider: 'VidLink',
+          name: '🌐 VidLink HD',
+          title: 'VidLink Player',
+          embedUrl: vidlinkUrl,
+          category: 'web',
+          isDub: true,
+          score: 76
+        },
+        {
+          provider: 'SmashyStream',
+          name: '🌐 SmashyStream HD',
+          title: 'SmashyStream Player',
+          embedUrl: smashyUrl,
+          category: 'web',
+          isDub: false,
+          score: 70
+        },
+        {
+          provider: 'CineStream',
+          name: '🌐 CineStream HD',
+          title: 'CineStream Player',
+          embedUrl: cinestreamUrl,
+          category: 'web',
+          isDub: false,
+          score: 65
+        },
+        {
+          provider: '2Embed',
+          name: '🌐 2Embed HD',
+          title: '2Embed Player',
+          embedUrl: twoembedUrl,
+          category: 'web',
+          isDub: false,
+          score: 60
+        },
+        {
+          provider: 'VidSrc EN',
+          name: '🌐 VidSrc (Legendado)',
+          title: 'VidSrc Original Player',
+          embedUrl: vidsrcEnUrl,
+          category: 'web',
+          isDub: false,
+          score: 55
+        }
+      ];
+
+      // ══════════════════════════════════════════════
+      // 3. Torrents (Brazuca & Torrentio)
       // ══════════════════════════════════════════════
       const torrentSources = [
         ...brazucaStreams.map(s => ({ ...s, customProvider: 'Brazuca' })),
@@ -1066,12 +1071,16 @@ const API = {
         ...tpbPlusStreams.slice(0, 10).map(s => ({ ...s, customProvider: 'ThePirateBay' }))
       ];
 
-      torrentSources.forEach(s => {
+      torrentSources.forEach((s) => {
         const hash = s.infoHash;
         if (!hash) return;
 
-        const titleRaw = (s.title || s.name || '').toLowerCase();
-        const isDub = titleRaw.includes('dublado') || titleRaw.includes('dual') || titleRaw.includes('pt-br') || titleRaw.includes('pt br') || titleRaw.includes('português') || titleRaw.includes('portugues') || titleRaw.includes('brazuca') || titleRaw.includes('bludv') || titleRaw.includes('comando') || titleRaw.includes('nacional');
+        const titleRaw = `${s.name || ''} ${s.title || ''}`.toLowerCase();
+        const isDub = titleRaw.includes('dublado') || titleRaw.includes('dual') || titleRaw.includes('pt-br') || titleRaw.includes('português') || titleRaw.includes('portugues') || titleRaw.includes('brazuca') || titleRaw.includes('bludv') || titleRaw.includes('comando') || titleRaw.includes('nacional');
+        let quality = '1080p';
+        if (titleRaw.includes('4k') || titleRaw.includes('2160')) quality = '4K';
+        else if (titleRaw.includes('720')) quality = '720p';
+
         const trackers = [
           'udp://tracker.opentrackr.org:1337/announce',
           'udp://open.stealth.si:80/announce',
@@ -1082,6 +1091,8 @@ const API = {
 
         streamsList.push({
           provider: s.customProvider,
+          name: `🧲 ${s.customProvider} ${quality}${isDub ? ' (Dublado)' : ''}`,
+          title: s.title || s.name || `${s.customProvider} ${quality}`,
           magnetUrl: magnetUrl,
           infoHash: hash,
           isDub: isDub,
@@ -1090,27 +1101,15 @@ const API = {
         });
       });
 
-      // ══════════════════════════════════════════════
-      // 3. Clean Web Embed Streams
-      // ══════════════════════════════════════════════
-      streamsList.push(...newWebStreams);
+      streamsList.push(...webEmbedItems);
 
-      // Sort all streams by priority score (Dublado / Direct first)
+      // Sort all streams: Direct FrostStream & Fenix first, Dubbed first, Highest score first
       streamsList.sort((a, b) => {
+        if (a.category === 'frost' && b.category !== 'frost') return -1;
+        if (a.category !== 'frost' && b.category === 'frost') return 1;
         if (a.isDub && !b.isDub) return -1;
         if (!a.isDub && b.isDub) return 1;
         return (b.score || 0) - (a.score || 0);
-      });
-
-      // Assign Clean, Simple Numbered Names (e.g. FenixFlix Nativo 01, FrostStream 01, Brazuca 01, WarezCDN 01, VidSrc 01)
-      const providerCounters = {};
-      streamsList.forEach(s => {
-        let prov = s.provider || 'Servidor';
-        if (prov === 'FenixFlix') prov = 'FenixFlix Nativo';
-        providerCounters[prov] = (providerCounters[prov] || 0) + 1;
-        const numPad = String(providerCounters[prov]).padStart(2, '0');
-        s.name = `${prov} ${numPad}`;
-        s.title = `${prov} ${numPad}`;
       });
 
       Cache.set(cacheKey, streamsList);
@@ -3454,7 +3453,7 @@ const UI = {
     if (playerOverlay) playerOverlay.classList.remove('hidden');
     if (playerLoading) {
       playerLoading.classList.remove('hidden');
-      playerLoading.querySelector('p').textContent = '⚡ Testando velocidade das fontes (Iniciando por FrostStream)...';
+      playerLoading.querySelector('p').textContent = '⚡ Conectando ao melhor servidor...';
     }
 
     const titleText = state.currentMeta.name;
@@ -3470,7 +3469,6 @@ const UI = {
 
     // If user closed player or modal while fetching, STOP immediately!
     if (!state.isPlayerActive || sessionId !== state.autoPlaySessionId) {
-      console.log('Playback cancelled by user, aborting auto-play.');
       return;
     }
 
@@ -3481,90 +3479,19 @@ const UI = {
       return;
     }
 
-    // High-speed parallel latency / ping probe for direct streams (max 2.0s timeout):
-    const probeDirectStream = async (stream) => {
-      if (!stream.url) return { ...stream, latency: 9999, isLive: false };
-      const start = Date.now();
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 2000);
-        const res = await fetch(stream.url, {
-          method: 'GET',
-          headers: { 'Range': 'bytes=0-100' },
-          signal: controller.signal
-        });
-        clearTimeout(timeout);
-        const latency = Date.now() - start;
-        const isLive = res.ok || res.status === 206 || res.status === 200;
-        return { ...stream, latency: isLive ? latency : 9999, isLive };
-      } catch (e) {
-        return { ...stream, latency: 9999, isLive: false };
-      }
-    };
-
-    const directStreams = rawStreams.filter(s => s.url);
-    const nonDirectStreams = rawStreams.filter(s => !s.url);
-
-    // Run parallel probe in < 2 seconds:
-    const probedDirect = await Promise.all(directStreams.map(s => probeDirectStream(s)));
-
-    // Strict Priority: FrostStream ALWAYS at the top of the list if available!
-    const frostLive = probedDirect.filter(s => s.name.toLowerCase().includes('frost') && s.isLive).sort((a, b) => a.latency - b.latency);
-    const frostOther = probedDirect.filter(s => s.name.toLowerCase().includes('frost') && !s.isLive);
-    const allFrost = [...frostLive, ...frostOther];
-
-    const fenixLive = probedDirect.filter(s => s.name.toLowerCase().includes('fenix') && s.isLive).sort((a, b) => a.latency - b.latency);
-    const fenixOther = probedDirect.filter(s => s.name.toLowerCase().includes('fenix') && !s.isLive);
-    const allFenix = [...fenixLive, ...fenixOther];
-
-    const otherDirectLive = probedDirect.filter(s => !s.name.toLowerCase().includes('frost') && !s.name.toLowerCase().includes('fenix') && s.isLive).sort((a, b) => a.latency - b.latency);
-    const otherDirectRest = probedDirect.filter(s => !s.name.toLowerCase().includes('frost') && !s.name.toLowerCase().includes('fenix') && !s.isLive);
-    const allOtherDirect = [...otherDirectLive, ...otherDirectRest];
-    
-    const webEmbeds = nonDirectStreams.filter(s => s.embedUrl).map(s => ({
-      ...s,
-      latency: s.latency || Math.floor(Math.random() * 80 + 110)
-    }));
-
-    const torrentWebStreams = nonDirectStreams.filter(s => s.magnetUrl || s.infoHash).map(s => {
-      const mag = s.magnetUrl || `magnet:?xt=urn:btih:${s.infoHash}&dn=${encodeURIComponent(s.name)}`;
-      return {
-        ...s,
-        latency: 450,
-        embedUrl: `https://webtor.io/show?magnet=${encodeURIComponent(mag)}`
-      };
-    });
-
-    const candidates = [
-      ...allFrost,
-      ...allFenix,
-      ...allOtherDirect,
-      ...webEmbeds,
-      ...torrentWebStreams
-    ];
-
-    if (!candidates || candidates.length === 0) {
-      alert('Nenhum servidor disponível para este título no momento.');
-      if (playerLoading) playerLoading.classList.add('hidden');
-      this.closePlayer();
-      return;
-    }
-
-    state.activeStreams = candidates;
+    state.activeStreams = rawStreams;
     state.currentStreamIndex = 0;
-    this.updateHudStreamSelector(candidates, 0);
+    this.updateHudStreamSelector(rawStreams, 0);
 
-    const winner = candidates[0];
-    const speedInfo = winner.latency && winner.latency < 9999 ? ` (${winner.latency}ms ⚡)` : '';
+    const winner = rawStreams[0];
     if (playerLoading) {
-      playerLoading.querySelector('p').textContent = `🚀 Conectando a ${winner.name}${speedInfo}...`;
+      playerLoading.querySelector('p').textContent = `🚀 Conectando a ${winner.name}...`;
     }
 
-    // Launch winner stream in < 3s!
     this.testAndPlayStreamIndex(0);
   },
 
-  async testAndPlayStreamIndex(index) {
+  testAndPlayStreamIndex(index) {
     if (!state.isPlayerActive) return;
     if (!state.activeStreams || index >= state.activeStreams.length) {
       this.showPlayerError();
@@ -3575,38 +3502,22 @@ const UI = {
     this.updateHudStreamSelector(state.activeStreams, index);
 
     const stream = state.activeStreams[index];
-    const speedLabel = stream.latency && stream.latency < 9999 ? ` (${stream.latency}ms)` : '';
     const playerLoading = document.getElementById('player-loading');
     if (playerLoading) {
       playerLoading.classList.remove('hidden');
-      playerLoading.querySelector('p').textContent = `⚡ Conectando ao Servidor ${index + 1}/${state.activeStreams.length} (${stream.name}${speedLabel})...`;
+      playerLoading.querySelector('p').textContent = `⚡ Conectando a ${stream.name}...`;
     }
 
     if (stream.url) {
       this.playStream(stream.url, stream.name);
     } else if (stream.embedUrl) {
       this.playIframe(stream.embedUrl, stream.name);
+    } else if (stream.magnetUrl || stream.infoHash) {
+      this.playTorrent(stream.magnetUrl, stream.name);
     }
 
-    // Always display the health-check question instantly
+    // Display health-check feedback prompt
     this.showSourceFeedbackPrompt(stream);
-
-    // Auto-tester fallback timer: If server fails or stalls > 3.5s, automatically test next server immediately!
-    if (this.autoTestTimer) clearTimeout(this.autoTestTimer);
-    this.autoTestTimer = setTimeout(() => {
-      const playerOverlay = document.getElementById('player-overlay');
-      if (!state.isPlayerActive || !playerOverlay || playerOverlay.classList.contains('hidden')) return;
-
-      const video = document.getElementById('video-player');
-      const iframe = document.getElementById('iframe-player');
-      const isVideoPlaying = video && !video.paused && video.currentTime > 0.1 && video.readyState >= 2;
-      const isIframeVisible = iframe && !iframe.classList.contains('hidden');
-
-      if (!isVideoPlaying && !isIframeVisible && index + 1 < state.activeStreams.length) {
-        console.log(`Server ${index + 1} (${stream.name}) took > 3.5s, testing next server ${index + 2}...`);
-        this.testAndPlayStreamIndex(index + 1);
-      }
-    }, 3500);
   },
 
   showSourceFeedbackPrompt(stream) {
@@ -3617,25 +3528,24 @@ const UI = {
 
     if (this.feedbackTimer) clearTimeout(this.feedbackTimer);
 
-    const msInfo = stream?.latency && stream.latency < 9999 ? ` (${stream.latency}ms ⚡)` : '';
     if (serverBadge) {
-      serverBadge.textContent = `⚡ Auto-Play: ${stream?.name || 'Servidor Atual'}${msInfo}`;
+      serverBadge.textContent = `⚡ Servidor: ${stream?.name || 'Atual'}`;
     }
     
-    // Show instantly on screen with fresh transition
+    // Show on screen
     feedbackPrompt.classList.remove('hidden');
     feedbackPrompt.classList.remove('show');
     void feedbackPrompt.offsetWidth;
     feedbackPrompt.classList.add('show');
 
-    // Auto-hide smoothly after 12s if user doesn't interact
+    // Auto-hide smoothly after 10s
     if (this.feedbackAutoHideTimer) clearTimeout(this.feedbackAutoHideTimer);
     this.feedbackAutoHideTimer = setTimeout(() => {
       feedbackPrompt.classList.remove('show');
       setTimeout(() => {
         feedbackPrompt.classList.add('hidden');
       }, 350);
-    }, 12000);
+    }, 10000);
   },
 
   updateHudStreamSelector(streams, activeIndex = 0) {
@@ -3644,8 +3554,7 @@ const UI = {
 
     hudStreamSelect.innerHTML = streams.map((s, idx) => {
       const medal = idx === 0 ? '🥇 ' : idx === 1 ? '🥈 ' : idx === 2 ? '🥉 ' : '';
-      const msLabel = s.latency && s.latency < 9999 ? ` (${s.latency}ms)` : '';
-      const label = `${medal}${s.name.replace(/—/g, '-')}${msLabel}`;
+      const label = `${medal}${s.name.replace(/—/g, '-')}`;
       const selected = idx === activeIndex ? 'selected' : '';
       return `<option value="${idx}" ${selected}>${label}</option>`;
     }).join('');
@@ -3665,6 +3574,8 @@ const UI = {
       this.playStream(next.url, next.name);
     } else if (next.embedUrl) {
       this.playIframe(next.embedUrl, next.name);
+    } else if (next.magnetUrl || next.infoHash) {
+      this.playTorrent(next.magnetUrl, next.name);
     }
 
     this.showSourceFeedbackPrompt(next);
@@ -3704,9 +3615,9 @@ const UI = {
       return;
     }
 
-    const frost = streams.filter(s => s.name.startsWith('FrostStream') || s.provider === 'FrostStream' || s.category === 'frost');
-    const fenix = streams.filter(s => s.name.startsWith('FenixFlix') && !frost.includes(s));
-    const torrents = streams.filter(s => (s.name.startsWith('Brazuca') || s.name.startsWith('Mico Leão') || s.name.startsWith('Torrentio') || s.name.startsWith('ThePirateBay')) && !frost.includes(s));
+    const frost = streams.filter(s => s.category === 'frost' || s.provider === 'FrostStream' || (s.name && s.name.includes('FrostStream')));
+    const fenix = streams.filter(s => (s.category === 'fenix' || s.provider === 'FenixFlix' || (s.name && s.name.includes('FenixFlix'))) && !frost.includes(s));
+    const torrents = streams.filter(s => (s.category === 'torrent' || s.magnetUrl || s.infoHash) && !frost.includes(s) && !fenix.includes(s));
     const web = streams.filter(s => !fenix.includes(s) && !frost.includes(s) && !torrents.includes(s));
 
     let html = '';
@@ -4007,39 +3918,28 @@ const UI = {
       }
     };
 
-    video.onerror = () => {
+    video.onerror = (e) => {
       const overlay = document.getElementById('player-overlay');
       if (!state.isPlayerActive || !overlay || overlay.classList.contains('hidden') || !video.src || video.src === 'about:blank') return;
-      console.warn('Direct video error on stream:', url);
-      if (!video.dataset.triedProxy && !url.includes('corsproxy') && !url.includes('allorigins')) {
-        video.dataset.triedProxy = '1';
-        const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(url);
-        video.src = proxyUrl;
-        triggerAutoPlay();
-        return;
-      }
-      video.dataset.triedProxy = '';
-      if (typeof this.playNextStream === 'function') {
-        console.log('Auto-advancing to next working stream...');
-        this.playNextStream();
-      }
+      console.warn('Direct video playback error:', e);
+      if (playerLoading) playerLoading.classList.add('hidden');
     };
 
-    // 3.5s stall watchdog: auto advance if stream doesn't start
+    // 12s stall watchdog: only notify/advance if completely stalled
     if (this.streamWatchdogTimer) clearTimeout(this.streamWatchdogTimer);
     this.streamWatchdogTimer = setTimeout(() => {
       const overlay = document.getElementById('player-overlay');
       if (!state.isPlayerActive || !overlay || overlay.classList.contains('hidden')) return;
-      if (video && video.readyState < 2 && video.paused) {
-        console.warn('Stream stall detected (>3.5s), auto-falling back to next stream...');
+      if (video && video.readyState === 0 && video.paused) {
+        console.warn('Stream stall detected (>12s), auto-advancing to next stream...');
         if (typeof this.playNextStream === 'function') {
           this.playNextStream();
         }
       }
-    }, 3500);
+    }, 12000);
 
     if (url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
-      const hls = new Hls();
+      const hls = new Hls({ enableWorker: true, lowLatencyMode: true });
       hls.loadSource(url);
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -4047,11 +3947,8 @@ const UI = {
       });
       hls.on(Hls.Events.ERROR, (event, data) => {
         if (data.fatal) {
-          console.warn('HLS error:', data);
-          const overlay = document.getElementById('player-overlay');
-          if (state.isPlayerActive && overlay && !overlay.classList.contains('hidden') && typeof this.playNextStream === 'function') {
-            this.playNextStream();
-          }
+          console.warn('HLS fatal error:', data);
+          if (playerLoading) playerLoading.classList.add('hidden');
         }
       });
       window.currentHls = hls;
@@ -4094,7 +3991,10 @@ const UI = {
         window.webtorrentClient = new WebTorrent();
       }
 
-      const magnetUrl = `magnet:?xt=urn:btih:${infoHash}&dn=${encodeURIComponent(title)}&tr=udp://tracker.openbittorrent.com:80&tr=udp://tracker.opentrackr.org:1337/announce&tr=wss://tracker.openwebtorrent.com`;
+      let magnetUrl = infoHash;
+      if (!magnetUrl.startsWith('magnet:')) {
+        magnetUrl = `magnet:?xt=urn:btih:${infoHash}&dn=${encodeURIComponent(title)}&tr=udp://tracker.openbittorrent.com:80&tr=udp://tracker.opentrackr.org:1337/announce&tr=wss://tracker.openwebtorrent.com`;
+      }
 
       window.webtorrentClient.add(magnetUrl, (torrent) => {
         window.currentTorrent = torrent;
