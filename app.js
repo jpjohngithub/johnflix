@@ -1571,35 +1571,38 @@ const Subtitles = {
 
 const Motion = {
   beginTabChange(next) {
-    state.tabEnterPending = true;
     const main = document.getElementById('main-content');
     if (!main) {
       if (typeof next === 'function') next();
       return;
     }
     main.classList.remove('page-enter');
-    main.classList.add('is-leaving');
-    setTimeout(() => { if (typeof next === 'function') next(); }, 260);
+    main.classList.add('tab-fade-out');
+    setTimeout(() => {
+      if (typeof next === 'function') next();
+      main.classList.remove('tab-fade-out');
+      void main.offsetWidth;
+      main.classList.add('page-enter');
+    }, 150);
   },
   pageEnter() {
     const main = document.getElementById('main-content');
     if (!main) return;
-    main.classList.remove('is-leaving');
+    main.classList.remove('tab-fade-out');
     main.classList.remove('page-enter');
     void main.offsetWidth;
     main.classList.add('page-enter');
   },
   fadeBlock(el) {
     if (!el) return;
-    el.classList.remove('soft-in');
+    el.classList.remove('hero-in');
     void el.offsetWidth;
-    el.classList.add('soft-in');
+    el.classList.add('hero-in');
   },
   reveal(root) {
     if (!root) return;
     root.querySelectorAll('.section-title, .explore-title, .cinema-saga-title').forEach((el, i) => {
       el.style.setProperty('--in-delay', `${i * 55}ms`);
-      this.fadeBlock(el);
     });
   }
 };
@@ -2462,25 +2465,14 @@ const UI = {
         heroContent.classList.remove('hero-in');
         void heroContent.offsetWidth;
         heroContent.classList.add('hero-in');
-        heroContent.style.opacity = '1';
       }
       if (heroBackdrop) {
         heroBackdrop.classList.remove('hero-bg-in');
         void heroBackdrop.offsetWidth;
         heroBackdrop.classList.add('hero-bg-in');
-        heroBackdrop.style.opacity = '1';
       }
-      if (heroTitle) Motion.fadeBlock(heroTitle);
-      if (heroDescription) Motion.fadeBlock(heroDescription);
-      if (heroMeta) Motion.fadeBlock(heroMeta);
     };
-    if (heroContent && heroBackdrop) {
-      heroContent.style.opacity = '0';
-      heroBackdrop.style.opacity = '0.25';
-      setTimeout(playHeroIn, animate ? 280 : 40);
-    } else {
-      playHeroIn();
-    }
+    playHeroIn();
   },
   
 
