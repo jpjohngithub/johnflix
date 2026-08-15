@@ -1570,10 +1570,6 @@ const Subtitles = {
 
 
 const Motion = {
-  reduced() {
-    return false;
-  },
-  _tw: new WeakMap(),
   beginTabChange(next) {
     state.tabEnterPending = true;
     const main = document.getElementById('main-content');
@@ -1583,7 +1579,7 @@ const Motion = {
     }
     main.classList.remove('page-enter');
     main.classList.add('is-leaving');
-    setTimeout(() => { if (typeof next === 'function') next(); }, 320);
+    setTimeout(() => { if (typeof next === 'function') next(); }, 280);
   },
   pageEnter() {
     const main = document.getElementById('main-content');
@@ -1593,42 +1589,43 @@ const Motion = {
     void main.offsetWidth;
     main.classList.add('page-enter');
   },
-  typewriter(el, text, ms) {
+  esc(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  },
+  appleText(el, text) {
     if (!el) return;
     const full = text == null ? '' : String(text);
-    const prev = this._tw.get(el);
-    if (prev) clearInterval(prev);
-    if (full.length < 1) {
-      el.textContent = full;
-      el.classList.remove('is-typing', 'type-settle');
+    if (!full) {
+      el.textContent = '';
       return;
     }
-    el.classList.remove('type-settle');
-    el.classList.add('is-typing');
-    el.textContent = '';
-    let i = 0;
-    const step = ms || 48;
-    const timer = setInterval(() => {
-      i += 1;
-      el.textContent = full.slice(0, i);
-      if (i >= full.length) {
-        clearInterval(timer);
-        this._tw.delete(el);
-        el.classList.remove('is-typing');
-        el.classList.add('type-settle');
-        setTimeout(() => el.classList.remove('type-settle'), 420);
-      }
-    }, step);
-    this._tw.set(el, timer);
+    const parts = full.split(/(\s+)/);
+    let delay = 0;
+    el.innerHTML = parts.map((part) => {
+      if (!part) return '';
+      if (/^\s+$/.test(part)) return part;
+      const html = `<span class="apple-word" style="--d:${delay}ms">${this.esc(part)}</span>`;
+      delay += 48;
+      return html;
+    }).join('');
   },
-  typeSectionTitles(root) {
+  reveal(root) {
     if (!root) return;
-    const els = root.querySelectorAll('.section-title, .explore-title, .cinema-saga-title');
-    els.forEach((el, idx) => {
-      const text = (el.textContent || '').replace(/\s+/g, ' ').trim();
-      if (!text) return;
-      el.textContent = text;
-      setTimeout(() => this.typewriter(el, text, 36), idx * 80);
+    root.querySelectorAll('.section-title, .explore-title, .cinema-saga-title').forEach((el, i) => {
+      const t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+      if (!t) return;
+      setTimeout(() => this.appleText(el, t), i * 70);
+    });
+    const cards = root.querySelectorAll('.movie-card');
+    cards.forEach((card, i) => {
+      card.classList.remove('card-in');
+      card.style.setProperty('--in-delay', `${Math.min(i % 14, 13) * 42}ms`);
+      void card.offsetWidth;
+      card.classList.add('card-in');
     });
   }
 };
@@ -2470,7 +2467,7 @@ const UI = {
         const bgUrl = getBackgroundUrl(meta);
         heroBackdrop.style.backgroundImage = `url('${bgUrl}')`;
       }
-      if (heroTitle) Motion.typewriter(heroTitle, meta.name, 52);
+      if (heroTitle) Motion.appleText(heroTitle, meta.name);
       if (heroMeta) {
         const year = meta.year || meta.releaseInfo || '';
         const rating = meta.imdbRating ? `<span class="hero-meta-badge imdb">★ ${meta.imdbRating}</span>` : '<span class="hero-meta-badge imdb">★ 8.6</span>';
@@ -2501,7 +2498,13 @@ const UI = {
       }
       if (heroDescription) {
         const desc = heroDescription.textContent || '';
-        if (desc.length > 8) Motion.typewriter(heroDescription, desc, 16);
+        if (desc) Motion.appleText(heroDescription, desc);
+      }
+      if (heroMeta) {
+        heroMeta.querySelectorAll(':scope > *').forEach((chip, i) => {
+          chip.classList.add('chip-in');
+          chip.style.setProperty('--in-delay', `${120 + i * 60}ms`);
+        });
       }
     };
     if (heroContent && heroBackdrop) {
@@ -2519,10 +2522,10 @@ const UI = {
     if (state.tabEnterPending) {
       state.tabEnterPending = false;
       Motion.pageEnter();
-      Motion.typeSectionTitles(root);
+      Motion.reveal(root);
     } else if (!state._didInitialType) {
       state._didInitialType = true;
-      Motion.typeSectionTitles(root);
+      Motion.reveal(root);
     }
   },
 
@@ -4092,7 +4095,7 @@ const UI = {
     state.tabEnterPending = false;
     Motion.pageEnter();
     const catalog = document.getElementById('catalog-container');
-    if (catalog) Motion.typeSectionTitles(catalog);
+    if (catalog) Motion.reveal(catalog);
   }
 };
 
