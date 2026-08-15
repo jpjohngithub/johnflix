@@ -1797,10 +1797,57 @@ html {
   }
   .hud-speed-group label {
     display: none;
-  }
   .hud-select {
     padding: 3px 6px;
     font-size: 0.78rem;
+  }
+}
+
+/* --- Mobile Touch Gesture Badges --- */
+.hud-gesture-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.7);
+  background: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  font-family: var(--font);
+  font-size: 1.5rem;
+  font-weight: 800;
+  padding: 14px 28px;
+  border-radius: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+  opacity: 0;
+  z-index: 100;
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.hud-gesture-badge.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+/* Touch-action optimization to eliminate 300ms mobile tap delays */
+button, a, input, select, .movie-card, .stream-item, .mobile-nav-item {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (max-width: 768px) {
+  /* Ultra-fluid mobile touch cards */
+  .movie-card {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .movie-card:active {
+    transform: scale(0.96);
+  }
+  .stream-item:active {
+    transform: scale(0.98);
+  }
+  .mobile-nav-item:active {
+    transform: scale(0.92);
   }
 }
 

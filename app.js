@@ -1142,7 +1142,59 @@ const UI = {
 
     if (playerOverlay) {
       playerOverlay.addEventListener('mousemove', resetHudTimer);
-      playerOverlay.addEventListener('touchstart', resetHudTimer);
+      
+      // Mobile Touch Gesture Recognizer (Double-tap left = -10s, right = +10s, single-tap = toggle HUD)
+      let lastTapTime = 0;
+      let singleTapTimeout = null;
+
+      const showGestureFeedback = (text) => {
+        let badge = document.getElementById('hud-gesture-badge');
+        if (!badge) {
+          badge = document.createElement('div');
+          badge.id = 'hud-gesture-badge';
+          badge.className = 'hud-gesture-badge';
+          playerOverlay.appendChild(badge);
+        }
+        badge.textContent = text;
+        badge.classList.remove('show');
+        void badge.offsetWidth;
+        badge.classList.add('show');
+        setTimeout(() => badge.classList.remove('show'), 650);
+      };
+
+      playerOverlay.addEventListener('touchend', (e) => {
+        // Ignore taps on interactive controls
+        if (e.target.closest('button, select, input, a, .hud-top, .hud-bottom')) return;
+        
+        const now = Date.now();
+        const diff = now - lastTapTime;
+        const touch = e.changedTouches ? e.changedTouches[0] : null;
+        
+        if (diff < 300 && touch) {
+          clearTimeout(singleTapTimeout);
+          const screenWidth = window.innerWidth;
+          const isLeft = touch.clientX < (screenWidth / 2);
+          
+          if (video && !video.classList.contains('hidden')) {
+            if (isLeft) {
+              video.currentTime = Math.max(0, video.currentTime - 10);
+              showGestureFeedback('⏪ -10s');
+            } else {
+              const dur = video.duration || 99999;
+              video.currentTime = Math.min(dur, video.currentTime + 10);
+              showGestureFeedback('⏩ +10s');
+            }
+          }
+          lastTapTime = 0;
+        } else {
+          lastTapTime = now;
+          singleTapTimeout = setTimeout(() => {
+            if (playerHud) {
+              playerHud.classList.toggle('hud-hidden');
+            }
+          }, 300);
+        }
+      });
     }
 
     if (hudBackBtn) {
