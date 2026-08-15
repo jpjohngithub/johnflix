@@ -1870,7 +1870,10 @@ const UI = {
     if (feedbackYesBtn) {
       feedbackYesBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (feedbackPrompt) feedbackPrompt.classList.add('hidden');
+        if (feedbackPrompt) {
+          feedbackPrompt.classList.remove('show');
+          setTimeout(() => feedbackPrompt.classList.add('hidden'), 350);
+        }
         this.showPlayerToast('✅ Fonte confirmada!', 1800);
       });
     }
@@ -1878,7 +1881,10 @@ const UI = {
     if (feedbackNoBtn) {
       feedbackNoBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (feedbackPrompt) feedbackPrompt.classList.add('hidden');
+        if (feedbackPrompt) {
+          feedbackPrompt.classList.remove('show');
+          setTimeout(() => feedbackPrompt.classList.add('hidden'), 350);
+        }
         this.showPlayerToast('⚡ Trocando de servidor...', 1800);
         this.playNextStream();
       });
@@ -3365,7 +3371,8 @@ const UI = {
   showSourceFeedbackPrompt(stream) {
     const feedbackPrompt = document.getElementById('hud-source-feedback');
     const serverBadge = document.getElementById('hud-feedback-server-badge');
-    if (!feedbackPrompt || !state.isPlayerActive) return;
+    const playerOverlay = document.getElementById('player-overlay');
+    if (!feedbackPrompt || !playerOverlay || playerOverlay.classList.contains('hidden')) return;
 
     if (this.feedbackTimer) clearTimeout(this.feedbackTimer);
 
@@ -3374,13 +3381,19 @@ const UI = {
       serverBadge.textContent = `⚡ Auto-Play: ${stream?.name || 'Servidor Atual'}${msInfo}`;
     }
     
-    // Show instantly (0ms) on screen
+    // Show instantly on screen with fresh transition
     feedbackPrompt.classList.remove('hidden');
+    feedbackPrompt.classList.remove('show');
+    void feedbackPrompt.offsetWidth;
+    feedbackPrompt.classList.add('show');
 
     // Auto-hide smoothly after 12s if user doesn't interact
     if (this.feedbackAutoHideTimer) clearTimeout(this.feedbackAutoHideTimer);
     this.feedbackAutoHideTimer = setTimeout(() => {
-      feedbackPrompt.classList.add('hidden');
+      feedbackPrompt.classList.remove('show');
+      setTimeout(() => {
+        feedbackPrompt.classList.add('hidden');
+      }, 350);
     }, 12000);
   },
 

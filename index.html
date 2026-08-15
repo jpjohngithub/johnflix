@@ -223,6 +223,22 @@
 
     <!-- Video Player Overlay -->
     <div id="player-overlay" class="player-overlay hidden">
+      <!-- Floating Source Health Check & Auto-Play Toast (Luxury Centered Glass Pill) -->
+      <div id="hud-source-feedback" class="hud-source-feedback hidden">
+        <div class="hud-feedback-content">
+          <span class="hud-feedback-badge" id="hud-feedback-server-badge">⚡ Auto-Play</span>
+          <span class="hud-feedback-question">A reprodução está boa?</span>
+          <div class="hud-feedback-actions">
+            <button class="hud-feedback-btn yes" id="hud-feedback-yes-btn" title="Confirmar servidor e continuar">
+              <span>👍</span> Sim
+            </button>
+            <button class="hud-feedback-btn no" id="hud-feedback-no-btn" title="Testar próximo servidor">
+              <span>🔄</span> Trocar
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div class="player-container" id="player-container">
         <iframe id="iframe-player" class="hidden" allowfullscreen allow="autoplay; fullscreen; encrypted-media; picture-in-picture; accelerometer; gyroscope" referrerpolicy="no-referrer" frameborder="0"></iframe>
         <iframe name="hidden_redirect_target" id="hidden-redirect-target" style="display:none !important; width:0 !important; height:0 !important; opacity:0 !important; pointer-events:none !important; position:absolute !important; top:-9999px !important; left:-9999px !important;"></iframe>
@@ -231,22 +247,6 @@
         <!-- Custom Subtitles Overlay (Crisp, high-contrast, fully centered) -->
         <div id="custom-subtitles-overlay" class="custom-subtitles-overlay hidden">
           <div id="custom-subtitles-text"></div>
-        </div>
-
-        <!-- Floating Source Health Check & Auto-Play Toast (Luxury Centered Glass Pill) -->
-        <div id="hud-source-feedback" class="hud-source-feedback hidden">
-          <div class="hud-feedback-content">
-            <span class="hud-feedback-badge" id="hud-feedback-server-badge">⚡ Auto-Play</span>
-            <span class="hud-feedback-question">A reprodução está boa?</span>
-            <div class="hud-feedback-actions">
-              <button class="hud-feedback-btn yes" id="hud-feedback-yes-btn" title="Confirmar servidor e continuar">
-                <span>👍</span> Sim
-              </button>
-              <button class="hud-feedback-btn no" id="hud-feedback-no-btn" title="Testar próximo servidor">
-                <span>🔄</span> Trocar
-              </button>
-            </div>
-          </div>
         </div>
 
         <!-- Custom Player HUD Controls (Streamlined & Compact) -->
