@@ -2141,87 +2141,6 @@ const UI = {
 
     // Seção Cinema Mode (Grandes Sagas e Trilogias em Ordem Cronológica)
     if (state.currentType === 'cinema') {
-      let totalMoviesCount = 0;
-      CINEMA_SAGAS.forEach(s => totalMoviesCount += s.items.length);
-
-      const VAULT_METADATA = {
-        spiderman: { icon: '🕷️', shortName: 'Homem-Aranha' },
-        mcu: { icon: '⚡', shortName: 'Marvel MCU' },
-        dc: { icon: '🦇', shortName: 'DC Universe' },
-        starwars: { icon: '⭐', shortName: 'Star Wars' },
-        harrypotter: { icon: '🧙‍♂️', shortName: 'Harry Potter' },
-        lotr: { icon: '💍', shortName: 'Senhor dos Anéis' },
-        fast: { icon: '🚗', shortName: 'Velozes & Furiosos' },
-        johnwick: { icon: '🥋', shortName: 'John Wick' },
-        transformers: { icon: '🤖', shortName: 'Transformers' },
-        missionimpossible: { icon: '🎯', shortName: 'Missão: Impossível' },
-        pirates: { icon: '🏴‍☠️', shortName: 'Piratas do Caribe' },
-        apes: { icon: '🦧', shortName: 'Planeta dos Macacos' },
-        dune: { icon: '🪐', shortName: 'Saga Duna' },
-        shrek: { icon: '🟢', shortName: 'Saga Shrek' },
-        toystory: { icon: '🚀', shortName: 'Saga Toy Story' },
-        jurassic: { icon: '🦖', shortName: 'Jurassic Park' },
-        matrix: { icon: '🕶️', shortName: 'Saga Matrix' },
-        hungergames: { icon: '🏹', shortName: 'Jogos Vorazes' }
-      };
-
-      html += `
-        <div class="cinema-vault-hub">
-          <div class="cinema-header-banner">
-            <div class="cinema-banner-glow"></div>
-            <div class="cinema-banner-content">
-              <div class="cinema-badge-pill">
-                <span class="cinema-badge-pulse"></span>
-                🏛️ EXPOSIÇÃO EXCLUSIVA DE FRANQUIAS
-              </div>
-              <h1 class="cinema-banner-title">
-                Seção <span class="gradient-cinema-text">Cinema</span>
-              </h1>
-              <p class="cinema-banner-subtitle">
-                O acervo definitivo dos maiores universos e sagas do cinema. Selecione uma franquia abaixo para explorar todos os seus filmes em ordem cronológica de lançamento.
-              </p>
-              <div class="cinema-banner-stats">
-                <div class="cinema-stat-item">
-                  <span class="cinema-stat-val">${CINEMA_SAGAS.length}</span>
-                  <span class="cinema-stat-lbl">Franquias Épicas</span>
-                </div>
-                <div class="cinema-stat-divider"></div>
-                <div class="cinema-stat-item">
-                  <span class="cinema-stat-val">${totalMoviesCount}+</span>
-                  <span class="cinema-stat-lbl">Filmes Verificados</span>
-                </div>
-                <div class="cinema-stat-divider"></div>
-                <div class="cinema-stat-item">
-                  <span class="cinema-stat-val">2024–2026</span>
-                  <span class="cinema-stat-lbl">Últimos Lançamentos</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="cinema-vault-grid-section">
-            <div class="cinema-vault-grid-title">
-              <span>🌟</span> Selecione um Universo Cinematográfico:
-            </div>
-            <div class="cinema-vault-grid">
-              ${CINEMA_SAGAS.map(s => {
-                const meta = VAULT_METADATA[s.id] || { icon: '🎬', shortName: s.id };
-                return `
-                  <div class="cinema-vault-card" onclick="document.getElementById('saga-${s.id}')?.scrollIntoView({behavior:'smooth', block:'start'});" style="--card-accent: ${s.accent}; --card-glow: ${s.accent}40;">
-                    <div class="cinema-vault-card-top">
-                      <span class="cinema-vault-icon">${meta.icon}</span>
-                      <span class="cinema-vault-count">${s.items.length} Filmes</span>
-                    </div>
-                    <div class="cinema-vault-name">${meta.shortName}</div>
-                    <div class="cinema-vault-action">Explorar Cronologia →</div>
-                  </div>
-                `;
-              }).join('')}
-            </div>
-          </div>
-        </div>
-      `;
-
       CINEMA_SAGAS.forEach(saga => {
         // Automatic chronological ordering by release year:
         const sortedItems = [...saga.items].sort((a, b) => (parseInt(a.year, 10) || 0) - (parseInt(b.year, 10) || 0));
@@ -2235,7 +2154,6 @@ const UI = {
                   ${saga.title}
                 </h2>
               </div>
-              <span class="cinema-saga-tag">${sortedItems.length} Filmes • Cronologia</span>
             </div>
             <div class="carousel-wrapper">
               <button class="carousel-btn carousel-prev" onclick="window.scrollCarousel('saga-${saga.id}', -1)">‹</button>
@@ -2247,7 +2165,6 @@ const UI = {
           </section>
         `;
       });
-
       container.innerHTML = html;
       return;
     }
