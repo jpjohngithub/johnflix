@@ -516,21 +516,42 @@ const API = {
 
       if (extra.search) {
         url = `https://v3-cinemeta.strem.io/catalog/${type}/top/search=${encodeURIComponent(extra.search)}.json`;
-      } else if (catalogId === 'imdbRating') {
-        url = `https://cinemeta-catalogs.strem.io/imdbRating/catalog/${type}/imdbRating`;
-        if (genreParam) url += `/genre=${encodeURIComponent(genreParam)}`;
-        if (extra.skip) url += `/skip=${extra.skip}`;
-        url += '.json';
+        const res = await fetchWithTimeout(url);
+        const data = await res.json();
+        return data.metas || [];
+      }
+
+      // Fetch multi-page catalog to ensure deep, authentic results
+      let urls = [];
+      if (catalogId === 'imdbRating') {
+        urls.push(`https://cinemeta-catalogs.strem.io/imdbRating/catalog/${type}/imdbRating${genreParam ? `/genre=${encodeURIComponent(genreParam)}` : ''}.json`);
+        if (genreParam) {
+          urls.push(`https://cinemeta-catalogs.strem.io/imdbRating/catalog/${type}/imdbRating/genre=${encodeURIComponent(genreParam)}/skip=20.json`);
+        }
       } else {
-        url = `https://cinemeta-catalogs.strem.io/top/catalog/${type}/top`;
-        if (genreParam) url += `/genre=${encodeURIComponent(genreParam)}`;
-        if (extra.skip) url += `/skip=${extra.skip}`;
-        url += '.json';
+        urls.push(`https://cinemeta-catalogs.strem.io/top/catalog/${type}/top${genreParam ? `/genre=${encodeURIComponent(genreParam)}` : ''}.json`);
+        if (genreParam) {
+          urls.push(`https://cinemeta-catalogs.strem.io/top/catalog/${type}/top/genre=${encodeURIComponent(genreParam)}/skip=20.json`);
+        }
       }
       
-      const res = await fetchWithTimeout(url);
-      const data = await res.json();
-      return data.metas || [];
+      const results = await Promise.all(urls.map(u => fetchWithTimeout(u).then(r => r.json()).then(d => d.metas || []).catch(() => [])));
+      let combined = results.flat().filter((item, idx, self) => self.findIndex(t => t.id === item.id) === idx);
+
+      // Strict Genre Verification: Only keep titles that authentically belong to the selected genre!
+      if (genreParam && !genreParam.startsWith('Saga:')) {
+        const targetGenre = genreParam.toLowerCase().trim();
+        const filtered = combined.filter(item => {
+          if (!item.genres || !Array.isArray(item.genres) || item.genres.length === 0) return true;
+          return item.genres.some(g => {
+            const gLower = g.toLowerCase();
+            return gLower === targetGenre || gLower.includes(targetGenre);
+          });
+        });
+        if (filtered.length > 0) return filtered;
+      }
+
+      return combined;
     } catch (error) {
       console.error('Error fetching catalog:', error);
       return [];
