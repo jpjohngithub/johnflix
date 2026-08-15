@@ -2155,12 +2155,7 @@ const UI = {
       hudStreamSelect.addEventListener('change', (e) => {
         const idx = parseInt(e.target.value, 10);
         if (!isNaN(idx) && state.activeStreams && state.activeStreams[idx]) {
-          const s = state.activeStreams[idx];
-          if (s.url) {
-            this.playStream(s.url, s.name);
-          } else if (s.embedUrl) {
-            this.playIframe(s.embedUrl, s.name);
-          }
+          this.selectAndPlayStream(idx);
         }
       });
     }
@@ -3491,8 +3486,13 @@ const UI = {
     this.testAndPlayStreamIndex(0);
   },
 
+  selectAndPlayStream(index) {
+    state.isPlayerActive = true;
+    this.testAndPlayStreamIndex(index);
+  },
+
   testAndPlayStreamIndex(index) {
-    if (!state.isPlayerActive) return;
+    state.isPlayerActive = true;
     if (!state.activeStreams || index >= state.activeStreams.length) {
       this.showPlayerError();
       return;
@@ -3564,21 +3564,8 @@ const UI = {
     const playerOverlay = document.getElementById('player-overlay');
     if (!state.isPlayerActive || !playerOverlay || playerOverlay.classList.contains('hidden')) return;
     if (!state.activeStreams || state.activeStreams.length === 0) return;
-    state.currentStreamIndex = ((state.currentStreamIndex || 0) + 1) % state.activeStreams.length;
-    const next = state.activeStreams[state.currentStreamIndex];
-    if (!next) return;
-
-    this.updateHudStreamSelector(state.activeStreams, state.currentStreamIndex);
-
-    if (next.url) {
-      this.playStream(next.url, next.name);
-    } else if (next.embedUrl) {
-      this.playIframe(next.embedUrl, next.name);
-    } else if (next.magnetUrl || next.infoHash) {
-      this.playTorrent(next.magnetUrl, next.name);
-    }
-
-    this.showSourceFeedbackPrompt(next);
+    const nextIdx = ((state.currentStreamIndex || 0) + 1) % state.activeStreams.length;
+    this.selectAndPlayStream(nextIdx);
   },
   
   async loadStreams() {
@@ -3625,88 +3612,60 @@ const UI = {
     if (frost.length > 0) {
       html += '<div style="color:#06b6d4; font-weight:800; font-size:1.05rem; margin:1rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(6,182,212,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #06b6d4;">'
         + '<span>❄️</span> FrostStream (Principal)</div>';
-      html += frost.map(stream => this.createStreamItem(stream)).join('');
+      html += frost.map(stream => {
+        const idx = streams.indexOf(stream);
+        return this.createStreamItem(stream, idx >= 0 ? idx : 0);
+      }).join('');
     }
 
     if (fenix.length > 0) {
       html += '<div style="color:#ef4444; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(239,68,68,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #ef4444;">'
         + '<span>🔥</span> FenixFlix Nativo (Player Nativo HTML5)</div>';
-      html += fenix.map(stream => this.createStreamItem(stream)).join('');
+      html += fenix.map(stream => {
+        const idx = streams.indexOf(stream);
+        return this.createStreamItem(stream, idx >= 0 ? idx : 0);
+      }).join('');
     }
 
     if (torrents.length > 0) {
       html += '<div style="color:#f59e0b; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(245,158,11,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #f59e0b;">'
         + '<span>🧲</span> Torrents Nativos (Brazuca, Mico Leão e Torrentio)</div>';
-      html += torrents.map(stream => this.createStreamItem(stream)).join('');
+      html += torrents.map(stream => {
+        const idx = streams.indexOf(stream);
+        return this.createStreamItem(stream, idx >= 0 ? idx : 0);
+      }).join('');
     }
 
     if (web.length > 0) {
       html += '<div style="color:#8b5cf6; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(139,92,246,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #8b5cf6;">'
         + '<span>🌐</span> Servidores Web</div>';
-      html += web.map(stream => this.createStreamItem(stream)).join('');
+      html += web.map(stream => {
+        const idx = streams.indexOf(stream);
+        return this.createStreamItem(stream, idx >= 0 ? idx : 0);
+      }).join('');
     }
 
     streamsList.innerHTML = html;
   },
   
-  createStreamItem(stream) {
-    const name = stream.name;
+  createStreamItem(stream, index = 0) {
+    const name = stream.name || 'Servidor';
+    const isFenix = name.includes('FenixFlix');
+    const isFrost = name.includes('FrostStream') || stream.category === 'frost';
+    const isTorrent = stream.category === 'torrent' || stream.magnetUrl || stream.infoHash;
+    const accentColor = isFenix ? '#ef4444' : isFrost ? '#06b6d4' : isTorrent ? '#f59e0b' : '#8b5cf6';
+    const btnColor = isTorrent ? '#000000' : '#ffffff';
 
-    // Direct HTTP MP4 Video Streams (FenixFlix / FrostStream)
-    if (stream.url) {
-      const escapedUrl = stream.url.replace(/'/g, "\\'");
-      const escapedTitle = name.replace(/'/g, "\\'");
-      const isFenix = name.includes('FenixFlix');
-      const accentColor = isFenix ? '#ef4444' : '#06b6d4';
-
-      return `
-        <div class="stream-item" style="border-left: 4px solid ${accentColor}; cursor: pointer;" onclick="UI.playStream('${escapedUrl}', '${escapedTitle}')">
-          <div class="stream-info">
-            <span class="stream-name" style="font-weight:700;">${name}</span>
-          </div>
-          <button class="stream-play-btn" style="background:${accentColor}; color:white; font-weight:800;"
-            onclick="event.stopPropagation(); UI.playStream('${escapedUrl}', '${escapedTitle}')">▶ Assistir</button>
+    return `
+      <div class="stream-item" style="border-left: 4px solid ${accentColor}; cursor: pointer;" onclick="UI.selectAndPlayStream(${index})">
+        <div class="stream-info">
+          <span class="stream-name" style="font-weight:700;">${name}</span>
+          ${stream.title && stream.title !== name ? `<span class="stream-details" style="font-size:0.78rem; color:#9ca3af; white-space:pre-line;">${stream.title.replace(/</g, '&lt;')}</span>` : ''}
         </div>
-      `;
-    }
-
-    // Torrent Streams (Brazuca / Torrentio)
-    const magnetUrl = stream.magnetUrl || (stream.infoHash ? `magnet:?xt=urn:btih:${stream.infoHash}&dn=${encodeURIComponent(name)}` : null);
-    if (magnetUrl) {
-      const escapedMagnet = magnetUrl.replace(/"/g, '&quot;');
-      const escapedTitle = name.replace(/'/g, "\\'");
-      const accentColor = '#f59e0b';
-
-      return `
-        <div class="stream-item" style="border-left: 4px solid ${accentColor}; cursor: pointer;" onclick="UI.playTorrent('${escapedMagnet.replace(/'/g, "\\'")}', '${escapedTitle}')">
-          <div class="stream-info">
-            <span class="stream-name" style="font-weight:700;">${name}</span>
-          </div>
-          <button class="stream-play-btn" style="background:${accentColor}; color:#000; font-weight:800;"
-            onclick="event.stopPropagation(); UI.playTorrent('${escapedMagnet.replace(/'/g, "\\'")}', '${escapedTitle}')">▶ Assistir</button>
-        </div>
-      `;
-    }
-
-    // Web Embed Players & FrostStream Web Providers
-    if (stream.embedUrl) {
-      const escapedEmbed = stream.embedUrl.replace(/'/g, "\\'");
-      const escapedTitle = name.replace(/'/g, "\\'");
-      const isFrost = name.toLowerCase().includes('frost') || stream.provider === 'FrostStream';
-      const accentColor = isFrost ? '#06b6d4' : '#8b5cf6';
-
-      return `
-        <div class="stream-item" style="border-left: 4px solid ${accentColor}; cursor: pointer;" onclick="UI.playIframe('${escapedEmbed}', '${escapedTitle}')">
-          <div class="stream-info">
-            <span class="stream-name" style="font-weight:700;">${name}</span>
-          </div>
-          <button class="stream-play-btn" style="background:${accentColor}; color:white; font-weight:800;"
-            onclick="event.stopPropagation(); UI.playIframe('${escapedEmbed}', '${escapedTitle}')">▶ Assistir</button>
-        </div>
-      `;
-    }
-
-    return '';
+        <button class="stream-play-btn" style="background:${accentColor}; color:${btnColor}; font-weight:800;"
+          onclick="event.stopPropagation(); UI.selectAndPlayStream(${index})">▶ Assistir</button>
+      </div>
+    `;
   },
 
   playIframe(embedUrl, title) {
