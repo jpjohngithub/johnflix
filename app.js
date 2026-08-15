@@ -1571,28 +1571,24 @@ const Subtitles = {
 
 const Motion = {
   reduced() {
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    return false;
   },
   _tw: new WeakMap(),
   beginTabChange(next) {
     state.tabEnterPending = true;
     const main = document.getElementById('main-content');
-    if (!main || this.reduced()) {
+    if (!main) {
       if (typeof next === 'function') next();
       return;
     }
     main.classList.remove('page-enter');
     main.classList.add('is-leaving');
-    setTimeout(() => { if (typeof next === 'function') next(); }, 180);
+    setTimeout(() => { if (typeof next === 'function') next(); }, 320);
   },
   pageEnter() {
     const main = document.getElementById('main-content');
     if (!main) return;
     main.classList.remove('is-leaving');
-    if (this.reduced()) {
-      main.classList.remove('page-enter');
-      return;
-    }
     main.classList.remove('page-enter');
     void main.offsetWidth;
     main.classList.add('page-enter');
@@ -1602,7 +1598,7 @@ const Motion = {
     const full = text == null ? '' : String(text);
     const prev = this._tw.get(el);
     if (prev) clearInterval(prev);
-    if (this.reduced() || full.length < 2) {
+    if (full.length < 1) {
       el.textContent = full;
       el.classList.remove('is-typing', 'type-settle');
       return;
@@ -1611,7 +1607,7 @@ const Motion = {
     el.classList.add('is-typing');
     el.textContent = '';
     let i = 0;
-    const step = ms || 22;
+    const step = ms || 48;
     const timer = setInterval(() => {
       i += 1;
       el.textContent = full.slice(0, i);
@@ -1620,18 +1616,19 @@ const Motion = {
         this._tw.delete(el);
         el.classList.remove('is-typing');
         el.classList.add('type-settle');
-        setTimeout(() => el.classList.remove('type-settle'), 340);
+        setTimeout(() => el.classList.remove('type-settle'), 420);
       }
     }, step);
     this._tw.set(el, timer);
   },
   typeSectionTitles(root) {
     if (!root) return;
-    const els = root.querySelectorAll('.section-title, .explore-title');
+    const els = root.querySelectorAll('.section-title, .explore-title, .cinema-saga-title');
     els.forEach((el, idx) => {
       const text = (el.textContent || '').replace(/\s+/g, ' ').trim();
       if (!text) return;
-      setTimeout(() => this.typewriter(el, text, 18), idx * 40);
+      el.textContent = text;
+      setTimeout(() => this.typewriter(el, text, 36), idx * 80);
     });
   }
 };
@@ -2473,7 +2470,7 @@ const UI = {
         const bgUrl = getBackgroundUrl(meta);
         heroBackdrop.style.backgroundImage = `url('${bgUrl}')`;
       }
-      if (heroTitle) Motion.typewriter(heroTitle, meta.name, 24);
+      if (heroTitle) Motion.typewriter(heroTitle, meta.name, 52);
       if (heroMeta) {
         const year = meta.year || meta.releaseInfo || '';
         const rating = meta.imdbRating ? `<span class="hero-meta-badge imdb">★ ${meta.imdbRating}</span>` : '<span class="hero-meta-badge imdb">★ 8.6</span>';
@@ -2488,18 +2485,31 @@ const UI = {
       }
     };
 
-    if (animate && heroContent && heroBackdrop) {
-      heroContent.style.opacity = '0';
-      heroBackdrop.style.opacity = '0.3';
-      setTimeout(() => {
-        updateDOM();
-        heroContent.style.opacity = '1';
-        heroBackdrop.style.opacity = '1';
-      }, 350);
-    } else {
+    const playHeroIn = () => {
       updateDOM();
-      if (heroContent) heroContent.style.opacity = '1';
-      if (heroBackdrop) heroBackdrop.style.opacity = '1';
+      if (heroContent) {
+        heroContent.classList.remove('hero-in');
+        void heroContent.offsetWidth;
+        heroContent.classList.add('hero-in');
+        heroContent.style.opacity = '1';
+      }
+      if (heroBackdrop) {
+        heroBackdrop.classList.remove('hero-bg-in');
+        void heroBackdrop.offsetWidth;
+        heroBackdrop.classList.add('hero-bg-in');
+        heroBackdrop.style.opacity = '1';
+      }
+      if (heroDescription) {
+        const desc = heroDescription.textContent || '';
+        if (desc.length > 8) Motion.typewriter(heroDescription, desc, 16);
+      }
+    };
+    if (heroContent && heroBackdrop) {
+      heroContent.style.opacity = '0';
+      heroBackdrop.style.opacity = '0.25';
+      setTimeout(playHeroIn, animate ? 280 : 40);
+    } else {
+      playHeroIn();
     }
   },
   
@@ -4079,10 +4089,10 @@ const UI = {
         loadingScreen.classList.add('hidden');
       }, 500); // fade out duration
     }
-    if (state.tabEnterPending) {
-      state.tabEnterPending = false;
-      Motion.pageEnter();
-    }
+    state.tabEnterPending = false;
+    Motion.pageEnter();
+    const catalog = document.getElementById('catalog-container');
+    if (catalog) Motion.typeSectionTitles(catalog);
   }
 };
 
