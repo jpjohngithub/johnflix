@@ -2444,18 +2444,21 @@ const UI = {
         const bgUrl = getBackgroundUrl(meta);
         heroBackdrop.style.backgroundImage = `url('${bgUrl}')`;
       }
-      if (heroTitle) heroTitle.textContent = meta.name || '';
+      if (heroTitle) {
+        const words = (meta.name || '').split(' ');
+        heroTitle.innerHTML = words.map((w, idx) => `<span class="kinetic-word" style="--i:${idx}">${w}</span>`).join(' ');
+      }
       if (heroMeta) {
         const year = meta.year || meta.releaseInfo || '';
-        const rating = meta.imdbRating ? `<span class="hero-meta-badge imdb">★ ${meta.imdbRating}</span>` : '<span class="hero-meta-badge imdb">★ 8.6</span>';
-        const quality = `<span class="hero-meta-badge quality">4K Ultra HD</span>`;
-        const audio = `<span class="hero-meta-badge audio">Dublado PT-BR</span>`;
-        const runtime = meta.runtime ? `<span style="color:#cbd5e1; font-weight:600;">${meta.runtime}</span>` : '';
-        const yearBadge = year ? `<span style="color:#cbd5e1; font-weight:600;">${year}</span>` : '';
+        const rating = meta.imdbRating ? `<span class="hero-meta-badge imdb kinetic-badge" style="--i:0">★ ${meta.imdbRating}</span>` : '<span class="hero-meta-badge imdb kinetic-badge" style="--i:0">★ 8.6</span>';
+        const quality = `<span class="hero-meta-badge quality kinetic-badge" style="--i:1">4K Ultra HD</span>`;
+        const audio = `<span class="hero-meta-badge audio kinetic-badge" style="--i:2">Dublado PT-BR</span>`;
+        const runtime = meta.runtime ? `<span class="kinetic-badge" style="--i:3; color:#cbd5e1; font-weight:600;">${meta.runtime}</span>` : '';
+        const yearBadge = year ? `<span class="kinetic-badge" style="--i:4; color:#cbd5e1; font-weight:600;">${year}</span>` : '';
         heroMeta.innerHTML = [rating, quality, audio, yearBadge, runtime].filter(Boolean).join(' &nbsp; ');
       }
       if (heroDescription) {
-        heroDescription.textContent = meta.description || 'Sem descrição disponível.';
+        heroDescription.innerHTML = `<span class="kinetic-desc">${meta.description || 'Sem descrição disponível.'}</span>`;
       }
     };
 
