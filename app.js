@@ -1833,31 +1833,6 @@ const UI = {
       });
     }
     
-    // Watchlist Nav Links
-    const showWatchlist = (e) => {
-      if (e) e.preventDefault();
-      this.hideSearchResults();
-      const watchlistMap = User.getWatchlist();
-      const watchlistArray = Object.values(watchlistMap);
-
-      if (watchlistArray.length === 0) {
-        alert('Sua lista de favoritos está vazia no momento! Adicione filmes e séries clicando no botão "⭐ + Minha Lista".');
-        return;
-      }
-
-      this.renderCatalogs();
-
-      setTimeout(() => {
-        const watchlistSec = document.getElementById('watchlist-section');
-        if (watchlistSec) {
-          watchlistSec.scrollIntoView({ behavior: 'smooth' });
-        }
-      }, 50);
-    };
-
-    document.getElementById('nav-watchlist')?.addEventListener('click', showWatchlist);
-    document.getElementById('mobile-nav-watchlist')?.addEventListener('click', showWatchlist);
-
     // Hero buttons & Auto-Play BR
     document.getElementById('hero-play-btn')?.addEventListener('click', async () => {
       if (state.heroMeta) {
@@ -2707,7 +2682,8 @@ const UI = {
 
     // Favorites / Watchlist Tab Mode
     if (state.currentType === 'favorites' || state.currentType === 'watchlist') {
-      const favorites = Storage.getFavorites();
+      const watchlistMap = User.getWatchlist();
+      const favorites = Object.values(watchlistMap).sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
       if (favorites.length > 0) {
         const cardsHtml = favorites.map(item => this.createMovieCard(item)).join('');
         html += `
