@@ -281,53 +281,48 @@
           <div id="custom-subtitles-text"></div>
         </div>
 
-        <!-- Floating Source Health Check & Fast Switch Prompt -->
+        <!-- Floating Source Health Check & Fast Switch Prompt (Compact Glass Pill) -->
         <div id="hud-source-feedback" class="hud-source-feedback hidden">
           <div class="hud-feedback-content">
-            <div class="hud-feedback-header">
-              <span class="hud-feedback-badge" id="hud-feedback-server-badge">⚡ Testando servidor...</span>
-              <span class="hud-feedback-question">A fonte está funcionando corretamente?</span>
-            </div>
+            <span class="hud-feedback-badge" id="hud-feedback-server-badge">⚡ Testando servidor...</span>
+            <span class="hud-feedback-question">A fonte está funcionando?</span>
             <div class="hud-feedback-actions">
-              <button class="hud-feedback-btn yes" id="hud-feedback-yes-btn">
-                <span>👍</span> Sim (Continuar)
+              <button class="hud-feedback-btn yes" id="hud-feedback-yes-btn" title="Confirmar fonte e continuar assistindo">
+                <span>👍</span> Sim
               </button>
-              <button class="hud-feedback-btn no" id="hud-feedback-no-btn">
-                <span>👎</span> Não (Trocar Fonte)
+              <button class="hud-feedback-btn no" id="hud-feedback-no-btn" title="Trocar para o próximo servidor mais rápido">
+                <span>🔄</span> Trocar
               </button>
             </div>
           </div>
         </div>
 
-        <!-- Custom Player HUD Controls -->
+        <!-- Custom Player HUD Controls (Streamlined & Compact) -->
         <div id="player-hud" class="player-hud">
           <!-- Top Bar -->
           <div class="hud-top" id="hud-top">
-            <button class="hud-back-btn" id="hud-back-btn">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-              <span>Voltar</span>
-            </button>
-            <span class="hud-title" id="hud-title">JohnFlix HD Player</span>
-
-            <!-- Quick Stream Selector Dropdown inside Player HUD -->
-            <div class="hud-stream-switcher" id="hud-stream-switcher">
-              <label for="hud-stream-select" style="font-size:0.75rem; color:#d8b4fe; font-weight:700;">📡 Trocar Fonte:</label>
-              <select id="hud-stream-select" class="hud-select" style="max-width:220px; font-size:0.8rem; background:rgba(0,0,0,0.7); border:1px solid var(--accent); color:white; border-radius:8px; padding:4px 8px; font-weight:600; cursor:pointer;">
-                <option value="">Carregando fontes...</option>
-              </select>
+            <div class="hud-top-left">
+              <button class="hud-back-btn" id="hud-back-btn" title="Voltar ao catálogo">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                <span>Voltar</span>
+              </button>
+              <span class="hud-title" id="hud-title">JohnFlix HD Player</span>
             </div>
 
-            <div class="hud-top-actions">
-              <button class="hud-toggle-bar-btn" id="hud-next-stream-btn" style="background:linear-gradient(135deg, #8b5cf6, #7c3aed); border-color:#8b5cf6; color:white; font-weight:700;" title="Trocar para próximo servidor automaticamente">
-                ⚡ Próximo Server
-              </button>
-              <a id="hud-open-tab-btn" href="#" target="_blank" rel="noopener noreferrer" class="hud-toggle-bar-btn" style="text-decoration:none; background:rgba(139,92,246,0.3); border-color:var(--accent);" title="Abrir player direto em nova aba para contornar bloqueios">
-                🔗 Nova Aba
+            <!-- Top Right: Clean Stream Selector & Quick Actions -->
+            <div class="hud-top-right">
+              <div class="hud-stream-capsule">
+                <span class="hud-stream-icon">⚡</span>
+                <select id="hud-stream-select" class="hud-select hud-stream-select" title="Selecionar servidor de reprodução">
+                  <option value="">Carregando fontes...</option>
+                </select>
+                <button class="hud-icon-btn" id="hud-next-stream-btn" title="Pular para próximo servidor">
+                  ⏭
+                </button>
+              </div>
+              <a id="hud-open-tab-btn" href="#" target="_blank" rel="noopener noreferrer" class="hud-icon-btn" title="Abrir player direto em nova aba">
+                🔗
               </a>
-              <button class="hud-toggle-bar-btn" id="hud-toggle-top-btn" title="Ocultar/Mostrar Barra do Topo">
-                👁️ Ocultar Barra
-              </button>
-              <span class="hud-badge">1080p Full HD</span>
             </div>
           </div>
 
@@ -342,50 +337,50 @@
             </div>
 
             <div class="hud-controls-row">
+              <!-- Left Controls -->
               <div class="hud-left-controls">
-                <button class="hud-btn" id="hud-play-btn" title="Play / Pause">
-                  <svg id="hud-play-icon" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                <button class="hud-btn hud-play-btn-main" id="hud-play-btn" title="Play / Pause">
+                  <svg id="hud-play-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
                 </button>
-                <button class="hud-btn" id="hud-rewind-btn" title="Voltar 10s">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 19l-9-7 9-7v14z"></path><path d="M22 19l-9-7 9-7v14z"></path></svg>
+                <button class="hud-btn hud-seek-btn" id="hud-rewind-btn" title="Voltar 10 segundos">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 19l-9-7 9-7v14z"></path><path d="M22 19l-9-7 9-7v14z"></path></svg>
                   <span class="hud-btn-sub">-10s</span>
                 </button>
-                <button class="hud-btn" id="hud-forward-btn" title="Avançar 10s">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 19l9-7-9-7v14z"></path><path d="M22 19l-9-7 9-7v14z"></path></svg>
+                <button class="hud-btn hud-seek-btn" id="hud-forward-btn" title="Avançar 10 segundos">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 19l9-7-9-7v14z"></path><path d="M22 19l-9-7 9-7v14z"></path></svg>
                   <span class="hud-btn-sub">+10s</span>
                 </button>
 
-                <!-- Volume Group -->
+                <!-- Volume Group with Smooth Hover Expand -->
                 <div class="hud-volume-group">
-                  <button class="hud-btn" id="hud-volume-btn" title="Volume / Mute">
-                    <svg id="hud-vol-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                  <button class="hud-btn" id="hud-volume-btn" title="Volume / Mudo">
+                    <svg id="hud-vol-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
                   </button>
                   <input type="range" id="hud-volume-slider" min="0" max="1" step="0.05" value="1" class="hud-volume-slider" title="Volume">
                 </div>
               </div>
 
+              <!-- Right Controls -->
               <div class="hud-right-controls">
-                <!-- Subtitles Selector -->
-                <div class="hud-subtitles-group" style="display:flex; align-items:center; gap:6px;">
-                  <label for="hud-subtitle-select" style="font-size:0.8rem; color:#cbd5e1; font-weight:600;">💬 Legenda:</label>
-                  <select id="hud-subtitle-select" class="hud-select" style="background:rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.2); color:white; border-radius:6px; padding:3px 8px; font-size:0.8rem;">
-                    <option value="off" selected>🚫 Desativada</option>
-                    <option value="pob">🇧🇷 Português (BR)</option>
+                <!-- Subtitles Group -->
+                <div class="hud-subtitles-group">
+                  <span class="hud-control-label">💬</span>
+                  <select id="hud-subtitle-select" class="hud-select" title="Legendas">
+                    <option value="off" selected>🚫 Sem Legenda</option>
+                    <option value="pob">🇧🇷 Português</option>
                     <option value="eng">🇺🇸 English</option>
                     <option value="spa">🇪🇸 Español</option>
                   </select>
-                  <button id="hud-sub-auto-sync" class="hud-btn hud-sub-sync-btn" style="padding:4px 10px; font-size:0.75rem; font-weight:700; background:linear-gradient(135deg, rgba(139,92,246,0.35), rgba(6,182,212,0.35)); border:1px solid rgba(139,92,246,0.45); border-radius:6px; color:#ffffff; display:flex; align-items:center; gap:4px; cursor:pointer;" title="Sincronizar fala e legenda automaticamente com o tempo do vídeo">
-                    <span>✨</span> Auto-Sync
+                  <button id="hud-sub-auto-sync" class="hud-sub-sync-btn" title="Sincronizar fala e legenda automaticamente">
+                    ✨ Sync
                   </button>
                 </div>
 
                 <!-- Speed Selector -->
                 <div class="hud-speed-group">
-                  <label for="hud-speed-select">Velocidade:</label>
-                  <select id="hud-speed-select" class="hud-select">
-                    <option value="0.5">0.5x</option>
+                  <select id="hud-speed-select" class="hud-select hud-speed-select" title="Velocidade de Reprodução">
                     <option value="0.75">0.75x</option>
-                    <option value="1" selected>1.0x (Normal)</option>
+                    <option value="1" selected>1.0x</option>
                     <option value="1.25">1.25x</option>
                     <option value="1.5">1.5x</option>
                     <option value="2">2.0x</option>
@@ -393,8 +388,8 @@
                 </div>
 
                 <!-- Fullscreen Button -->
-                <button class="hud-btn" id="hud-fullscreen-btn" title="Tela Cheia">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+                <button class="hud-btn" id="hud-fullscreen-btn" title="Alternar Tela Cheia (F)">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
                 </button>
               </div>
             </div>
