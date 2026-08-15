@@ -2970,17 +2970,6 @@ body {
   #main-content { padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-  .hero-backdrop { animation: none !important; transform: none !important; }
-}
-
 
 /* ==========================================================================
    JOHNFLIX CINEMATIC 2026 — layout + Apple motion language
@@ -3216,18 +3205,17 @@ body {
   to   { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
-/* --- Carousel track: snap, masks, room to lift --- */
+/* --- Carousel track: smooth overflow, room to lift & glow --- */
 .carousel-wrapper {
   position: relative;
-  isolation: isolate;
 }
 .carousel-wrapper::before,
 .carousel-wrapper::after {
   content: '';
   position: absolute;
   top: 0;
-  bottom: 36px;
-  width: 64px;
+  bottom: 24px;
+  width: 48px;
   z-index: 9;
   pointer-events: none;
 }
@@ -3241,52 +3229,48 @@ body {
 }
 .carousel-track {
   display: flex;
-  gap: 10px;
+  gap: 14px;
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: visible !important;
   scroll-behavior: smooth;
-  scroll-snap-type: x mandatory;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  padding: 28px 6px 56px;
+  padding: 24px 8px 44px !important;
 }
 .carousel-track::-webkit-scrollbar { display: none; }
 
 .carousel-btn {
   position: absolute;
-  top: 28px;
-  bottom: 56px;
+  top: 24px;
+  bottom: 44px;
   height: auto;
-  width: 52px;
+  width: 48px;
   transform: none;
-  z-index: 12;
+  z-index: 20;
   opacity: 0;
   border: none;
-  border-radius: 0;
+  border-radius: var(--radius-sm);
   color: #ffffff;
   font-size: 2rem;
-  background: rgba(10, 10, 16, 0.45);
+  background: rgba(10, 10, 16, 0.65);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  box-shadow: none;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
   transition: opacity 240ms var(--ease-ios), background-color 240ms var(--ease-ios), transform 200ms var(--ease-ios);
 }
 .carousel-prev {
   left: 0;
-  background: linear-gradient(90deg, rgba(7, 7, 10, 0.82), rgba(7, 7, 10, 0.15));
 }
 .carousel-next {
   right: 0;
-  background: linear-gradient(270deg, rgba(7, 7, 10, 0.82), rgba(7, 7, 10, 0.15));
 }
 .carousel-wrapper:hover .carousel-btn { opacity: 1; }
 .carousel-btn:hover {
-  background: rgba(139, 92, 246, 0.92);
-  transform: none;
-  box-shadow: 0 0 24px rgba(139, 92, 246, 0.45);
+  background: rgba(139, 92, 246, 0.95);
+  box-shadow: 0 0 28px rgba(139, 92, 246, 0.6);
   border-color: transparent;
 }
-.carousel-btn:active { transform: scale(0.97); }
+.carousel-btn:active { transform: scale(0.95); }
 
 /* --- Cards: larger posters, fluid hover zoom & soft glow --- */
 .movie-card {
@@ -3298,8 +3282,8 @@ body {
   cursor: pointer;
   transform: translate3d(0, 0, 0);
   will-change: transform, box-shadow;
-  transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.42s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.35s ease !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
   position: relative;
   z-index: 1;
 }
@@ -3323,10 +3307,10 @@ body {
 }
 
 .movie-card:hover {
-  transform: translate3d(0, -10px, 0) scale(1.065) !important;
+  transform: translate3d(0, -12px, 0) scale(1.08) !important;
   z-index: 50 !important;
-  border-color: rgba(167, 139, 250, 0.8) !important;
-  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.92), 0 0 28px rgba(139, 92, 246, 0.45), inset 0 0 0 1px rgba(167, 139, 250, 0.5) !important;
+  border-color: rgba(167, 139, 250, 0.85) !important;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.95), 0 0 32px rgba(139, 92, 246, 0.55), inset 0 0 0 1px rgba(167, 139, 250, 0.6) !important;
 }
 
 .movie-poster-wrap {
@@ -3448,6 +3432,25 @@ body {
   100% {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+.section-title,
+.explore-title,
+.cinema-saga-title {
+  animation: sectionTitlePopIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes sectionTitlePopIn {
+  0% {
+    opacity: 0;
+    transform: translate3d(-14px, 0, 0);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    filter: blur(0);
   }
 }
 
