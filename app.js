@@ -1132,40 +1132,64 @@ const API = {
       'homem aranha': 'spider-man',
       'homem de ferro': 'iron man',
       'capitao america': 'captain america',
-      'vingadores': 'avengers',
-      'senhor dos aneis': 'lord of the rings',
+      'vingadores': 'the avengers',
+      'os vingadores': 'the avengers',
+      'senhor dos aneis': 'the lord of the rings',
+      'o senhor dos aneis': 'the lord of the rings',
       'guerra nas estrelas': 'star wars',
       'velozes e furiosos': 'fast and furious',
       'planeta dos macacos': 'planet of the apes',
-      'jogos vorazes': 'hunger games',
+      'jogos vorazes': 'the hunger games',
       'piratas do caribe': 'pirates of the caribbean',
       'uma familia da pesada': 'family guy',
-      'o poderoso chefao': 'godfather',
+      'o poderoso chefao': 'the godfather',
+      'poderoso chefao': 'the godfather',
       'clube da luta': 'fight club',
       'interestelar': 'interstellar',
       'a viagem de chihiro': 'spirited away',
       'ataque dos titas': 'attack on titan',
-      'cavaleiro das trevas': 'dark knight',
+      'cavaleiro das trevas': 'the dark knight',
+      'o cavaleiro das trevas': 'the dark knight',
       'coringa': 'joker',
       'bastardos inglorios': 'inglourious basterds',
       'matrix': 'the matrix',
+      'a matrix': 'the matrix',
       'origem': 'inception',
+      'a origem': 'inception',
       'resgate do soldado ryan': 'saving private ryan',
-      'silencio dos inocentes': 'silence of the lambs',
+      'o resgate do soldado ryan': 'saving private ryan',
+      'silencio dos inocentes': 'the silence of the lambs',
+      'o silencio dos inocentes': 'the silence of the lambs',
       'gato de botas': 'puss in boots',
-      'monstros sa': 'monsters inc',
+      'o gato de botas': 'puss in boots',
+      'monstros sa': 'monsters, inc.',
+      'monstros s.a.': 'monsters, inc.',
       'procurando nemo': 'finding nemo',
       'divertida mente': 'inside out',
+      'divertidamente': 'inside out',
       'como treinar o seu dragao': 'how to train your dragon',
+      'como treinar seu dragao': 'how to train your dragon',
       'samurai de olhos azuis': 'blue eye samurai',
       'invencivel': 'invincible',
       'desencanto': 'disenchantment',
-      'sangue de zeus': 'blood of zeus'
+      'sangue de zeus': 'blood of zeus',
+      'sobrenatural': 'supernatural',
+      'la casa de papel': 'money heist',
+      'a casa do dragao': 'house of the dragon',
+      'doutor estranho': 'doctor strange',
+      'pantera negra': 'black panther',
+      'guardioes da galaxia': 'guardians of the galaxy',
+      'guardioes': 'guardians of the galaxy',
+      'deadpool': 'deadpool',
+      'wolverine': 'wolverine',
+      'batman': 'batman',
+      'superman': 'superman',
+      'liga da justica': 'justice league'
     };
 
     const searchQueries = [rawQuery];
     for (const [pt, en] of Object.entries(ALIAS_MAP)) {
-      if (norm.includes(pt)) {
+      if (norm.includes(pt) || pt.includes(norm)) {
         searchQueries.push(en);
       }
     }
@@ -1178,9 +1202,11 @@ const API = {
     const fetchPromises = [];
     uniqueQueries.forEach(q => {
       targetTypes.forEach(t => {
+        const url = `https://v3-cinemeta.strem.io/catalog/${t}/top/search=${encodeURIComponent(q)}.json`;
         fetchPromises.push(
-          this.fetchCatalog(t, 'top', { search: q })
-            .then(items => (items || []).map(item => ({ ...item, type: item.type || t })))
+          fetchWithTimeout(url, 4000)
+            .then(res => res.json())
+            .then(d => (d.metas || []).map(m => ({ ...m, type: m.type || t })))
             .catch(() => [])
         );
       });
@@ -1194,7 +1220,56 @@ const API = {
       }
     });
 
-    return Array.from(combinedMap.values());
+    // Score against all query variants
+    const normVariants = uniqueQueries.map(q => q.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim());
+
+    const scoreTitle = (name) => {
+      if (!name) return 0;
+      const n = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+      const nClean = n.replace(/^(the|a|an|o|os|as|um|uma)\s+/i, '');
+
+      let bestScore = 0;
+      for (const v of normVariants) {
+        const vClean = v.replace(/^(the|a|an|o|os|as|um|uma)\s+/i, '');
+        if (n === v || nClean === vClean) {
+          bestScore = Math.max(bestScore, 1000);
+          continue;
+        }
+        if (n.startsWith(v) || nClean.startsWith(vClean)) {
+          bestScore = Math.max(bestScore, 600);
+          continue;
+        }
+        if (n.includes(v) || nClean.includes(vClean)) {
+          bestScore = Math.max(bestScore, 400);
+          continue;
+        }
+
+        const vWords = vClean.split(/\s+/).filter(w => w.length >= 3);
+        if (vWords.length > 0) {
+          let matchCount = 0;
+          vWords.forEach(w => {
+            if (nClean.includes(w)) matchCount += 100;
+          });
+          bestScore = Math.max(bestScore, matchCount);
+        }
+      }
+      return bestScore;
+    };
+
+    const finalResults = Array.from(combinedMap.values());
+    finalResults.sort((a, b) => {
+      const sA = scoreTitle(a.name);
+      const sB = scoreTitle(b.name);
+      if (sB !== sA) return sB - sA;
+      const rA = parseFloat(a.imdbRating) || 0;
+      const rB = parseFloat(b.imdbRating) || 0;
+      if (rB !== rA) return rB - rA;
+      const yA = parseInt(a.year || a.releaseInfo, 10) || 0;
+      const yB = parseInt(b.year || b.releaseInfo, 10) || 0;
+      return yB - yA;
+    });
+
+    return finalResults;
   }
 };
 
@@ -1712,14 +1787,24 @@ const UI = {
     
     // Search input (Instant 0ms local match + fast Cinemeta catalog fetch)
     if (searchInput) {
-      const debouncedRemoteSearch = debounce((q) => this.performSearch(q), 100);
+      const debouncedRemoteSearch = debounce((q) => this.performSearch(q), 80);
 
       searchInput.addEventListener('input', (e) => {
         const val = e.target.value;
         if (val.trim().length === 0) {
+          state.searchSeq = (state.searchSeq || 0) + 1;
           this.hideSearchResults();
         } else {
           debouncedRemoteSearch(val);
+        }
+      });
+
+      searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          searchInput.value = '';
+          state.searchSeq = (state.searchSeq || 0) + 1;
+          if (searchContainer) searchContainer.classList.remove('active');
+          this.hideSearchResults();
         }
       });
     }
@@ -3085,86 +3170,77 @@ const UI = {
       return;
     }
 
+    state.searchSeq = (state.searchSeq || 0) + 1;
+    const currentSeq = state.searchSeq;
+
     const normQ = rawQuery.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-    const queryWords = normQ.split(/\s+/).filter(w => w.length > 0);
 
-    // 1. INSTANT 0ms Deep Local Index Search (CINEMA_SAGAS + Catalogs + Favorites)
-    const localPool = [];
-    const seenIds = new Set();
+    // Instantly reveal search results container
+    const resultsArea = document.getElementById('search-results');
+    const grid = document.getElementById('search-grid');
+    if (resultsArea) resultsArea.classList.remove('hidden');
+    document.getElementById('catalog-container')?.classList.add('hidden');
+    document.getElementById('hero-section')?.classList.add('hidden');
 
-    // Index all saga items
-    CINEMA_SAGAS.forEach(saga => {
-      (saga.items || []).forEach(item => {
-        const cleanId = item.id.split(':')[0];
-        if (!seenIds.has(cleanId)) {
-          seenIds.add(cleanId);
-          localPool.push({
-            id: cleanId,
-            name: item.name,
-            year: item.year,
-            type: item.type || 'movie',
-            poster: `https://images.metahub.space/poster/medium/${cleanId}/img`,
-            description: item.timeline || saga.title
-          });
-        }
-      });
-    });
-
-    // Index popular and featured catalogs
-    [...(state.catalogs.popular || []), ...(state.catalogs.featured || [])].forEach(item => {
-      if (item && item.id && !seenIds.has(item.id)) {
-        seenIds.add(item.id);
-        localPool.push(item);
-      }
-    });
-
-    // Score function for high precision
-    const scoreItem = (item) => {
-      const nameNorm = (item.name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-      const descNorm = (item.description || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-
-      if (nameNorm === normQ) return 500;
-      if (nameNorm.startsWith(normQ)) return 300;
-      if (nameNorm.includes(normQ)) return 200;
-
-      let wordMatchCount = 0;
-      queryWords.forEach(w => {
-        if (nameNorm.includes(w)) wordMatchCount += 50;
-        else if (descNorm.includes(w)) wordMatchCount += 20;
-      });
-
-      return wordMatchCount;
-    };
-
-    const scoredLocal = localPool
-      .map(item => ({ item, score: scoreItem(item) }))
-      .filter(entry => entry.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .map(entry => entry.item);
-
-    // Show instant 0ms results immediately!
-    if (scoredLocal.length > 0) {
-      this.showSearchResults(scoredLocal);
+    const titleEl = resultsArea?.querySelector('.section-title');
+    if (titleEl) {
+      titleEl.textContent = `Resultados para "${rawQuery}"`;
     }
 
-    // 2. Multi-threaded Remote Search (Cinemeta Movie + Series)
-    if (rawQuery.length >= 2) {
-      const remoteResults = await API.searchContent(state.currentType, rawQuery);
-      if (remoteResults && remoteResults.length > 0) {
-        const mergedMap = new Map();
-        scoredLocal.forEach(item => mergedMap.set(item.id, item));
-        remoteResults.forEach(item => {
-          if (item && item.id && !mergedMap.has(item.id)) {
-            mergedMap.set(item.id, item);
-          }
-        });
+    // 1. INSTANT 0ms Local Title Matching (exact/prefix matches in already loaded content)
+    const localMatches = [];
+    const seenIds = new Set();
 
-        const allMerged = Array.from(mergedMap.values());
-        allMerged.sort((a, b) => scoreItem(b) - scoreItem(a));
-        this.showSearchResults(allMerged);
-      } else if (scoredLocal.length === 0) {
-        this.showSearchResults([]);
+    const addIfMatch = (item) => {
+      if (!item || !item.id || seenIds.has(item.id)) return;
+      const n = (item.name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+      if (n.includes(normQ)) {
+        seenIds.add(item.id);
+        localMatches.push(item);
       }
+    };
+
+    [...(state.catalogs.popular || []), ...(state.catalogs.featured || []), ...(state.watchlist || []), ...(state.favorites || [])].forEach(addIfMatch);
+    CINEMA_SAGAS.forEach(saga => (saga.items || []).forEach(addIfMatch));
+
+    if (localMatches.length > 0) {
+      if (grid) grid.innerHTML = localMatches.map(item => this.createMovieCard(item)).join('');
+    } else {
+      if (grid) {
+        grid.innerHTML = `
+          <div class="streams-loading" style="grid-column: 1 / -1; padding: 4rem 0;">
+            <div class="spinner"></div>
+            <span>Buscando "${rawQuery}"...</span>
+          </div>
+        `;
+      }
+    }
+
+    // 2. Multi-threaded Remote Search (Movie + Series across Cinemeta)
+    try {
+      const searchType = (state.currentType === 'explore') ? (state.exploreType || 'all') : (state.currentType || 'all');
+      const remoteResults = await API.searchContent(searchType, rawQuery);
+
+      if (currentSeq !== state.searchSeq) return; // Stale query, discard!
+
+      if (remoteResults && remoteResults.length > 0) {
+        if (titleEl) titleEl.textContent = `Resultados para "${rawQuery}" (${remoteResults.length})`;
+        if (grid) grid.innerHTML = remoteResults.map(item => this.createMovieCard(item)).join('');
+      } else if (localMatches.length === 0) {
+        if (titleEl) titleEl.textContent = `Resultados da Busca`;
+        if (grid) {
+          grid.innerHTML = `
+            <div class="empty-state" style="grid-column: 1 / -1; text-align: center; padding: 4rem 1rem; color: var(--text-secondary);">
+              <div style="font-size: 2.5rem; margin-bottom: 0.8rem;">🔍</div>
+              <p style="font-size: 1.1rem; font-weight: 700; color: #ffffff; margin-bottom: 0.4rem;">Nenhum resultado encontrado para "${rawQuery}"</p>
+              <p style="font-size: 0.85rem; color: var(--text-muted);">Verifique a ortografia ou experimente pesquisar por outro título.</p>
+            </div>
+          `;
+        }
+      }
+    } catch (err) {
+      if (currentSeq !== state.searchSeq) return;
+      console.error('Error during search:', err);
     }
   },
 
