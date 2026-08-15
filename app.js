@@ -1369,6 +1369,31 @@ const UI = {
     this.bindEvents();
     this.loadInitialData();
   },
+
+  showPlayerToast(message, duration = 2200) {
+    const playerOverlay = document.getElementById('player-overlay');
+    if (!playerOverlay) return;
+
+    const oldToast = document.getElementById('player-toast-notification');
+    if (oldToast) oldToast.remove();
+
+    const toast = document.createElement('div');
+    toast.id = 'player-toast-notification';
+    toast.className = 'player-toast-notification';
+    toast.innerHTML = `<span>${message}</span>`;
+    playerOverlay.appendChild(toast);
+
+    requestAnimationFrame(() => {
+      toast.classList.add('show');
+    });
+
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => {
+        if (toast.parentNode) toast.remove();
+      }, 350);
+    }, duration);
+  },
   
   bindEvents() {
     // Logo Click — Reset to Initial Home Tab (Like F5 / Home)
@@ -1522,18 +1547,7 @@ const UI = {
     document.getElementById('hud-sub-auto-sync')?.addEventListener('click', (e) => {
       e.stopPropagation();
       const res = Subtitles.autoSync();
-      let badge = document.getElementById('hud-gesture-badge');
-      if (!badge) {
-        badge = document.createElement('div');
-        badge.id = 'hud-gesture-badge';
-        badge.className = 'hud-gesture-badge';
-        document.getElementById('player-overlay')?.appendChild(badge);
-      }
-      badge.textContent = res.msg;
-      badge.classList.remove('show');
-      void badge.offsetWidth;
-      badge.classList.add('show');
-      setTimeout(() => badge.classList.remove('show'), 1200);
+      this.showPlayerToast(res.msg, 2400);
     });
 
     // Language selector
@@ -1770,13 +1784,11 @@ const UI = {
         e.preventDefault();
         if (video && !video.classList.contains('hidden')) {
           video.currentTime = Math.max(0, video.currentTime - 10);
-          showGestureFeedback('⏪ -10s');
         }
       } else if (e.key === 'ArrowRight' || e.key === 'l' || e.key === 'L') {
         e.preventDefault();
         if (video && !video.classList.contains('hidden') && video.duration) {
           video.currentTime = Math.min(video.duration, video.currentTime + 10);
-          showGestureFeedback('⏩ +10s');
         }
       } else if (e.key === 'f' || e.key === 'F') {
         e.preventDefault();
@@ -1789,7 +1801,7 @@ const UI = {
         e.preventDefault();
         if (video) {
           video.muted = !video.muted;
-          showGestureFeedback(video.muted ? '🔇 Mudo' : '🔊 Áudio Ativado');
+          this.showPlayerToast(video.muted ? '🔇 Mudo' : '🔊 Áudio Ativado', 1500);
         }
       }
     });
@@ -1808,7 +1820,7 @@ const UI = {
       feedbackYesBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         if (feedbackPrompt) feedbackPrompt.classList.add('hidden');
-        showGestureFeedback('✅ Fonte confirmada!');
+        this.showPlayerToast('✅ Fonte confirmada!', 1800);
       });
     }
 
@@ -1816,7 +1828,7 @@ const UI = {
       feedbackNoBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         if (feedbackPrompt) feedbackPrompt.classList.add('hidden');
-        showGestureFeedback('⚡ Trocando de servidor...');
+        this.showPlayerToast('⚡ Trocando de servidor...', 1800);
         this.playNextStream();
       });
     }
