@@ -1852,37 +1852,159 @@ button, a, input, select, .movie-card, .stream-item, .mobile-nav-item {
 }
 
 /* --- Seção Cinema: Luxury Cinematic Design System --- */
+
+/* Hero Banner Intro for Cinema Tab */
+.cinema-header-banner {
+  position: relative;
+  margin: 1.5rem 4% 2.8rem;
+  padding: 2.5rem 2.8rem;
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(20, 20, 35, 0.85) 0%, rgba(10, 10, 20, 0.95) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.cinema-banner-glow {
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.25) 0%, rgba(225, 29, 72, 0.1) 50%, transparent 70%);
+  filter: blur(60px);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.cinema-banner-content {
+  position: relative;
+  z-index: 2;
+  max-width: 800px;
+}
+
+.cinema-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  color: #a78bfa;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+
+.cinema-badge-pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #a78bfa;
+  box-shadow: 0 0 10px #a78bfa;
+  animation: cinemaPulse 2s infinite;
+}
+
+@keyframes cinemaPulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(167, 139, 250, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(167, 139, 250, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(167, 139, 250, 0); }
+}
+
+.cinema-banner-title {
+  font-size: 2.5rem;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  color: #ffffff;
+  margin-bottom: 0.6rem;
+  line-height: 1.15;
+}
+
+.gradient-cinema-text {
+  background: linear-gradient(135deg, #a78bfa 0%, #f43f5e 50%, #fb923c 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.cinema-banner-subtitle {
+  font-size: 1.02rem;
+  color: #9ca3af;
+  line-height: 1.6;
+  margin-bottom: 1.6rem;
+}
+
+.cinema-banner-stats {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.cinema-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cinema-stat-val {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.cinema-stat-lbl {
+  font-size: 0.78rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.cinema-stat-divider {
+  width: 1px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* Saga Section Containers */
 .cinema-saga-section {
   position: relative;
-  margin-bottom: 3.2rem;
-  padding: 0;
+  margin-bottom: 3.5rem;
+  padding: 1.4rem 0 1rem;
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, transparent 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .cinema-saga-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 4% 1rem;
+  padding: 0 4% 1.2rem;
   gap: 14px;
 }
 
 .cinema-saga-title-wrap {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .cinema-saga-indicator {
-  width: 4px;
-  height: 28px;
+  width: 5px;
+  height: 32px;
   border-radius: 4px;
   flex-shrink: 0;
-  box-shadow: 0 0 16px currentColor;
+  box-shadow: 0 0 18px currentColor;
 }
 
 .cinema-saga-title {
-  font-size: 1.45rem;
-  font-weight: 800;
+  font-size: 1.55rem;
+  font-weight: 900;
   letter-spacing: -0.4px;
   display: flex;
   align-items: center;
@@ -1892,62 +2014,91 @@ button, a, input, select, .movie-card, .stream-item, .mobile-nav-item {
 }
 
 .cinema-saga-tag {
-  font-size: 0.7rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  padding: 3px 10px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: #e5e7eb;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #d1d5db;
 }
 
+/* Cinema Movie Cards */
 .cinema-card {
   position: relative;
-  border-radius: var(--radius);
+  border-radius: 14px;
   overflow: hidden;
-  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.35s ease;
-  background: #12121a;
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  background: #11111a;
+  border: 1px solid rgba(255, 255, 255, 0.07);
 }
 
 .cinema-card:hover {
-  transform: scale(1.09) translateY(-6px);
-  z-index: 10;
+  transform: scale(1.08) translateY(-7px);
+  z-index: 20;
+  border-color: var(--saga-accent, rgba(255, 255, 255, 0.3));
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7), 0 0 25px var(--saga-accent-glow, rgba(139, 92, 246, 0.25));
 }
 
 .cinema-card-badge {
   position: absolute;
-  top: 9px;
-  left: 9px;
+  top: 10px;
+  left: 10px;
   z-index: 10;
   color: #ffffff;
   font-family: var(--font);
   font-weight: 900;
   font-size: 0.8rem;
-  padding: 4px 8px;
-  border-radius: 7px;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.35);
+  padding: 4px 9px;
+  border-radius: 8px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   letter-spacing: 0.5px;
 }
 
 .cinema-card-year {
   position: absolute;
-  top: 9px;
-  right: 9px;
+  top: 10px;
+  right: 10px;
   z-index: 10;
   color: #e5e7eb;
   font-family: var(--font);
   font-weight: 800;
   font-size: 0.72rem;
-  padding: 3px 8px;
-  border-radius: 6px;
+  padding: 3px 9px;
+  border-radius: 7px;
   background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.15);
   letter-spacing: 0.3px;
+}
+
+@media (max-width: 768px) {
+  .cinema-header-banner {
+    padding: 1.8rem 1.5rem;
+    margin: 1rem 3% 2rem;
+    border-radius: 18px;
+  }
+
+  .cinema-banner-title {
+    font-size: 1.8rem;
+  }
+
+  .cinema-banner-subtitle {
+    font-size: 0.9rem;
+  }
+
+  .cinema-saga-title {
+    font-size: 1.25rem;
+  }
+
+  .cinema-saga-indicator {
+    height: 24px;
+  }
 }
 
 /* --- Prevent Native Browser Duplicate Subtitles --- */

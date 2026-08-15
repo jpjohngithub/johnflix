@@ -2108,51 +2108,18 @@ const UI = {
     
     let html = '';
 
-    // If dedicated Watchlist mode
-    if (state.currentType === 'watchlist') {
-      const allProgressMap = User.getAllProgress();
-      const progressList = Object.values(allProgressMap)
-        .filter(item => item && item.currentTime > 10 && item.percentage < 95)
-        .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
-
-      if (progressList.length > 0) {
-        const continueCardsHtml = progressList.map(item => this.createContinueCard(item)).join('');
+    // Favorites / Watchlist Tab Mode
+    if (state.currentType === 'favorites' || state.currentType === 'watchlist') {
+      const favorites = Storage.getFavorites();
+      if (favorites.length > 0) {
+        const cardsHtml = favorites.map(item => this.createMovieCard(item)).join('');
         html += `
-          <section class="catalog-section continue-watching-section" style="padding-top:20px;">
-            <div style="display:flex; align-items:center; justify-content:space-between; padding-right:4%; margin-bottom:1rem;">
-              <h2 class="section-title" style="color:#d8b4fe; display:flex; align-items:center; gap:8px; margin-bottom:0;">
-                <span>🕒</span> Continuar Assistindo
-              </h2>
-              <button class="btn btn-secondary" onclick="UI.clearHistory()" style="padding:6px 14px; font-size:0.8rem; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:#fca5a5; gap:6px; cursor:pointer;" title="Limpar todo o histórico">
-                🗑️ Limpar Histórico
-              </button>
+          <div class="search-results" style="padding-top: 2rem;">
+            <h2 class="section-title">⭐ Minha Lista (${favorites.length})</h2>
+            <div class="search-grid">
+              ${cardsHtml}
             </div>
-            <div class="carousel-wrapper">
-              <button class="carousel-btn carousel-prev" onclick="window.scrollCarousel('continue', -1)">‹</button>
-              <div class="carousel-track" id="carousel-continue">
-                ${continueCardsHtml}
-              </div>
-              <button class="carousel-btn carousel-next" onclick="window.scrollCarousel('continue', 1)">›</button>
-            </div>
-          </section>
-        `;
-      }
-
-      const watchlistMap = User.getWatchlist();
-      const watchlistArray = Object.values(watchlistMap)
-        .sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
-
-      if (watchlistArray.length > 0) {
-        const watchlistCardsHtml = watchlistArray.map(item => this.createMovieCard(item)).join('');
-        html += `
-          <section class="catalog-section watchlist-section" id="watchlist-section" style="padding-top:20px;">
-            <h2 class="section-title" style="color:#facc15; display:flex; align-items:center; gap:8px;">
-              <span>⭐</span> Minha Lista (${watchlistArray.length})
-            </h2>
-            <div class="search-grid" style="padding: 0 4%;">
-              ${watchlistCardsHtml}
-            </div>
-          </section>
+          </div>
         `;
       } else {
         html += `
@@ -2168,13 +2135,49 @@ const UI = {
           </div>
         `;
       }
-
       container.innerHTML = html;
       return;
     }
 
     // Seção Cinema Mode (Grandes Sagas e Trilogias em Ordem Cronológica)
     if (state.currentType === 'cinema') {
+      let totalMoviesCount = 0;
+      CINEMA_SAGAS.forEach(s => totalMoviesCount += s.items.length);
+
+      html += `
+        <div class="cinema-header-banner">
+          <div class="cinema-banner-glow"></div>
+          <div class="cinema-banner-content">
+            <div class="cinema-badge-pill">
+              <span class="cinema-badge-pulse"></span>
+              🏛️ UNIVERSOS CINEMATOGRÁFICOS
+            </div>
+            <h1 class="cinema-banner-title">
+              Seção <span class="gradient-cinema-text">Cinema</span>
+            </h1>
+            <p class="cinema-banner-subtitle">
+              Explore as maiores sagas, universos e franquias da história do cinema organizadas rigorosamente em ordem cronológica de lançamento.
+            </p>
+            <div class="cinema-banner-stats">
+              <div class="cinema-stat-item">
+                <span class="cinema-stat-val">${CINEMA_SAGAS.length}</span>
+                <span class="cinema-stat-lbl">Franquias Épicas</span>
+              </div>
+              <div class="cinema-stat-divider"></div>
+              <div class="cinema-stat-item">
+                <span class="cinema-stat-val">${totalMoviesCount}+</span>
+                <span class="cinema-stat-lbl">Filmes Verificados</span>
+              </div>
+              <div class="cinema-stat-divider"></div>
+              <div class="cinema-stat-item">
+                <span class="cinema-stat-val">2024–2026</span>
+                <span class="cinema-stat-lbl">Últimos Lançamentos</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
       CINEMA_SAGAS.forEach(saga => {
         // Automatic chronological ordering by release year:
         const sortedItems = [...saga.items].sort((a, b) => (parseInt(a.year, 10) || 0) - (parseInt(b.year, 10) || 0));
@@ -2188,6 +2191,7 @@ const UI = {
                   ${saga.title}
                 </h2>
               </div>
+              <span class="cinema-saga-tag">${sortedItems.length} Filmes • Cronologia</span>
             </div>
             <div class="carousel-wrapper">
               <button class="carousel-btn carousel-prev" onclick="window.scrollCarousel('saga-${saga.id}', -1)">‹</button>
