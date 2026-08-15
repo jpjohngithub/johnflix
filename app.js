@@ -2879,13 +2879,18 @@ const UI = {
     // Run parallel probe in < 2 seconds:
     const probedDirect = await Promise.all(directStreams.map(s => probeDirectStream(s)));
 
-    // Order: FrostStream Nativo first, then FenixFlix Nativo, then Other Direct, then Web Embeds, then Torrents
-    const liveFrost = probedDirect.filter(s => s.name.includes('Frost') && s.isLive).sort((a, b) => a.latency - b.latency);
-    const liveFenix = probedDirect.filter(s => s.name.includes('Fenix') && s.isLive).sort((a, b) => a.latency - b.latency);
-    const liveOtherDirect = probedDirect.filter(s => !s.name.includes('Frost') && !s.name.includes('Fenix') && s.isLive).sort((a, b) => a.latency - b.latency);
-    const unprobedFrost = probedDirect.filter(s => s.name.includes('Frost') && !s.isLive);
-    const unprobedFenix = probedDirect.filter(s => s.name.includes('Fenix') && !s.isLive);
-    const unprobedDirect = probedDirect.filter(s => !s.name.includes('Frost') && !s.name.includes('Fenix') && !s.isLive);
+    // Strict Priority: FrostStream ALWAYS at the top of the list if available!
+    const frostLive = probedDirect.filter(s => s.name.toLowerCase().includes('frost') && s.isLive).sort((a, b) => a.latency - b.latency);
+    const frostOther = probedDirect.filter(s => s.name.toLowerCase().includes('frost') && !s.isLive);
+    const allFrost = [...frostLive, ...frostOther];
+
+    const fenixLive = probedDirect.filter(s => s.name.toLowerCase().includes('fenix') && s.isLive).sort((a, b) => a.latency - b.latency);
+    const fenixOther = probedDirect.filter(s => s.name.toLowerCase().includes('fenix') && !s.isLive);
+    const allFenix = [...fenixLive, ...fenixOther];
+
+    const otherDirectLive = probedDirect.filter(s => !s.name.toLowerCase().includes('frost') && !s.name.toLowerCase().includes('fenix') && s.isLive).sort((a, b) => a.latency - b.latency);
+    const otherDirectRest = probedDirect.filter(s => !s.name.toLowerCase().includes('frost') && !s.name.toLowerCase().includes('fenix') && !s.isLive);
+    const allOtherDirect = [...otherDirectLive, ...otherDirectRest];
     
     const webEmbeds = nonDirectStreams.filter(s => s.embedUrl).map(s => ({
       ...s,
@@ -2902,13 +2907,10 @@ const UI = {
     });
 
     const candidates = [
-      ...liveFrost,
-      ...liveFenix,
-      ...liveOtherDirect,
+      ...allFrost,
+      ...allFenix,
+      ...allOtherDirect,
       ...webEmbeds,
-      ...unprobedFrost,
-      ...unprobedFenix,
-      ...unprobedDirect,
       ...torrentWebStreams
     ];
 
@@ -2957,9 +2959,10 @@ const UI = {
       this.playIframe(stream.embedUrl, stream.name);
     }
 
+    // Always display the health-check question instantly
     this.showSourceFeedbackPrompt(stream);
 
-    // Auto-tester fallback timer: If server fails or stalls > 3.0s, automatically test next server immediately!
+    // Auto-tester fallback timer: If server fails or stalls > 3.5s, automatically test next server immediately!
     if (this.autoTestTimer) clearTimeout(this.autoTestTimer);
     this.autoTestTimer = setTimeout(() => {
       const playerOverlay = document.getElementById('player-overlay');
@@ -2971,10 +2974,10 @@ const UI = {
       const isIframeVisible = iframe && !iframe.classList.contains('hidden');
 
       if (!isVideoPlaying && !isIframeVisible && index + 1 < state.activeStreams.length) {
-        console.log(`Server ${index + 1} (${stream.name}) took > 3s, testing next server ${index + 2}...`);
+        console.log(`Server ${index + 1} (${stream.name}) took > 3.5s, testing next server ${index + 2}...`);
         this.testAndPlayStreamIndex(index + 1);
       }
-    }, 3000);
+    }, 3500);
   },
 
   showSourceFeedbackPrompt(stream) {
@@ -2989,14 +2992,14 @@ const UI = {
       serverBadge.textContent = `⚡ ${stream?.name || 'Servidor Atual'}${msInfo}`;
     }
     
-    // Show instantly (0ms) as soon as movie starts
+    // Show instantly (0ms) on screen
     feedbackPrompt.classList.remove('hidden');
 
-    // Auto-hide after 12s if user doesn't interact so it doesn't disturb viewing
+    // Auto-hide after 18s if user doesn't interact so it doesn't disturb viewing
     if (this.feedbackAutoHideTimer) clearTimeout(this.feedbackAutoHideTimer);
     this.feedbackAutoHideTimer = setTimeout(() => {
       feedbackPrompt.classList.add('hidden');
-    }, 12000);
+    }, 18000);
   },
 
   updateHudStreamSelector(streams, activeIndex = 0) {
