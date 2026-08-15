@@ -1536,27 +1536,76 @@ const UI = {
       }, 3500);
     };
 
+    const togglePlayPause = () => {
+      if (!video || video.classList.contains('hidden')) return;
+      if (video.paused) {
+        video.play().catch(err => {
+          console.warn("Play error fallback:", err);
+          video.muted = true;
+          video.play();
+        });
+        showGestureFeedback('▶ Reproduzir');
+      } else {
+        video.pause();
+        showGestureFeedback('⏸ Pausado');
+      }
+    };
+
+    const showGestureFeedback = (text) => {
+      let badge = document.getElementById('hud-gesture-badge');
+      if (!badge) {
+        badge = document.createElement('div');
+        badge.id = 'hud-gesture-badge';
+        badge.className = 'hud-gesture-badge';
+        if (playerOverlay) playerOverlay.appendChild(badge);
+      }
+      badge.textContent = text;
+      badge.classList.remove('show');
+      void badge.offsetWidth;
+      badge.classList.add('show');
+      setTimeout(() => badge.classList.remove('show'), 650);
+    };
+
     if (playerOverlay) {
       playerOverlay.addEventListener('mousemove', resetHudTimer);
+
+      // Desktop Click on Screen -> Toggle Play / Pause!
+      playerOverlay.addEventListener('click', (e) => {
+        // Ignore clicks on control elements (buttons, inputs, sliders, selects, HUD top/bottom bars)
+        if (e.target.closest('button, select, input, a, .hud-top, .hud-bottom, .hud-controls-row, .hud-timeline-container, .modal-content, #streams-list')) return;
+        togglePlayPause();
+        resetHudTimer();
+      });
+
+      // Desktop Double-Click on Screen -> Toggle Fullscreen / Skip 10s
+      playerOverlay.addEventListener('dblclick', (e) => {
+        if (e.target.closest('button, select, input, a, .hud-top, .hud-bottom')) return;
+        const rect = playerOverlay.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const width = rect.width;
+        if (clickX < width * 0.35) {
+          if (video && !video.classList.contains('hidden')) {
+            video.currentTime = Math.max(0, video.currentTime - 10);
+            showGestureFeedback('⏪ -10s');
+          }
+        } else if (clickX > width * 0.65) {
+          if (video && !video.classList.contains('hidden') && video.duration) {
+            video.currentTime = Math.min(video.duration, video.currentTime + 10);
+            showGestureFeedback('⏩ +10s');
+          }
+        } else {
+          if (!document.fullscreenElement) {
+            playerOverlay.requestFullscreen?.().catch(() => {});
+            showGestureFeedback('⛶ Tela Cheia');
+          } else {
+            document.exitFullscreen?.().catch(() => {});
+          }
+        }
+      });
       
-      // Mobile Touch Gesture Recognizer (Double-tap left = -10s, right = +10s, single-tap = toggle HUD)
+      // Mobile Touch Gesture Recognizer (Double-tap left = -10s, right = +10s, single-tap = toggle HUD & play/pause)
       let lastTapTime = 0;
       let singleTapTimeout = null;
-
-      const showGestureFeedback = (text) => {
-        let badge = document.getElementById('hud-gesture-badge');
-        if (!badge) {
-          badge = document.createElement('div');
-          badge.id = 'hud-gesture-badge';
-          badge.className = 'hud-gesture-badge';
-          playerOverlay.appendChild(badge);
-        }
-        badge.textContent = text;
-        badge.classList.remove('show');
-        void badge.offsetWidth;
-        badge.classList.add('show');
-        setTimeout(() => badge.classList.remove('show'), 650);
-      };
 
       playerOverlay.addEventListener('touchend', (e) => {
         // Ignore taps on interactive controls
@@ -1592,6 +1641,42 @@ const UI = {
         }
       });
     }
+
+    // Keyboard Shortcuts (Space/K = Play/Pause, ArrowLeft = -10s, ArrowRight = +10s, F = Fullscreen, M = Mute)
+    document.addEventListener('keydown', (e) => {
+      if (!state.isPlayerActive || !playerOverlay || playerOverlay.classList.contains('hidden')) return;
+      if (['input', 'textarea', 'select'].includes(document.activeElement?.tagName?.toLowerCase())) return;
+
+      if (e.key === ' ' || e.key === 'k' || e.key === 'K') {
+        e.preventDefault();
+        togglePlayPause();
+      } else if (e.key === 'ArrowLeft' || e.key === 'j' || e.key === 'J') {
+        e.preventDefault();
+        if (video && !video.classList.contains('hidden')) {
+          video.currentTime = Math.max(0, video.currentTime - 10);
+          showGestureFeedback('⏪ -10s');
+        }
+      } else if (e.key === 'ArrowRight' || e.key === 'l' || e.key === 'L') {
+        e.preventDefault();
+        if (video && !video.classList.contains('hidden') && video.duration) {
+          video.currentTime = Math.min(video.duration, video.currentTime + 10);
+          showGestureFeedback('⏩ +10s');
+        }
+      } else if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        if (!document.fullscreenElement) {
+          playerOverlay.requestFullscreen?.().catch(() => {});
+        } else {
+          document.exitFullscreen?.().catch(() => {});
+        }
+      } else if (e.key === 'm' || e.key === 'M') {
+        e.preventDefault();
+        if (video) {
+          video.muted = !video.muted;
+          showGestureFeedback(video.muted ? '🔇 Mudo' : '🔊 Áudio Ativado');
+        }
+      }
+    });
 
     if (hudBackBtn) {
       hudBackBtn.addEventListener('click', () => this.closePlayer());
