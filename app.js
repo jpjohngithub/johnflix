@@ -2142,16 +2142,35 @@ const UI = {
 
     // Seção Cinema Mode (Grandes Sagas e Trilogias em Ordem Cronológica)
     if (state.currentType === 'cinema') {
+      const SAGA_CHIPS = [
+        { id: 'spiderman', name: 'Homem-Aranha', icon: '🕷️', accent: '#ef4444' },
+        { id: 'mcu', name: 'Marvel MCU', icon: '⚡', accent: '#e11d48' },
+        { id: 'dc', name: 'DC Universe', icon: '🦇', accent: '#3b82f6' },
+        { id: 'starwars', name: 'Star Wars', icon: '⭐', accent: '#eab308' },
+        { id: 'harrypotter', name: 'Harry Potter', icon: '🧙‍♂️', accent: '#a855f7' },
+        { id: 'lotr', name: 'Senhor dos Anéis', icon: '💍', accent: '#f59e0b' },
+        { id: 'fast', name: 'Velozes & Furiosos', icon: '🚗', accent: '#06b6d4' },
+        { id: 'johnwick', name: 'John Wick', icon: '🥋', accent: '#10b981' },
+        { id: 'transformers', name: 'Transformers', icon: '🤖', accent: '#38bdf8' },
+        { id: 'missionimpossible', name: 'Missão: Impossível', icon: '🎯', accent: '#f43f5e' },
+        { id: 'pirates', name: 'Piratas do Caribe', icon: '🏴‍☠️', accent: '#14b8a6' },
+        { id: 'matrix', name: 'Matrix', icon: '🕶️', accent: '#22c55e' },
+        { id: 'hungergames', name: 'Jogos Vorazes', icon: '🏹', accent: '#f97316' },
+        { id: 'jurassic', name: 'Jurassic Park', icon: '🦖', accent: '#84cc16' },
+        { id: 'apes_dune', name: 'Macacos & Duna', icon: '🪐', accent: '#fb923c' },
+        { id: 'animation_classics', name: 'Shrek & Toy Story', icon: '🏰', accent: '#ec4899' }
+      ];
+
       html += `
-        <div class="cinema-chip-nav">
-          ${CINEMA_SAGAS.map(s => {
-            const shortName = s.title.split('(')[0].trim();
-            return `
-              <button onclick="document.getElementById('saga-${s.id}')?.scrollIntoView({behavior:'smooth', block:'start'});" class="cinema-chip-btn" style="border-color:${s.accent};">
-                ${shortName}
+        <div class="cinema-chip-nav-wrapper">
+          <div class="cinema-chip-nav">
+            ${SAGA_CHIPS.map(c => `
+              <button onclick="document.getElementById('saga-${c.id}')?.scrollIntoView({behavior:'smooth', block:'start'});" class="cinema-chip-btn" style="--chip-accent: ${c.accent}; --chip-glow: ${c.accent}40;">
+                <span class="cinema-chip-icon">${c.icon}</span>
+                <span>${c.name}</span>
               </button>
-            `;
-          }).join('')}
+            `).join('')}
+          </div>
         </div>
       `;
 
