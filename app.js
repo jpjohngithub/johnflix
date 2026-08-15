@@ -971,10 +971,11 @@ const API = {
         return (b.score || 0) - (a.score || 0);
       });
 
-      // Assign Clean, Simple Numbered Names (e.g. FenixFlix 01, FrostStream 01, Brazuca 01, VidSrc 01)
+      // Assign Clean, Simple Numbered Names (e.g. FenixFlix Nativo 01, FrostStream 01, Brazuca 01, VidSrc 01)
       const providerCounters = {};
       streamsList.forEach(s => {
-        const prov = s.provider || 'Servidor';
+        let prov = s.provider || 'Servidor';
+        if (prov === 'FenixFlix') prov = 'FenixFlix Nativo';
         providerCounters[prov] = (providerCounters[prov] || 0) + 1;
         const numPad = String(providerCounters[prov]).padStart(2, '0');
         s.name = `${prov} ${numPad}`;
@@ -2745,7 +2746,8 @@ const UI = {
     if (!state.currentMeta) return;
 
     state.isPlayerActive = true;
-    const sessionId = ++state.autoPlaySessionId;
+    state.autoPlaySessionId = Date.now();
+    const sessionId = state.autoPlaySessionId;
 
     const playerOverlay = document.getElementById('player-overlay');
     const playerLoading = document.getElementById('player-loading');
@@ -2755,7 +2757,7 @@ const UI = {
     if (playerOverlay) playerOverlay.classList.remove('hidden');
     if (playerLoading) {
       playerLoading.classList.remove('hidden');
-      playerLoading.querySelector('p').textContent = '⚡ Buscando e testando servidores em paralelo (0s - 3s)...';
+      playerLoading.querySelector('p').textContent = '⚡ Testando velocidade das fontes em tempo real (< 3s)...';
     }
 
     const titleText = state.currentMeta.name;
@@ -2775,10 +2777,45 @@ const UI = {
       return;
     }
 
-    const fenixDirect = (rawStreams || []).filter(s => s.url && (s.name.includes('Fenix') || (s.title && s.title.includes('Fenix')) || s.category === 'fenix'));
-    const otherDirect = (rawStreams || []).filter(s => s.url && !fenixDirect.includes(s));
-    const webEmbeds = (rawStreams || []).filter(s => s.embedUrl);
-    const torrentWebStreams = (rawStreams || []).filter(s => (s.magnetUrl || s.infoHash) && !s.url && !s.embedUrl).map(s => {
+    if (!rawStreams || rawStreams.length === 0) {
+      alert('Nenhum servidor disponível para este título no momento.');
+      if (playerLoading) playerLoading.classList.add('hidden');
+      this.closePlayer();
+      return;
+    }
+
+    // High-speed parallel latency / ping probe for direct streams (max 2.0s timeout):
+    const probeDirectStream = async (stream) => {
+      if (!stream.url) return { ...stream, latency: 9999, isLive: false };
+      const start = Date.now();
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 2000);
+        const res = await fetch(stream.url, {
+          method: 'GET',
+          headers: { 'Range': 'bytes=0-100' },
+          signal: controller.signal
+        });
+        clearTimeout(timeout);
+        const latency = Date.now() - start;
+        return { ...stream, latency: (res.ok || res.status === 206) ? latency : 9999, isLive: (res.ok || res.status === 206) };
+      } catch (e) {
+        return { ...stream, latency: 9999, isLive: false };
+      }
+    };
+
+    const directStreams = rawStreams.filter(s => s.url);
+    const nonDirectStreams = rawStreams.filter(s => !s.url);
+
+    // Run parallel probe in < 2 seconds:
+    const probedDirect = await Promise.all(directStreams.map(s => probeDirectStream(s)));
+
+    const liveFenix = probedDirect.filter(s => s.name.includes('Fenix') && s.isLive).sort((a, b) => a.latency - b.latency);
+    const liveDirect = probedDirect.filter(s => !s.name.includes('Fenix') && s.isLive).sort((a, b) => a.latency - b.latency);
+    const unprobedFenix = probedDirect.filter(s => s.name.includes('Fenix') && !s.isLive);
+    const unprobedDirect = probedDirect.filter(s => !s.name.includes('Fenix') && !s.isLive);
+    const webEmbeds = nonDirectStreams.filter(s => s.embedUrl);
+    const torrentWebStreams = nonDirectStreams.filter(s => s.magnetUrl || s.infoHash).map(s => {
       const mag = s.magnetUrl || `magnet:?xt=urn:btih:${s.infoHash}&dn=${encodeURIComponent(s.name)}`;
       return {
         ...s,
@@ -2786,16 +2823,14 @@ const UI = {
       };
     });
 
-    // Sort candidates: FenixFlix Nativo first, then FrostStream Direct, then Web Embeds, then Torrents
-    fenixDirect.sort((a, b) => {
-      const aIs720 = a.name.includes('720') || (a.title && a.title.includes('720'));
-      const bIs720 = b.name.includes('720') || (b.title && b.title.includes('720'));
-      if (aIs720 && !bIs720) return -1;
-      if (!aIs720 && bIs720) return 1;
-      return (b.score || 0) - (a.score || 0);
-    });
-
-    const candidates = [...fenixDirect, ...otherDirect, ...webEmbeds, ...torrentWebStreams];
+    const candidates = [
+      ...liveFenix,
+      ...liveDirect,
+      ...unprobedFenix,
+      ...webEmbeds,
+      ...unprobedDirect,
+      ...torrentWebStreams
+    ];
 
     if (!candidates || candidates.length === 0) {
       alert('Nenhum servidor disponível para este título no momento.');
@@ -2804,17 +2839,17 @@ const UI = {
       return;
     }
 
-    // Always prioritize FenixFlix as winner candidate 0
     state.activeStreams = candidates;
     state.currentStreamIndex = 0;
     this.updateHudStreamSelector(candidates, 0);
 
     const winner = candidates[0];
+    const speedInfo = winner.latency && winner.latency < 9999 ? ` (${winner.latency}ms ⚡)` : '';
     if (playerLoading) {
-      playerLoading.querySelector('p').textContent = `🚀 Iniciando com ${winner.name}...`;
+      playerLoading.querySelector('p').textContent = `🚀 Conectando a ${winner.name}${speedInfo}...`;
     }
 
-    // Launch winner stream immediately!
+    // Launch winner stream in < 3s!
     this.testAndPlayStreamIndex(0);
   },
 
@@ -2932,13 +2967,13 @@ const UI = {
 
     if (fenix.length > 0) {
       html += '<div style="color:#ef4444; font-weight:800; font-size:1.05rem; margin:1rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(239,68,68,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #ef4444;">'
-        + '<span>🔥</span> FenixFlix</div>';
+        + '<span>🔥</span> FenixFlix Nativo (Player Nativo HTML5)</div>';
       html += fenix.map(stream => this.createStreamItem(stream)).join('');
     }
 
     if (frost.length > 0) {
       html += '<div style="color:#06b6d4; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(6,182,212,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #06b6d4;">'
-        + '<span>❄️</span> FrostStream</div>';
+        + '<span>❄️</span> FrostStream Nativo</div>';
       html += frost.map(stream => this.createStreamItem(stream)).join('');
     }
 
