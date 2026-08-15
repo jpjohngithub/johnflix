@@ -3309,19 +3309,33 @@ body {
   transform-origin: 50% 12%;
 }
 #main-content.is-leaving {
-  animation: pageLeave 180ms var(--ease-ios) forwards;
+  animation: pageLeave 320ms var(--ease-ios) forwards;
   pointer-events: none;
 }
 #main-content.page-enter {
-  animation: pageEnter 320ms var(--ease-ios) both;
+  animation: pageEnter 520ms var(--ease-ios) both;
 }
 @keyframes pageLeave {
-  from { opacity: 1; transform: scale(1); }
-  to   { opacity: 0; transform: scale(0.98); }
+  from { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+  to   { opacity: 0; transform: translate3d(0, 18px, 0) scale(0.96); }
 }
 @keyframes pageEnter {
-  from { opacity: 0; transform: translate3d(0, 12px, 0) scale(0.99); }
-  to   { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+  from { opacity: 0; transform: translate3d(0, 28px, 0) scale(0.97); filter: blur(8px); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0) scale(1); filter: blur(0); }
+}
+.hero-content.hero-in {
+  animation: heroIn 560ms var(--ease-ios) both;
+}
+.hero-backdrop.hero-bg-in {
+  animation: heroBgIn 700ms var(--ease-ios) both;
+}
+@keyframes heroIn {
+  from { opacity: 0; transform: translate3d(0, 22px, 0); filter: blur(6px); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); filter: blur(0); }
+}
+@keyframes heroBgIn {
+  from { opacity: 0.2; transform: translateZ(0) scale(1.04); }
+  to   { opacity: 1; transform: translateZ(0) scale(1); }
 }
 
 /* Modal / sheet — Apple scale + heavy blur */
@@ -3394,23 +3408,5 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-  .hero-backdrop { animation: none !important; transform: none !important; }
-  #main-content.is-leaving,
-  #main-content.page-enter,
-  .catalog-section,
-  .hero-title.type-settle {
-    animation: none !important;
-    transform: none !important;
-    opacity: 1 !important;
-  }
-  .hero-title.is-typing::after,
-  .section-title.is-typing::after,
-  .explore-title.is-typing::after { display: none !important; }
+  .hero-backdrop { animation: kenBurns 28s linear infinite alternate !important; }
 }
