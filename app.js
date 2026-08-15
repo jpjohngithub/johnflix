@@ -2786,7 +2786,7 @@ const UI = {
       };
     });
 
-    // Sort FenixFlix direct streams: 720p working stream first, then 1080p, then 4K
+    // Sort candidates: FenixFlix Nativo first, then FrostStream Direct, then Web Embeds, then Torrents
     fenixDirect.sort((a, b) => {
       const aIs720 = a.name.includes('720') || (a.title && a.title.includes('720'));
       const bIs720 = b.name.includes('720') || (b.title && b.title.includes('720'));
@@ -2841,7 +2841,7 @@ const UI = {
       this.playIframe(stream.embedUrl, stream.name);
     }
 
-    // Auto-tester fallback timer: If server fails or stalls > 4s, automatically test next server only if player is still OPEN!
+    // Auto-tester fallback timer: If server fails or stalls > 3.0s, automatically test next server immediately!
     if (this.autoTestTimer) clearTimeout(this.autoTestTimer);
     this.autoTestTimer = setTimeout(() => {
       const playerOverlay = document.getElementById('player-overlay');
@@ -2853,10 +2853,10 @@ const UI = {
       const isIframeVisible = iframe && !iframe.classList.contains('hidden');
 
       if (!isVideoPlaying && !isIframeVisible && index + 1 < state.activeStreams.length) {
-        console.log(`Server ${index + 1} timed out, testing server ${index + 2}...`);
+        console.log(`Server ${index + 1} (${stream.name}) took > 3s, testing next server ${index + 2}...`);
         this.testAndPlayStreamIndex(index + 1);
       }
-    }, 4000);
+    }, 3000);
   },
 
   updateHudStreamSelector(streams, activeIndex = 0) {
