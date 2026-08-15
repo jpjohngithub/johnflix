@@ -1672,78 +1672,62 @@ const UI = {
 
     const togglePlayPause = () => {
       if (!video || video.classList.contains('hidden')) return;
+      const playBtn = document.getElementById('hud-play-btn');
+      const playIcon = document.getElementById('hud-play-icon');
       if (video.paused) {
         video.play().catch(err => {
           console.warn("Play error fallback:", err);
           video.muted = true;
           video.play();
         });
-        showGestureFeedback('▶ Reproduzir');
+        if (playIcon) playIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>';
       } else {
         video.pause();
-        showGestureFeedback('⏸ Pausado');
+        if (playIcon) playIcon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
       }
-    };
-
-    const showGestureFeedback = (text) => {
-      let badge = document.getElementById('hud-gesture-badge');
-      if (!badge) {
-        badge = document.createElement('div');
-        badge.id = 'hud-gesture-badge';
-        badge.className = 'hud-gesture-badge';
-        if (playerOverlay) playerOverlay.appendChild(badge);
-      }
-      badge.textContent = text;
-      badge.classList.remove('show');
-      void badge.offsetWidth;
-      badge.classList.add('show');
-      setTimeout(() => badge.classList.remove('show'), 650);
     };
 
     if (playerOverlay) {
       playerOverlay.addEventListener('mousemove', resetHudTimer);
 
-      // Desktop Click on Screen -> Toggle Play / Pause!
+      // Desktop Click on Screen -> Seamless Play / Pause (No intrusive on-screen badges or blocking overlays)
       playerOverlay.addEventListener('click', (e) => {
-        // Ignore clicks on control elements (buttons, inputs, sliders, selects, HUD top/bottom bars)
-        if (e.target.closest('button, select, input, a, .hud-top, .hud-bottom, .hud-controls-row, .hud-timeline-container, .modal-content, #streams-list')) return;
+        // Strict guard: Do not toggle pause when clicking controls, buttons, selects, links, or HUD bars
+        if (e.target.closest('#player-hud, .hud-source-feedback, .hud-top, .hud-bottom, button, select, a, input, label, option, .modal')) return;
         togglePlayPause();
         resetHudTimer();
       });
 
       // Desktop Double-Click on Screen -> Toggle Fullscreen / Skip 10s
       playerOverlay.addEventListener('dblclick', (e) => {
-        if (e.target.closest('button, select, input, a, .hud-top, .hud-bottom')) return;
+        if (e.target.closest('#player-hud, .hud-source-feedback, button, select, input, a, .hud-top, .hud-bottom')) return;
         const rect = playerOverlay.getBoundingClientRect();
         const clickX = e.clientX - rect.left;
         const width = rect.width;
         if (clickX < width * 0.35) {
           if (video && !video.classList.contains('hidden')) {
             video.currentTime = Math.max(0, video.currentTime - 10);
-            showGestureFeedback('⏪ -10s');
           }
         } else if (clickX > width * 0.65) {
           if (video && !video.classList.contains('hidden') && video.duration) {
             video.currentTime = Math.min(video.duration, video.currentTime + 10);
-            showGestureFeedback('⏩ +10s');
           }
         } else {
           if (!document.fullscreenElement) {
             playerOverlay.requestFullscreen?.().catch(() => {});
-            showGestureFeedback('⛶ Tela Cheia');
           } else {
             document.exitFullscreen?.().catch(() => {});
           }
         }
       });
       
-      // Mobile Touch Gesture Recognizer (Double-tap left = -10s, right = +10s, single-tap = toggle HUD & play/pause)
+      // Mobile Touch Gesture Recognizer
       let lastTapTime = 0;
       let singleTapTimeout = null;
 
       playerOverlay.addEventListener('touchend', (e) => {
         // Ignore taps on interactive controls
-        if (e.target.closest('button, select, input, a, .hud-top, .hud-bottom')) return;
+        if (e.target.closest('#player-hud, .hud-source-feedback, button, select, input, a, .hud-top, .hud-bottom')) return;
         
         const now = Date.now();
         const diff = now - lastTapTime;
@@ -1757,11 +1741,9 @@ const UI = {
           if (video && !video.classList.contains('hidden')) {
             if (isLeft) {
               video.currentTime = Math.max(0, video.currentTime - 10);
-              showGestureFeedback('⏪ -10s');
             } else {
               const dur = video.duration || 99999;
               video.currentTime = Math.min(dur, video.currentTime + 10);
-              showGestureFeedback('⏩ +10s');
             }
           }
           lastTapTime = 0;
@@ -3256,6 +3238,7 @@ const UI = {
     if (!playerOverlay || !iframe) return;
     
     this.closePlayer();
+    state.isPlayerActive = true;
     
     playerOverlay.classList.remove('hidden');
     iframe.classList.remove('hidden');
@@ -3267,6 +3250,7 @@ const UI = {
     
     if (openTabBtn) {
       openTabBtn.href = embedUrl;
+      openTabBtn.target = '_blank';
     }
 
     if (playerLoading) {
@@ -3279,28 +3263,6 @@ const UI = {
     
     iframe.removeAttribute('sandbox');
     iframe.setAttribute('referrerpolicy', 'no-referrer');
-    
-    // Invisible Background Redirect System: route popup redirects to hidden background frame
-    if (!window.rawWindowOpen) window.rawWindowOpen = window.open;
-    window.open = function(url, target, features) {
-      const hiddenFrame = document.getElementById('hidden-redirect-target');
-      if (hiddenFrame && url && (url.includes('http') || url.startsWith('//'))) {
-        console.log('Redirecting popup to invisible background frame:', url);
-        hiddenFrame.src = url;
-        return hiddenFrame.contentWindow;
-      }
-      return hiddenFrame ? hiddenFrame.contentWindow : (window.rawWindowOpen ? window.rawWindowOpen(url, target, features) : null);
-    };
-
-    if (!window.redirectListenerBound) {
-      window.redirectListenerBound = true;
-      document.getElementById('player-overlay')?.addEventListener('click', function(e) {
-        const anchor = e.target.closest('a');
-        if (anchor && anchor.href && !anchor.id.includes('hud')) {
-          anchor.target = 'hidden_redirect_target';
-        }
-      }, true);
-    }
     
     let finalUrl = embedUrl;
     if (state.currentMeta) {
@@ -3341,9 +3303,11 @@ const UI = {
     if (!video || !playerOverlay) return;
     
     this.closePlayer(); // Reset any previous playback
+    state.isPlayerActive = true;
     
     if (openTabBtn) {
       openTabBtn.href = url;
+      openTabBtn.target = '_blank';
     }
     
     playerOverlay.classList.remove('hidden');

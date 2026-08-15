@@ -1217,9 +1217,6 @@ html {
 .hud-top {
   display: flex;
   align-items: center;
-.hud-top {
-  display: flex;
-  align-items: center;
   justify-content: space-between;
   gap: 12px;
   pointer-events: auto;
