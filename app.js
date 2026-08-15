@@ -885,29 +885,35 @@ const API = {
 
       const frostConfiguredUrl = 'https://froststream.cloutteam.com/providers.iptv=checked&providers.cdmoviedb=checked&providers.redeflix=checked&providers.tomato=checked&providers.myembed=checked&providers.anizone=checked';
 
-      const [fenixRes, frostRes, frostConfigRes] = await Promise.allSettled([
+      const [fenixRes, frostRes, frostConfigRes, brazucaRes, torrentioRes] = await Promise.allSettled([
         fetchAddon('https://fenixflix.fenixhub.online'),
         fetchAddon('https://froststream.cloutteam.com'),
-        fetchAddon(frostConfiguredUrl)
+        fetchAddon(frostConfiguredUrl),
+        fetchAddon('https://94c8cb9f702d-brazuca-torrents.baby-beamup.club'),
+        fetchAddon('https://torrentio.strem.fun')
       ]);
 
       const fenixStreams = fenixRes.status === 'fulfilled' ? fenixRes.value : [];
       const frostBaseStreams = frostRes.status === 'fulfilled' ? frostRes.value : [];
       const frostConfigStreams = frostConfigRes.status === 'fulfilled' ? frostConfigRes.value : [];
       const frostStreams = [...frostBaseStreams, ...frostConfigStreams];
+      const brazucaStreams = brazucaRes.status === 'fulfilled' ? brazucaRes.value : [];
+      const torrentioStreams = torrentioRes.status === 'fulfilled' ? torrentioRes.value : [];
 
       const streamsList = [];
 
       // ══════════════════════════════════════════════
-      // Direct MP4 / CDN Native Video Streams
+      // 1. Direct MP4 / CDN Native Video Streams (FenixFlix & FrostStream)
       // ══════════════════════════════════════════════
-      const directVideoSources = [...fenixStreams, ...frostStreams.filter(s => s.url)];
+      const directVideoSources = [
+        ...fenixStreams.map(s => ({ ...s, customProvider: 'FenixFlix' })),
+        ...frostStreams.filter(s => s.url).map(s => ({ ...s, customProvider: s.name?.includes('Fenix') ? 'FenixFlix' : 'FrostStream' }))
+      ];
+
       directVideoSources.forEach(s => {
         if (!s.url) return;
 
-        const isFenix = s.name?.includes('Fenix') || s.title?.includes('Fenix') || s.url?.includes('fenix');
-        const provider = isFenix ? 'FenixFlix' : 'FrostStream';
-
+        const provider = s.customProvider || (s.name?.includes('Fenix') ? 'FenixFlix' : 'FrostStream');
         const descRaw = (s.description || s.title || s.name || '').toLowerCase();
         const isDub = descRaw.includes('dublado') || descRaw.includes('🇧🇷') || descRaw.includes('dual') || descRaw.includes('pt-br') || descRaw.includes('português');
         const is720 = descRaw.includes('720');
@@ -916,22 +922,56 @@ const API = {
           provider: provider,
           url: s.url,
           isDub: isDub,
-          category: isFenix ? 'fenix' : 'frost',
-          score: (isFenix ? 100 : 80) + (is720 ? 30 : 10) + (isDub ? 20 : 0)
+          category: provider === 'FenixFlix' ? 'fenix' : 'frost',
+          score: (provider === 'FenixFlix' ? 100 : 90) + (is720 ? 30 : 10) + (isDub ? 25 : 0)
         });
       });
 
-      // Append new web embed streams
+      // ══════════════════════════════════════════════
+      // 2. Brazuca & Torrentio Torrents
+      // ══════════════════════════════════════════════
+      const torrentSources = [
+        ...brazucaStreams.map(s => ({ ...s, customProvider: 'Brazuca' })),
+        ...torrentioStreams.slice(0, 15).map(s => ({ ...s, customProvider: 'Torrentio' }))
+      ];
+
+      torrentSources.forEach(s => {
+        const hash = s.infoHash;
+        if (!hash) return;
+
+        const titleRaw = (s.title || s.name || '').toLowerCase();
+        const isDub = titleRaw.includes('dublado') || titleRaw.includes('dual') || titleRaw.includes('pt-br') || titleRaw.includes('português') || titleRaw.includes('brazuca');
+        const trackers = [
+          'udp://tracker.opentrackr.org:1337/announce',
+          'udp://open.stealth.si:80/announce',
+          'udp://tracker.torrent.eu.org:451/announce',
+          'udp://tracker.fnix.net:6969/announce'
+        ];
+        const magnetUrl = `magnet:?xt=urn:btih:${hash}&dn=${encodeURIComponent(s.name || 'Stream')}&${trackers.map(t => `tr=${encodeURIComponent(t)}`).join('&')}`;
+
+        streamsList.push({
+          provider: s.customProvider,
+          magnetUrl: magnetUrl,
+          infoHash: hash,
+          isDub: isDub,
+          category: 'torrent',
+          score: (s.customProvider === 'Brazuca' ? 60 : 40) + (isDub ? 25 : 0)
+        });
+      });
+
+      // ══════════════════════════════════════════════
+      // 3. Clean Web Embed Streams
+      // ══════════════════════════════════════════════
       streamsList.push(...newWebStreams);
 
-      // Sort all streams by priority score
+      // Sort all streams by priority score (Dublado / Direct first)
       streamsList.sort((a, b) => {
         if (a.isDub && !b.isDub) return -1;
         if (!a.isDub && b.isDub) return 1;
         return (b.score || 0) - (a.score || 0);
       });
 
-      // Assign Clean, Simple Numbered Names (e.g. FenixFlix 01, VidSrc 01, MultiEmbed 01)
+      // Assign Clean, Simple Numbered Names (e.g. FenixFlix 01, FrostStream 01, Brazuca 01, VidSrc 01)
       const providerCounters = {};
       streamsList.forEach(s => {
         const prov = s.provider || 'Servidor';
@@ -2885,7 +2925,8 @@ const UI = {
 
     const fenix = streams.filter(s => s.name.startsWith('FenixFlix'));
     const frost = streams.filter(s => s.name.startsWith('FrostStream'));
-    const web = streams.filter(s => !fenix.includes(s) && !frost.includes(s));
+    const torrents = streams.filter(s => s.name.startsWith('Brazuca') || s.name.startsWith('Torrentio'));
+    const web = streams.filter(s => !fenix.includes(s) && !frost.includes(s) && !torrents.includes(s));
 
     let html = '';
 
@@ -2899,6 +2940,12 @@ const UI = {
       html += '<div style="color:#06b6d4; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(6,182,212,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #06b6d4;">'
         + '<span>❄️</span> FrostStream</div>';
       html += frost.map(stream => this.createStreamItem(stream)).join('');
+    }
+
+    if (torrents.length > 0) {
+      html += '<div style="color:#f59e0b; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(245,158,11,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #f59e0b;">'
+        + '<span>🧲</span> Torrents</div>';
+      html += torrents.map(stream => this.createStreamItem(stream)).join('');
     }
 
     if (web.length > 0) {
@@ -2927,6 +2974,24 @@ const UI = {
           </div>
           <button class="stream-play-btn" style="background:${accentColor}; color:white; font-weight:800;"
             onclick="event.stopPropagation(); UI.playStream('${escapedUrl}', '${escapedTitle}')">▶ Assistir</button>
+        </div>
+      `;
+    }
+
+    // Torrent Streams (Brazuca / Torrentio)
+    const magnetUrl = stream.magnetUrl || (stream.infoHash ? `magnet:?xt=urn:btih:${stream.infoHash}&dn=${encodeURIComponent(name)}` : null);
+    if (magnetUrl) {
+      const escapedMagnet = magnetUrl.replace(/"/g, '&quot;');
+      const escapedTitle = name.replace(/'/g, "\\'");
+      const accentColor = '#f59e0b';
+
+      return `
+        <div class="stream-item" style="border-left: 4px solid ${accentColor}; cursor: pointer;" onclick="UI.playTorrent('${escapedMagnet.replace(/'/g, "\\'")}', '${escapedTitle}')">
+          <div class="stream-info">
+            <span class="stream-name" style="font-weight:700;">${name}</span>
+          </div>
+          <button class="stream-play-btn" style="background:${accentColor}; color:#000; font-weight:800;"
+            onclick="event.stopPropagation(); UI.playTorrent('${escapedMagnet.replace(/'/g, "\\'")}', '${escapedTitle}')">▶ Assistir</button>
         </div>
       `;
     }
