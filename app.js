@@ -2227,6 +2227,8 @@ const UI = {
   },
 
   playNextStream() {
+    const playerOverlay = document.getElementById('player-overlay');
+    if (!state.isPlayerActive || !playerOverlay || playerOverlay.classList.contains('hidden')) return;
     if (!state.activeStreams || state.activeStreams.length === 0) return;
     state.currentStreamIndex = ((state.currentStreamIndex || 0) + 1) % state.activeStreams.length;
     const next = state.activeStreams[state.currentStreamIndex];
@@ -2687,6 +2689,8 @@ const UI = {
     };
 
     video.onerror = () => {
+      const overlay = document.getElementById('player-overlay');
+      if (!state.isPlayerActive || !overlay || overlay.classList.contains('hidden') || !video.src || video.src === 'about:blank') return;
       console.warn('Direct video error on stream:', url);
       if (!video.dataset.triedProxy && !url.includes('corsproxy') && !url.includes('allorigins')) {
         video.dataset.triedProxy = '1';
@@ -2705,7 +2709,9 @@ const UI = {
     // 3.5s stall watchdog: auto advance if stream doesn't start
     if (this.streamWatchdogTimer) clearTimeout(this.streamWatchdogTimer);
     this.streamWatchdogTimer = setTimeout(() => {
-      if (video && video.readyState < 2 && video.paused && !playerOverlay.classList.contains('hidden')) {
+      const overlay = document.getElementById('player-overlay');
+      if (!state.isPlayerActive || !overlay || overlay.classList.contains('hidden')) return;
+      if (video && video.readyState < 2 && video.paused) {
         console.warn('Stream stall detected (>3.5s), auto-falling back to next stream...');
         if (typeof this.playNextStream === 'function') {
           this.playNextStream();
@@ -2723,7 +2729,10 @@ const UI = {
       hls.on(Hls.Events.ERROR, (event, data) => {
         if (data.fatal) {
           console.warn('HLS error:', data);
-          if (typeof this.playNextStream === 'function') this.playNextStream();
+          const overlay = document.getElementById('player-overlay');
+          if (state.isPlayerActive && overlay && !overlay.classList.contains('hidden') && typeof this.playNextStream === 'function') {
+            this.playNextStream();
+          }
         }
       });
       window.currentHls = hls;
@@ -2845,8 +2854,18 @@ const UI = {
       iframe.classList.add('hidden');
     }
     if (video) {
+      video.onerror = null;
+      video.onplay = null;
+      video.onplaying = null;
+      video.oncanplay = null;
+      video.onloadedmetadata = null;
+      video.ontimeupdate = null;
+      video.onseeking = null;
+      video.onseeked = null;
       video.pause();
+      video.removeAttribute('src');
       video.src = '';
+      try { video.load(); } catch(e) {}
       video.classList.remove('hidden');
     }
 
