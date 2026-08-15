@@ -582,6 +582,40 @@ const CINEMA_SAGAS = [
       { id: 'tt10298810', name: 'Lightyear', year: '2022', timeline: 'Origem do Buzz', type: 'movie' },
       { id: 'tt29355505', name: 'Toy Story 5', year: '2026', timeline: 'Nova Aventura dos Brinquedos', type: 'movie' }
     ]
+  },
+  {
+    id: 'adultanimation',
+    title: '🔞 Séries & Desenhos Adultos (Rick and Morty, BoJack, Invencível e mais)',
+    accent: '#ef4444',
+    items: [
+      { id: 'tt0096697', name: 'Os Simpsons', year: '1989', timeline: 'Clássico da Animação', type: 'series' },
+      { id: 'tt0121955', name: 'South Park', year: '1997', timeline: 'Sátira & Humor Ácido', type: 'series' },
+      { id: 'tt0182576', name: 'Uma Família da Pesada (Family Guy)', year: '1999', timeline: 'Peter Griffin & Família', type: 'series' },
+      { id: 'tt0149460', name: 'Futurama', year: '1999', timeline: 'Ficção & Comédia Espacial', type: 'series' },
+      { id: 'tt0397306', name: 'American Dad!', year: '2005', timeline: 'Stan Smith & Roger', type: 'series' },
+      { id: 'tt0437745', name: 'Frango Robô (Robot Chicken)', year: '2005', timeline: 'Stop-Motion Sátira', type: 'series' },
+      { id: 'tt1486217', name: 'Archer', year: '2009', timeline: 'Espionagem & Comédia', type: 'series' },
+      { id: 'tt2861424', name: 'Rick and Morty', year: '2013', timeline: 'Multiverso & Ficção Científica', type: 'series' },
+      { id: 'tt2950342', name: 'Mr. Pickles', year: '2013', timeline: 'Terror & Humor Extremo', type: 'series' },
+      { id: 'tt3398228', name: 'BoJack Horseman', year: '2014', timeline: 'Drama Psicológico & Comédia', type: 'series' },
+      { id: 'tt4326894', name: 'F is for Family', year: '2015', timeline: 'Família Anos 70 (Bill Burr)', type: 'series' },
+      { id: 'tt6517102', name: 'Castlevania', year: '2017', timeline: 'Fantasia Sombria & Ação', type: 'series' },
+      { id: 'tt6524350', name: 'Big Mouth', year: '2017', timeline: 'Puberdade & Monstros', type: 'series' },
+      { id: 'tt5363918', name: 'Desencanto (Disenchantment)', year: '2018', timeline: 'Fantasia Medieval (Matt Groening)', type: 'series' },
+      { id: 'tt8235236', name: 'Paradise PD', year: '2018', timeline: 'Comédia Policial Ácida', type: 'series' },
+      { id: 'tt9561862', name: 'Love, Death & Robots', year: '2019', timeline: 'Antologia Sci-Fi Adulta', type: 'series' },
+      { id: 'tt10332508', name: 'Primal (Genndy Tartakovsky)', year: '2019', timeline: 'Ação Brutal Pré-Histórica', type: 'series' },
+      { id: 'tt7658402', name: 'Harley Quinn', year: '2019', timeline: 'Vilões DC & Violência', type: 'series' },
+      { id: 'tt8910922', name: 'Solar Opposites', year: '2020', timeline: 'Alienígenas na Terra', type: 'series' },
+      { id: 'tt10009170', name: 'O Sangue de Zeus (Blood of Zeus)', year: '2020', timeline: 'Mitologia Grega & Ação', type: 'series' },
+      { id: 'tt12074628', name: 'Smiling Friends', year: '2020', timeline: 'Comédia Surreal Adult Swim', type: 'series' },
+      { id: 'tt6741278', name: 'Invencível (Invincible)', year: '2021', timeline: 'Super-Heróis & Sangue', type: 'series' },
+      { id: 'tt11126994', name: 'Arcane', year: '2021', timeline: 'League of Legends (Obra-Prima)', type: 'series' },
+      { id: 'tt10231312', name: 'Departamento de Conspirações (Inside Job)', year: '2021', timeline: 'Teorias da Conspiração', type: 'series' },
+      { id: 'tt12590266', name: 'Cyberpunk: Edgerunners', year: '2022', timeline: 'Distopia & Ação Frenética', type: 'series' },
+      { id: 'tt13309742', name: 'Samurai de Olhos Azuis (Blue Eye Samurai)', year: '2023', timeline: 'Vingança no Japão Feudal', type: 'series' },
+      { id: 'tt7216636', name: 'Hazbin Hotel', year: '2024', timeline: 'Inferno & Musicais Adultos', type: 'series' }
+    ]
   }
 ];
 
@@ -606,7 +640,7 @@ const API = {
         if (merged.length > 0) return merged;
       }
 
-      // Handle dynamic Saga queries (Marvel, DC, Star Wars, Harry Potter, Spider-Man, etc.)
+      // Handle dynamic Saga queries (Marvel, DC, Star Wars, Harry Potter, Spider-Man, Adult Animation, etc.)
       const SAGA_TERMS = {
         'Saga: Marvel MCU': ['marvel', 'avengers', 'iron man', 'captain america', 'thor', 'guardians of the galaxy', 'deadpool & wolverine'],
         'Saga: DC Universe': ['batman', 'superman', 'justice league', 'wonder woman', 'aquaman', 'the flash', 'joker'],
@@ -625,7 +659,8 @@ const API = {
         'Saga: Shrek': ['shrek', 'puss in boots', 'gato de botas'],
         'Saga: Toy Story': ['toy story', 'lightyear'],
         'Saga: Matrix': ['matrix'],
-        'Saga: Jogos Vorazes': ['hunger games', 'jogos vorazes']
+        'Saga: Jogos Vorazes': ['hunger games', 'jogos vorazes'],
+        'Saga: Animações Adultas': ['rick and morty', 'bojack horseman', 'south park', 'invincible', 'arcane', 'family guy', 'futurama', 'love death robots', 'cyberpunk edgerunners', 'castlevania', 'archer', 'solar opposites', 'harley quinn', 'primal', 'blue eye samurai']
       };
 
       if (genreParam && SAGA_TERMS[genreParam]) {
@@ -1981,8 +2016,9 @@ const UI = {
     const posterUrl = `https://images.metahub.space/poster/medium/${cleanId}/img`;
     const num = index + 1;
     const formattedNum = num < 10 ? `#0${num}` : `#${num}`;
+    const mediaType = item.type || 'movie';
     return `
-      <div class="movie-card cinema-card" onclick="UI.openModal('${cleanId}', 'movie')">
+      <div class="movie-card cinema-card" onclick="UI.openModal('${cleanId}', '${mediaType}')">
         <div class="cinema-card-badge" style="background:${accent};">${formattedNum}</div>
         <div class="cinema-card-year">${item.year}</div>
         <img class="movie-poster" src="${posterUrl}" alt="${item.name}" onerror="this.style.background='linear-gradient(135deg, #1a1a2e, #2a2a4e)'; this.style.minHeight='270px';" loading="lazy">
