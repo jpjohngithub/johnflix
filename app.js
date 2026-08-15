@@ -115,9 +115,21 @@ const User = {
           poster = `https://images.metahub.space/poster/medium/${cleanId}/img`;
         }
 
-        let name = item.name;
-        if (!name || name === 'Vídeo' || name.startsWith('🇧🇷') || name.startsWith('🌐')) {
-          name = item.title && !item.title.startsWith('🇧🇷') ? item.title : '';
+        let name = item.name || item.title || '';
+        const isServerName = !name || /^(FrostStream|Brazuca|Torrentio|FenixFlix|Servidor|Stream|Embed|Player Web|Vídeo)/i.test(name) || name.includes('Stream ') || name.startsWith('🇧🇷') || name.startsWith('🌐') || name.startsWith('❄️') || name.startsWith('🧲') || name.startsWith('🔥');
+
+        if (isServerName) {
+          let foundName = '';
+          if (typeof CINEMA_SAGAS !== 'undefined') {
+            for (const saga of CINEMA_SAGAS) {
+              const match = (saga.items || []).find(i => i.id.startsWith(cleanId));
+              if (match) { foundName = match.name; break; }
+            }
+          }
+          if (!foundName && state.currentMeta && state.currentMeta.id.startsWith(cleanId)) {
+            foundName = state.currentMeta.name;
+          }
+          name = foundName || '';
         }
 
         sanitized[cleanId] = {
@@ -137,16 +149,28 @@ const User = {
     const progressMap = this.getAllProgress();
     
     let posterUrl = extra.poster || '';
-    let itemTitle = extra.name || extra.title || '';
+    let itemTitle = (state.currentMeta && state.currentMeta.id.startsWith(cleanId)) ? state.currentMeta.name : (extra.name || extra.title || '');
+
+    // Never save server names (e.g. FrostStream, Brazuca, etc.) as the item title
+    const isServerTitle = !itemTitle || /^(FrostStream|Brazuca|Torrentio|FenixFlix|Servidor|Stream|Embed|Player Web|Vídeo)/i.test(itemTitle) || itemTitle.includes('Stream ') || itemTitle.startsWith('🇧🇷') || itemTitle.startsWith('🌐');
+    if (isServerTitle) {
+      itemTitle = (state.currentMeta && state.currentMeta.id.startsWith(cleanId)) ? state.currentMeta.name : '';
+    }
+
+    if (!itemTitle && typeof CINEMA_SAGAS !== 'undefined') {
+      for (const saga of CINEMA_SAGAS) {
+        const match = (saga.items || []).find(i => i.id.startsWith(cleanId));
+        if (match) { itemTitle = match.name; break; }
+      }
+    }
+
     let itemType = extra.type || (state.currentMeta ? state.currentMeta.type : null) || ((extra.season && extra.season > 1) ? 'series' : (state.currentType === 'series' ? 'series' : 'movie'));
 
     if (state.currentMeta) {
       const metaCleanId = (state.currentMeta.id || '').split(':')[0];
       if (metaCleanId === cleanId) {
         if (!posterUrl) posterUrl = getPosterUrl(state.currentMeta);
-        if (!itemTitle || itemTitle.startsWith('🇧🇷') || itemTitle.startsWith('🌐')) {
-          itemTitle = state.currentMeta.name;
-        }
+        itemTitle = state.currentMeta.name;
         itemType = state.currentMeta.type || itemType;
       }
     }
@@ -2400,13 +2424,47 @@ const UI = {
   createContinueCard(item) {
     const cleanId = (item.id || '').split(':')[0];
     const posterUrl = item.poster && !item.poster.includes(':') ? item.poster : `https://images.metahub.space/poster/medium/${cleanId}/img`;
-    const name = item.name && item.name !== 'Vídeo' && !item.name.startsWith('🇧🇷') ? item.name : 'Filme / Série';
+    
+    let name = item.name || '';
+    const isServerName = !name || /^(FrostStream|Brazuca|Torrentio|FenixFlix|Servidor|Stream|Embed|Player Web|Vídeo)/i.test(name) || name.includes('Stream ') || name.startsWith('🇧🇷') || name.startsWith('🌐') || name.startsWith('❄️') || name.startsWith('🧲') || name.startsWith('🔥');
+
+    if (isServerName) {
+      if (typeof CINEMA_SAGAS !== 'undefined') {
+        for (const saga of CINEMA_SAGAS) {
+          const match = (saga.items || []).find(i => i.id.startsWith(cleanId));
+          if (match) { name = match.name; break; }
+        }
+      }
+      if (!name || isServerName) {
+        if (state.currentMeta && state.currentMeta.id.startsWith(cleanId)) {
+          name = state.currentMeta.name;
+        }
+      }
+    }
+
+    if (!name || isServerName) {
+      name = 'Filme / Série';
+      // Asynchronously fetch real meta name from Cinemeta and update card on screen & storage
+      API.fetchMeta(item.type || 'series', cleanId).then(meta => {
+        if (meta && meta.name) {
+          const cardTitleEl = document.querySelector(`.continue-card[data-id="${cleanId}"] .movie-card-title`);
+          if (cardTitleEl) cardTitleEl.textContent = meta.name;
+          const progressMap = User.getAllProgress();
+          if (progressMap[cleanId]) {
+            progressMap[cleanId].name = meta.name;
+            if (meta.type) progressMap[cleanId].type = meta.type;
+            localStorage.setItem('johnflix_progress', JSON.stringify(progressMap));
+          }
+        }
+      }).catch(() => {});
+    }
+
     const isSeries = item.type === 'series';
     const pct = item.percentage || 0;
     const epBadge = isSeries ? `T${item.season || 1}:E${item.episode || 1}` : '';
 
     return `
-      <div class="movie-card continue-card" onclick="UI.openModal('${cleanId}', '${item.type || (isSeries ? 'series' : 'movie')}')">
+      <div class="movie-card continue-card" data-id="${cleanId}" onclick="UI.openModal('${cleanId}', '${item.type || (isSeries ? 'series' : 'movie')}')">
         <button class="continue-card-delete" onclick="event.stopPropagation(); UI.removeHistoryItem('${cleanId}');" title="Remover do histórico">✕</button>
         <div class="continue-poster-wrapper">
           <img class="movie-poster" src="${posterUrl}" alt="${name}" onerror="this.src='https://images.metahub.space/poster/medium/${cleanId}/img';" loading="lazy">
@@ -3708,7 +3766,8 @@ const UI = {
 
       if (video.currentTime > 5 && state.currentMeta) {
         User.saveProgress(state.currentMeta.id, video.currentTime, video.duration, {
-          title: title,
+          name: state.currentMeta.name,
+          title: state.currentMeta.name,
           season: state.currentSeason,
           episode: state.currentEpisode
         });
