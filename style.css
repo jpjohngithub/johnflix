@@ -950,6 +950,201 @@ body {
   margin-top: 1.5rem;
 }
 
+/* --- Dedicated Explore & Genre Hub --- */
+.explore-hub {
+  padding: 100px 4% 4rem;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.explore-header {
+  margin-bottom: 1.8rem;
+}
+
+.explore-title {
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: #ffffff;
+  margin-bottom: 0.4rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.explore-subtitle {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.explore-search-wrap {
+  position: relative;
+  margin-bottom: 1.6rem;
+}
+
+.explore-search-bar {
+  display: flex;
+  align-items: center;
+  background: rgba(20, 21, 32, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-full);
+  padding: 8px 18px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(14px);
+  transition: var(--transition);
+}
+
+.explore-search-bar:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 25px var(--accent-glow);
+  background: rgba(15, 16, 24, 0.98);
+}
+
+.explore-search-icon {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  margin-right: 10px;
+}
+
+.explore-search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.explore-search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.explore-search-clear {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #ffffff;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
+}
+
+.explore-search-clear:hover {
+  background: var(--danger);
+}
+
+.explore-type-filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 1.6rem;
+  flex-wrap: wrap;
+}
+
+.explore-type-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 7px 16px;
+  border-radius: var(--radius-full);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.explore-type-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.explore-type-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+  box-shadow: 0 0 16px var(--accent-glow);
+}
+
+.explore-section-label {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.explore-chips-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 1.8rem;
+}
+
+.explore-chip {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  color: #e2e8f0;
+  padding: 7px 14px;
+  border-radius: var(--radius-full);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  backdrop-filter: blur(8px);
+}
+
+.explore-chip:hover {
+  background: rgba(139, 92, 246, 0.18);
+  border-color: rgba(139, 92, 246, 0.45);
+  color: #ffffff;
+  transform: translateY(-2px);
+}
+
+.explore-chip.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 0 18px var(--accent-glow);
+  transform: scale(1.04);
+}
+
+.explore-results-title-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.2rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.explore-results-title {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.explore-results-count {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
 /* --- Cinema Sagas Sections --- */
 .cinema-saga-section {
   position: relative;

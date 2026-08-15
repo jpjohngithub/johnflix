@@ -255,8 +255,12 @@ const User = {
 // --- State Management ---
 
 const state = {
-  currentType: 'all', // 'all', 'movie', 'series', or 'watchlist'
+  currentType: 'all', // 'all', 'cinema', 'movie', 'series', 'explore', or 'watchlist'
   currentGenre: '',
+  exploreGenre: 'Action',
+  exploreSaga: null,
+  exploreType: 'all',
+  exploreQuery: '',
   currentMeta: null,
   currentLang: 'dublado', // 'dublado', 'legendado', 'original'
   currentSeason: 1,
@@ -270,6 +274,29 @@ const state = {
   isPlayerActive: false,
   autoPlaySessionId: 0
 };
+
+const GENRES_LIST = [
+  { id: 'Action', label: '💥 Ação' },
+  { id: 'Adventure', label: '🗺️ Aventura' },
+  { id: 'Animation', label: '🎨 Animação' },
+  { id: 'Anime', label: '⛩️ Anime' },
+  { id: 'Comedy', label: '😂 Comédia' },
+  { id: 'Crime', label: '🕵️ Crime' },
+  { id: 'Documentary', label: '📽️ Documentário' },
+  { id: 'Drama', label: '🎭 Drama' },
+  { id: 'Dorama', label: '🌸 Dorama / K-Drama' },
+  { id: 'Family', label: '👨‍👩‍👧 Família' },
+  { id: 'Fantasy', label: '🧙 Fantasia' },
+  { id: 'History', label: '📜 História' },
+  { id: 'Horror', label: '👻 Terror' },
+  { id: 'Mystery', label: '🔍 Mistério' },
+  { id: 'Romance', label: '❤️ Romance' },
+  { id: 'Sci-Fi', label: '🚀 Ficção Científica' },
+  { id: 'Sport', label: '⚽ Esporte' },
+  { id: 'Thriller', label: '⚡ Suspense' },
+  { id: 'War', label: '⚔️ Guerra' },
+  { id: 'Western', label: '🤠 Faroeste' }
+];
 
 // --- Seção Cinema: Grandes Sagas e Trilogias em Ordem Cronológica ---
 
@@ -2052,7 +2079,7 @@ const UI = {
     try {
       this.hideSearchResults();
 
-      if (state.currentType === 'watchlist') {
+      if (state.currentType === 'watchlist' || state.currentType === 'explore') {
         const heroSection = document.getElementById('hero-section');
         if (heroSection) heroSection.classList.add('hidden');
         this.renderCatalogs();
@@ -2545,11 +2572,281 @@ const UI = {
       html += this.createCarousel(`${typeName} em Destaque`, state.catalogs.featured, 'featured');
     }
     
+    // Dedicated Explore Tab
+    if (state.currentType === 'explore') {
+      this.renderExploreHub();
+      return;
+    }
+
     if (!html) {
       html = '<div class="empty-state">Nenhum conteúdo encontrado.</div>';
     }
     
     container.innerHTML = html;
+  },
+
+  renderExploreHub() {
+    const container = document.getElementById('catalog-container');
+    if (!container) return;
+
+    const currentGenre = state.exploreGenre || 'Action';
+    const currentSaga = state.exploreSaga || null;
+    const currentExploreType = state.exploreType || 'all';
+
+    const genresHtml = GENRES_LIST.map(g => `
+      <button class="explore-chip ${(!currentSaga && currentGenre === g.id) ? 'active' : ''}" data-genre="${g.id}">
+        ${g.label}
+      </button>
+    `).join('');
+
+    const sagasHtml = CINEMA_SAGAS.map(s => `
+      <button class="explore-chip ${(currentSaga === s.id) ? 'active' : ''}" data-saga="${s.id}">
+        ${s.title.split('(')[0].trim()}
+      </button>
+    `).join('');
+
+    container.innerHTML = `
+      <div class="explore-hub">
+        <div class="explore-header">
+          <h1 class="explore-title">🧭 Explorar & Descobrir</h1>
+          <p class="explore-subtitle">Pesquise títulos ou selecione gêneros e universos do cinema para navegar</p>
+        </div>
+
+        <div class="explore-search-wrap">
+          <div class="explore-search-bar">
+            <span class="explore-search-icon">🔍</span>
+            <input type="text" id="explore-search-input" class="explore-search-input" placeholder="Buscar filmes, séries, sagas e animes..." value="${state.exploreQuery || ''}">
+            <button id="explore-search-clear" class="explore-search-clear ${state.exploreQuery ? '' : 'hidden'}" title="Limpar busca">✕</button>
+          </div>
+        </div>
+
+        <div class="explore-type-filters">
+          <button class="explore-type-btn ${currentExploreType === 'all' ? 'active' : ''}" data-explore-type="all">🍿 Todos</button>
+          <button class="explore-type-btn ${currentExploreType === 'movie' ? 'active' : ''}" data-explore-type="movie">🎬 Filmes</button>
+          <button class="explore-type-btn ${currentExploreType === 'series' ? 'active' : ''}" data-explore-type="series">📺 Séries</button>
+        </div>
+
+        <div class="explore-section-label">
+          <span>🎬</span> Gêneros Populares
+        </div>
+        <div class="explore-chips-container" id="explore-genres-list">
+          ${genresHtml}
+        </div>
+
+        <div class="explore-section-label">
+          <span>⚡</span> Sagas & Universos do Cinema
+        </div>
+        <div class="explore-chips-container" id="explore-sagas-list">
+          ${sagasHtml}
+        </div>
+
+        <div class="explore-results-container">
+          <div class="explore-results-title-bar">
+            <h2 class="explore-results-title" id="explore-results-title">Carregando conteúdos...</h2>
+            <span class="explore-results-count" id="explore-results-count"></span>
+          </div>
+          <div class="search-grid" id="explore-grid">
+            <div class="streams-loading" style="grid-column: 1 / -1; padding: 4rem 0;">
+              <div class="spinner"></div>
+              <span>Carregando títulos...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Bind event listeners
+    const searchInput = document.getElementById('explore-search-input');
+    const clearBtn = document.getElementById('explore-search-clear');
+
+    if (searchInput) {
+      const debouncedSearch = debounce((q) => {
+        state.exploreQuery = q.trim();
+        if (state.exploreQuery) {
+          if (clearBtn) clearBtn.classList.remove('hidden');
+          this.searchExploreContent(state.exploreQuery);
+        } else {
+          if (clearBtn) clearBtn.classList.add('hidden');
+          this.loadExploreContent();
+        }
+      }, 150);
+
+      searchInput.addEventListener('input', (e) => debouncedSearch(e.target.value));
+    }
+
+    if (clearBtn && searchInput) {
+      clearBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        state.exploreQuery = '';
+        clearBtn.classList.add('hidden');
+        this.loadExploreContent();
+      });
+    }
+
+    // Type filter buttons
+    document.querySelectorAll('[data-explore-type]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        document.querySelectorAll('[data-explore-type]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.exploreType = btn.dataset.exploreType;
+        if (state.exploreQuery) {
+          this.searchExploreContent(state.exploreQuery);
+        } else {
+          this.loadExploreContent();
+        }
+      });
+    });
+
+    // Genre Chips
+    document.querySelectorAll('[data-genre]').forEach(chip => {
+      chip.addEventListener('click', (e) => {
+        document.querySelectorAll('[data-genre], [data-saga]').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        state.exploreGenre = chip.dataset.genre;
+        state.exploreSaga = null;
+        state.exploreQuery = '';
+        if (searchInput) searchInput.value = '';
+        if (clearBtn) clearBtn.classList.add('hidden');
+        this.loadExploreContent();
+      });
+    });
+
+    // Saga Chips
+    document.querySelectorAll('[data-saga]').forEach(chip => {
+      chip.addEventListener('click', (e) => {
+        document.querySelectorAll('[data-genre], [data-saga]').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        state.exploreSaga = chip.dataset.saga;
+        state.exploreGenre = null;
+        state.exploreQuery = '';
+        if (searchInput) searchInput.value = '';
+        if (clearBtn) clearBtn.classList.add('hidden');
+        this.loadExploreContent();
+      });
+    });
+
+    // Load initial content for explore tab
+    if (state.exploreQuery) {
+      this.searchExploreContent(state.exploreQuery);
+    } else {
+      this.loadExploreContent();
+    }
+  },
+
+  async loadExploreContent() {
+    const grid = document.getElementById('explore-grid');
+    const titleEl = document.getElementById('explore-results-title');
+    const countEl = document.getElementById('explore-results-count');
+    if (!grid) return;
+
+    grid.innerHTML = `
+      <div class="streams-loading" style="grid-column: 1 / -1; padding: 4rem 0;">
+        <div class="spinner"></div>
+        <span>Carregando títulos...</span>
+      </div>
+    `;
+
+    // 1. If Saga is active
+    if (state.exploreSaga) {
+      const saga = CINEMA_SAGAS.find(s => s.id === state.exploreSaga);
+      if (saga) {
+        if (titleEl) titleEl.textContent = saga.title;
+        const sortedItems = [...saga.items].sort((a, b) => (parseInt(a.year, 10) || 0) - (parseInt(b.year, 10) || 0));
+        if (countEl) countEl.textContent = `${sortedItems.length} produções`;
+        grid.innerHTML = sortedItems.map((item, idx) => this.createCinemaMovieCard(item, idx, saga.accent)).join('');
+        return;
+      }
+    }
+
+    // 2. If Genre is active
+    const currentGenre = state.exploreGenre || 'Action';
+    const genreObj = GENRES_LIST.find(g => g.id === currentGenre) || { label: currentGenre };
+    if (titleEl) titleEl.textContent = `Em Destaque: ${genreObj.label}`;
+
+    try {
+      const type = state.exploreType || 'all';
+      let items = [];
+
+      if (type === 'all') {
+        const [movTop, serTop] = await Promise.all([
+          API.fetchCatalog('movie', 'top', { genre: currentGenre }).catch(() => []),
+          API.fetchCatalog('series', 'top', { genre: currentGenre }).catch(() => [])
+        ]);
+        (movTop || []).forEach(m => m.type = 'movie');
+        (serTop || []).forEach(s => s.type = 'series');
+        items = this.interleaveArrays(movTop || [], serTop || []);
+      } else {
+        items = await API.fetchCatalog(type, 'top', { genre: currentGenre }).catch(() => []);
+        (items || []).forEach(item => item.type = type);
+      }
+
+      if (countEl) countEl.textContent = `${items.length} títulos encontrados`;
+
+      if (items.length > 0) {
+        grid.innerHTML = items.map(item => this.createMovieCard(item)).join('');
+      } else {
+        grid.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; padding: 4rem 1rem; color: var(--text-secondary);">
+            <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">Nenhum título encontrado para este gênero.</p>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">Tente selecionar outro gênero acima ou mudar o filtro entre Filmes e Séries.</p>
+          </div>
+        `;
+      }
+    } catch (err) {
+      console.error('Error in loadExploreContent:', err);
+      grid.innerHTML = `<p style="grid-column:1/-1; text-align:center; padding:3rem; color:var(--text-muted);">Erro ao carregar títulos. Tente novamente.</p>`;
+    }
+  },
+
+  async searchExploreContent(query) {
+    const grid = document.getElementById('explore-grid');
+    const titleEl = document.getElementById('explore-results-title');
+    const countEl = document.getElementById('explore-results-count');
+    if (!grid) return;
+
+    if (titleEl) titleEl.textContent = `Resultados para "${query}"`;
+
+    grid.innerHTML = `
+      <div class="streams-loading" style="grid-column: 1 / -1; padding: 4rem 0;">
+        <div class="spinner"></div>
+        <span>Buscando "${query}"...</span>
+      </div>
+    `;
+
+    try {
+      const type = state.exploreType || 'all';
+      let results = [];
+
+      if (type === 'all') {
+        const [mov, ser] = await Promise.all([
+          API.searchContent('movie', query).catch(() => []),
+          API.searchContent('series', query).catch(() => [])
+        ]);
+        (mov || []).forEach(m => m.type = 'movie');
+        (ser || []).forEach(s => s.type = 'series');
+        results = this.interleaveArrays(mov || [], ser || []);
+      } else {
+        results = await API.searchContent(type, query).catch(() => []);
+        (results || []).forEach(r => r.type = type);
+      }
+
+      if (countEl) countEl.textContent = `${results.length} resultados`;
+
+      if (results.length > 0) {
+        grid.innerHTML = results.map(item => this.createMovieCard(item)).join('');
+      } else {
+        grid.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; padding: 4rem 1rem; color: var(--text-secondary);">
+            <div style="font-size: 2.5rem; margin-bottom: 0.8rem;">🔍</div>
+            <p style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; color: white;">Nenhum resultado encontrado para "${query}"</p>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">Verifique a ortografia ou experimente buscar por termos em inglês ou nomes de atores.</p>
+          </div>
+        `;
+      }
+    } catch (err) {
+      console.error('Error in searchExploreContent:', err);
+      grid.innerHTML = `<p style="grid-column:1/-1; text-align:center; padding:3rem; color:var(--text-muted);">Erro ao realizar busca. Tente novamente.</p>`;
+    }
   },
   
   async performSearch(query) {

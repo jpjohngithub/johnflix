@@ -36,6 +36,10 @@
             <span class="nav-link-icon">📺</span>
             <span class="nav-link-text">Séries</span>
           </a>
+          <a href="#" class="nav-link" data-type="explore">
+            <span class="nav-link-icon">🧭</span>
+            <span class="nav-link-text">Explorar</span>
+          </a>
           <a href="#" class="nav-link" data-type="watchlist">
             <span class="nav-link-icon">⭐</span>
             <span class="nav-link-text">Minha Lista</span>
@@ -43,59 +47,11 @@
         </nav>
         <div class="header-actions">
           <div class="search-container" id="search-container">
-            <button class="search-toggle" id="search-toggle">
+            <button class="search-toggle" id="search-toggle" title="Buscar filmes e séries">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             </button>
             <input type="text" id="search-input" placeholder="Buscar filmes e séries...">
           </div>
-          <select id="genre-select">
-            <option value="">Todos os Gêneros</option>
-            <optgroup label="🏛️ Sagas e Universos do Cinema">
-              <option value="Saga: Marvel MCU">⚡ Marvel (MCU Completo)</option>
-              <option value="Saga: DC Universe">🦇 DC Universe & Batman</option>
-              <option value="Saga: Star Wars">⭐ Star Wars (Cronologia)</option>
-              <option value="Saga: Harry Potter">🧙‍♂️ Harry Potter & Mundo Bruxo</option>
-              <option value="Saga: Homem-Aranha">🕷️ Homem-Aranha (Spider-Verse)</option>
-              <option value="Saga: Senhor dos Anéis">💍 O Senhor dos Anéis & Hobbit</option>
-              <option value="Saga: Velozes e Furiosos">🚗 Velozes e Furiosos</option>
-              <option value="Saga: John Wick">🥋 John Wick</option>
-              <option value="Saga: Jurassic Park">🦖 Jurassic Park & World</option>
-              <option value="Saga: Transformers">🤖 Transformers</option>
-              <option value="Saga: Missão Impossível">🎯 Missão: Impossível</option>
-              <option value="Saga: Piratas do Caribe">🏴‍☠️ Piratas do Caribe</option>
-              <option value="Saga: Planeta dos Macacos">🦧 Planeta dos Macacos</option>
-              <option value="Saga: Duna">🪐 Saga Duna</option>
-              <option value="Saga: Shrek">🟢 Saga Shrek</option>
-              <option value="Saga: Toy Story">🚀 Saga Toy Story</option>
-              <option value="Saga: Matrix">🕶️ Saga Matrix</option>
-              <option value="Saga: Jogos Vorazes">🏹 Jogos Vorazes</option>
-              <option value="Saga: Animações Adultas">🔞 Séries & Desenhos Adultos</option>
-            </optgroup>
-            <optgroup label="🎬 Gêneros Tradicionais">
-              <option value="Saga: Animações Adultas">🔞 Animação Adulta</option>
-              <option value="Anime">⛩️ Anime</option>
-              <option value="Dorama">🌸 Dorama / K-Drama</option>
-              <option value="Action">Ação</option>
-              <option value="Adventure">Aventura</option>
-              <option value="Animation">Animação</option>
-              <option value="Biography">Biografia</option>
-              <option value="Comedy">Comédia</option>
-              <option value="Crime">Crime</option>
-              <option value="Documentary">Documentário</option>
-              <option value="Drama">Drama</option>
-              <option value="Family">Família</option>
-              <option value="Fantasy">Fantasia</option>
-              <option value="History">História</option>
-              <option value="Horror">Terror</option>
-              <option value="Mystery">Mistério</option>
-              <option value="Romance">Romance</option>
-              <option value="Sci-Fi">Ficção Científica</option>
-              <option value="Sport">Esporte</option>
-              <option value="Thriller">Suspense</option>
-              <option value="War">Guerra</option>
-              <option value="Western">Faroeste</option>
-            </optgroup>
-          </select>
         </div>
       </div>
     </header>
@@ -428,13 +384,13 @@
         <span class="mobile-nav-icon">📺</span>
         <span class="mobile-nav-label">Séries</span>
       </button>
+      <button class="mobile-nav-item" data-type="explore">
+        <span class="mobile-nav-icon">🧭</span>
+        <span class="mobile-nav-label">Explorar</span>
+      </button>
       <button class="mobile-nav-item" data-type="watchlist">
         <span class="mobile-nav-icon">⭐</span>
         <span class="mobile-nav-label">Minha Lista</span>
-      </button>
-      <button class="mobile-nav-item" id="mobile-nav-search">
-        <span class="mobile-nav-icon">🔍</span>
-        <span class="mobile-nav-label">Buscar</span>
       </button>
     </nav>
 
