@@ -775,7 +775,7 @@ const API = {
         : type;
 
       const streamId = realType === 'series' ? `${cleanId}:${season}:${episode}` : cleanId;
-      const cacheKey = `st_v12_${streamId}`;
+      const cacheKey = `st_v50_${streamId}`;
       const cached = Cache.get(cacheKey);
       if (cached && cached.length > 0) return cached;
 
@@ -857,7 +857,7 @@ const API = {
       const streamsList = [];
 
       // ══════════════════════════════════════════════
-      // 🔥 FenixFlix — Direct MP4/CDN streams PT-BR & English (Player Nativo)
+      // 🔥 FenixFlix & FrostStream — Direct MP4/CDN streams (Player Nativo HTML5)
       // ══════════════════════════════════════════════
       const directVideoSources = [...fenixStreams, ...frostStreams.filter(s => s.url)];
       directVideoSources.forEach(s => {
@@ -881,12 +881,12 @@ const API = {
         const qualScore = is720 ? 100 : is1080 ? 75 : is4k ? 60 : 40;
 
         const displayName = is720 
-          ? `⚡ ${isDub ? '🇧🇷 Dublado PT-BR' : '🇺🇸 Inglês / Dual'} — FenixFlix 720p (Ultra Rápido & Estável)` 
-          : `🔥 ${isDub ? '🇧🇷 Dublado PT-BR' : '🇺🇸 Inglês / Dual'} — FenixFlix ${quality}`;
+          ? `⚡ ${isDub ? '🇧🇷 Dublado PT-BR' : '🇺🇸 Inglês / Dual'} — FenixFlix 720p (Ultra Rápido & Estável - Player Nativo)` 
+          : `🔥 ${isDub ? '🇧🇷 Dublado PT-BR' : '🇺🇸 Inglês / Dual'} — FenixFlix ${quality} (Player Nativo)`;
 
         streamsList.push({
           name: displayName,
-          title: `🔥 FenixFlix • ${descRaw.slice(0, 80) || (quality + ' Direct MP4')}`,
+          title: `🔥 FenixFlix • ${descRaw.slice(0, 80) || (quality + ' Direct MP4 - Player Nativo')}`,
           url: s.url,
           isDub: isDub,
           category: 'fenix',
