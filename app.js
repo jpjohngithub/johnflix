@@ -484,16 +484,33 @@ const API = {
         if (merged.length > 0) return merged;
       }
 
-      // Handle custom Dorama / K-Drama genre query
-      if (genreParam === 'Dorama') {
-        const terms = ['squid game', 'all of us are dead', 'crash landing on you', 'the glory', 'vincenzo', 'sweet home', 'kingdom', 'extraordinary attorney woo', 'business proposal', 'true beauty', 'goblin', 'itaewon class'];
-        const results = await Promise.all(terms.slice(0, 8).map(q => 
+      // Handle dynamic Saga queries (Marvel, DC, Star Wars, Harry Potter, Spider-Man, etc.)
+      const SAGA_TERMS = {
+        'Saga: Marvel MCU': ['marvel', 'avengers', 'iron man', 'captain america', 'thor', 'guardians of the galaxy', 'deadpool & wolverine'],
+        'Saga: DC Universe': ['batman', 'superman', 'justice league', 'wonder woman', 'aquaman', 'the flash', 'joker'],
+        'Saga: Star Wars': ['star wars', 'mandalorian', 'rogue one', 'han solo'],
+        'Saga: Harry Potter': ['harry potter', 'fantastic beasts', 'dumbledore'],
+        'Saga: Homem-Aranha': ['spider-man', 'spider-verse', 'homem-aranha', 'venom'],
+        'Saga: Senhor dos Anéis': ['lord of the rings', 'hobbit', 'senhor dos aneis', 'rings of power'],
+        'Saga: Velozes e Furiosos': ['fast and furious', 'velozes e furiosos', 'hobbs and shaw'],
+        'Saga: John Wick': ['john wick', 'ballerina'],
+        'Saga: Jurassic Park': ['jurassic park', 'jurassic world'],
+        'Saga: Transformers': ['transformers', 'bumblebee', 'rise of the beasts'],
+        'Saga: Missão Impossível': ['mission impossible', 'missao impossivel'],
+        'Saga: Piratas do Caribe': ['pirates of the caribbean', 'piratas do caribe']
+      };
+
+      if (genreParam && SAGA_TERMS[genreParam]) {
+        const terms = SAGA_TERMS[genreParam];
+        const results = await Promise.all(terms.map(q => 
           fetchWithTimeout(`https://v3-cinemeta.strem.io/catalog/${type === 'movie' ? 'movie' : 'series'}/top/search=${encodeURIComponent(q)}.json`)
             .then(r => r.json())
             .then(d => (d.metas || []))
             .catch(() => [])
         ));
         const merged = results.flat().filter((item, idx, self) => self.findIndex(t => t.id === item.id) === idx);
+        // Automatic chronological ordering by release year:
+        merged.sort((a, b) => (parseInt(a.year || a.releaseInfo, 10) || 0) - (parseInt(b.year || b.releaseInfo, 10) || 0));
         if (merged.length > 0) return merged;
       }
 
@@ -2008,8 +2025,23 @@ const UI = {
 
     // Seção Cinema Mode (Grandes Sagas e Trilogias em Ordem Cronológica)
     if (state.currentType === 'cinema') {
+      html += `
+        <div class="cinema-chip-nav" style="display:flex; gap:8px; overflow-x:auto; padding: 10px 4% 15px; scrollbar-width:none; -webkit-overflow-scrolling:touch;">
+          ${CINEMA_SAGAS.map(s => {
+            const shortName = s.title.split('(')[0].trim();
+            return `
+              <button onclick="document.getElementById('saga-${s.id}')?.scrollIntoView({behavior:'smooth', block:'center'});" class="btn btn-secondary" style="padding:7px 14px; font-size:0.82rem; border-radius:20px; white-space:nowrap; border:1px solid ${s.accent}; color:#fff; background:rgba(255,255,255,0.06); flex-shrink:0; cursor:pointer;">
+                ${shortName}
+              </button>
+            `;
+          }).join('')}
+        </div>
+      `;
+
       CINEMA_SAGAS.forEach(saga => {
-        const cardsHtml = saga.items.map((item, idx) => this.createCinemaMovieCard(item, idx, saga.accent)).join('');
+        // Automatic chronological ordering by release year:
+        const sortedItems = [...saga.items].sort((a, b) => (parseInt(a.year, 10) || 0) - (parseInt(b.year, 10) || 0));
+        const cardsHtml = sortedItems.map((item, idx) => this.createCinemaMovieCard(item, idx, saga.accent)).join('');
         html += `
           <section class="catalog-section cinema-saga-section" id="saga-${saga.id}">
             <h2 class="section-title" style="color:${saga.accent}; display:flex; align-items:center; gap:8px; margin-bottom:0.3rem;">
