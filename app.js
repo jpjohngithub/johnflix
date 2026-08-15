@@ -2022,11 +2022,10 @@ const UI = {
       hudBackBtn.addEventListener('click', () => this.closePlayer());
     }
 
-    // Source Health & Fast Feedback buttons
+    // Source Health & Fast Feedback buttons (ONLY closes on 'Sim'!)
     const feedbackPrompt = document.getElementById('hud-source-feedback');
     const feedbackYesBtn = document.getElementById('hud-feedback-yes-btn');
     const feedbackNoBtn = document.getElementById('hud-feedback-no-btn');
-    const feedbackCloseBtn = document.getElementById('hud-feedback-close-btn');
     const nextStreamBtn = document.getElementById('hud-next-stream-btn');
 
     if (feedbackYesBtn) {
@@ -2038,35 +2037,18 @@ const UI = {
       });
     }
 
-    if (feedbackCloseBtn) {
-      feedbackCloseBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        state.feedbackConfirmed = true;
-        this.dismissFeedbackPrompt();
-      });
-    }
-
     if (feedbackNoBtn) {
       feedbackNoBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.dismissFeedbackPrompt();
-        this.showPlayerToast('⚡ Trocando servidor...', 1200);
+        // Do NOT close the prompt! Switch to next stream and keep prompt visible!
+        this.showPlayerToast('⚡ Trocando servidor...', 1000);
         this.playNextStream();
-      });
-    }
-
-    if (feedbackPrompt) {
-      feedbackPrompt.addEventListener('click', (e) => {
-        if (!e.target.closest('button')) {
-          this.dismissFeedbackPrompt();
-        }
       });
     }
 
     if (nextStreamBtn) {
       nextStreamBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.dismissFeedbackPrompt();
         this.playNextStream();
       });
     }
