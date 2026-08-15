@@ -296,6 +296,8 @@ const CINEMA_SAGAS = [
       { id: 'tt9362722', name: 'Homem-Aranha: Através do Aranhaverso', year: '2023', timeline: 'Aranhaverso 2', type: 'movie' },
       { id: 'tt11057302', name: 'Madame Teia', year: '2024', timeline: 'Universo Aranha (Sony)', type: 'movie' },
       { id: 'tt16366836', name: 'Venom: A Última Rodada', year: '2024', timeline: 'Universo Aranha (Sony)', type: 'movie' },
+      { id: 'tt8790086', name: 'Kraven, o Caçador', year: '2024', timeline: 'Universo Aranha (Sony)', type: 'movie' },
+      { id: 'tt16360004', name: 'Homem-Aranha: Além do Aranhaverso', year: '2025', timeline: 'Aranhaverso 3', type: 'movie' },
       { id: 'tt22084616', name: 'Homem-Aranha: Brand New Day (Spider-Man 4)', year: '2026', timeline: '4º MCU (Novo Capítulo)', type: 'movie' }
     ]
   },
@@ -336,7 +338,10 @@ const CINEMA_SAGAS = [
       { id: 'tt10954600', name: 'Homem-Formiga e a Vespa: Quantumania', year: '2023', timeline: '2025 - Kang', type: 'movie' },
       { id: 'tt6791350', name: 'Guardiões da Galáxia Vol. 3', year: '2023', timeline: '2026', type: 'movie' },
       { id: 'tt10676048', name: 'As Marvels', year: '2023', timeline: '2026', type: 'movie' },
-      { id: 'tt6263850', name: 'Deadpool & Wolverine', year: '2024', timeline: '2024 - Multiverso TVA', type: 'movie' }
+      { id: 'tt6263850', name: 'Deadpool & Wolverine', year: '2024', timeline: '2024 - Multiverso TVA', type: 'movie' },
+      { id: 'tt14513804', name: 'Capitão América: Admirável Mundo Novo', year: '2025', timeline: '2026 - Sam Wilson', type: 'movie' },
+      { id: 'tt20969586', name: 'Thunderbolts*', year: '2025', timeline: '2026 - Nova Equipe', type: 'movie' },
+      { id: 'tt10676052', name: 'Quarteto Fantástico: Primeiros Passos', year: '2025', timeline: 'Multiverso Anos 60', type: 'movie' }
     ]
   },
   {
@@ -366,7 +371,8 @@ const CINEMA_SAGAS = [
       { id: 'tt0439572', name: 'The Flash', year: '2023', timeline: 'DCEU (Ponto de Ignição)', type: 'movie' },
       { id: 'tt9362930', name: 'Besouro Azul', year: '2023', timeline: 'DCEU', type: 'movie' },
       { id: 'tt9663764', name: 'Aquaman 2: O Reino Perdido', year: '2023', timeline: 'DCEU Final', type: 'movie' },
-      { id: 'tt11315808', name: 'Coringa: Delírio a Dois', year: '2024', timeline: 'Elseworlds', type: 'movie' }
+      { id: 'tt11315808', name: 'Coringa: Delírio a Dois', year: '2024', timeline: 'Elseworlds', type: 'movie' },
+      { id: 'tt5950044', name: 'Superman', year: '2025', timeline: 'Novo DCU (James Gunn)', type: 'movie' }
     ]
   },
   {
@@ -416,7 +422,8 @@ const CINEMA_SAGAS = [
       { id: 'tt2310332', name: 'O Hobbit: A Batalha dos Cinco Exércitos', year: '2014', timeline: 'O Hobbit Parte 3', type: 'movie' },
       { id: 'tt0120737', name: 'O Senhor dos Anéis: A Sociedade do Anel', year: '2001', timeline: 'SDA Parte 1', type: 'movie' },
       { id: 'tt0167261', name: 'O Senhor dos Anéis: As Duas Torres', year: '2002', timeline: 'SDA Parte 2', type: 'movie' },
-      { id: 'tt0167260', name: 'O Senhor dos Anéis: O Retorno do Rei', year: '2003', timeline: 'SDA Parte 3 (O Fim de Sauron)', type: 'movie' }
+      { id: 'tt0167260', name: 'O Senhor dos Anéis: O Retorno do Rei', year: '2003', timeline: 'SDA Parte 3 (O Fim de Sauron)', type: 'movie' },
+      { id: 'tt14824600', name: 'O Senhor dos Anéis: A Guerra dos Rohirrim', year: '2024', timeline: '261 Anos Antes de Frodo', type: 'movie' }
     ]
   },
   {
@@ -445,7 +452,8 @@ const CINEMA_SAGAS = [
       { id: 'tt2911666', name: 'John Wick: De Volta ao Jogo', year: '2014', timeline: 'Capítulo 1', type: 'movie' },
       { id: 'tt4425200', name: 'John Wick: Um Novo Dia Para Matar', year: '2017', timeline: 'Capítulo 2', type: 'movie' },
       { id: 'tt6146586', name: 'John Wick 3: Parabellum', year: '2019', timeline: 'Capítulo 3', type: 'movie' },
-      { id: 'tt10366206', name: 'John Wick 4: Baba Yaga', year: '2023', timeline: 'Capítulo 4 (Final Épico)', type: 'movie' }
+      { id: 'tt10366206', name: 'John Wick 4: Baba Yaga', year: '2023', timeline: 'Capítulo 4 (Final Épico)', type: 'movie' },
+      { id: 'tt7181546', name: 'Bailarina (Do Universo de John Wick)', year: '2025', timeline: 'Entre John Wick 3 e 4', type: 'movie' }
     ]
   },
   {
@@ -474,7 +482,8 @@ const CINEMA_SAGAS = [
       { id: 'tt1229238', name: 'Missão: Impossível - Protocolo Fantasma', year: '2011', timeline: '4º Filme', type: 'movie' },
       { id: 'tt2381249', name: 'Missão: Impossível - Nação Secreta', year: '2015', timeline: '5º Filme', type: 'movie' },
       { id: 'tt4912910', name: 'Missão: Impossível - Efeito Fallout', year: '2018', timeline: '6º Filme', type: 'movie' },
-      { id: 'tt9603212', name: 'Missão: Impossível - Acerto de Contas Parte 1', year: '2023', timeline: '7º Filme', type: 'movie' }
+      { id: 'tt9603212', name: 'Missão: Impossível - Acerto de Contas Parte 1', year: '2023', timeline: '7º Filme', type: 'movie' },
+      { id: 'tt9603208', name: 'Missão: Impossível - O Acerto Final', year: '2025', timeline: '8º Filme (Acerto de Contas 2)', type: 'movie' }
     ]
   },
   {
@@ -522,39 +531,56 @@ const CINEMA_SAGAS = [
       { id: 'tt0163025', name: 'Jurassic Park III', year: '2001', timeline: '3º Filme', type: 'movie' },
       { id: 'tt0369610', name: 'Jurassic World: O Mundo dos Dinossauros', year: '2015', timeline: 'Jurassic World 1', type: 'movie' },
       { id: 'tt4881806', name: 'Jurassic World: Reino Ameaçado', year: '2018', timeline: 'Jurassic World 2', type: 'movie' },
-      { id: 'tt8041270', name: 'Jurassic World: Domínio', year: '2022', timeline: 'Jurassic World 3', type: 'movie' }
+      { id: 'tt8041270', name: 'Jurassic World: Domínio', year: '2022', timeline: 'Jurassic World 3', type: 'movie' },
+      { id: 'tt31036941', name: 'Jurassic World: Rebirth', year: '2025', timeline: 'Nova Era dos Dinossauros', type: 'movie' }
     ]
   },
   {
-    id: 'apes_dune',
-    title: '🪐 Planeta dos Macacos & Duna (Ficção Científica Épica)',
-    accent: '#f97316',
+    id: 'apes',
+    title: '🦧 Planeta dos Macacos (Saga de César ao Reinado)',
+    accent: '#f59e0b',
     items: [
       { id: 'tt1318514', name: 'Planeta dos Macacos: A Origem', year: '2011', timeline: 'Origem de César', type: 'movie' },
       { id: 'tt2103281', name: 'Planeta dos Macacos: O Confronto', year: '2014', timeline: 'A Ascensão dos Símios', type: 'movie' },
       { id: 'tt3450958', name: 'Planeta dos Macacos: A Guerra', year: '2017', timeline: 'A Batalha Final', type: 'movie' },
-      { id: 'tt11389872', name: 'Planeta dos Macacos: O Reinado', year: '2024', timeline: 'Gerações Futuras', type: 'movie' },
+      { id: 'tt11389872', name: 'Planeta dos Macacos: O Reinado', year: '2024', timeline: 'Gerações Futuras', type: 'movie' }
+    ]
+  },
+  {
+    id: 'dune',
+    title: '🪐 Saga Duna (O Universo de Arrakis & Paul Atreides)',
+    accent: '#f97316',
+    items: [
       { id: 'tt0087182', name: 'Duna', year: '1984', timeline: 'Duna Clássico (David Lynch)', type: 'movie' },
       { id: 'tt1160419', name: 'Duna: Parte 1', year: '2021', timeline: 'Duna Livro 1 - Ato 1', type: 'movie' },
       { id: 'tt15239678', name: 'Duna: Parte 2', year: '2024', timeline: 'Duna Livro 1 - Ato 2', type: 'movie' }
     ]
   },
   {
-    id: 'animation_classics',
-    title: '🏰 Shrek & Toy Story (Grandes Animações do Cinema)',
+    id: 'shrek',
+    title: '🟢 Saga Shrek & Gato de Botas (O Reino de Tão Tão Distante)',
+    accent: '#84cc16',
+    items: [
+      { id: 'tt0126029', name: 'Shrek', year: '2001', timeline: 'Shrek 1 (Oscar)', type: 'movie' },
+      { id: 'tt0298148', name: 'Shrek 2', year: '2004', timeline: 'Shrek 2 (Tão Tão Distante)', type: 'movie' },
+      { id: 'tt0413267', name: 'Shrek Terceiro', year: '2007', timeline: 'Shrek 3', type: 'movie' },
+      { id: 'tt0892791', name: 'Shrek Para Sempre: O Capítulo Final', year: '2010', timeline: 'Shrek 4', type: 'movie' },
+      { id: 'tt0448694', name: 'Gato de Botas', year: '2011', timeline: 'Origem do Gato', type: 'movie' },
+      { id: 'tt3915174', name: 'Gato de Botas 2: O Último Pedido', year: '2022', timeline: 'A Última Vida', type: 'movie' },
+      { id: 'tt6113186', name: 'Shrek 5', year: '2026', timeline: 'O Retorno a Tão Tão Distante', type: 'movie' }
+    ]
+  },
+  {
+    id: 'toystory',
+    title: '🚀 Saga Toy Story (Ao Infinito e Além)',
     accent: '#ec4899',
     items: [
       { id: 'tt0114709', name: 'Toy Story: Um Mundo de Aventuras', year: '1995', timeline: 'Toy Story 1', type: 'movie' },
       { id: 'tt0120363', name: 'Toy Story 2', year: '1999', timeline: 'Toy Story 2', type: 'movie' },
-      { id: 'tt0126029', name: 'Shrek', year: '2001', timeline: 'Shrek 1 (Oscar)', type: 'movie' },
-      { id: 'tt0298148', name: 'Shrek 2', year: '2004', timeline: 'Shrek 2 (Tão Tão Distante)', type: 'movie' },
-      { id: 'tt0413267', name: 'Shrek Terceiro', year: '2007', timeline: 'Shrek 3', type: 'movie' },
       { id: 'tt0435761', name: 'Toy Story 3', year: '2010', timeline: 'Toy Story 3 (Sunnyside)', type: 'movie' },
-      { id: 'tt0892791', name: 'Shrek Para Sempre: O Capítulo Final', year: '2010', timeline: 'Shrek 4', type: 'movie' },
-      { id: 'tt0448694', name: 'Gato de Botas', year: '2011', timeline: 'Origem do Gato', type: 'movie' },
       { id: 'tt1979376', name: 'Toy Story 4', year: '2019', timeline: 'Toy Story 4 (Garfinho)', type: 'movie' },
       { id: 'tt10298810', name: 'Lightyear', year: '2022', timeline: 'Origem do Buzz', type: 'movie' },
-      { id: 'tt3915174', name: 'Gato de Botas 2: O Último Pedido', year: '2022', timeline: 'A Última Vida', type: 'movie' }
+      { id: 'tt29355505', name: 'Toy Story 5', year: '2026', timeline: 'Nova Aventura dos Brinquedos', type: 'movie' }
     ]
   }
 ];
@@ -593,7 +619,13 @@ const API = {
         'Saga: Jurassic Park': ['jurassic park', 'jurassic world'],
         'Saga: Transformers': ['transformers', 'bumblebee', 'rise of the beasts'],
         'Saga: Missão Impossível': ['mission impossible', 'missao impossivel'],
-        'Saga: Piratas do Caribe': ['pirates of the caribbean', 'piratas do caribe']
+        'Saga: Piratas do Caribe': ['pirates of the caribbean', 'piratas do caribe'],
+        'Saga: Planeta dos Macacos': ['planet of the apes', 'planeta dos macacos'],
+        'Saga: Duna': ['dune', 'duna'],
+        'Saga: Shrek': ['shrek', 'puss in boots', 'gato de botas'],
+        'Saga: Toy Story': ['toy story', 'lightyear'],
+        'Saga: Matrix': ['matrix'],
+        'Saga: Jogos Vorazes': ['hunger games', 'jogos vorazes']
       };
 
       if (genreParam && SAGA_TERMS[genreParam]) {
@@ -2143,38 +2175,6 @@ const UI = {
 
     // Seção Cinema Mode (Grandes Sagas e Trilogias em Ordem Cronológica)
     if (state.currentType === 'cinema') {
-      const SAGA_CHIPS = [
-        { id: 'spiderman', name: 'Homem-Aranha', icon: '🕷️', accent: '#ef4444' },
-        { id: 'mcu', name: 'Marvel MCU', icon: '⚡', accent: '#e11d48' },
-        { id: 'dc', name: 'DC Universe', icon: '🦇', accent: '#3b82f6' },
-        { id: 'starwars', name: 'Star Wars', icon: '⭐', accent: '#eab308' },
-        { id: 'harrypotter', name: 'Harry Potter', icon: '🧙‍♂️', accent: '#a855f7' },
-        { id: 'lotr', name: 'Senhor dos Anéis', icon: '💍', accent: '#f59e0b' },
-        { id: 'fast', name: 'Velozes & Furiosos', icon: '🚗', accent: '#06b6d4' },
-        { id: 'johnwick', name: 'John Wick', icon: '🥋', accent: '#10b981' },
-        { id: 'transformers', name: 'Transformers', icon: '🤖', accent: '#38bdf8' },
-        { id: 'missionimpossible', name: 'Missão: Impossível', icon: '🎯', accent: '#f43f5e' },
-        { id: 'pirates', name: 'Piratas do Caribe', icon: '🏴‍☠️', accent: '#14b8a6' },
-        { id: 'matrix', name: 'Matrix', icon: '🕶️', accent: '#22c55e' },
-        { id: 'hungergames', name: 'Jogos Vorazes', icon: '🏹', accent: '#f97316' },
-        { id: 'jurassic', name: 'Jurassic Park', icon: '🦖', accent: '#84cc16' },
-        { id: 'apes_dune', name: 'Macacos & Duna', icon: '🪐', accent: '#fb923c' },
-        { id: 'animation_classics', name: 'Shrek & Toy Story', icon: '🏰', accent: '#ec4899' }
-      ];
-
-      html += `
-        <div class="cinema-chip-nav-wrapper">
-          <div class="cinema-chip-nav">
-            ${SAGA_CHIPS.map(c => `
-              <button onclick="document.getElementById('saga-${c.id}')?.scrollIntoView({behavior:'smooth', block:'start'});" class="cinema-chip-btn" style="--chip-accent: ${c.accent}; --chip-glow: ${c.accent}40;">
-                <span class="cinema-chip-icon">${c.icon}</span>
-                <span>${c.name}</span>
-              </button>
-            `).join('')}
-          </div>
-        </div>
-      `;
-
       CINEMA_SAGAS.forEach(saga => {
         // Automatic chronological ordering by release year:
         const sortedItems = [...saga.items].sort((a, b) => (parseInt(a.year, 10) || 0) - (parseInt(b.year, 10) || 0));
