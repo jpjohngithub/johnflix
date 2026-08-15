@@ -2186,12 +2186,9 @@ const UI = {
       if (heroTitle) heroTitle.textContent = meta.name;
       if (heroMeta) {
         const year = meta.year || meta.releaseInfo || '';
-        const rating = meta.imdbRating ? `<span class="hero-meta-badge imdb">★ ${meta.imdbRating}</span>` : '<span class="hero-meta-badge imdb">★ 8.6</span>';
-        const quality = `<span class="hero-meta-badge quality">4K Ultra HD</span>`;
-        const audio = `<span class="hero-meta-badge audio">Dublado PT-BR</span>`;
-        const runtime = meta.runtime ? `<span style="color:#cbd5e1; font-weight:600;">${meta.runtime}</span>` : '';
-        const yearBadge = year ? `<span style="color:#cbd5e1; font-weight:600;">${year}</span>` : '';
-        heroMeta.innerHTML = [rating, quality, audio, yearBadge, runtime].filter(Boolean).join(' &nbsp; ');
+        const rating = meta.imdbRating ? `<span class="rating">⭐ ${meta.imdbRating}</span>` : '';
+        const runtime = meta.runtime ? `⏱ ${meta.runtime}` : '';
+        heroMeta.innerHTML = [year, rating, runtime].filter(Boolean).join(' &nbsp;|&nbsp; ');
       }
       if (heroDescription) {
         heroDescription.textContent = meta.description || 'Sem descrição disponível.';
@@ -2217,28 +2214,14 @@ const UI = {
     const posterUrl = getPosterUrl(item);
     const itemType = item.type || (state.currentType === 'series' ? 'series' : 'movie');
     const isSeries = itemType === 'series';
-    const rating = item.imdbRating ? `★ ${item.imdbRating}` : '★ 8.4';
-    const matchScore = item.imdbRating ? `${Math.min(99, Math.round(parseFloat(item.imdbRating) * 11))}% Relevante` : '96% Relevante';
     return `
       <div class="movie-card" onclick="UI.openModal('${item.id}', '${itemType}')">
-        <div class="movie-poster-wrap">
-          <img class="movie-poster" src="${posterUrl}" alt="${item.name}" onerror="this.style.background='linear-gradient(135deg, #141520, #1f2032)'; this.style.minHeight='270px';" loading="lazy">
-          <span class="movie-card-badge">${rating}</span>
-          <span class="movie-card-audio-tag">${isSeries ? 'Série' : '4K HDR'}</span>
-        </div>
+        <img class="movie-poster" src="${posterUrl}" alt="${item.name}" onerror="this.style.background='linear-gradient(135deg, #1a1a2e, #2a2a4e)'; this.style.minHeight='270px';" loading="lazy">
+        <span class="movie-card-type">${isSeries ? '📺 SÉRIE' : '🎬 FILME'}</span>
+        ${item.imdbRating ? `<span class="movie-card-rating">⭐ ${item.imdbRating}</span>` : ''}
         <div class="movie-card-overlay">
-          <div class="movie-card-details">
-            <span class="movie-card-title">${item.name}</span>
-            <div class="movie-card-meta-row">
-              <span class="movie-card-match">${matchScore}</span>
-              <span>•</span>
-              <span class="movie-card-year">${item.year || (isSeries ? 'Série' : 'Filme')}</span>
-            </div>
-            <div class="movie-card-actions">
-              <button class="card-action-btn play" title="Assistir">▶</button>
-              <button class="card-action-btn" title="Mais Informações">ℹ</button>
-            </div>
-          </div>
+          <span class="movie-card-title">${item.name}</span>
+          <span class="movie-card-year">${item.year || ''}</span>
         </div>
       </div>
     `;
@@ -2252,22 +2235,12 @@ const UI = {
     const mediaType = item.type || 'movie';
     return `
       <div class="movie-card cinema-card" onclick="UI.openModal('${cleanId}', '${mediaType}')">
-        <div class="movie-poster-wrap">
-          <img class="movie-poster" src="${posterUrl}" alt="${item.name}" onerror="this.style.background='linear-gradient(135deg, #141520, #1f2032)'; this.style.minHeight='270px';" loading="lazy">
-          <span class="movie-card-badge" style="background:${accent}; color:white;">${formattedNum}</span>
-          <span class="movie-card-audio-tag">${item.year}</span>
-        </div>
+        <div class="cinema-card-badge" style="background:${accent};">${formattedNum}</div>
+        <div class="cinema-card-year">${item.year}</div>
+        <img class="movie-poster" src="${posterUrl}" alt="${item.name}" onerror="this.style.background='linear-gradient(135deg, #1a1a2e, #2a2a4e)'; this.style.minHeight='270px';" loading="lazy">
         <div class="movie-card-overlay">
-          <div class="movie-card-details">
-            <span class="movie-card-title">${item.name}</span>
-            <div class="movie-card-meta-row">
-              <span class="movie-card-year">${item.timeline || `${item.year} • Capítulo ${num}`}</span>
-            </div>
-            <div class="movie-card-actions">
-              <button class="card-action-btn play" title="Assistir">▶</button>
-              <button class="card-action-btn" title="Mais Informações">ℹ</button>
-            </div>
-          </div>
+          <span class="movie-card-title">${item.name}</span>
+          <span class="movie-card-year">${item.timeline || `${item.year} • Capítulo ${num}`}</span>
         </div>
       </div>
     `;
@@ -2279,13 +2252,7 @@ const UI = {
     
     return `
       <section class="catalog-section">
-        <div class="catalog-section-header">
-          <div class="section-title-wrap">
-            <span class="section-indicator"></span>
-            <h2 class="section-title">${title}</h2>
-          </div>
-          <a href="#" class="section-see-all" onclick="event.preventDefault();">Explorar ›</a>
-        </div>
+        <h2 class="section-title">${title}</h2>
         <div class="carousel-wrapper">
           <button class="carousel-btn carousel-prev" onclick="window.scrollCarousel('${id}', -1)">‹</button>
           <div class="carousel-track" id="carousel-${id}">
