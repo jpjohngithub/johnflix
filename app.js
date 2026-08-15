@@ -296,7 +296,9 @@ const state = {
   isLoading: false,
   heroMeta: null,
   isPlayerActive: false,
-  autoPlaySessionId: 0
+  autoPlaySessionId: 0,
+  tabEnterPending: false,
+  _didInitialType: false
 };
 
 const GENRES_LIST = [
@@ -1566,6 +1568,74 @@ const Subtitles = {
 
 // --- UI Module ---
 
+
+const Motion = {
+  reduced() {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  },
+  _tw: new WeakMap(),
+  beginTabChange(next) {
+    state.tabEnterPending = true;
+    const main = document.getElementById('main-content');
+    if (!main || this.reduced()) {
+      if (typeof next === 'function') next();
+      return;
+    }
+    main.classList.remove('page-enter');
+    main.classList.add('is-leaving');
+    setTimeout(() => { if (typeof next === 'function') next(); }, 180);
+  },
+  pageEnter() {
+    const main = document.getElementById('main-content');
+    if (!main) return;
+    main.classList.remove('is-leaving');
+    if (this.reduced()) {
+      main.classList.remove('page-enter');
+      return;
+    }
+    main.classList.remove('page-enter');
+    void main.offsetWidth;
+    main.classList.add('page-enter');
+  },
+  typewriter(el, text, ms) {
+    if (!el) return;
+    const full = text == null ? '' : String(text);
+    const prev = this._tw.get(el);
+    if (prev) clearInterval(prev);
+    if (this.reduced() || full.length < 2) {
+      el.textContent = full;
+      el.classList.remove('is-typing', 'type-settle');
+      return;
+    }
+    el.classList.remove('type-settle');
+    el.classList.add('is-typing');
+    el.textContent = '';
+    let i = 0;
+    const step = ms || 22;
+    const timer = setInterval(() => {
+      i += 1;
+      el.textContent = full.slice(0, i);
+      if (i >= full.length) {
+        clearInterval(timer);
+        this._tw.delete(el);
+        el.classList.remove('is-typing');
+        el.classList.add('type-settle');
+        setTimeout(() => el.classList.remove('type-settle'), 340);
+      }
+    }, step);
+    this._tw.set(el, timer);
+  },
+  typeSectionTitles(root) {
+    if (!root) return;
+    const els = root.querySelectorAll('.section-title, .explore-title');
+    els.forEach((el, idx) => {
+      const text = (el.textContent || '').replace(/\s+/g, ' ').trim();
+      if (!text) return;
+      setTimeout(() => this.typewriter(el, text, 18), idx * 40);
+    });
+  }
+};
+
 const UI = {
   init() {
     this.bindEvents();
@@ -1630,7 +1700,7 @@ const UI = {
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
         // Reload initial catalog home data
-        this.loadInitialData();
+        Motion.beginTabChange(() => this.loadInitialData());
       });
     });
 
@@ -1665,7 +1735,7 @@ const UI = {
           this.performSearch(activeQuery);
         } else {
           this.hideSearchResults();
-          this.loadInitialData();
+          Motion.beginTabChange(() => this.loadInitialData());
         }
       });
     });
@@ -2403,7 +2473,7 @@ const UI = {
         const bgUrl = getBackgroundUrl(meta);
         heroBackdrop.style.backgroundImage = `url('${bgUrl}')`;
       }
-      if (heroTitle) heroTitle.textContent = meta.name;
+      if (heroTitle) Motion.typewriter(heroTitle, meta.name, 24);
       if (heroMeta) {
         const year = meta.year || meta.releaseInfo || '';
         const rating = meta.imdbRating ? `<span class="hero-meta-badge imdb">★ ${meta.imdbRating}</span>` : '<span class="hero-meta-badge imdb">★ 8.6</span>';
@@ -2433,6 +2503,19 @@ const UI = {
     }
   },
   
+
+  afterCatalogPaint(container) {
+    const root = container || document.getElementById('catalog-container');
+    if (state.tabEnterPending) {
+      state.tabEnterPending = false;
+      Motion.pageEnter();
+      Motion.typeSectionTitles(root);
+    } else if (!state._didInitialType) {
+      state._didInitialType = true;
+      Motion.typeSectionTitles(root);
+    }
+  },
+
   createMovieCard(item) {
     const posterUrl = getPosterUrl(item);
     const itemType = item.type || (state.currentType === 'series' ? 'series' : 'movie');
@@ -2675,6 +2758,7 @@ const UI = {
         `;
       }
       container.innerHTML = html;
+      this.afterCatalogPaint(container);
       return;
     }
 
@@ -2705,6 +2789,7 @@ const UI = {
         `;
       });
       container.innerHTML = html;
+      this.afterCatalogPaint(container);
       return;
     }
 
@@ -2798,6 +2883,7 @@ const UI = {
     }
     
     container.innerHTML = html;
+    this.afterCatalogPaint(container);
   },
 
   renderExploreHub() {
@@ -2869,6 +2955,7 @@ const UI = {
         </div>
       </div>
     `;
+    this.afterCatalogPaint(container);
 
     // Bind event listeners
     const searchInput = document.getElementById('explore-search-input');
@@ -3991,6 +4078,10 @@ const UI = {
       setTimeout(() => {
         loadingScreen.classList.add('hidden');
       }, 500); // fade out duration
+    }
+    if (state.tabEnterPending) {
+      state.tabEnterPending = false;
+      Motion.pageEnter();
     }
   }
 };
