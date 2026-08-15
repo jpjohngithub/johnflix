@@ -2083,46 +2083,251 @@ body {
     justify-content: center;
   }
 
-  /* Player HUD on Mobile */
+  /* --- Mobile Vertical & Portrait Player Architecture --- */
+  .player-overlay {
+    height: 100% !important;
+    height: 100dvh !important;
+    width: 100vw !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    background: #000000 !important;
+    overflow: hidden !important;
+  }
+
+  .player-container {
+    width: 100% !important;
+    max-width: 100vw !important;
+    height: 100% !important;
+    max-height: 100dvh !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: relative !important;
+    background: #000000 !important;
+  }
+
+  #video-player {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    aspect-ratio: 16 / 9 !important;
+    object-fit: contain !important;
+    background: #000000 !important;
+  }
+
+  #iframe-player {
+    width: 100% !important;
+    max-width: 100% !important;
+    aspect-ratio: 16 / 9 !important;
+    max-height: 75vh !important;
+    border: none !important;
+    background: #000000 !important;
+  }
+
+  /* Player HUD on Mobile Vertical */
   .player-hud {
-    padding: 0.8rem;
+    padding: max(14px, env(safe-area-inset-top, 14px)) 16px max(18px, env(safe-area-inset-bottom, 18px)) !important;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.92) 0%, rgba(0, 0, 0, 0.4) 18%, transparent 35%, transparent 65%, rgba(0, 0, 0, 0.65) 80%, rgba(0, 0, 0, 0.96) 100%) !important;
+  }
+
+  .hud-top {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .hud-top-left {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+
+  .hud-back-btn {
+    padding: 6px 12px !important;
+    font-size: 0.8rem !important;
+    gap: 4px !important;
+    border-radius: var(--radius-full) !important;
+    background: rgba(255, 255, 255, 0.16) !important;
+    backdrop-filter: blur(12px) !important;
+    flex-shrink: 0 !important;
   }
 
   .hud-title {
-    max-width: 120px;
-    font-size: 0.82rem;
+    font-size: 0.86rem !important;
+    font-weight: 700 !important;
+    max-width: 32vw !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .hud-top-right {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .hud-stream-capsule {
+    padding: 2px 4px 2px 8px !important;
+    gap: 4px !important;
+    background: rgba(12, 13, 22, 0.9) !important;
+    border: 1px solid rgba(139, 92, 246, 0.5) !important;
+    border-radius: var(--radius-full) !important;
   }
 
   .hud-stream-select {
-    max-width: 95px;
-    font-size: 0.72rem;
+    max-width: 100px !important;
+    font-size: 0.72rem !important;
+    padding: 2px !important;
+  }
+
+  .hud-icon-btn {
+    width: 30px !important;
+    height: 30px !important;
+    font-size: 0.8rem !important;
   }
 
   .hud-volume-group {
-    display: none;
+    display: none !important;
   }
 
   .hud-control-label {
-    display: none;
+    display: none !important;
+  }
+
+  /* Bottom Controls on Mobile Vertical */
+  .hud-bottom {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    width: 100% !important;
+    padding-bottom: 4px !important;
+  }
+
+  .hud-timeline-container {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+  .hud-seekbar {
+    height: 6px !important;
+    border-radius: var(--radius-full) !important;
+  }
+
+  .hud-seekbar::-webkit-slider-thumb {
+    width: 16px !important;
+    height: 16px !important;
+    box-shadow: 0 0 12px var(--accent-glow) !important;
+  }
+
+  .hud-time-display {
+    font-size: 0.75rem !important;
+    font-family: monospace !important;
+    color: #cbd5e1 !important;
+  }
+
+  .hud-controls-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    gap: 6px !important;
+  }
+
+  .hud-left-controls {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+  }
+
+  .hud-btn {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 50% !important;
+    background: rgba(255, 255, 255, 0.14) !important;
+  }
+
+  .hud-play-btn-main {
+    width: 46px !important;
+    height: 46px !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: 0 0 16px rgba(255, 255, 255, 0.4) !important;
+  }
+
+  .hud-right-controls {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+  }
+
+  .hud-subtitles-group {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    padding: 2px 6px !important;
+    background: rgba(12, 13, 22, 0.85) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    border-radius: var(--radius-full) !important;
+  }
+
+  .hud-subtitles-group .hud-select {
+    font-size: 0.72rem !important;
+    max-width: 80px !important;
+    padding: 2px !important;
+  }
+
+  .hud-sub-sync-btn {
+    font-size: 0.68rem !important;
+    padding: 2px 6px !important;
+  }
+
+  .hud-speed-select {
+    font-size: 0.72rem !important;
+    padding: 3px 6px !important;
+  }
+
+  /* Custom Subtitles Positioning on Mobile Vertical */
+  .custom-subtitles-overlay {
+    bottom: 22% !important;
+    width: 92% !important;
+    max-width: 92vw !important;
+    text-align: center !important;
+  }
+
+  #custom-subtitles-text {
+    font-size: clamp(0.95rem, 3.8vw, 1.25rem) !important;
+    padding: 4px 10px !important;
+    background: rgba(0, 0, 0, 0.88) !important;
+    border-radius: 6px !important;
   }
 
   .player-loading {
-    top: 15px;
-    padding: 6px 14px;
-    font-size: 0.76rem;
-    gap: 8px;
-    max-width: 95vw;
+    top: max(15px, env(safe-area-inset-top, 15px)) !important;
+    padding: 6px 14px !important;
+    font-size: 0.76rem !important;
+    gap: 8px !important;
+    max-width: 92vw !important;
   }
 
   .hud-source-feedback {
-    top: 65px;
-    bottom: auto;
-    padding: 6px 12px;
-    max-width: 96vw;
+    top: max(60px, calc(env(safe-area-inset-top, 15px) + 45px)) !important;
+    bottom: auto !important;
+    padding: 6px 12px !important;
+    max-width: 95vw !important;
   }
 
   .hud-feedback-question {
-    display: none;
+    display: none !important;
   }
 
   /* Native Mobile Bottom Navigation Bar */
@@ -2185,6 +2390,48 @@ body {
 
   #main-content {
     padding-bottom: 75px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hud-title {
+    max-width: 22vw !important;
+    font-size: 0.78rem !important;
+  }
+
+  .hud-back-btn span {
+    display: none !important;
+  }
+
+  .hud-back-btn {
+    padding: 6px !important;
+    width: 32px !important;
+    height: 32px !important;
+    justify-content: center !important;
+  }
+
+  .hud-stream-select {
+    max-width: 85px !important;
+    font-size: 0.68rem !important;
+  }
+
+  .hud-btn {
+    width: 34px !important;
+    height: 34px !important;
+  }
+
+  .hud-play-btn-main {
+    width: 42px !important;
+    height: 42px !important;
+  }
+
+  .hud-subtitles-group .hud-select {
+    max-width: 68px !important;
+    font-size: 0.66rem !important;
+  }
+
+  .hud-speed-select {
+    display: none !important;
   }
 }
 
