@@ -913,17 +913,79 @@ const API = {
   },
   
   async searchContent(type, query) {
-    if (type === 'all') {
-      const [movs, sers] = await Promise.all([
-        this.fetchCatalog('movie', 'top', { search: query }),
-        this.fetchCatalog('series', 'top', { search: query })
-      ]).catch(() => [[], []]);
-      const map = new Map();
-      (movs || []).forEach(m => { m.type = 'movie'; map.set(m.id, m); });
-      (sers || []).forEach(s => { s.type = 'series'; map.set(s.id, s); });
-      return Array.from(map.values());
+    const rawQuery = (query || '').trim();
+    if (!rawQuery) return [];
+
+    const norm = rawQuery.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+
+    // Multilingual Translation / Alias Dictionary for Accurate Search
+    const ALIAS_MAP = {
+      'homem aranha': 'spider-man',
+      'homem de ferro': 'iron man',
+      'capitao america': 'captain america',
+      'vingadores': 'avengers',
+      'senhor dos aneis': 'lord of the rings',
+      'guerra nas estrelas': 'star wars',
+      'velozes e furiosos': 'fast and furious',
+      'planeta dos macacos': 'planet of the apes',
+      'jogos vorazes': 'hunger games',
+      'piratas do caribe': 'pirates of the caribbean',
+      'uma familia da pesada': 'family guy',
+      'o poderoso chefao': 'godfather',
+      'clube da luta': 'fight club',
+      'interestelar': 'interstellar',
+      'a viagem de chihiro': 'spirited away',
+      'ataque dos titas': 'attack on titan',
+      'cavaleiro das trevas': 'dark knight',
+      'coringa': 'joker',
+      'bastardos inglorios': 'inglourious basterds',
+      'matrix': 'the matrix',
+      'origem': 'inception',
+      'resgate do soldado ryan': 'saving private ryan',
+      'silencio dos inocentes': 'silence of the lambs',
+      'gato de botas': 'puss in boots',
+      'monstros sa': 'monsters inc',
+      'procurando nemo': 'finding nemo',
+      'divertida mente': 'inside out',
+      'como treinar o seu dragao': 'how to train your dragon',
+      'samurai de olhos azuis': 'blue eye samurai',
+      'invencivel': 'invincible',
+      'desencanto': 'disenchantment',
+      'sangue de zeus': 'blood of zeus'
+    };
+
+    const searchQueries = [rawQuery];
+    for (const [pt, en] of Object.entries(ALIAS_MAP)) {
+      if (norm.includes(pt)) {
+        searchQueries.push(en);
+      }
     }
-    return this.fetchCatalog(type, 'top', { search: query });
+
+    const uniqueQueries = [...new Set(searchQueries)];
+    const targetTypes = (type === 'all' || !type || type === 'cinema' || type === 'watchlist' || type === 'favorites') 
+      ? ['movie', 'series'] 
+      : [type];
+
+    const fetchPromises = [];
+    uniqueQueries.forEach(q => {
+      targetTypes.forEach(t => {
+        fetchPromises.push(
+          this.fetchCatalog(t, 'top', { search: q })
+            .then(items => (items || []).map(item => ({ ...item, type: item.type || t })))
+            .catch(() => [])
+        );
+      });
+    });
+
+    const resultsArray = await Promise.all(fetchPromises);
+    const combinedMap = new Map();
+    resultsArray.flat().forEach(item => {
+      if (item && item.id && !combinedMap.has(item.id)) {
+        combinedMap.set(item.id, item);
+      }
+    });
+
+    return Array.from(combinedMap.values());
   }
 };
 
@@ -2195,34 +2257,90 @@ const UI = {
   },
   
   async performSearch(query) {
-    const q = query.trim().toLowerCase();
-    if (q.length === 0) {
+    const rawQuery = (query || '').trim();
+    if (rawQuery.length === 0) {
       this.hideSearchResults();
       return;
     }
 
-    // 1. INSTANT 0ms Local Catalog Search
-    const allLocal = [...(state.catalogs.popular || []), ...(state.catalogs.featured || [])];
-    const localMatches = allLocal.filter((item, index, self) => {
-      const isUnique = self.findIndex(t => t.id === item.id) === index;
-      const nameMatch = (item.name || '').toLowerCase().includes(q);
-      const descMatch = (item.description || '').toLowerCase().includes(q);
-      return isUnique && (nameMatch || descMatch);
+    const normQ = rawQuery.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    const queryWords = normQ.split(/\s+/).filter(w => w.length > 0);
+
+    // 1. INSTANT 0ms Deep Local Index Search (CINEMA_SAGAS + Catalogs + Favorites)
+    const localPool = [];
+    const seenIds = new Set();
+
+    // Index all saga items
+    CINEMA_SAGAS.forEach(saga => {
+      (saga.items || []).forEach(item => {
+        const cleanId = item.id.split(':')[0];
+        if (!seenIds.has(cleanId)) {
+          seenIds.add(cleanId);
+          localPool.push({
+            id: cleanId,
+            name: item.name,
+            year: item.year,
+            type: item.type || 'movie',
+            poster: `https://images.metahub.space/poster/medium/${cleanId}/img`,
+            description: item.timeline || saga.title
+          });
+        }
+      });
     });
 
-    if (localMatches.length > 0) {
-      this.showSearchResults(localMatches);
+    // Index popular and featured catalogs
+    [...(state.catalogs.popular || []), ...(state.catalogs.featured || [])].forEach(item => {
+      if (item && item.id && !seenIds.has(item.id)) {
+        seenIds.add(item.id);
+        localPool.push(item);
+      }
+    });
+
+    // Score function for high precision
+    const scoreItem = (item) => {
+      const nameNorm = (item.name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const descNorm = (item.description || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+      if (nameNorm === normQ) return 500;
+      if (nameNorm.startsWith(normQ)) return 300;
+      if (nameNorm.includes(normQ)) return 200;
+
+      let wordMatchCount = 0;
+      queryWords.forEach(w => {
+        if (nameNorm.includes(w)) wordMatchCount += 50;
+        else if (descNorm.includes(w)) wordMatchCount += 20;
+      });
+
+      return wordMatchCount;
+    };
+
+    const scoredLocal = localPool
+      .map(item => ({ item, score: scoreItem(item) }))
+      .filter(entry => entry.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .map(entry => entry.item);
+
+    // Show instant 0ms results immediately!
+    if (scoredLocal.length > 0) {
+      this.showSearchResults(scoredLocal);
     }
 
-    // 2. Fetch full Cinemeta search for currentType (movie or series)
-    if (q.length >= 2) {
-      const remoteResults = await API.searchContent(state.currentType, query.trim());
+    // 2. Multi-threaded Remote Search (Cinemeta Movie + Series)
+    if (rawQuery.length >= 2) {
+      const remoteResults = await API.searchContent(state.currentType, rawQuery);
       if (remoteResults && remoteResults.length > 0) {
-        const combinedMap = new Map();
-        localMatches.forEach(item => combinedMap.set(item.id, item));
-        remoteResults.forEach(item => combinedMap.set(item.id, item));
-        this.showSearchResults(Array.from(combinedMap.values()));
-      } else if (localMatches.length === 0) {
+        const mergedMap = new Map();
+        scoredLocal.forEach(item => mergedMap.set(item.id, item));
+        remoteResults.forEach(item => {
+          if (item && item.id && !mergedMap.has(item.id)) {
+            mergedMap.set(item.id, item);
+          }
+        });
+
+        const allMerged = Array.from(mergedMap.values());
+        allMerged.sort((a, b) => scoreItem(b) - scoreItem(a));
+        this.showSearchResults(allMerged);
+      } else if (scoredLocal.length === 0) {
         this.showSearchResults([]);
       }
     }
