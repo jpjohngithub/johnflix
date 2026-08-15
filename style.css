@@ -1851,6 +1851,36 @@ button, a, input, select, .movie-card, .stream-item, .mobile-nav-item {
   }
 }
 
+/* --- Seção Cinema Badges and Styles --- */
+.cinema-card {
+  position: relative;
+}
+
+.cinema-card-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 10;
+  color: #ffffff;
+  font-family: var(--font);
+  font-weight: 900;
+  font-size: 0.78rem;
+  padding: 3px 8px;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  letter-spacing: 0.5px;
+}
+
+.cinema-saga-desc {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  padding-left: 4%;
+  margin-top: -0.2rem;
+  margin-bottom: 0.9rem;
+  line-height: 1.45;
+}
+
 /* --- Prevent Native Browser Duplicate Subtitles --- */
 ::cue,
 video::cue {

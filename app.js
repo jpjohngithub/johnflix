@@ -271,6 +271,198 @@ const state = {
   autoPlaySessionId: 0
 };
 
+// --- Seção Cinema: Grandes Sagas e Trilogias em Ordem Cronológica ---
+
+const CINEMA_SAGAS = [
+  {
+    id: 'spiderman',
+    title: '🕷️ Saga Homem-Aranha (Do Clássico ao Aranhaverso)',
+    description: 'Acompanhe a trajetória de Peter Parker e Miles Morales através das três eras e do multiverso.',
+    accent: '#ef4444',
+    items: [
+      { id: 'tt0145487', name: 'Homem-Aranha', year: '2002', timeline: '1º Filme (Tobey)', type: 'movie' },
+      { id: 'tt0316654', name: 'Homem-Aranha 2', year: '2004', timeline: '2º Filme (Tobey)', type: 'movie' },
+      { id: 'tt0413300', name: 'Homem-Aranha 3', year: '2007', timeline: '3º Filme (Tobey)', type: 'movie' },
+      { id: 'tt0948470', name: 'O Espetacular Homem-Aranha', year: '2012', timeline: '1º Filme (Andrew)', type: 'movie' },
+      { id: 'tt1872181', name: 'O Espetacular Homem-Aranha 2', year: '2014', timeline: '2º Filme (Andrew)', type: 'movie' },
+      { id: 'tt2250912', name: 'Homem-Aranha: De Volta ao Lar', year: '2017', timeline: '1º MCU (Tom Holland)', type: 'movie' },
+      { id: 'tt4633694', name: 'Homem-Aranha no Aranhaverso', year: '2018', timeline: 'Aranhaverso 1', type: 'movie' },
+      { id: 'tt6320628', name: 'Homem-Aranha: Longe de Casa', year: '2019', timeline: '2º MCU (Tom Holland)', type: 'movie' },
+      { id: 'tt10872600', name: 'Homem-Aranha: Sem Volta para Casa', year: '2021', timeline: '3º MCU (Multiverso)', type: 'movie' },
+      { id: 'tt9362722', name: 'Homem-Aranha: Através do Aranhaverso', year: '2023', timeline: 'Aranhaverso 2', type: 'movie' }
+    ]
+  },
+  {
+    id: 'mcu',
+    title: '⚡ Marvel Cinematic Universe (MCU - Ordem Cronológica da Linha do Tempo)',
+    description: 'A ordem oficial em que os acontecimentos ocorrem dentro do Universo Marvel.',
+    accent: '#e11d48',
+    items: [
+      { id: 'tt0458339', name: 'Capitão América: O Primeiro Vingador', year: '2011', timeline: '1942 - Segunda Guerra', type: 'movie' },
+      { id: 'tt4154664', name: 'Capitã Marvel', year: '2019', timeline: '1995 - Origem dos Vingadores', type: 'movie' },
+      { id: 'tt0371746', name: 'Homem de Ferro', year: '2008', timeline: '2008 - O Início da Era dos Heróis', type: 'movie' },
+      { id: 'tt1228705', name: 'Homem de Ferro 2', year: '2010', timeline: '2010', type: 'movie' },
+      { id: 'tt0800080', name: 'O Incrível Hulk', year: '2008', timeline: '2010', type: 'movie' },
+      { id: 'tt0800369', name: 'Thor', year: '2011', timeline: '2011', type: 'movie' },
+      { id: 'tt0848228', name: 'Os Vingadores', year: '2012', timeline: '2012 - Batalha de NY', type: 'movie' },
+      { id: 'tt1300854', name: 'Homem de Ferro 3', year: '2013', timeline: '2012', type: 'movie' },
+      { id: 'tt1981109', name: 'Thor: O Mundo Sombrio', year: '2013', timeline: '2013', type: 'movie' },
+      { id: 'tt1843866', name: 'Capitão América: O Soldado Invernal', year: '2014', timeline: '2014 - Queda da S.H.I.E.L.D.', type: 'movie' },
+      { id: 'tt2015381', name: 'Guardiões da Galáxia', year: '2014', timeline: '2014 - No Espaço', type: 'movie' },
+      { id: 'tt3896198', name: 'Guardiões da Galáxia Vol. 2', year: '2017', timeline: '2014 - No Espaço', type: 'movie' },
+      { id: 'tt2395427', name: 'Vingadores: Era de Ultron', year: '2015', timeline: '2015 - Batalha de Sokóvia', type: 'movie' },
+      { id: 'tt0478970', name: 'Homem-Formiga', year: '2015', timeline: '2015', type: 'movie' },
+      { id: 'tt3498820', name: 'Capitão América: Guerra Civil', year: '2016', timeline: '2016 - Divisão dos Heróis', type: 'movie' },
+      { id: 'tt3480822', name: 'Viúva Negra', year: '2021', timeline: '2016 - Pós-Guerra Civil', type: 'movie' },
+      { id: 'tt1825683', name: 'Pantera Negra', year: '2018', timeline: '2016 - Em Wakanda', type: 'movie' },
+      { id: 'tt1211837', name: 'Doutor Estranho', year: '2016', timeline: '2016 - Mestre das Artes Místicas', type: 'movie' },
+      { id: 'tt3501632', name: 'Thor: Ragnarok', year: '2017', timeline: '2017 - Destruição de Asgard', type: 'movie' },
+      { id: 'tt5095030', name: 'Homem-Formiga e a Vespa', year: '2018', timeline: '2018 - Reino Quântico', type: 'movie' },
+      { id: 'tt4154756', name: 'Vingadores: Guerra Infinita', year: '2018', timeline: '2018 - O Estalo de Thanos', type: 'movie' },
+      { id: 'tt4154796', name: 'Vingadores: Ultimato', year: '2019', timeline: '2018 a 2023 - O Fim de Uma Era', type: 'movie' },
+      { id: 'tt6320628', name: 'Homem-Aranha: Longe de Casa', year: '2019', timeline: '2024 - Pós-Blip', type: 'movie' },
+      { id: 'tt10872600', name: 'Homem-Aranha: Sem Volta para Casa', year: '2021', timeline: '2024 - Abertura do Multiverso', type: 'movie' },
+      { id: 'tt9419884', name: 'Doutor Estranho no Multiverso da Loucura', year: '2022', timeline: '2024', type: 'movie' },
+      { id: 'tt10648342', name: 'Thor: Amor e Trovão', year: '2022', timeline: '2024', type: 'movie' },
+      { id: 'tt9114286', name: 'Pantera Negra: Wakanda Para Sempre', year: '2022', timeline: '2025', type: 'movie' },
+      { id: 'tt6791350', name: 'Guardiões da Galáxia Vol. 3', year: '2023', timeline: '2026', type: 'movie' },
+      { id: 'tt6263850', name: 'Deadpool & Wolverine', year: '2024', timeline: '2024 - Linha Temporal Sagrada', type: 'movie' }
+    ]
+  },
+  {
+    id: 'dc',
+    title: '🦇 DC Universe & Trilogia do Cavaleiro das Trevas',
+    description: 'As grandes obras da DC: de Batman de Christopher Nolan à Liga da Justiça de Zack Snyder.',
+    accent: '#3b82f6',
+    items: [
+      { id: 'tt0372784', name: 'Batman Begins', year: '2005', timeline: 'Trilogia Nolan 1', type: 'movie' },
+      { id: 'tt0468569', name: 'Batman: O Cavaleiro das Trevas', year: '2008', timeline: 'Trilogia Nolan 2', type: 'movie' },
+      { id: 'tt1345836', name: 'Batman: O Cavaleiro das Trevas Ressurge', year: '2012', timeline: 'Trilogia Nolan 3', type: 'movie' },
+      { id: 'tt0770828', name: 'O Homem de Aço', year: '2013', timeline: 'DCEU 1 (Superman)', type: 'movie' },
+      { id: 'tt2975590', name: 'Batman vs Superman: A Origem da Justiça', year: '2016', timeline: 'DCEU 2', type: 'movie' },
+      { id: 'tt0451279', name: 'Mulher-Maravilha', year: '2017', timeline: 'DCEU 3 (1918)', type: 'movie' },
+      { id: 'tt12361974', name: 'Liga da Justiça de Zack Snyder', year: '2021', timeline: 'DCEU 4 (Versão Definitiva)', type: 'movie' },
+      { id: 'tt1477834', name: 'Aquaman', year: '2018', timeline: 'DCEU 5', type: 'movie' },
+      { id: 'tt0448115', name: 'Shazam!', year: '2019', timeline: 'DCEU 6', type: 'movie' },
+      { id: 'tt7286456', name: 'Coringa', year: '2019', timeline: 'Elseworlds (Joaquin Phoenix)', type: 'movie' },
+      { id: 'tt6334354', name: 'O Esquadrão Suicida', year: '2021', timeline: 'DCEU (James Gunn)', type: 'movie' },
+      { id: 'tt1877830', name: 'The Batman', year: '2022', timeline: 'Elseworlds (Robert Pattinson)', type: 'movie' },
+      { id: 'tt0439572', name: 'The Flash', year: '2023', timeline: 'DCEU (Ponto de Ignição)', type: 'movie' }
+    ]
+  },
+  {
+    id: 'starwars',
+    title: '⭐ Star Wars (Ordem Cronológica da Linha do Tempo Galáctica)',
+    description: 'Da queda da República à ascensão dos Skywalker, na sequência canônica da galáxia.',
+    accent: '#eab308',
+    items: [
+      { id: 'tt0120915', name: 'Star Wars: Ep. I - A Ameaça Fantasma', year: '1999', timeline: '32 ABY (Origem de Anakin)', type: 'movie' },
+      { id: 'tt0121765', name: 'Star Wars: Ep. II - Ataque dos Clones', year: '2002', timeline: '22 ABY (Guerra dos Clones)', type: 'movie' },
+      { id: 'tt0121766', name: 'Star Wars: Ep. III - A Vingança dos Sith', year: '2005', timeline: '19 ABY (Nascimento de Vader)', type: 'movie' },
+      { id: 'tt3778644', name: 'Han Solo: Uma História Star Wars', year: '2018', timeline: '10 ABY (Juventude de Solo)', type: 'movie' },
+      { id: 'tt3748528', name: 'Rogue One: Uma História Star Wars', year: '2016', timeline: '0 ABY (Roubo da Estrela da Morte)', type: 'movie' },
+      { id: 'tt0076759', name: 'Star Wars: Ep. IV - Uma Nova Esperança', year: '1977', timeline: '0 DBY (Trilogia Clássica 1)', type: 'movie' },
+      { id: 'tt0080684', name: 'Star Wars: Ep. V - O Império Contra-Ataca', year: '1980', timeline: '3 DBY (Trilogia Clássica 2)', type: 'movie' },
+      { id: 'tt0086190', name: 'Star Wars: Ep. VI - O Retorno de Jedi', year: '1983', timeline: '4 DBY (Trilogia Clássica 3)', type: 'movie' },
+      { id: 'tt2488496', name: 'Star Wars: Ep. VII - O Despertar da Força', year: '2015', timeline: '34 DBY (Trilogia Nova 1)', type: 'movie' },
+      { id: 'tt2527338', name: 'Star Wars: Ep. VIII - Os Últimos Jedi', year: '2017', timeline: '34 DBY (Trilogia Nova 2)', type: 'movie' },
+      { id: 'tt2527336', name: 'Star Wars: Ep. IX - A Ascensão Skywalker', year: '2019', timeline: '35 DBY (Fim da Saga)', type: 'movie' }
+    ]
+  },
+  {
+    id: 'harrypotter',
+    title: '🧙‍♂️ Harry Potter & Mundo Bruxo (Ordem Cronológica Completa)',
+    description: 'De Nova York dos anos 1920 até a Batalha de Hogwarts e a queda de Voldemort.',
+    accent: '#a855f7',
+    items: [
+      { id: 'tt3183660', name: 'Animais Fantásticos e Onde Habitam', year: '2016', timeline: '1926 (Newt Scamander)', type: 'movie' },
+      { id: 'tt4123430', name: 'Animais Fantásticos: Os Crimes de Grindelwald', year: '2018', timeline: '1927', type: 'movie' },
+      { id: 'tt4123432', name: 'Animais Fantásticos: Os Segredos de Dumbledore', year: '2022', timeline: '1932 (Guerra Bruxa)', type: 'movie' },
+      { id: 'tt0241527', name: 'Harry Potter e a Pedra Filosofal', year: '2001', timeline: '1991 (1º Ano em Hogwarts)', type: 'movie' },
+      { id: 'tt0295297', name: 'Harry Potter e a Câmara Secreta', year: '2002', timeline: '1992 (2º Ano em Hogwarts)', type: 'movie' },
+      { id: 'tt0304141', name: 'Harry Potter e o Prisioneiro de Azkaban', year: '2004', timeline: '1993 (3º Ano em Hogwarts)', type: 'movie' },
+      { id: 'tt0330373', name: 'Harry Potter e o Cálice de Fogo', year: '2005', timeline: '1994 (Torneio Tribruxo)', type: 'movie' },
+      { id: 'tt0373889', name: 'Harry Potter e a微Ordem da Fênix', year: '2007', timeline: '1995 (5º Ano em Hogwarts)', type: 'movie' },
+      { id: 'tt0417741', name: 'Harry Potter e o Enigma do Príncipe', year: '2009', timeline: '1996 (6º Ano em Hogwarts)', type: 'movie' },
+      { id: 'tt0926084', name: 'Harry Potter e as Relíquias da Morte - Parte 1', year: '2010', timeline: '1997 (Em Busca das Horcruxes)', type: 'movie' },
+      { id: 'tt1201607', name: 'Harry Potter e as Relíquias da Morte - Parte 2', year: '2011', timeline: '1998 (Batalha de Hogwarts)', type: 'movie' }
+    ]
+  },
+  {
+    id: 'lotr',
+    title: '💍 O Senhor dos Anéis & O Hobbit (Terra-Média)',
+    description: 'A jornada de Bilbo e Frodo Bolseiro na criação e destruição do Um Anel.',
+    accent: '#f59e0b',
+    items: [
+      { id: 'tt0903624', name: 'O Hobbit: Uma Jornada Inesperada', year: '2012', timeline: 'O Hobbit Parte 1', type: 'movie' },
+      { id: 'tt1170358', name: 'O Hobbit: A Desolação de Smaug', year: '2013', timeline: 'O Hobbit Parte 2', type: 'movie' },
+      { id: 'tt2310332', name: 'O Hobbit: A Batalha dos Cinco Exércitos', year: '2014', timeline: 'O Hobbit Parte 3', type: 'movie' },
+      { id: 'tt0120737', name: 'O Senhor dos Anéis: A Sociedade do Anel', year: '2001', timeline: 'SDA Parte 1', type: 'movie' },
+      { id: 'tt0167261', name: 'O Senhor dos Anéis: As Duas Torres', year: '2002', timeline: 'SDA Parte 2', type: 'movie' },
+      { id: 'tt0167260', name: 'O Senhor dos Anéis: O Retorno do Rei', year: '2003', timeline: 'SDA Parte 3 (O Fim de Sauron)', type: 'movie' }
+    ]
+  },
+  {
+    id: 'fast',
+    title: '🚗 Velozes e Furiosos (Saga Completa em Ordem Cronológica)',
+    description: 'A evolução de rachas de rua em Los Angeles para missões globais de espionagem.',
+    accent: '#06b6d4',
+    items: [
+      { id: 'tt0232500', name: 'Velozes e Furiosos', year: '2001', timeline: '1º Filme', type: 'movie' },
+      { id: 'tt0322259', name: '+ Velozes + Furiosos', year: '2003', timeline: '2º Filme (Miami)', type: 'movie' },
+      { id: 'tt1013752', name: 'Velozes e Furiosos 4', year: '2009', timeline: '3º na Cronologia', type: 'movie' },
+      { id: 'tt1596343', name: 'Velozes e Furiosos 5: Operação Rio', year: '2011', timeline: '4º na Cronologia (Rio)', type: 'movie' },
+      { id: 'tt1905041', name: 'Velozes e Furiosos 6', year: '2013', timeline: '5º na Cronologia', type: 'movie' },
+      { id: 'tt0463985', name: 'Velozes e Furiosos: Desafio em Tóquio', year: '2006', timeline: '6º na Cronologia (Tóquio)', type: 'movie' },
+      { id: 'tt2820852', name: 'Velozes e Furiosos 7', year: '2015', timeline: '7º Filme (Homenagem a Paul)', type: 'movie' },
+      { id: 'tt4630562', name: 'Velozes e Furiosos 8', year: '2017', timeline: '8º Filme', type: 'movie' },
+      { id: 'tt6806448', name: 'Velozes e Furiosos: Hobbs & Shaw', year: '2019', timeline: 'Spin-off', type: 'movie' },
+      { id: 'tt5433118', name: 'Velozes e Furiosos 9', year: '2021', timeline: '9º Filme', type: 'movie' },
+      { id: 'tt5433122', name: 'Velozes e Furiosos 10', year: '2023', timeline: '10º Filme', type: 'movie' }
+    ]
+  },
+  {
+    id: 'johnwick',
+    title: '🥋 John Wick (Saga Baba Yaga)',
+    description: 'Os 4 capítulos da saga de vingança e honra de John Wick na Alta Cúpula.',
+    accent: '#10b981',
+    items: [
+      { id: 'tt2911666', name: 'John Wick: De Volta ao Jogo', year: '2014', timeline: 'Capítulo 1', type: 'movie' },
+      { id: 'tt4425200', name: 'John Wick: Um Novo Dia Para Matar', year: '2017', timeline: 'Capítulo 2', type: 'movie' },
+      { id: 'tt6146586', name: 'John Wick 3: Parabellum', year: '2019', timeline: 'Capítulo 3', type: 'movie' },
+      { id: 'tt10366206', name: 'John Wick 4: Baba Yaga', year: '2023', timeline: 'Capítulo 4 (Final Épico)', type: 'movie' }
+    ]
+  },
+  {
+    id: 'jurassic',
+    title: '🦖 Jurassic Park & Jurassic World (A Era dos Dinossauros)',
+    description: 'Do clássico de Steven Spielberg em Isla Nublar ao domínio global dos dinossauros.',
+    accent: '#84cc16',
+    items: [
+      { id: 'tt0107290', name: 'Jurassic Park: O Parque dos Dinossauros', year: '1993', timeline: '1º Parque (Clássico)', type: 'movie' },
+      { id: 'tt0119864', name: 'O Mundo Perdido: Jurassic Park', year: '1997', timeline: '2º Filme', type: 'movie' },
+      { id: 'tt0163025', name: 'Jurassic Park III', year: '2001', timeline: '3º Filme', type: 'movie' },
+      { id: 'tt369610', name: 'Jurassic World: O Mundo dos Dinossauros', year: '2015', timeline: 'Jurassic World 1', type: 'movie' },
+      { id: 'tt4881806', name: 'Jurassic World: Reino Ameaçado', year: '2018', timeline: 'Jurassic World 2', type: 'movie' },
+      { id: 'tt8036722', name: 'Jurassic World: Domínio', year: '2022', timeline: 'Jurassic World 3', type: 'movie' }
+    ]
+  },
+  {
+    id: 'apes_dune',
+    title: '🪐 Planeta dos Macacos & Duna (Ficção Científica Épica)',
+    description: 'A tetralogia de César e a saga de Paul Atreides em Arrakis.',
+    accent: '#f97316',
+    items: [
+      { id: 'tt1318514', name: 'Planeta dos Macacos: A Origem', year: '2011', timeline: 'Origem de César', type: 'movie' },
+      { id: 'tt2103281', name: 'Planeta dos Macacos: O Confronto', year: '2014', timeline: 'A Ascensão dos Símios', type: 'movie' },
+      { id: 'tt3450958', name: 'Planeta dos Macacos: A Guerra', year: '2017', timeline: 'A Batalha Final', type: 'movie' },
+      { id: 'tt11384580', name: 'Planeta dos Macacos: O Reinado', year: '2024', timeline: 'Gerações Futuras', type: 'movie' },
+      { id: 'tt1160419', name: 'Duna: Parte 1', year: '2021', timeline: 'Duna Livro 1 - Ato 1', type: 'movie' },
+      { id: 'tt15239678', name: 'Duna: Parte 2', year: '2024', timeline: 'Duna Livro 1 - Ato 2', type: 'movie' }
+    ]
+  }
+];
+
 // --- API Module ---
 
 const API = {
@@ -895,7 +1087,7 @@ const UI = {
 
         const heroTypeName = document.getElementById('hero-type-name');
         if (heroTypeName) {
-          heroTypeName.textContent = state.currentType === 'movie' ? 'Filmes' : 'Séries';
+          heroTypeName.textContent = state.currentType === 'cinema' ? '🏛️ Seção Cinema' : (state.currentType === 'movie' ? 'Filmes' : (state.currentType === 'series' ? 'Séries' : 'Todos'));
         }
 
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1437,6 +1629,23 @@ const UI = {
         this.renderCatalogs();
         this.hideLoadingScreen();
         return;
+      } else if (state.currentType === 'cinema') {
+        const heroSection = document.getElementById('hero-section');
+        if (heroSection) heroSection.classList.remove('hidden');
+        
+        // Spotlight marquee item from Cinema Sagas
+        const marqueeItem = {
+          id: 'tt6263850',
+          name: 'Deadpool & Wolverine (2024)',
+          year: '2024',
+          description: 'A TVA recruta Wade Wilson para uma missão através do Multiverso ao lado de uma variante relutante de Wolverine.',
+          type: 'movie',
+          imdbRating: '7.8'
+        };
+        this.setHero(marqueeItem, true);
+        this.renderCatalogs();
+        this.hideLoadingScreen();
+        return;
       } else {
         const heroSection = document.getElementById('hero-section');
         if (heroSection) heroSection.classList.remove('hidden');
@@ -1550,7 +1759,7 @@ const UI = {
     const updateDOM = () => {
       const itemType = meta.type || (state.currentType === 'series' ? 'series' : 'movie');
       if (heroTypeName) {
-        heroTypeName.textContent = itemType === 'series' ? 'Série 📺' : 'Filme 🎬';
+        heroTypeName.textContent = state.currentType === 'cinema' ? '🏛️ Seção Cinema' : (itemType === 'series' ? 'Série 📺' : 'Filme 🎬');
       }
       
       if (heroBackdrop) {
@@ -1596,6 +1805,23 @@ const UI = {
         <div class="movie-card-overlay">
           <span class="movie-card-title">${item.name}</span>
           <span class="movie-card-year">${item.year || ''}</span>
+        </div>
+      </div>
+    `;
+  },
+
+  createCinemaMovieCard(item, index, accent = '#8b5cf6') {
+    const cleanId = item.id.split(':')[0];
+    const posterUrl = `https://images.metahub.space/poster/medium/${cleanId}/img`;
+    const num = index + 1;
+    return `
+      <div class="movie-card cinema-card" onclick="UI.openModal('${cleanId}', 'movie')">
+        <div class="cinema-card-badge" style="background:${accent};">#${num}</div>
+        <img class="movie-poster" src="${posterUrl}" alt="${item.name}" onerror="this.style.background='linear-gradient(135deg, #1a1a2e, #2a2a4e)'; this.style.minHeight='270px';" loading="lazy">
+        <span class="movie-card-type" style="background:rgba(0,0,0,0.88); color:#fff; font-size:0.68rem; font-weight:700;">${item.timeline || item.year}</span>
+        <div class="movie-card-overlay">
+          <span class="movie-card-title">${item.name}</span>
+          <span class="movie-card-year">${item.year} • Filme #${num}</span>
         </div>
       </div>
     `;
@@ -1775,6 +2001,31 @@ const UI = {
           </div>
         `;
       }
+
+      container.innerHTML = html;
+      return;
+    }
+
+    // Seção Cinema Mode (Grandes Sagas e Trilogias em Ordem Cronológica)
+    if (state.currentType === 'cinema') {
+      CINEMA_SAGAS.forEach(saga => {
+        const cardsHtml = saga.items.map((item, idx) => this.createCinemaMovieCard(item, idx, saga.accent)).join('');
+        html += `
+          <section class="catalog-section cinema-saga-section" id="saga-${saga.id}">
+            <h2 class="section-title" style="color:${saga.accent}; display:flex; align-items:center; gap:8px; margin-bottom:0.3rem;">
+              ${saga.title}
+            </h2>
+            <p class="cinema-saga-desc">${saga.description}</p>
+            <div class="carousel-wrapper">
+              <button class="carousel-btn carousel-prev" onclick="window.scrollCarousel('saga-${saga.id}', -1)">‹</button>
+              <div class="carousel-track" id="carousel-saga-${saga.id}">
+                ${cardsHtml}
+              </div>
+              <button class="carousel-btn carousel-next" onclick="window.scrollCarousel('saga-${saga.id}', 1)">›</button>
+            </div>
+          </section>
+        `;
+      });
 
       container.innerHTML = html;
       return;
