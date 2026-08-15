@@ -1284,6 +1284,63 @@ const Subtitles = {
     }
   },
 
+  clear() {
+    this.activeCues = [];
+    this.syncOffset = 0;
+    const overlay = document.getElementById('custom-subtitles-overlay');
+    const subText = document.getElementById('custom-subtitles-text');
+    if (subText) subText.textContent = '';
+    if (overlay) overlay.classList.add('hidden');
+  },
+
+  autoSync() {
+    const video = document.getElementById('video-player');
+    if (!video || !this.activeCues || this.activeCues.length === 0) {
+      return { success: false, msg: '💬 Ative uma legenda para auto-sincronizar.' };
+    }
+
+    const currTime = video.currentTime;
+    let closestCue = null;
+    let minDiff = Infinity;
+
+    for (const cue of this.activeCues) {
+      const diffStart = Math.abs(cue.start - currTime);
+      const diffEnd = Math.abs(cue.end - currTime);
+      const diffCenter = Math.abs(((cue.start + cue.end) / 2) - currTime);
+      const m = Math.min(diffStart, diffEnd, diffCenter);
+      if (m < minDiff) {
+        minDiff = m;
+        closestCue = cue;
+      }
+    }
+
+    if (closestCue) {
+      let calculatedOffset = 0;
+      if (currTime >= closestCue.start && currTime <= closestCue.end) {
+        calculatedOffset = 0;
+      } else if (minDiff < 30) {
+        calculatedOffset = (currTime - closestCue.start);
+        calculatedOffset = Math.max(-12, Math.min(12, calculatedOffset));
+      } else {
+        calculatedOffset = 0;
+      }
+
+      this.syncOffset = calculatedOffset;
+      this.syncOverlay(currTime);
+      
+      const offsetMs = Math.round(this.syncOffset * 1000);
+      return {
+        success: true,
+        offset: this.syncOffset,
+        msg: offsetMs === 0 ? '✨ Legenda 100% sincronizada com a fala!' : `✨ Sincronizado automaticamente (${offsetMs > 0 ? '+' : ''}${offsetMs}ms)`
+      };
+    }
+
+    this.syncOffset = 0;
+    this.syncOverlay(currTime);
+    return { success: true, offset: 0, msg: '✨ Legenda sincronizada!' };
+  },
+
   syncOverlay(currentTime) {
     const overlay = document.getElementById('custom-subtitles-overlay');
     const subText = document.getElementById('custom-subtitles-text');
@@ -1461,23 +1518,22 @@ const UI = {
       });
     }
 
-    // HUD Subtitle Sync Adjustment Buttons
-    document.getElementById('hud-sub-delay-minus')?.addEventListener('click', () => {
-      Subtitles.syncOffset -= 1.0;
-      const btn = document.getElementById('hud-sub-delay-reset');
-      if (btn) btn.textContent = `${Subtitles.syncOffset > 0 ? '+' : ''}${Subtitles.syncOffset.toFixed(0)}s`;
-    });
-
-    document.getElementById('hud-sub-delay-reset')?.addEventListener('click', () => {
-      Subtitles.syncOffset = 0;
-      const btn = document.getElementById('hud-sub-delay-reset');
-      if (btn) btn.textContent = '⚡0s';
-    });
-
-    document.getElementById('hud-sub-delay-plus')?.addEventListener('click', () => {
-      Subtitles.syncOffset += 1.0;
-      const btn = document.getElementById('hud-sub-delay-reset');
-      if (btn) btn.textContent = `${Subtitles.syncOffset > 0 ? '+' : ''}${Subtitles.syncOffset.toFixed(0)}s`;
+    // HUD Subtitle Auto-Sync Button (Instant speech-to-subtitle time alignment)
+    document.getElementById('hud-sub-auto-sync')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const res = Subtitles.autoSync();
+      let badge = document.getElementById('hud-gesture-badge');
+      if (!badge) {
+        badge = document.createElement('div');
+        badge.id = 'hud-gesture-badge';
+        badge.className = 'hud-gesture-badge';
+        document.getElementById('player-overlay')?.appendChild(badge);
+      }
+      badge.textContent = res.msg;
+      badge.classList.remove('show');
+      void badge.offsetWidth;
+      badge.classList.add('show');
+      setTimeout(() => badge.classList.remove('show'), 1200);
     });
 
     // Language selector
