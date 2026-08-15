@@ -2138,7 +2138,7 @@ body {
 
   /* Player HUD on Mobile Vertical */
   .player-hud {
-    padding: max(14px, env(safe-area-inset-top, 14px)) 16px max(18px, env(safe-area-inset-bottom, 18px)) !important;
+    padding: max(12px, env(safe-area-inset-top, 12px)) 12px max(14px, env(safe-area-inset-bottom, 14px)) !important;
     background: linear-gradient(180deg, rgba(0, 0, 0, 0.92) 0%, rgba(0, 0, 0, 0.4) 18%, transparent 35%, transparent 65%, rgba(0, 0, 0, 0.65) 80%, rgba(0, 0, 0, 0.96) 100%) !important;
   }
 
@@ -2146,21 +2146,23 @@ body {
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
-    gap: 8px !important;
+    gap: 6px !important;
     width: 100% !important;
+    flex-wrap: nowrap !important;
   }
 
   .hud-top-left {
     display: flex !important;
     align-items: center !important;
-    gap: 8px !important;
-    flex: 1 !important;
+    gap: 6px !important;
+    flex: 1 1 auto !important;
     min-width: 0 !important;
+    overflow: hidden !important;
   }
 
   .hud-back-btn {
-    padding: 6px 12px !important;
-    font-size: 0.8rem !important;
+    padding: 5px 10px !important;
+    font-size: 0.76rem !important;
     gap: 4px !important;
     border-radius: var(--radius-full) !important;
     background: rgba(255, 255, 255, 0.16) !important;
@@ -2169,9 +2171,10 @@ body {
   }
 
   .hud-title {
-    font-size: 0.86rem !important;
+    font-size: 0.82rem !important;
     font-weight: 700 !important;
-    max-width: 32vw !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
@@ -2180,28 +2183,31 @@ body {
   .hud-top-right {
     display: flex !important;
     align-items: center !important;
-    gap: 6px !important;
+    gap: 4px !important;
     flex-shrink: 0 !important;
   }
 
   .hud-stream-capsule {
-    padding: 2px 4px 2px 8px !important;
-    gap: 4px !important;
+    padding: 2px 4px 2px 6px !important;
+    gap: 3px !important;
     background: rgba(12, 13, 22, 0.9) !important;
     border: 1px solid rgba(139, 92, 246, 0.5) !important;
     border-radius: var(--radius-full) !important;
+    max-width: 130px !important;
+    overflow: hidden !important;
   }
 
   .hud-stream-select {
-    max-width: 100px !important;
-    font-size: 0.72rem !important;
-    padding: 2px !important;
+    max-width: 80px !important;
+    font-size: 0.7rem !important;
+    padding: 1px 2px !important;
   }
 
   .hud-icon-btn {
-    width: 30px !important;
-    height: 30px !important;
-    font-size: 0.8rem !important;
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 0.76rem !important;
+    flex-shrink: 0 !important;
   }
 
   .hud-volume-group {
@@ -2216,33 +2222,35 @@ body {
   .hud-bottom {
     display: flex !important;
     flex-direction: column !important;
-    gap: 10px !important;
+    gap: 8px !important;
     width: 100% !important;
-    padding-bottom: 4px !important;
+    padding-bottom: 2px !important;
   }
 
   .hud-timeline-container {
     display: flex !important;
     align-items: center !important;
-    gap: 10px !important;
+    gap: 8px !important;
     width: 100% !important;
   }
 
   .hud-seekbar {
-    height: 6px !important;
+    height: 5px !important;
     border-radius: var(--radius-full) !important;
+    flex: 1 !important;
   }
 
   .hud-seekbar::-webkit-slider-thumb {
-    width: 16px !important;
-    height: 16px !important;
-    box-shadow: 0 0 12px var(--accent-glow) !important;
+    width: 14px !important;
+    height: 14px !important;
+    box-shadow: 0 0 10px var(--accent-glow) !important;
   }
 
   .hud-time-display {
-    font-size: 0.75rem !important;
+    font-size: 0.72rem !important;
     font-family: monospace !important;
     color: #cbd5e1 !important;
+    flex-shrink: 0 !important;
   }
 
   .hud-controls-row {
@@ -2250,60 +2258,72 @@ body {
     align-items: center !important;
     justify-content: space-between !important;
     width: 100% !important;
-    gap: 6px !important;
+    gap: 4px !important;
+    flex-wrap: nowrap !important;
   }
 
   .hud-left-controls {
     display: flex !important;
     align-items: center !important;
-    gap: 6px !important;
+    gap: 4px !important;
+    flex-shrink: 0 !important;
   }
 
   .hud-btn {
-    width: 38px !important;
-    height: 38px !important;
+    width: 32px !important;
+    height: 32px !important;
     border-radius: 50% !important;
     background: rgba(255, 255, 255, 0.14) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    flex-shrink: 0 !important;
+  }
+
+  .hud-btn-sub {
+    display: none !important;
   }
 
   .hud-play-btn-main {
-    width: 46px !important;
-    height: 46px !important;
+    width: 40px !important;
+    height: 40px !important;
     background: #ffffff !important;
     color: #000000 !important;
-    box-shadow: 0 0 16px rgba(255, 255, 255, 0.4) !important;
+    box-shadow: 0 0 14px rgba(255, 255, 255, 0.4) !important;
+    flex-shrink: 0 !important;
   }
 
   .hud-right-controls {
     display: flex !important;
     align-items: center !important;
-    gap: 6px !important;
+    gap: 4px !important;
+    flex-shrink: 0 !important;
   }
 
   .hud-subtitles-group {
     display: flex !important;
     align-items: center !important;
-    gap: 4px !important;
-    padding: 2px 6px !important;
+    gap: 2px !important;
+    padding: 2px 4px !important;
     background: rgba(12, 13, 22, 0.85) !important;
     border: 1px solid rgba(255, 255, 255, 0.18) !important;
     border-radius: var(--radius-full) !important;
   }
 
   .hud-subtitles-group .hud-select {
-    font-size: 0.72rem !important;
-    max-width: 80px !important;
-    padding: 2px !important;
+    font-size: 0.68rem !important;
+    max-width: 66px !important;
+    padding: 1px !important;
   }
 
   .hud-sub-sync-btn {
-    font-size: 0.68rem !important;
-    padding: 2px 6px !important;
+    display: none !important;
   }
 
   .hud-speed-select {
-    font-size: 0.72rem !important;
-    padding: 3px 6px !important;
+    font-size: 0.68rem !important;
+    padding: 2px 4px !important;
   }
 
   /* Custom Subtitles Positioning on Mobile Vertical */
@@ -2330,14 +2350,49 @@ body {
   }
 
   .hud-source-feedback {
-    top: max(60px, calc(env(safe-area-inset-top, 15px) + 45px)) !important;
+    top: max(55px, calc(env(safe-area-inset-top, 12px) + 48px)) !important;
     bottom: auto !important;
-    padding: 6px 12px !important;
-    max-width: 95vw !important;
+    padding: 5px 10px !important;
+    max-width: 96vw !important;
+    gap: 6px !important;
+  }
+
+  .hud-feedback-content {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    flex-wrap: nowrap !important;
+  }
+
+  .hud-feedback-badge {
+    font-size: 0.7rem !important;
+    padding: 2px 6px !important;
+    max-width: 105px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
   }
 
   .hud-feedback-question {
-    display: none !important;
+    display: inline-block !important;
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+  }
+
+  .hud-feedback-actions {
+    display: flex !important;
+    gap: 4px !important;
+    align-items: center !important;
+    flex-shrink: 0 !important;
+  }
+
+  .hud-feedback-btn {
+    padding: 4px 8px !important;
+    font-size: 0.7rem !important;
+    gap: 2px !important;
+    border-radius: var(--radius-full) !important;
   }
 
   /* Native Mobile Bottom Navigation Bar */
@@ -2405,8 +2460,8 @@ body {
 
 @media (max-width: 480px) {
   .hud-title {
-    max-width: 22vw !important;
-    font-size: 0.78rem !important;
+    max-width: 25vw !important;
+    font-size: 0.76rem !important;
   }
 
   .hud-back-btn span {
@@ -2414,34 +2469,48 @@ body {
   }
 
   .hud-back-btn {
-    padding: 6px !important;
-    width: 32px !important;
-    height: 32px !important;
+    padding: 5px !important;
+    width: 30px !important;
+    height: 30px !important;
     justify-content: center !important;
   }
 
+  .hud-stream-capsule {
+    max-width: 110px !important;
+  }
+
   .hud-stream-select {
-    max-width: 85px !important;
-    font-size: 0.68rem !important;
+    max-width: 65px !important;
+    font-size: 0.66rem !important;
+  }
+
+  .hud-icon-btn {
+    width: 26px !important;
+    height: 26px !important;
+    font-size: 0.72rem !important;
   }
 
   .hud-btn {
-    width: 34px !important;
-    height: 34px !important;
+    width: 30px !important;
+    height: 30px !important;
   }
 
   .hud-play-btn-main {
-    width: 42px !important;
-    height: 42px !important;
+    width: 38px !important;
+    height: 38px !important;
   }
 
   .hud-subtitles-group .hud-select {
-    max-width: 68px !important;
-    font-size: 0.66rem !important;
+    max-width: 58px !important;
+    font-size: 0.64rem !important;
   }
 
   .hud-speed-select {
     display: none !important;
+  }
+
+  .hud-feedback-badge {
+    max-width: 85px !important;
   }
 }
 
