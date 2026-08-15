@@ -3313,17 +3313,17 @@ const UI = {
 
     const msInfo = stream?.latency && stream.latency < 9999 ? ` (${stream.latency}ms ⚡)` : '';
     if (serverBadge) {
-      serverBadge.textContent = `⚡ ${stream?.name || 'Servidor Atual'}${msInfo}`;
+      serverBadge.textContent = `⚡ Auto-Play: ${stream?.name || 'Servidor Atual'}${msInfo}`;
     }
     
     // Show instantly (0ms) on screen
     feedbackPrompt.classList.remove('hidden');
 
-    // Auto-hide after 18s if user doesn't interact so it doesn't disturb viewing
+    // Auto-hide smoothly after 12s if user doesn't interact
     if (this.feedbackAutoHideTimer) clearTimeout(this.feedbackAutoHideTimer);
     this.feedbackAutoHideTimer = setTimeout(() => {
       feedbackPrompt.classList.add('hidden');
-    }, 18000);
+    }, 12000);
   },
 
   updateHudStreamSelector(streams, activeIndex = 0) {

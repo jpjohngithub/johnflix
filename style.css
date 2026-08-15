@@ -1812,61 +1812,55 @@ body {
   color: white;
 }
 
-/* Floating Source Health Check (Compact Glass Pill) */
+/* Floating Source Health Check & Auto-Play Prompt (Luxury Centered Glass Pill) */
 .hud-source-feedback {
   position: absolute;
-  bottom: 86px;
+  top: 75px;
   left: 50%;
-  transform: translateX(-50%);
-  z-index: 150;
+  transform: translate(-50%, 0);
+  z-index: 200;
   background: rgba(12, 13, 22, 0.94);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
   border: 1px solid rgba(139, 92, 246, 0.5);
   border-radius: var(--radius-full);
-  padding: 6px 14px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85), 0 0 20px rgba(139, 92, 246, 0.25);
-  animation: feedbackSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 7px 16px 7px 18px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85), 0 0 22px rgba(139, 92, 246, 0.3);
+  animation: toastFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   transition: opacity 0.3s ease, transform 0.3s ease;
   pointer-events: auto;
-  max-width: 92vw;
-}
-
-@keyframes feedbackSlideUp {
-  from {
-    opacity: 0;
-    transform: translate(-50%, 20px);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, 0);
-  }
+  max-width: 94vw;
+  display: flex;
+  align-items: center;
 }
 
 .hud-feedback-content {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   text-align: center;
+  white-space: nowrap;
 }
 
 .hud-feedback-badge {
   font-size: 0.78rem;
-  font-weight: 700;
-  color: #c4b5fd;
+  font-weight: 800;
+  color: #d8b4fe;
   background: rgba(139, 92, 246, 0.2);
-  border: 1px solid rgba(139, 92, 246, 0.35);
-  padding: 3px 8px;
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  padding: 3px 9px;
   border-radius: var(--radius-full);
-  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .hud-feedback-question {
   font-size: 0.84rem;
-  font-weight: 600;
+  font-weight: 700;
   color: #ffffff;
-  white-space: nowrap;
+  letter-spacing: -0.1px;
 }
 
 .hud-feedback-actions {
@@ -1892,23 +1886,23 @@ body {
 .hud-feedback-btn.yes {
   background: linear-gradient(135deg, #10b981, #059669);
   color: #ffffff;
-  box-shadow: 0 0 10px rgba(16, 185, 129, 0.35);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
 }
 
 .hud-feedback-btn.yes:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 0 16px rgba(16, 185, 129, 0.55);
+  transform: translateY(-1px) scale(1.04);
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.6);
 }
 
 .hud-feedback-btn.no {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
   color: #ffffff;
-  box-shadow: 0 0 10px rgba(239, 68, 68, 0.35);
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.4);
 }
 
 .hud-feedback-btn.no:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 0 16px rgba(239, 68, 68, 0.55);
+  transform: translateY(-1px) scale(1.04);
+  box-shadow: 0 0 16px rgba(139, 92, 246, 0.6);
 }
 
 /* Custom Subtitles Display Overlay */
@@ -2090,8 +2084,9 @@ body {
   }
 
   .hud-source-feedback {
-    bottom: 72px;
-    padding: 5px 12px;
+    top: 65px;
+    bottom: auto;
+    padding: 6px 12px;
     max-width: 96vw;
   }
 
