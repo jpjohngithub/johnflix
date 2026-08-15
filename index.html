@@ -261,6 +261,11 @@
         <iframe name="hidden_redirect_target" id="hidden-redirect-target" style="display:none !important; width:0 !important; height:0 !important; opacity:0 !important; pointer-events:none !important; position:absolute !important; top:-9999px !important; left:-9999px !important;"></iframe>
         <video id="video-player" controls autoplay></video>
 
+        <!-- Custom Subtitles Overlay (Crisp, high-contrast, fully centered) -->
+        <div id="custom-subtitles-overlay" class="custom-subtitles-overlay hidden">
+          <div id="custom-subtitles-text"></div>
+        </div>
+
         <!-- Custom Player HUD Controls -->
         <div id="player-hud" class="player-hud">
           <!-- Top Bar -->
@@ -327,6 +332,20 @@
               </div>
 
               <div class="hud-right-controls">
+                <!-- Subtitles Selector -->
+                <div class="hud-subtitles-group" style="display:flex; align-items:center; gap:6px;">
+                  <label for="hud-subtitle-select" style="font-size:0.8rem; color:#cbd5e1; font-weight:600;">💬 Legenda:</label>
+                  <select id="hud-subtitle-select" class="hud-select" style="background:rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.2); color:white; border-radius:6px; padding:3px 8px; font-size:0.8rem;">
+                    <option value="pob" selected>🇧🇷 Português (BR)</option>
+                    <option value="eng">🇺🇸 English</option>
+                    <option value="spa">🇪🇸 Español</option>
+                    <option value="off">🚫 Desativada</option>
+                  </select>
+                  <button id="hud-sub-delay-minus" class="hud-btn" style="padding:2px 6px; font-size:0.75rem;" title="Atrasar Legenda (-1s)">-1s</button>
+                  <button id="hud-sub-delay-reset" class="hud-btn" style="padding:2px 6px; font-size:0.75rem;" title="Resetar Sincronia">⚡0s</button>
+                  <button id="hud-sub-delay-plus" class="hud-btn" style="padding:2px 6px; font-size:0.75rem;" title="Adiantar Legenda (+1s)">+1s</button>
+                </div>
+
                 <!-- Speed Selector -->
                 <div class="hud-speed-group">
                   <label for="hud-speed-select">Velocidade:</label>

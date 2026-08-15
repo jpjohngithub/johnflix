@@ -998,40 +998,68 @@ const Subtitles = {
   syncOffset: 0,
 
   async fetchList(imdbId, type, season = 1, episode = 1, lang = 'pob') {
-    const cleanId = (imdbId || '').replace('tt', '').padStart(7, '0');
-    const cacheKey = `sub_${cleanId}_${type}_${season}_${episode}_${lang}`;
+    const cleanId = (imdbId || '').split(':')[0];
+    const realType = (type === 'series' || cleanId.includes(':') || (season && episode && type !== 'movie')) ? 'series' : 'movie';
+    const subKey = realType === 'series' ? `${cleanId}:${season}:${episode}` : cleanId;
+    const cacheKey = `sub_v3_${subKey}_${lang}`;
     if (this.cache[cacheKey]) return this.cache[cacheKey];
 
-    let url = `https://rest.opensubtitles.org/search/imdbid-${cleanId}/sublanguageid-${lang}`;
-    if (type === 'series') {
-      url = `https://rest.opensubtitles.org/search/episode-${episode}/imdbid-${cleanId}/season-${season}/sublanguageid-${lang}`;
-    }
+    const results = [];
 
+    // 1. Fetch from high-speed Stremio OpenSubtitles v3 Addon (CORS-free, direct UTF-8)
     try {
-      const res = await fetch(url, { headers: { 'User-Agent': 'TemporaryUserAgent' } });
+      const stremioUrl = `https://opensubtitles-v3.strem.io/subtitles/${realType}/${subKey}.json`;
+      const res = await fetch(stremioUrl, { headers: { 'Accept': 'application/json' } });
+      if (res.ok) {
+        const data = await res.json();
+        const allSubs = data.subtitles || [];
+        const langMatches = allSubs.filter(s => {
+          const l = (s.lang || '').toLowerCase();
+          if (lang === 'pob') return l === 'pob' || l === 'por' || l === 'pt' || l === 'pt-br' || l === 'brazilian';
+          if (lang === 'eng') return l === 'eng' || l === 'en' || l === 'english';
+          if (lang === 'spa') return l === 'spa' || l === 'es' || l === 'spanish';
+          return l === lang;
+        });
+
+        langMatches.forEach(s => {
+          results.push({
+            url: s.url,
+            lang: s.lang,
+            SubFileName: s.id || 'OpenSubtitles HD',
+            source: 'stremio'
+          });
+        });
+      }
+    } catch(e) {}
+
+    // 2. Fetch from OpenSubtitles REST fallback
+    try {
+      const padId = cleanId.replace('tt', '').padStart(7, '0');
+      let restUrl = `https://rest.opensubtitles.org/search/imdbid-${padId}/sublanguageid-${lang}`;
+      if (realType === 'series') {
+        restUrl = `https://rest.opensubtitles.org/search/episode-${episode}/imdbid-${padId}/season-${season}/sublanguageid-${lang}`;
+      }
+
+      const res = await fetch(restUrl, { headers: { 'User-Agent': 'TemporaryUserAgent' } });
       if (res.ok) {
         const data = await res.json();
         const list = Array.isArray(data) ? data : [];
-        
-        // Strict movie title & year filtering
-        const movieName = state.currentMeta ? state.currentMeta.name : '';
-        const movieYear = state.currentMeta ? state.currentMeta.year : '';
-        const cleanTitle = (movieName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-
-        const filtered = list.filter(s => {
-          if (!s.SubDownloadLink || (s.SubFormat !== 'srt' && s.SubFormat !== 'vtt')) return false;
-          if (type === 'series') return true;
-          const subName = ((s.MovieName || '') + ' ' + (s.SubFileName || '')).toLowerCase().replace(/[^a-z0-9]/g, '');
-          const yearMatch = !movieYear || !s.MovieYear || s.MovieYear == movieYear;
-          return (subName.includes(cleanTitle.slice(0, 10)) || cleanTitle.includes(subName.slice(0, 10))) && yearMatch;
-        }).sort((a, b) => (parseInt(b.SubDownloadsCnt) || 0) - (parseInt(a.SubDownloadsCnt) || 0));
-
-        const finalResult = filtered.length > 0 ? filtered : list;
-        this.cache[cacheKey] = finalResult;
-        return finalResult;
+        list.forEach(s => {
+          if (s.SubDownloadLink) {
+            results.push({
+              SubDownloadLink: s.SubDownloadLink,
+              SubFormat: s.SubFormat,
+              SubFileName: s.SubFileName || s.MovieName,
+              SubLanguageID: s.SubLanguageID,
+              source: 'rest'
+            });
+          }
+        });
       }
     } catch(e) {}
-    return [];
+
+    this.cache[cacheKey] = results;
+    return results;
   },
 
   srtToVtt(srtText) {
@@ -1050,7 +1078,7 @@ const Subtitles = {
       const parts = (tStr || '').trim().split(':');
       if (parts.length === 3) {
         const secsParts = parts[2].split('.');
-        return parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseInt(secsParts[0]) + (parseInt(secsParts[1] || '0') / 1000);
+        return parseInt(parts[0], 10) * 3600 + parseInt(parts[1], 10) * 60 + parseInt(secsParts[0], 10) + (parseInt(secsParts[1] || '0', 10) / 1000);
       }
       return 0;
     };
@@ -1084,7 +1112,7 @@ const Subtitles = {
     return cues;
   },
 
-  async applySubtitles(lang, imdbId, type, season, episode, chosenIndex = 0) {
+  async applySubtitles(lang, imdbId, type, season = 1, episode = 1, chosenIndex = 0) {
     const overlay = document.getElementById('custom-subtitles-overlay');
     const subText = document.getElementById('custom-subtitles-text');
     const video = document.getElementById('video-player');
@@ -1116,29 +1144,39 @@ const Subtitles = {
   },
 
   async downloadAndAttach(subObj, video, langName) {
-    if (!subObj || !subObj.SubDownloadLink) return;
+    if (!subObj) return;
 
     try {
-      const dlUrl = subObj.SubDownloadLink;
-      const res = await fetch(dlUrl, { headers: { 'User-Agent': 'TemporaryUserAgent' } });
-      if (!res.ok) return;
-
-      const buffer = new Uint8Array(await res.arrayBuffer());
-      let uint8Data = buffer;
-
-      if (buffer[0] === 0x1f && buffer[1] === 0x8b) {
-        if (typeof DecompressionStream !== 'undefined') {
-          const ds = new DecompressionStream('gzip');
-          const decompressedStream = new Response(buffer).body.pipeThrough(ds);
-          uint8Data = new Uint8Array(await new Response(decompressedStream).arrayBuffer());
-        }
-      }
-
       let rawSrt = '';
-      try {
-        rawSrt = new TextDecoder('utf-8', { fatal: true }).decode(uint8Data);
-      } catch(e) {
-        rawSrt = new TextDecoder('iso-8859-1').decode(uint8Data);
+
+      if (subObj.url) {
+        // Direct Stremio subtitle URL
+        const res = await fetch(subObj.url);
+        if (res.ok) {
+          rawSrt = await res.text();
+        }
+      } else if (subObj.SubDownloadLink) {
+        // OpenSubtitles REST link (may be gzip compressed)
+        const dlUrl = subObj.SubDownloadLink;
+        const res = await fetch(dlUrl, { headers: { 'User-Agent': 'TemporaryUserAgent' } });
+        if (!res.ok) return;
+
+        const buffer = new Uint8Array(await res.arrayBuffer());
+        let uint8Data = buffer;
+
+        if (buffer[0] === 0x1f && buffer[1] === 0x8b) {
+          if (typeof DecompressionStream !== 'undefined') {
+            const ds = new DecompressionStream('gzip');
+            const decompressedStream = new Response(buffer).body.pipeThrough(ds);
+            uint8Data = new Uint8Array(await new Response(decompressedStream).arrayBuffer());
+          }
+        }
+
+        try {
+          rawSrt = new TextDecoder('utf-8', { fatal: true }).decode(uint8Data);
+        } catch(e) {
+          rawSrt = new TextDecoder('iso-8859-1').decode(uint8Data);
+        }
       }
 
       if (!rawSrt || rawSrt.length === 0) return;
@@ -1154,13 +1192,13 @@ const Subtitles = {
         const track = document.createElement('track');
         track.kind = 'subtitles';
         track.label = langName;
-        track.srclang = subObj.SubLanguageID || 'pt';
+        track.srclang = (subObj.lang || subObj.SubLanguageID || 'pt').slice(0, 2);
         track.src = blobUrl;
         track.default = true;
 
         video.appendChild(track);
         if (video.textTracks && video.textTracks[0]) {
-          video.textTracks[0].mode = 'hidden'; // Keep native track hidden to prevent duplicate subtitles!
+          video.textTracks[0].mode = 'hidden'; // Custom overlay renders text
         }
       }
     } catch(e) {
