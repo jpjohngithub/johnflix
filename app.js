@@ -779,36 +779,8 @@ const API = {
       const cached = Cache.get(cacheKey);
       if (cached && cached.length > 0) return cached;
 
-      // 1. Generate Instant Web Embed Streams (Dublado PT-BR & English)
+      // 1. Generate Clean Web Player Embed Streams (VidSrc)
       const isMovie = realType === 'movie';
-      const warezLink = isMovie 
-        ? `https://warezcdn.link/embed/filme/${cleanId}?autoplay=1`
-        : `https://warezcdn.link/embed/serie/${cleanId}/${season}/${episode}?autoplay=1`;
-
-      const superflixUrl = isMovie
-        ? `https://superflixapi.top/filme/${cleanId}`
-        : `https://superflixapi.top/serie/${cleanId}/${season}/${episode}`;
-
-      const megaflixUrl = isMovie
-        ? `https://megaflix.cx/embed/filme/${cleanId}`
-        : `https://megaflix.cx/embed/serie/${cleanId}/${season}/${episode}`;
-
-      const primecineUrl = isMovie
-        ? `https://primecine.top/embed/filme/${cleanId}`
-        : `https://primecine.top/embed/serie/${cleanId}/${season}/${episode}`;
-
-      const embedflixUrl = isMovie
-        ? `https://embedflix.net/filme/${cleanId}`
-        : `https://embedflix.net/serie/${cleanId}/${season}/${episode}`;
-
-      const flixapiUrl = isMovie
-        ? `https://flixapi.org/embed/filme/${cleanId}`
-        : `https://flixapi.org/embed/serie/${cleanId}/${season}/${episode}`;
-
-      const autoembedUrl = isMovie
-        ? `https://autoembed.co/movie/imdb/${cleanId}`
-        : `https://autoembed.co/tv/imdb/${cleanId}/${season}/${episode}`;
-
       const vidsrcDubUrl = isMovie 
         ? `https://vidsrc.me/embed/movie?imdb=${cleanId}&ds_lang=pt&autoplay=1` 
         : `https://vidsrc.me/embed/tv?imdb=${cleanId}&season=${season}&episode=${episode}&ds_lang=pt&autoplay=1`;
@@ -823,68 +795,12 @@ const API = {
 
       const instantWebStreams = [
         {
-          name: '🇧🇷 SuperFlix VIP (Dublado PT-BR)',
-          title: '⚡ Servidor SuperFlix Dublado em Português BR',
-          embedUrl: superflixUrl,
-          isDub: true,
-          category: 'dubbed',
-          score: 85
-        },
-        {
-          name: '🇧🇷 WarezCDN Turbo (Dublado PT-BR)',
-          title: '⚡ Servidor WarezCDN Alta Velocidade Dublado',
-          embedUrl: warezLink,
-          isDub: true,
-          category: 'dubbed',
-          score: 80
-        },
-        {
-          name: '🇧🇷 MegaFlix Gold (Dublado PT-BR)',
-          title: '⚡ Servidor MegaFlix Dublado Português',
-          embedUrl: megaflixUrl,
-          isDub: true,
-          category: 'dubbed',
-          score: 75
-        },
-        {
-          name: '🇧🇷 PrimeCine HD (Dublado PT-BR)',
-          title: '⚡ Servidor PrimeCine Dublado',
-          embedUrl: primecineUrl,
-          isDub: true,
-          category: 'dubbed',
-          score: 70
-        },
-        {
-          name: '🇧🇷 EmbedFlix Pro (Dublado PT-BR)',
-          title: '⚡ Servidor EmbedFlix Dublado BR',
-          embedUrl: embedflixUrl,
-          isDub: true,
-          category: 'dubbed',
-          score: 65
-        },
-        {
-          name: '🇧🇷 AutoEmbed Brasil (Dublado PT-BR)',
-          title: '⚡ Servidor AutoEmbed Dublado',
-          embedUrl: autoembedUrl,
-          isDub: true,
-          category: 'dubbed',
-          score: 60
-        },
-        {
           name: '🇧🇷 VidSrc Brasil (Dublado / Dual)',
           title: '⚡ Servidor VidSrc PT-BR',
           embedUrl: vidsrcDubUrl,
           isDub: true,
           category: 'dubbed',
-          score: 55
-        },
-        {
-          name: '🇧🇷 FlixAPI Brasil (Dublado PT-BR)',
-          title: '⚡ Servidor FlixAPI Dublado',
-          embedUrl: flixapiUrl,
-          isDub: true,
-          category: 'dubbed',
-          score: 50
+          score: 80
         },
         {
           name: '✨ VidSrc Ultra (Áudio Original / Inglês 🇺🇸)',
@@ -892,7 +808,7 @@ const API = {
           embedUrl: vidsrc4kUrl,
           isDub: false,
           category: 'web',
-          score: 45
+          score: 60
         },
         {
           name: '🌐 Player Web VidSrc (English 🇺🇸)',
@@ -900,7 +816,7 @@ const API = {
           embedUrl: vidsrcEnUrl,
           isDub: false,
           category: 'web',
-          score: 35
+          score: 40
         }
       ];
 
@@ -927,20 +843,16 @@ const API = {
 
       const frostConfiguredUrl = 'https://froststream.cloutteam.com/providers.iptv=checked&providers.cdmoviedb=checked&providers.redeflix=checked&providers.tomato=checked&providers.myembed=checked&providers.anizone=checked';
 
-      const [fenixRes, frostRes, frostConfigRes, brazucaRes, torrentioRes] = await Promise.allSettled([
+      const [fenixRes, frostRes, frostConfigRes] = await Promise.allSettled([
         fetchAddon('https://fenixflix.fenixhub.online'),
         fetchAddon('https://froststream.cloutteam.com'),
-        fetchAddon(frostConfiguredUrl),
-        fetchAddon('https://94c8cb9f702d-brazuca-torrents.baby-beamup.club'),
-        fetchAddon('https://torrentio.strem.fun')
+        fetchAddon(frostConfiguredUrl)
       ]);
 
       const fenixStreams = fenixRes.status === 'fulfilled' ? fenixRes.value : [];
       const frostBaseStreams = frostRes.status === 'fulfilled' ? frostRes.value : [];
       const frostConfigStreams = frostConfigRes.status === 'fulfilled' ? frostConfigRes.value : [];
       const frostStreams = [...frostBaseStreams, ...frostConfigStreams];
-      const brazucaStreams = brazucaRes.status === 'fulfilled' ? brazucaRes.value : [];
-      const torrentioStreams = torrentioRes.status === 'fulfilled' ? torrentioRes.value : [];
 
       const streamsList = [];
 
@@ -966,7 +878,7 @@ const API = {
         const is4k = quality === '4K' || quality === '2160P';
 
         // 720p is awarded top reliability score to ensure fast, stutter-free instant play:
-        const qualScore = is720 ? 95 : is1080 ? 70 : is4k ? 60 : 40;
+        const qualScore = is720 ? 100 : is1080 ? 75 : is4k ? 60 : 40;
 
         const displayName = is720 
           ? `⚡ ${isDub ? '🇧🇷 Dublado PT-BR' : '🇺🇸 Inglês / Dual'} — FenixFlix 720p (Ultra Rápido & Estável)` 
@@ -982,60 +894,10 @@ const API = {
         });
       });
 
-      // ══════════════════════════════════════════════
-      // 🧲 Brazuca & Torrentio Torrents — PT-BR / Dual / Multi
-      // ══════════════════════════════════════════════
-      const allTorrentSources = [
-        ...brazucaStreams.map(s => ({ ...s, providerName: 'Brazuca' })),
-        ...torrentioStreams.slice(0, 20).map(s => ({ ...s, providerName: 'Torrentio' }))
-      ];
-
-      allTorrentSources.forEach(s => {
-        const hash = s.infoHash;
-        if (!hash) return;
-
-        const titleRaw = (s.title || s.name || 'Torrent HD').replace(/\n/g, ' ');
-        const combinedText = titleRaw.toLowerCase();
-
-        const isDub = combinedText.includes('dublado') || combinedText.includes('dual') || combinedText.includes('pt-br') || combinedText.includes('português') || combinedText.includes('brazuca') || combinedText.includes('dub');
-        const isEn = combinedText.includes('inglês') || combinedText.includes('english') || combinedText.includes('original');
-
-        const qualMatch = titleRaw.match(/(4k|2160p|1080p|720p|480p)/i);
-        const quality = qualMatch ? qualMatch[1].toUpperCase() : 'HD';
-        const is4k = quality === '4K' || quality === '2160P';
-
-        const seederMatch = titleRaw.match(/👤\s*(\d+)/);
-        const seeders = seederMatch ? parseInt(seederMatch[1], 10) : 0;
-
-        const trackers = [
-          'udp://tracker.opentrackr.org:1337/announce',
-          'udp://open.stealth.si:80/announce',
-          'udp://tracker.torrent.eu.org:451/announce',
-          'udp://tracker.fnix.net:6969/announce',
-          'udp://explodie.org:6969/announce',
-          'udp://p2p.publictracker.xyz:6969/announce',
-          ...(s.sources || []).filter(src => src.startsWith('tracker:')).map(src => src.replace('tracker:', ''))
-        ];
-
-        const filename = s.behaviorHints?.filename || titleRaw;
-        const magnetUrl = `magnet:?xt=urn:btih:${hash}&dn=${encodeURIComponent(filename)}&${trackers.map(t => `tr=${encodeURIComponent(t)}`).join('&')}`;
-
-        streamsList.push({
-          name: `🧲 ${isDub ? '🇧🇷 ' + s.providerName : '🇺🇸 ' + s.providerName} Torrent ${isDub ? '(Dual/Dublado)' : isEn ? '(Inglês 🇺🇸)' : ''}`,
-          title: `🧲 ${s.providerName} • ${titleRaw.slice(0, 100)}`,
-          magnetUrl: magnetUrl,
-          infoHash: hash,
-          fileIdx: s.fileIdx,
-          isDub: isDub,
-          category: 'torrent',
-          score: (isDub ? 35 : 10) + (is4k ? 25 : 0) + (seeders > 50 ? 15 : seeders > 10 ? 10 : 5)
-        });
-      });
-
-      // Append instant web embed streams
+      // Append clean web player streams
       streamsList.push(...instantWebStreams);
 
-      // Sort all streams: Dublado PT-BR servers first, then highest score
+      // Sort all streams: Dublado PT-BR / 720p first, then score
       streamsList.sort((a, b) => {
         if (a.isDub && !b.isDub) return -1;
         if (!a.isDub && b.isDub) return 1;
