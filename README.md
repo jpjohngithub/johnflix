@@ -1,6 +1,6 @@
 # 🎬 JohnFlix — Streaming de Filmes e Séries
 
-JohnFlix é uma plataforma moderna de streaming de filmes e séries inspirada no design da Netflix, construída com JavaScript Vanilla, HTML5, CSS3 responsivo e integração direta às APIs abertas do Stremio (Cinemeta, FrostStream, Torrentio, WarezCDN, VidSrc PT e Web Players HD).
+JohnFlix é uma plataforma moderna de streaming de filmes e séries inspirada no design da Netflix, construída com JavaScript Vanilla, HTML5, CSS3 responsivo e integração direta às APIs abertas do Stremio (Cinemeta, FenixFlix, FrostStream, Brazuca Torrents, Mico Leão, Torrentio, WarezCDN, VidSrc PT e Web Players HD).
 
 ![JohnFlix Screenshot](https://john-streaming-app.surge.sh/screenshot.png)
 
