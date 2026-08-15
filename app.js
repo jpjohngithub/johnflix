@@ -3312,17 +3312,21 @@ const UI = {
       if (playerLoading) playerLoading.classList.add('hidden');
     }, 1500);
 
-    // Automatically fetch and load subtitles
+    // Subtitles (disabled by default on video start)
     if (state.currentMeta) {
       const subSelect = document.getElementById('hud-subtitle-select');
-      const lang = subSelect ? subSelect.value : 'pob';
-      Subtitles.applySubtitles(
-        lang, 
-        state.currentMeta.id, 
-        state.currentType, 
-        state.currentSeason, 
-        state.currentEpisode
-      );
+      const lang = subSelect ? subSelect.value : 'off';
+      if (lang && lang !== 'off') {
+        Subtitles.applySubtitles(
+          lang, 
+          state.currentMeta.id, 
+          state.currentType, 
+          state.currentSeason, 
+          state.currentEpisode
+        );
+      } else {
+        Subtitles.clear();
+      }
     }
 
     // Save progress & sync subtitles as video plays or seeks
