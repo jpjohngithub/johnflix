@@ -1478,7 +1478,7 @@ const UI = {
 
         const heroTypeName = document.getElementById('hero-type-name');
         if (heroTypeName) {
-          heroTypeName.textContent = state.currentType === 'cinema' ? '🏛️ Seção Cinema' : (state.currentType === 'movie' ? 'Filmes' : (state.currentType === 'series' ? 'Séries' : 'Todos'));
+          heroTypeName.textContent = state.currentType === 'movie' ? 'Filmes' : (state.currentType === 'series' ? 'Séries' : 'Todos');
         }
 
         window.scrollTo({ top: 0, behavior: 'smooth' });
