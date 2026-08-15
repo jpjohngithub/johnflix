@@ -112,7 +112,12 @@ body {
   background: rgba(255, 255, 255, 0.35);
 }
 
-.hidden {
+.hidden,
+[hidden],
+.player-overlay.hidden,
+#player-overlay.hidden,
+.modal.hidden,
+#movie-modal.hidden {
   display: none !important;
 }
 
@@ -2085,15 +2090,20 @@ body {
 
   /* --- Mobile Vertical & Portrait Player Architecture --- */
   .player-overlay {
-    height: 100% !important;
-    height: 100dvh !important;
-    width: 100vw !important;
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: center !important;
-    align-items: center !important;
-    background: #000000 !important;
-    overflow: hidden !important;
+    height: 100%;
+    height: 100dvh;
+    width: 100vw;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: #000000;
+    overflow: hidden;
+  }
+
+  .player-overlay.hidden,
+  #player-overlay.hidden {
+    display: none !important;
   }
 
   .player-container {
