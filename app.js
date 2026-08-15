@@ -826,7 +826,9 @@ const API = {
         : type;
 
       const streamId = realType === 'series' ? `${cleanId}:${season}:${episode}` : cleanId;
-      const cacheKey = `st_v64_${streamId}`;
+      // New cache namespace ensures source lists are refreshed when a native
+      // provider is added instead of reusing an earlier list from localStorage.
+      const cacheKey = `st_v65_${streamId}`;
       const cached = Cache.get(cacheKey);
       if (cached && cached.length > 0) return cached;
 
@@ -873,16 +875,13 @@ const API = {
         ? `https://vidsrc.in/embed/movie/${cleanId}`
         : `https://vidsrc.in/embed/tv/${cleanId}/${season}/${episode}`;
 
-      // Helper: fetch directly from Stremio addon APIs with 5s timeout
+
       const fetchAddon = async (baseUrl, timeoutMs = 5000) => {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), timeoutMs);
         try {
           const directUrl = `${baseUrl}/stream/${realType}/${streamId}.json`;
-          const res = await fetch(directUrl, { 
-            signal: controller.signal,
-            headers: { 'Accept': 'application/json' }
-          });
+          const res = await fetch(directUrl, { signal: controller.signal, headers: { 'Accept': 'application/json' } });
           clearTimeout(timer);
           if (res.ok) {
             const data = await res.json();
@@ -897,11 +896,12 @@ const API = {
       const frostConfiguredUrl = 'https://froststream.cloutteam.com/providers.iptv=checked&providers.cdmoviedb=checked&providers.redeflix=checked&providers.tomato=checked&providers.myembed=checked&providers.anizone=checked&providers.superflix=checked&providers.overflix=checked';
       const torrentioPtBrUrl = 'https://torrentio.strem.fun/sort=qualitysize|providers=yts,eztv,rarbg,1337x,thepiratebay,kickasstorrents,torrentgalaxy,bludv,meustorrents,commandotorrents';
 
-      const [fenixRes, frostRes, frostConfigRes, brazucaRes, torrentioRes, torrentioPtBrRes, tpbPlusRes] = await Promise.allSettled([
+      const [fenixRes, frostRes, frostConfigRes, brazucaRes, micoLeaoRes, torrentioRes, torrentioPtBrRes, tpbPlusRes] = await Promise.allSettled([
         fetchAddon('https://fenixflix.fenixhub.online'),
         fetchAddon('https://froststream.cloutteam.com'),
         fetchAddon(frostConfiguredUrl),
         fetchAddon('https://94c8cb9f702d-brazuca-torrents.baby-beamup.club'),
+        fetchAddon(ADDONS.micoleao.baseUrl),
         fetchAddon('https://torrentio.strem.fun'),
         fetchAddon(torrentioPtBrUrl),
         fetchAddon('https://thepiratebay-plus.strem.fun')
@@ -912,17 +912,15 @@ const API = {
       const frostConfigStreams = frostConfigRes.status === 'fulfilled' ? frostConfigRes.value : [];
       const frostStreams = [...frostBaseStreams, ...frostConfigStreams];
       const brazucaStreams = brazucaRes.status === 'fulfilled' ? brazucaRes.value : [];
+      const micoLeaoStreams = micoLeaoRes.status === 'fulfilled' ? micoLeaoRes.value : [];
       const torrentioStreams = torrentioRes.status === 'fulfilled' ? torrentioRes.value : [];
       const torrentioPtBrStreams = torrentioPtBrRes.status === 'fulfilled' ? torrentioPtBrRes.value : [];
       const tpbPlusStreams = tpbPlusRes.status === 'fulfilled' ? tpbPlusRes.value : [];
 
       const streamsList = [];
 
-      // ══════════════════════════════════════════════
       // 1. Direct MP4 / CDN Native Video Streams (FrostStream & FenixFlix)
-      // ══════════════════════════════════════════════
       const directVideoSources = [];
-
       frostStreams.forEach(s => {
         if (!s.url) return;
         const rawInfo = `${s.name || ''} ${s.title || ''}`.toLowerCase();
@@ -931,7 +929,6 @@ const API = {
         if (rawInfo.includes('4k') || rawInfo.includes('2160')) quality = '4K';
         else if (rawInfo.includes('1080')) quality = '1080p';
         else if (rawInfo.includes('720')) quality = '720p';
-
         directVideoSources.push({
           provider: 'FrostStream',
           name: `❄️ FrostStream ${quality}${isDub ? ' (Dublado PT-BR)' : ''}`,
@@ -942,7 +939,6 @@ const API = {
           score: 100 + (quality === '4K' ? 30 : quality === '1080p' ? 20 : 10) + (isDub ? 40 : 0)
         });
       });
-
       fenixStreams.forEach(s => {
         if (!s.url) return;
         const rawInfo = `${s.name || ''} ${s.title || ''}`.toLowerCase();
@@ -951,7 +947,6 @@ const API = {
         if (rawInfo.includes('4k') || rawInfo.includes('2160')) quality = '4K';
         else if (rawInfo.includes('1080')) quality = '1080p';
         else if (rawInfo.includes('720')) quality = '720p';
-
         directVideoSources.push({
           provider: 'FenixFlix',
           name: `🔥 FenixFlix ${quality}${isDub ? ' (Dublado PT-BR)' : ''}`,
@@ -962,110 +957,26 @@ const API = {
           score: 90 + (quality === '4K' ? 30 : quality === '1080p' ? 20 : 10) + (isDub ? 40 : 0)
         });
       });
-
       streamsList.push(...directVideoSources);
 
-      // ══════════════════════════════════════════════
-      // 2. Web Embed Players (WarezCDN, EmbedderNet, VidSrc, MultiEmbed, AutoEmbed, etc.)
-      // ══════════════════════════════════════════════
+      // 2. Web Embed Players
       const webEmbedItems = [
-        {
-          provider: 'WarezCDN',
-          name: '🌐 WarezCDN (Dublado PT-BR)',
-          title: 'WarezCDN HD Player',
-          embedUrl: warezCdnUrl,
-          category: 'web',
-          isDub: true,
-          score: 85
-        },
-        {
-          provider: 'EmbedderNet',
-          name: '🌐 EmbedderNet (Dublado PT-BR)',
-          title: 'EmbedderNet HD Player',
-          embedUrl: embedderNetUrl,
-          category: 'web',
-          isDub: true,
-          score: 84
-        },
-        {
-          provider: 'VidSrc',
-          name: '🌐 VidSrc (Dublado PT-BR)',
-          title: 'VidSrc Player HD',
-          embedUrl: vidsrcDubUrl,
-          category: 'web',
-          isDub: true,
-          score: 82
-        },
-        {
-          provider: 'MultiEmbed',
-          name: '🌐 MultiEmbed HD',
-          title: 'MultiEmbed Fast Player',
-          embedUrl: multiembedUrl,
-          category: 'web',
-          isDub: true,
-          score: 80
-        },
-        {
-          provider: 'AutoEmbed',
-          name: '🌐 AutoEmbed HD',
-          title: 'AutoEmbed Player',
-          embedUrl: autoEmbedUrl,
-          category: 'web',
-          isDub: true,
-          score: 78
-        },
-        {
-          provider: 'VidLink',
-          name: '🌐 VidLink HD',
-          title: 'VidLink Player',
-          embedUrl: vidlinkUrl,
-          category: 'web',
-          isDub: true,
-          score: 76
-        },
-        {
-          provider: 'SmashyStream',
-          name: '🌐 SmashyStream HD',
-          title: 'SmashyStream Player',
-          embedUrl: smashyUrl,
-          category: 'web',
-          isDub: false,
-          score: 70
-        },
-        {
-          provider: 'CineStream',
-          name: '🌐 CineStream HD',
-          title: 'CineStream Player',
-          embedUrl: cinestreamUrl,
-          category: 'web',
-          isDub: false,
-          score: 65
-        },
-        {
-          provider: '2Embed',
-          name: '🌐 2Embed HD',
-          title: '2Embed Player',
-          embedUrl: twoembedUrl,
-          category: 'web',
-          isDub: false,
-          score: 60
-        },
-        {
-          provider: 'VidSrc EN',
-          name: '🌐 VidSrc (Legendado)',
-          title: 'VidSrc Original Player',
-          embedUrl: vidsrcEnUrl,
-          category: 'web',
-          isDub: false,
-          score: 55
-        }
+        { provider: 'WarezCDN', name: '🌐 WarezCDN (Dublado PT-BR)', title: 'WarezCDN HD Player', embedUrl: warezCdnUrl, category: 'web', isDub: true, score: 85 },
+        { provider: 'EmbedderNet', name: '🌐 EmbedderNet (Dublado PT-BR)', title: 'EmbedderNet HD Player', embedUrl: embedderNetUrl, category: 'web', isDub: true, score: 84 },
+        { provider: 'VidSrc', name: '🌐 VidSrc (Dublado PT-BR)', title: 'VidSrc Player HD', embedUrl: vidsrcDubUrl, category: 'web', isDub: true, score: 82 },
+        { provider: 'MultiEmbed', name: '🌐 MultiEmbed HD', title: 'MultiEmbed Fast Player', embedUrl: multiembedUrl, category: 'web', isDub: true, score: 80 },
+        { provider: 'AutoEmbed', name: '🌐 AutoEmbed HD', title: 'AutoEmbed Player', embedUrl: autoEmbedUrl, category: 'web', isDub: true, score: 78 },
+        { provider: 'VidLink', name: '🌐 VidLink HD', title: 'VidLink Player', embedUrl: vidlinkUrl, category: 'web', isDub: true, score: 76 },
+        { provider: 'SmashyStream', name: '🌐 SmashyStream HD', title: 'SmashyStream Player', embedUrl: smashyUrl, category: 'web', isDub: false, score: 70 },
+        { provider: 'CineStream', name: '🌐 CineStream HD', title: 'CineStream Player', embedUrl: cinestreamUrl, category: 'web', isDub: false, score: 65 },
+        { provider: '2Embed', name: '🌐 2Embed HD', title: '2Embed Player', embedUrl: twoembedUrl, category: 'web', isDub: false, score: 60 },
+        { provider: 'VidSrc EN', name: '🌐 VidSrc (Legendado)', title: 'VidSrc Original Player', embedUrl: vidsrcEnUrl, category: 'web', isDub: false, score: 55 }
       ];
 
-      // ══════════════════════════════════════════════
-      // 3. Torrents (Brazuca & Torrentio)
-      // ══════════════════════════════════════════════
+      // 3. Native torrents (Brazuca, Mico Leão & Torrentio)
       const torrentSources = [
-        ...brazucaStreams.map(s => ({ ...s, customProvider: 'Brazuca' })),
+        ...brazucaStreams.map(s => ({ ...s, customProvider: 'Brazuca Torrents' })),
+        ...micoLeaoStreams.map(s => ({ ...s, customProvider: 'Mico Leão' })),
         ...torrentioPtBrStreams.map(s => ({ ...s, customProvider: 'Torrentio PT-BR' })),
         ...torrentioStreams.slice(0, 15).map(s => ({ ...s, customProvider: 'Torrentio' })),
         ...tpbPlusStreams.slice(0, 10).map(s => ({ ...s, customProvider: 'ThePirateBay' }))
@@ -1075,8 +986,8 @@ const API = {
         const hash = s.infoHash;
         if (!hash) return;
 
-        const titleRaw = `${s.name || ''} ${s.title || ''}`.toLowerCase();
-        const isDub = titleRaw.includes('dublado') || titleRaw.includes('dual') || titleRaw.includes('pt-br') || titleRaw.includes('português') || titleRaw.includes('portugues') || titleRaw.includes('brazuca') || titleRaw.includes('bludv') || titleRaw.includes('comando') || titleRaw.includes('nacional');
+        const titleRaw = (s.name + ' ' + (s.title || '')).toLowerCase();
+        const isDub = titleRaw.includes('dublado') || titleRaw.includes('dual') || titleRaw.includes('pt-br') || titleRaw.includes('português') || titleRaw.includes('portugues') || titleRaw.includes('brazuca') || titleRaw.includes('mico') || titleRaw.includes('bludv') || titleRaw.includes('comando') || titleRaw.includes('nacional');
         let quality = '1080p';
         if (titleRaw.includes('4k') || titleRaw.includes('2160')) quality = '4K';
         else if (titleRaw.includes('720')) quality = '720p';
@@ -1087,17 +998,18 @@ const API = {
           'udp://tracker.torrent.eu.org:451/announce',
           'udp://tracker.fnix.net:6969/announce'
         ];
-        const magnetUrl = `magnet:?xt=urn:btih:${hash}&dn=${encodeURIComponent(s.name || 'Stream')}&${trackers.map(t => `tr=${encodeURIComponent(t)}`).join('&')}`;
+        const trackerParams = trackers.map(t => 'tr=' + encodeURIComponent(t)).join('&');
+        const magnetUrl = 'magnet:?xt=urn:btih:' + hash + '&dn=' + encodeURIComponent(s.name || 'Stream') + '&' + trackerParams;
 
         streamsList.push({
           provider: s.customProvider,
-          name: `🧲 ${s.customProvider} ${quality}${isDub ? ' (Dublado)' : ''}`,
-          title: s.title || s.name || `${s.customProvider} ${quality}`,
+          name: '🧲 ' + s.customProvider + ' ' + quality + (isDub ? ' (Dublado)' : ''),
+          title: s.title || s.name || (s.customProvider + ' ' + quality),
           magnetUrl: magnetUrl,
           infoHash: hash,
           isDub: isDub,
           category: 'torrent',
-          score: (s.customProvider === 'Brazuca' ? 70 : s.customProvider === 'Torrentio PT-BR' ? 60 : 40) + (isDub ? 30 : 0)
+          score: (s.customProvider === 'Brazuca Torrents' || s.customProvider === 'Mico Leão' ? 75 : s.customProvider === 'Torrentio PT-BR' ? 65 : 45) + (isDub ? 30 : 0)
         });
       });
 
@@ -3538,16 +3450,11 @@ const UI = {
       serverBadge.textContent = `⚡ Servidor: ${stream?.name || 'Atual'}`;
     }
     
-    // Show on screen
+    // Show on screen and KEEP IT VISIBLE until user clicks Sim / Trocar
     feedbackPrompt.classList.remove('hidden');
     feedbackPrompt.classList.remove('show');
     void feedbackPrompt.offsetWidth;
     feedbackPrompt.classList.add('show');
-
-    // Auto-hide smoothly after 3.5s so it never stays stuck on screen!
-    this.feedbackAutoHideTimer = setTimeout(() => {
-      this.dismissFeedbackPrompt();
-    }, 3500);
   },
 
   dismissFeedbackPrompt() {
