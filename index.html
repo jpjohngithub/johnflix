@@ -281,6 +281,24 @@
           <div id="custom-subtitles-text"></div>
         </div>
 
+        <!-- Floating Source Health Check & Fast Switch Prompt -->
+        <div id="hud-source-feedback" class="hud-source-feedback hidden">
+          <div class="hud-feedback-content">
+            <div class="hud-feedback-header">
+              <span class="hud-feedback-badge" id="hud-feedback-server-badge">⚡ Testando servidor...</span>
+              <span class="hud-feedback-question">A fonte está funcionando corretamente?</span>
+            </div>
+            <div class="hud-feedback-actions">
+              <button class="hud-feedback-btn yes" id="hud-feedback-yes-btn">
+                <span>👍</span> Sim (Continuar)
+              </button>
+              <button class="hud-feedback-btn no" id="hud-feedback-no-btn">
+                <span>👎</span> Não (Trocar Fonte)
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Custom Player HUD Controls -->
         <div id="player-hud" class="player-hud">
           <!-- Top Bar -->

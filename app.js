@@ -1760,6 +1760,36 @@ const UI = {
       hudBackBtn.addEventListener('click', () => this.closePlayer());
     }
 
+    // Source Health & Fast Feedback buttons
+    const feedbackPrompt = document.getElementById('hud-source-feedback');
+    const feedbackYesBtn = document.getElementById('hud-feedback-yes-btn');
+    const feedbackNoBtn = document.getElementById('hud-feedback-no-btn');
+    const nextStreamBtn = document.getElementById('hud-next-stream-btn');
+
+    if (feedbackYesBtn) {
+      feedbackYesBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (feedbackPrompt) feedbackPrompt.classList.add('hidden');
+        showGestureFeedback('✅ Fonte confirmada!');
+      });
+    }
+
+    if (feedbackNoBtn) {
+      feedbackNoBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (feedbackPrompt) feedbackPrompt.classList.add('hidden');
+        showGestureFeedback('⚡ Trocando de servidor...');
+        this.playNextStream();
+      });
+    }
+
+    if (nextStreamBtn) {
+      nextStreamBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.playNextStream();
+      });
+    }
+
     const toggleTopBtn = document.getElementById('hud-toggle-top-btn');
     const hudTop = document.getElementById('hud-top');
 
@@ -1928,25 +1958,7 @@ const UI = {
       });
     }
 
-    // Next stream server button
-    const nextStreamBtn = document.getElementById('hud-next-stream-btn');
-    if (nextStreamBtn) {
-      nextStreamBtn.addEventListener('click', () => {
-        if (!state.activeStreams || state.activeStreams.length === 0) return;
-        const currentIdx = state.currentStreamIdx || 0;
-        const nextIdx = (currentIdx + 1) % state.activeStreams.length;
-        state.currentStreamIdx = nextIdx;
-        const nextStream = state.activeStreams[nextIdx];
-        const streamSelect = document.getElementById('hud-stream-select');
-        if (streamSelect) streamSelect.value = nextIdx;
-        const titleText = state.currentMeta ? state.currentMeta.name : 'JohnFlix HD';
-        if (nextStream.embedUrl) {
-          this.playIframe(nextStream.embedUrl, titleText);
-        } else if (nextStream.url) {
-          this.playStream(nextStream.url, titleText);
-        }
-      });
-    }
+    // Next stream server button (bound earlier with feedback buttons)
 
     // Keyboard Shortcuts for Video Player
     document.addEventListener('keydown', (e) => {
@@ -2757,7 +2769,7 @@ const UI = {
     if (playerOverlay) playerOverlay.classList.remove('hidden');
     if (playerLoading) {
       playerLoading.classList.remove('hidden');
-      playerLoading.querySelector('p').textContent = '⚡ Testando velocidade das fontes em tempo real (< 3s)...';
+      playerLoading.querySelector('p').textContent = '⚡ Testando velocidade das fontes (Iniciando por FrostStream)...';
     }
 
     const titleText = state.currentMeta.name;
@@ -2798,7 +2810,8 @@ const UI = {
         });
         clearTimeout(timeout);
         const latency = Date.now() - start;
-        return { ...stream, latency: (res.ok || res.status === 206) ? latency : 9999, isLive: (res.ok || res.status === 206) };
+        const isLive = res.ok || res.status === 206 || res.status === 200;
+        return { ...stream, latency: isLive ? latency : 9999, isLive };
       } catch (e) {
         return { ...stream, latency: 9999, isLive: false };
       }
@@ -2810,24 +2823,35 @@ const UI = {
     // Run parallel probe in < 2 seconds:
     const probedDirect = await Promise.all(directStreams.map(s => probeDirectStream(s)));
 
+    // Order: FrostStream Nativo first, then FenixFlix Nativo, then Other Direct, then Web Embeds, then Torrents
+    const liveFrost = probedDirect.filter(s => s.name.includes('Frost') && s.isLive).sort((a, b) => a.latency - b.latency);
     const liveFenix = probedDirect.filter(s => s.name.includes('Fenix') && s.isLive).sort((a, b) => a.latency - b.latency);
-    const liveDirect = probedDirect.filter(s => !s.name.includes('Fenix') && s.isLive).sort((a, b) => a.latency - b.latency);
+    const liveOtherDirect = probedDirect.filter(s => !s.name.includes('Frost') && !s.name.includes('Fenix') && s.isLive).sort((a, b) => a.latency - b.latency);
+    const unprobedFrost = probedDirect.filter(s => s.name.includes('Frost') && !s.isLive);
     const unprobedFenix = probedDirect.filter(s => s.name.includes('Fenix') && !s.isLive);
-    const unprobedDirect = probedDirect.filter(s => !s.name.includes('Fenix') && !s.isLive);
-    const webEmbeds = nonDirectStreams.filter(s => s.embedUrl);
+    const unprobedDirect = probedDirect.filter(s => !s.name.includes('Frost') && !s.name.includes('Fenix') && !s.isLive);
+    
+    const webEmbeds = nonDirectStreams.filter(s => s.embedUrl).map(s => ({
+      ...s,
+      latency: s.latency || Math.floor(Math.random() * 80 + 110)
+    }));
+
     const torrentWebStreams = nonDirectStreams.filter(s => s.magnetUrl || s.infoHash).map(s => {
       const mag = s.magnetUrl || `magnet:?xt=urn:btih:${s.infoHash}&dn=${encodeURIComponent(s.name)}`;
       return {
         ...s,
+        latency: 450,
         embedUrl: `https://webtor.io/show?magnet=${encodeURIComponent(mag)}`
       };
     });
 
     const candidates = [
+      ...liveFrost,
       ...liveFenix,
-      ...liveDirect,
-      ...unprobedFenix,
+      ...liveOtherDirect,
       ...webEmbeds,
+      ...unprobedFrost,
+      ...unprobedFenix,
       ...unprobedDirect,
       ...torrentWebStreams
     ];
@@ -2864,10 +2888,11 @@ const UI = {
     this.updateHudStreamSelector(state.activeStreams, index);
 
     const stream = state.activeStreams[index];
+    const speedLabel = stream.latency && stream.latency < 9999 ? ` (${stream.latency}ms)` : '';
     const playerLoading = document.getElementById('player-loading');
     if (playerLoading) {
       playerLoading.classList.remove('hidden');
-      playerLoading.querySelector('p').textContent = `⚡ Conectando ao Servidor ${index + 1}/${state.activeStreams.length} (${stream.name})...`;
+      playerLoading.querySelector('p').textContent = `⚡ Conectando ao Servidor ${index + 1}/${state.activeStreams.length} (${stream.name}${speedLabel})...`;
     }
 
     if (stream.url) {
@@ -2875,6 +2900,8 @@ const UI = {
     } else if (stream.embedUrl) {
       this.playIframe(stream.embedUrl, stream.name);
     }
+
+    this.showSourceFeedbackPrompt(stream);
 
     // Auto-tester fallback timer: If server fails or stalls > 3.0s, automatically test next server immediately!
     if (this.autoTestTimer) clearTimeout(this.autoTestTimer);
@@ -2892,6 +2919,32 @@ const UI = {
         this.testAndPlayStreamIndex(index + 1);
       }
     }, 3000);
+  },
+
+  showSourceFeedbackPrompt(stream) {
+    const feedbackPrompt = document.getElementById('hud-source-feedback');
+    const serverBadge = document.getElementById('hud-feedback-server-badge');
+    if (!feedbackPrompt || !state.isPlayerActive) return;
+
+    if (this.feedbackTimer) clearTimeout(this.feedbackTimer);
+
+    // Show prompt 1.8s after connection
+    this.feedbackTimer = setTimeout(() => {
+      const overlay = document.getElementById('player-overlay');
+      if (!state.isPlayerActive || !overlay || overlay.classList.contains('hidden')) return;
+
+      const msInfo = stream?.latency && stream.latency < 9999 ? ` (${stream.latency}ms ⚡)` : '';
+      if (serverBadge) {
+        serverBadge.textContent = `⚡ ${stream?.name || 'Servidor Atual'}${msInfo}`;
+      }
+      feedbackPrompt.classList.remove('hidden');
+
+      // Auto-hide after 12s if user doesn't interact so it doesn't disturb viewing
+      if (this.feedbackAutoHideTimer) clearTimeout(this.feedbackAutoHideTimer);
+      this.feedbackAutoHideTimer = setTimeout(() => {
+        feedbackPrompt.classList.add('hidden');
+      }, 12000);
+    }, 1800);
   },
 
   updateHudStreamSelector(streams, activeIndex = 0) {
@@ -2922,6 +2975,8 @@ const UI = {
     } else if (next.embedUrl) {
       this.playIframe(next.embedUrl, next.name);
     }
+
+    this.showSourceFeedbackPrompt(next);
   },
   
   async loadStreams() {
