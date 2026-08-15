@@ -311,7 +311,7 @@ const CINEMA_SAGAS = [
       { id: 'tt0800369', name: 'Thor', year: '2011', timeline: '2011', type: 'movie' },
       { id: 'tt0848228', name: 'Os Vingadores', year: '2012', timeline: '2012 - Batalha de NY', type: 'movie' },
       { id: 'tt1300854', name: 'Homem de Ferro 3', year: '2013', timeline: '2012', type: 'movie' },
-      { id: 'tt1981109', name: 'Thor: O Mundo Sombrio', year: '2013', timeline: '2013', type: 'movie' },
+      { id: 'tt1981115', name: 'Thor: O Mundo Sombrio', year: '2013', timeline: '2013', type: 'movie' },
       { id: 'tt1843866', name: 'Capitão América: O Soldado Invernal', year: '2014', timeline: '2014 - Queda da S.H.I.E.L.D.', type: 'movie' },
       { id: 'tt2015381', name: 'Guardiões da Galáxia', year: '2014', timeline: '2014 - No Espaço', type: 'movie' },
       { id: 'tt3896198', name: 'Guardiões da Galáxia Vol. 2', year: '2017', timeline: '2014 - No Espaço', type: 'movie' },
@@ -432,8 +432,8 @@ const CINEMA_SAGAS = [
       { id: 'tt2820852', name: 'Velozes e Furiosos 7', year: '2015', timeline: '7º Filme (Homenagem a Paul)', type: 'movie' },
       { id: 'tt4630562', name: 'Velozes e Furiosos 8', year: '2017', timeline: '8º Filme', type: 'movie' },
       { id: 'tt6806448', name: 'Velozes e Furiosos: Hobbs & Shaw', year: '2019', timeline: 'Spin-off', type: 'movie' },
-      { id: 'tt5433118', name: 'Velozes e Furiosos 9', year: '2021', timeline: '9º Filme', type: 'movie' },
-      { id: 'tt5433122', name: 'Velozes e Furiosos 10', year: '2023', timeline: '10º Filme', type: 'movie' }
+      { id: 'tt5433138', name: 'Velozes e Furiosos 9', year: '2021', timeline: '9º Filme', type: 'movie' },
+      { id: 'tt5433140', name: 'Velozes e Furiosos 10', year: '2023', timeline: '10º Filme', type: 'movie' }
     ]
   },
   {
@@ -454,12 +454,12 @@ const CINEMA_SAGAS = [
     items: [
       { id: 'tt0418279', name: 'Transformers', year: '2007', timeline: '1º Filme', type: 'movie' },
       { id: 'tt1055369', name: 'Transformers: A Vingança dos Derrotados', year: '2009', timeline: '2º Filme', type: 'movie' },
-      { id: 'tt1564585', name: 'Transformers: O Lado Oculto da Lua', year: '2011', timeline: '3º Filme', type: 'movie' },
+      { id: 'tt1399103', name: 'Transformers: O Lado Oculto da Lua', year: '2011', timeline: '3º Filme', type: 'movie' },
       { id: 'tt2109248', name: 'Transformers: A Era da Extinção', year: '2014', timeline: '4º Filme', type: 'movie' },
       { id: 'tt3371366', name: 'Transformers: O Último Cavaleiro', year: '2017', timeline: '5º Filme', type: 'movie' },
       { id: 'tt4701182', name: 'Bumblebee', year: '2018', timeline: '1987 (Origem)', type: 'movie' },
       { id: 'tt5090568', name: 'Transformers: O Despertar das Feras', year: '2023', timeline: '1994 (Maximals)', type: 'movie' },
-      { id: 'tt2762886', name: 'Transformers: O Início', year: '2024', timeline: 'Cybertron (Origem)', type: 'movie' }
+      { id: 'tt8864596', name: 'Transformers: O Início', year: '2024', timeline: 'Cybertron (Origem)', type: 'movie' }
     ]
   },
   {
@@ -472,7 +472,7 @@ const CINEMA_SAGAS = [
       { id: 'tt0317919', name: 'Missão: Impossível 3', year: '2006', timeline: '3º Filme', type: 'movie' },
       { id: 'tt1229238', name: 'Missão: Impossível - Protocolo Fantasma', year: '2011', timeline: '4º Filme', type: 'movie' },
       { id: 'tt2381249', name: 'Missão: Impossível - Nação Secreta', year: '2015', timeline: '5º Filme', type: 'movie' },
-      { id: 'tt4649466', name: 'Missão: Impossível - Efeito Fallout', year: '2018', timeline: '6º Filme', type: 'movie' },
+      { id: 'tt4912910', name: 'Missão: Impossível - Efeito Fallout', year: '2018', timeline: '6º Filme', type: 'movie' },
       { id: 'tt9603212', name: 'Missão: Impossível - Acerto de Contas Parte 1', year: '2023', timeline: '7º Filme', type: 'movie' }
     ]
   },
@@ -517,11 +517,11 @@ const CINEMA_SAGAS = [
     accent: '#84cc16',
     items: [
       { id: 'tt0107290', name: 'Jurassic Park: O Parque dos Dinossauros', year: '1993', timeline: '1º Parque (Clássico)', type: 'movie' },
-      { id: 'tt0119864', name: 'O Mundo Perdido: Jurassic Park', year: '1997', timeline: '2º Filme', type: 'movie' },
+      { id: 'tt0119567', name: 'O Mundo Perdido: Jurassic Park', year: '1997', timeline: '2º Filme', type: 'movie' },
       { id: 'tt0163025', name: 'Jurassic Park III', year: '2001', timeline: '3º Filme', type: 'movie' },
-      { id: 'tt369610', name: 'Jurassic World: O Mundo dos Dinossauros', year: '2015', timeline: 'Jurassic World 1', type: 'movie' },
+      { id: 'tt0369610', name: 'Jurassic World: O Mundo dos Dinossauros', year: '2015', timeline: 'Jurassic World 1', type: 'movie' },
       { id: 'tt4881806', name: 'Jurassic World: Reino Ameaçado', year: '2018', timeline: 'Jurassic World 2', type: 'movie' },
-      { id: 'tt8036722', name: 'Jurassic World: Domínio', year: '2022', timeline: 'Jurassic World 3', type: 'movie' }
+      { id: 'tt8041270', name: 'Jurassic World: Domínio', year: '2022', timeline: 'Jurassic World 3', type: 'movie' }
     ]
   },
   {
@@ -532,7 +532,7 @@ const CINEMA_SAGAS = [
       { id: 'tt1318514', name: 'Planeta dos Macacos: A Origem', year: '2011', timeline: 'Origem de César', type: 'movie' },
       { id: 'tt2103281', name: 'Planeta dos Macacos: O Confronto', year: '2014', timeline: 'A Ascensão dos Símios', type: 'movie' },
       { id: 'tt3450958', name: 'Planeta dos Macacos: A Guerra', year: '2017', timeline: 'A Batalha Final', type: 'movie' },
-      { id: 'tt11384580', name: 'Planeta dos Macacos: O Reinado', year: '2024', timeline: 'Gerações Futuras', type: 'movie' },
+      { id: 'tt11389872', name: 'Planeta dos Macacos: O Reinado', year: '2024', timeline: 'Gerações Futuras', type: 'movie' },
       { id: 'tt0087182', name: 'Duna', year: '1984', timeline: 'Duna Clássico (David Lynch)', type: 'movie' },
       { id: 'tt1160419', name: 'Duna: Parte 1', year: '2021', timeline: 'Duna Livro 1 - Ato 1', type: 'movie' },
       { id: 'tt15239678', name: 'Duna: Parte 2', year: '2024', timeline: 'Duna Livro 1 - Ato 2', type: 'movie' }
