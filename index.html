@@ -71,7 +71,7 @@
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg> Detalhes
             </button>
             <button class="btn btn-secondary hero-watchlist-btn" id="hero-watchlist-btn">
-              <span id="hero-wl-icon">⭐</span> <span id="hero-wl-text">Salvar</span>
+              <span id="hero-wl-icon"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg></span> <span id="hero-wl-text">Salvar na Lista</span>
             </button>
           </div>
         </div>
@@ -121,10 +121,16 @@
             </div>
           </div>
           <div class="hero-buttons modal-actions">
-            <button class="btn btn-primary" id="modal-auto-play-btn">
-              Assistir Agora (Auto-Play Dublado PT-BR)
+            <button class="btn btn-autoplay" id="modal-auto-play-btn">
+              <span class="btn-autoplay-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              </span>
+              <div class="btn-autoplay-text">
+                <span class="btn-autoplay-main">Reproduzir Agora</span>
+                <span class="btn-autoplay-sub">⚡ Melhor Fonte Dublada PT-BR</span>
+              </div>
             </button>
-            <button class="btn btn-secondary" id="modal-watchlist-btn">
+            <button class="btn btn-secondary modal-watchlist-btn" id="modal-watchlist-btn">
               + Minha Lista
             </button>
           </div>

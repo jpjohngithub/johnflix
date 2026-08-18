@@ -3352,6 +3352,20 @@ body {
   gap: 2.1rem;
   z-index: 6;
 }
+
+#hero-section.hidden ~ #catalog-container,
+#hero-section.hidden + #catalog-container,
+#catalog-container.no-hero {
+  margin-top: 0 !important;
+  padding-top: calc(var(--header-height) + 2rem) !important;
+}
+
+.watchlist-container {
+  padding: calc(var(--header-height) + 2rem) 4% 4rem !important;
+  min-height: 75vh;
+  width: 100%;
+}
+
 .catalog-section {
   animation: rowIn 320ms var(--ease-ios) both;
 }
@@ -3398,40 +3412,133 @@ body {
   -ms-overflow-style: none;
   padding: 24px 8px 44px !important;
 }
-.carousel-track::-webkit-scrollbar { display: none; }
-
 .carousel-btn {
   position: absolute;
-  top: 24px;
-  bottom: 44px;
-  height: auto;
-  width: 48px;
-  transform: none;
-  z-index: 20;
+  top: 50% !important;
+  bottom: auto !important;
+  transform: translateY(-50%) !important;
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  max-width: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 25;
   opacity: 0;
-  border: none;
-  border-radius: var(--radius-sm);
-  color: #ffffff;
-  font-size: 2rem;
-  background: rgba(10, 10, 16, 0.65);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-  transition: opacity 240ms var(--ease-ios), background-color 240ms var(--ease-ios), transform 200ms var(--ease-ios);
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
+  font-size: 1.6rem !important;
+  line-height: 1 !important;
+  background: rgba(12, 12, 20, 0.88) !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6) !important;
+  cursor: pointer;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease, opacity 0.25s ease, box-shadow 0.25s ease !important;
+  outline: none;
+  padding: 0 !important;
 }
+
 .carousel-prev {
-  left: 0;
+  left: 10px !important;
 }
 .carousel-next {
-  right: 0;
+  right: 10px !important;
 }
+
 .carousel-wrapper:hover .carousel-btn { opacity: 1; }
+
 .carousel-btn:hover {
-  background: rgba(139, 92, 246, 0.95);
-  box-shadow: 0 0 28px rgba(139, 92, 246, 0.6);
-  border-color: transparent;
+  background: rgba(139, 92, 246, 0.95) !important;
+  transform: translateY(-50%) scale(1.12) !important;
+  box-shadow: 0 0 24px rgba(139, 92, 246, 0.65) !important;
+  border-color: rgba(167, 139, 250, 0.9) !important;
 }
-.carousel-btn:active { transform: scale(0.95); }
+
+.carousel-btn:active { transform: translateY(-50%) scale(0.92) !important; }
+
+/* --- Auto-Play Green Button --- */
+.btn-autoplay {
+  flex: 1 1 auto;
+  min-height: 54px;
+  padding: 10px 22px !important;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: #ffffff !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(255, 255, 255, 0.28) !important;
+  font-weight: 700 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 12px !important;
+  box-shadow: 0 10px 28px rgba(16, 185, 129, 0.38), 0 0 20px rgba(16, 185, 129, 0.22) !important;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, background 0.2s ease !important;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn-autoplay:hover {
+  background: linear-gradient(135deg, #34d399 0%, #10b981 100%) !important;
+  transform: scale(1.03) translateY(-2px) !important;
+  box-shadow: 0 14px 36px rgba(16, 185, 129, 0.52), 0 0 30px rgba(52, 211, 153, 0.45) !important;
+  border-color: rgba(255, 255, 255, 0.45) !important;
+}
+
+.btn-autoplay:active {
+  transform: scale(0.97) !important;
+}
+
+.btn-autoplay-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.2);
+  flex-shrink: 0;
+}
+
+.btn-autoplay-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  line-height: 1.25;
+}
+
+.btn-autoplay-main {
+  font-size: 1.02rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #ffffff;
+}
+
+.btn-autoplay-sub {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #d1fae5;
+  opacity: 0.95;
+}
+
+@media (max-width: 600px) {
+  .btn-autoplay {
+    width: 100%;
+    padding: 10px 16px !important;
+    min-height: 50px;
+  }
+  .btn-autoplay-main {
+    font-size: 0.95rem;
+  }
+  .btn-autoplay-sub {
+    font-size: 0.72rem;
+  }
+}
 
 /* --- Cards: larger posters, fluid hover zoom & soft glow --- */
 .movie-card {
@@ -3649,13 +3756,58 @@ body {
     padding-bottom: 5.5rem;
   }
   .hero-content { padding: 0 5% 0.5rem; max-width: 100%; }
-  .hero-title { font-size: clamp(2.15rem, 8.5vw, 2.9rem); }
-  .hero-buttons { gap: 10px; }
-  .hero-buttons .btn { flex: 1 1 calc(50% - 10px); min-height: 48px; padding: 12px 16px; font-size: 0.95rem; }
+  .hero-title { font-size: clamp(2.05rem, 8.5vw, 2.8rem); line-height: 1.08; }
+  .hero-spotlight-nav {
+    position: static !important;
+    margin: 0 0 10px 0 !important;
+    align-self: flex-start !important;
+    transform: none !important;
+    bottom: auto !important;
+    right: auto !important;
+    padding: 4px 10px !important;
+  }
+  .hero-buttons { 
+    display: flex !important; 
+    flex-wrap: wrap !important; 
+    gap: 8px !important; 
+    width: 100% !important; 
+  }
+  .hero-buttons .hero-play-btn { 
+    flex: 1 1 calc(50% - 4px) !important; 
+    min-height: 46px !important; 
+    padding: 11px 14px !important; 
+    font-size: 0.95rem !important; 
+  }
+  .hero-buttons .hero-info-btn { 
+    flex: 1 1 calc(50% - 4px) !important; 
+    min-height: 46px !important; 
+    padding: 11px 14px !important; 
+    font-size: 0.95rem !important; 
+  }
+  .hero-buttons .hero-watchlist-btn { 
+    flex: 1 1 100% !important; 
+    width: 100% !important; 
+    min-height: 42px !important; 
+    padding: 10px 14px !important; 
+    font-size: 0.9rem !important; 
+  }
   #catalog-container { margin-top: -2.75rem; gap: 1.7rem; padding-bottom: 6rem; }
   .movie-card { width: 158px; }
   .carousel-track { padding: 16px 4px 28px; gap: 8px; }
-  .carousel-btn { opacity: 0.7; width: 36px; top: 16px; bottom: 28px; }
+  .carousel-btn { 
+    opacity: 0.85; 
+    width: 36px !important; 
+    height: 36px !important; 
+    min-width: 36px !important; 
+    max-width: 36px !important; 
+    min-height: 36px !important; 
+    max-height: 36px !important; 
+    top: 50% !important; 
+    bottom: auto !important; 
+    transform: translateY(-50%) !important; 
+    border-radius: 50% !important; 
+    font-size: 1.25rem !important; 
+  }
   .carousel-wrapper::before,
   .carousel-wrapper::after { width: 28px; bottom: 20px; }
   .mobile-bottom-nav {

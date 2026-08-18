@@ -926,14 +926,14 @@ const API = {
       frostStreams.forEach(s => {
         if (!s.url) return;
         const rawInfo = `${s.name || ''} ${s.title || ''}`.toLowerCase();
-        const isDub = rawInfo.includes('dublado') || rawInfo.includes('🇧🇷') || rawInfo.includes('português') || rawInfo.includes('portugues') || rawInfo.includes('pt-br') || rawInfo.includes('dual');
+        const isDub = rawInfo.includes('dublado') || rawInfo.includes('português') || rawInfo.includes('portugues') || rawInfo.includes('pt-br') || rawInfo.includes('dual');
         let quality = 'HD';
         if (rawInfo.includes('4k') || rawInfo.includes('2160')) quality = '4K';
         else if (rawInfo.includes('1080')) quality = '1080p';
         else if (rawInfo.includes('720')) quality = '720p';
         directVideoSources.push({
           provider: 'FrostStream',
-          name: `❄️ FrostStream ${quality}${isDub ? ' (Dublado PT-BR)' : ''}`,
+          name: `FrostStream ${quality}${isDub ? ' (Dublado PT-BR)' : ''}`,
           title: s.title || `FrostStream ${quality}`,
           url: s.url,
           isDub: isDub,
@@ -944,14 +944,14 @@ const API = {
       fenixStreams.forEach(s => {
         if (!s.url) return;
         const rawInfo = `${s.name || ''} ${s.title || ''}`.toLowerCase();
-        const isDub = rawInfo.includes('dublado') || rawInfo.includes('🇧🇷') || rawInfo.includes('português') || rawInfo.includes('portugues') || rawInfo.includes('pt-br') || rawInfo.includes('dual');
+        const isDub = rawInfo.includes('dublado') || rawInfo.includes('português') || rawInfo.includes('portugues') || rawInfo.includes('pt-br') || rawInfo.includes('dual');
         let quality = 'HD';
         if (rawInfo.includes('4k') || rawInfo.includes('2160')) quality = '4K';
         else if (rawInfo.includes('1080')) quality = '1080p';
         else if (rawInfo.includes('720')) quality = '720p';
         directVideoSources.push({
           provider: 'FenixFlix',
-          name: `🔥 FenixFlix ${quality}${isDub ? ' (Dublado PT-BR)' : ''}`,
+          name: `FenixFlix ${quality}${isDub ? ' (Dublado PT-BR)' : ''}`,
           title: s.title || `FenixFlix ${quality}`,
           url: s.url,
           isDub: isDub,
@@ -963,16 +963,16 @@ const API = {
 
       // 2. Web Embed Players
       const webEmbedItems = [
-        { provider: 'WarezCDN', name: '🌐 WarezCDN (Dublado PT-BR)', title: 'WarezCDN HD Player', embedUrl: warezCdnUrl, category: 'web', isDub: true, score: 85 },
-        { provider: 'EmbedderNet', name: '🌐 EmbedderNet (Dublado PT-BR)', title: 'EmbedderNet HD Player', embedUrl: embedderNetUrl, category: 'web', isDub: true, score: 84 },
-        { provider: 'VidSrc', name: '🌐 VidSrc (Dublado PT-BR)', title: 'VidSrc Player HD', embedUrl: vidsrcDubUrl, category: 'web', isDub: true, score: 82 },
-        { provider: 'MultiEmbed', name: '🌐 MultiEmbed HD', title: 'MultiEmbed Fast Player', embedUrl: multiembedUrl, category: 'web', isDub: true, score: 80 },
-        { provider: 'AutoEmbed', name: '🌐 AutoEmbed HD', title: 'AutoEmbed Player', embedUrl: autoEmbedUrl, category: 'web', isDub: true, score: 78 },
-        { provider: 'VidLink', name: '🌐 VidLink HD', title: 'VidLink Player', embedUrl: vidlinkUrl, category: 'web', isDub: true, score: 76 },
-        { provider: 'SmashyStream', name: '🌐 SmashyStream HD', title: 'SmashyStream Player', embedUrl: smashyUrl, category: 'web', isDub: false, score: 70 },
-        { provider: 'CineStream', name: '🌐 CineStream HD', title: 'CineStream Player', embedUrl: cinestreamUrl, category: 'web', isDub: false, score: 65 },
-        { provider: '2Embed', name: '🌐 2Embed HD', title: '2Embed Player', embedUrl: twoembedUrl, category: 'web', isDub: false, score: 60 },
-        { provider: 'VidSrc EN', name: '🌐 VidSrc (Legendado)', title: 'VidSrc Original Player', embedUrl: vidsrcEnUrl, category: 'web', isDub: false, score: 55 }
+        { provider: 'WarezCDN', name: 'WarezCDN HD (Dublado PT-BR)', title: 'WarezCDN HD Player', embedUrl: warezCdnUrl, category: 'web', isDub: true, score: 85 },
+        { provider: 'EmbedderNet', name: 'EmbedderNet HD (Dublado PT-BR)', title: 'EmbedderNet HD Player', embedUrl: embedderNetUrl, category: 'web', isDub: true, score: 84 },
+        { provider: 'VidSrc', name: 'VidSrc HD (Dublado PT-BR)', title: 'VidSrc Player HD', embedUrl: vidsrcDubUrl, category: 'web', isDub: true, score: 82 },
+        { provider: 'MultiEmbed', name: 'MultiEmbed HD', title: 'MultiEmbed Fast Player', embedUrl: multiembedUrl, category: 'web', isDub: true, score: 80 },
+        { provider: 'AutoEmbed', name: 'AutoEmbed HD', title: 'AutoEmbed Player', embedUrl: autoEmbedUrl, category: 'web', isDub: true, score: 78 },
+        { provider: 'VidLink', name: 'VidLink HD', title: 'VidLink Player', embedUrl: vidlinkUrl, category: 'web', isDub: true, score: 76 },
+        { provider: 'SmashyStream', name: 'SmashyStream HD', title: 'SmashyStream Player', embedUrl: smashyUrl, category: 'web', isDub: false, score: 70 },
+        { provider: 'CineStream', name: 'CineStream HD', title: 'CineStream Player', embedUrl: cinestreamUrl, category: 'web', isDub: false, score: 65 },
+        { provider: '2Embed', name: '2Embed HD', title: '2Embed Player', embedUrl: twoembedUrl, category: 'web', isDub: false, score: 60 },
+        { provider: 'VidSrc EN', name: 'VidSrc Original (Legendado)', title: 'VidSrc Original Player', embedUrl: vidsrcEnUrl, category: 'web', isDub: false, score: 55 }
       ];
 
       // 3. Native torrents (Brazuca, Mico Leão & Torrentio)
@@ -1005,7 +1005,7 @@ const API = {
 
         streamsList.push({
           provider: s.customProvider,
-          name: '🧲 ' + s.customProvider + ' ' + quality + (isDub ? ' (Dublado)' : ''),
+          name: s.customProvider + ' ' + quality + (isDub ? ' (Dublado)' : ''),
           title: s.title || s.name || (s.customProvider + ' ' + quality),
           magnetUrl: magnetUrl,
           infoHash: hash,
@@ -2444,8 +2444,12 @@ const UI = {
     if (!btn || !state.heroMeta) return;
 
     const inList = User.isInWatchlist(state.heroMeta.id);
-    if (icon) icon.textContent = inList ? '⭐' : '➕';
-    if (text) text.textContent = inList ? 'Salvo ✓' : 'Salvar';
+    if (icon) {
+      icon.innerHTML = inList 
+        ? '<svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>'
+        : '<svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>';
+    }
+    if (text) text.textContent = inList ? 'Salvo na Lista' : 'Salvar na Lista';
     if (inList) {
       btn.style.background = 'rgba(139, 92, 246, 0.35)';
       btn.style.borderColor = 'var(--accent)';
@@ -2493,11 +2497,11 @@ const UI = {
     const updateDOM = () => {
       const itemType = meta.type || (state.currentType === 'series' ? 'series' : 'movie');
       if (heroTypeName) {
-        heroTypeName.textContent = state.currentType === 'cinema' ? '🏛️ Seção Cinema' : (itemType === 'series' ? 'Séries' : 'Filmes');
+        heroTypeName.textContent = state.currentType === 'cinema' ? 'Seção Cinema' : (itemType === 'series' ? 'Séries' : 'Filmes');
       }
       if (heroPillLabel) {
         const isHighRated = meta.imdbRating && parseFloat(meta.imdbRating) >= 8.0;
-        heroPillLabel.textContent = isHighRated ? 'EM ALTA HOJE 🔥' : 'RECOMENDADO ⭐';
+        heroPillLabel.textContent = isHighRated ? 'EM ALTA HOJE' : 'RECOMENDADO';
       }
       
       if (heroBackdrop) {
@@ -2510,7 +2514,7 @@ const UI = {
       }
       if (heroMeta) {
         const year = meta.year || meta.releaseInfo || '';
-        const rating = meta.imdbRating ? `<span class="hero-meta-badge imdb kinetic-badge" style="--i:0">★ ${meta.imdbRating}</span>` : '<span class="hero-meta-badge imdb kinetic-badge" style="--i:0">★ 8.6</span>';
+        const rating = meta.imdbRating ? `<span class="hero-meta-badge imdb kinetic-badge" style="--i:0">IMDb ${meta.imdbRating}</span>` : '<span class="hero-meta-badge imdb kinetic-badge" style="--i:0">IMDb 8.6</span>';
         const quality = `<span class="hero-meta-badge quality kinetic-badge" style="--i:1">4K Ultra HD</span>`;
         const audio = `<span class="hero-meta-badge audio kinetic-badge" style="--i:2">Dublado PT-BR</span>`;
         const runtime = meta.runtime ? `<span class="kinetic-badge" style="--i:3; color:#cbd5e1; font-weight:600;">${meta.runtime}</span>` : '';
@@ -2775,8 +2779,8 @@ const UI = {
       if (favorites.length > 0) {
         const cardsHtml = favorites.map(item => this.createMovieCard(item)).join('');
         html += `
-          <div class="search-results" style="padding-top: 2rem;">
-            <h2 class="section-title">⭐ Minha Lista (${favorites.length})</h2>
+          <div class="search-results watchlist-container">
+            <h2 class="section-title">Minha Lista (${favorites.length})</h2>
             <div class="search-grid">
               ${cardsHtml}
             </div>
@@ -2784,14 +2788,16 @@ const UI = {
         `;
       } else {
         html += `
-          <div class="empty-state" style="text-align:center; padding: 120px 20px 80px;">
-            <div style="font-size: 3.5rem; margin-bottom: 1rem;">⭐</div>
-            <h2 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 0.5rem; color: white;">Sua lista de favoritos está vazia</h2>
+          <div class="empty-state watchlist-container" style="text-align:center; padding: 120px 20px 80px;">
+            <div style="font-size: 3rem; margin-bottom: 1rem; color: var(--accent);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+            </div>
+            <h2 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 0.5rem; color: white;">Sua lista está vazia</h2>
             <p style="color: var(--text-secondary); max-width: 500px; margin: 0 auto 1.5rem; line-height: 1.6;">
-              Navegue pelos filmes e séries e clique no botão <strong>"⭐ + Minha Lista"</strong> dentro dos detalhes para salvar o que deseja assistir mais tarde!
+              Navegue pelos filmes e séries e clique no botão <strong>"Salvar na Lista"</strong> para montar sua coleção personalizada!
             </p>
             <button class="btn btn-primary" onclick="document.querySelector('[data-type=\\'movie\\']').click();" style="margin: 0 auto; padding: 12px 28px;">
-              🎬 Explorar Filmes e Séries
+              Explorar Filmes e Séries
             </button>
           </div>
         `;
@@ -3347,9 +3353,25 @@ const UI = {
     if (autoPlayBtn) {
       if (progress && progress.currentTime > 10) {
         const epInfo = (meta.type === 'series' || state.currentType === 'series') ? ` [T${state.currentSeason}:E${state.currentEpisode}]` : '';
-        autoPlayBtn.innerHTML = `⚡ Continuar Assistindo${epInfo} (de ${formatTime(progress.currentTime)})`;
+        autoPlayBtn.innerHTML = `
+          <span class="btn-autoplay-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          </span>
+          <div class="btn-autoplay-text">
+            <span class="btn-autoplay-main">Continuar Assistindo${epInfo}</span>
+            <span class="btn-autoplay-sub">A partir de ${formatTime(progress.currentTime)}</span>
+          </div>
+        `;
       } else {
-        autoPlayBtn.innerHTML = `⚡ Assistir Agora (Auto-Play Dublado PT-BR)`;
+        autoPlayBtn.innerHTML = `
+          <span class="btn-autoplay-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          </span>
+          <div class="btn-autoplay-text">
+            <span class="btn-autoplay-main">Reproduzir Agora</span>
+            <span class="btn-autoplay-sub">⚡ Melhor Fonte Dublada PT-BR</span>
+          </div>
+        `;
       }
     }
 
@@ -3482,7 +3504,7 @@ const UI = {
     if (playerOverlay) playerOverlay.classList.remove('hidden');
     if (playerLoading) {
       playerLoading.classList.remove('hidden');
-      playerLoading.querySelector('p').textContent = '⚡ Conectando ao melhor servidor...';
+      playerLoading.querySelector('p').textContent = 'Analisando e conectando ao melhor servidor...';
     }
 
     const titleText = state.currentMeta.name;
@@ -3508,16 +3530,57 @@ const UI = {
       return;
     }
 
-    state.activeStreams = rawStreams;
-    state.currentStreamIndex = 0;
-    this.updateHudStreamSelector(rawStreams, 0);
+    // Smart Server Prioritization & Pre-flight Responsiveness Check
+    let bestIndex = 0;
+    const directCandidates = rawStreams.filter(s => s.url && s.isDub);
+    const directAny = rawStreams.filter(s => s.url);
+    const trustedEmbeds = rawStreams.filter(s => s.embedUrl && (s.provider === 'WarezCDN' || s.provider === 'EmbedderNet' || s.provider === 'VidSrc'));
 
-    const winner = rawStreams[0];
-    if (playerLoading) {
-      playerLoading.querySelector('p').textContent = `🚀 Conectando a ${winner.name}...`;
+    if (directCandidates.length > 0) {
+      const candidate = directCandidates[0];
+      const pingOk = await this.probeStreamUrl(candidate.url, 2000);
+      if (pingOk) {
+        bestIndex = rawStreams.indexOf(candidate);
+      } else if (directCandidates.length > 1) {
+        const ping2 = await this.probeStreamUrl(directCandidates[1].url, 1500);
+        if (ping2) bestIndex = rawStreams.indexOf(directCandidates[1]);
+        else if (trustedEmbeds.length > 0) bestIndex = rawStreams.indexOf(trustedEmbeds[0]);
+      } else if (trustedEmbeds.length > 0) {
+        bestIndex = rawStreams.indexOf(trustedEmbeds[0]);
+      }
+    } else if (directAny.length > 0) {
+      const ping = await this.probeStreamUrl(directAny[0].url, 2000);
+      if (ping) bestIndex = rawStreams.indexOf(directAny[0]);
+      else if (trustedEmbeds.length > 0) bestIndex = rawStreams.indexOf(trustedEmbeds[0]);
+    } else if (trustedEmbeds.length > 0) {
+      bestIndex = rawStreams.indexOf(trustedEmbeds[0]);
     }
 
-    this.testAndPlayStreamIndex(0);
+    if (bestIndex < 0 || bestIndex >= rawStreams.length) bestIndex = 0;
+
+    state.activeStreams = rawStreams;
+    state.currentStreamIndex = bestIndex;
+    this.updateHudStreamSelector(rawStreams, bestIndex);
+
+    const winner = rawStreams[bestIndex];
+    if (playerLoading) {
+      playerLoading.querySelector('p').textContent = `Conectando ao servidor ${winner.name}...`;
+    }
+
+    this.testAndPlayStreamIndex(bestIndex);
+  },
+
+  async probeStreamUrl(url, timeoutMs = 2000) {
+    if (!url) return false;
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      await fetch(url, { method: 'HEAD', mode: 'no-cors', signal: controller.signal });
+      clearTimeout(timer);
+      return true;
+    } catch(e) {
+      return false;
+    }
   },
 
   selectAndPlayStream(index) {
