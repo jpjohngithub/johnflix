@@ -1953,7 +1953,14 @@ const UI = {
     };
 
     if (playerOverlay) {
-      playerOverlay.addEventListener('mousemove', resetHudTimer);
+      playerOverlay.addEventListener('mousemove', () => {
+        resetHudTimer();
+        this.onUserPlayerInteraction();
+      });
+      playerOverlay.addEventListener('touchstart', () => {
+        resetHudTimer();
+        this.onUserPlayerInteraction();
+      }, { passive: true });
 
       // Desktop Click on Screen -> Seamless Play / Pause (No intrusive on-screen badges or blocking overlays)
       playerOverlay.addEventListener('click', (e) => {
@@ -1961,6 +1968,7 @@ const UI = {
         if (e.target.closest('#player-hud, .hud-source-feedback, .hud-top, .hud-bottom, button, select, a, input, label, option, .modal')) return;
         togglePlayPause();
         resetHudTimer();
+        this.onUserPlayerInteraction();
       });
 
       // Desktop Double-Click on Screen -> Toggle Fullscreen / Skip 10s
@@ -2071,16 +2079,24 @@ const UI = {
       feedbackYesBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         state.feedbackConfirmed = true;
+        state.isAutoCycling = false;
+        if (this.autoCycleInterval) {
+          clearInterval(this.autoCycleInterval);
+          this.autoCycleInterval = null;
+        }
         this.dismissFeedbackPrompt();
-        this.showPlayerToast('✅ Fonte confirmada!', 1400);
+        this.showPlayerToast('Fonte confirmada!', 1400);
       });
     }
 
     if (feedbackNoBtn) {
       feedbackNoBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        // Do NOT close the prompt! Switch to next stream and keep prompt visible!
-        this.showPlayerToast('⚡ Trocando servidor...', 1000);
+        if (this.autoCycleInterval) {
+          clearInterval(this.autoCycleInterval);
+          this.autoCycleInterval = null;
+        }
+        this.showPlayerToast('Trocando servidor...', 1000);
         this.playNextStream();
       });
     }
@@ -2088,6 +2104,10 @@ const UI = {
     if (nextStreamBtn) {
       nextStreamBtn.addEventListener('click', (e) => {
         e.stopPropagation();
+        if (this.autoCycleInterval) {
+          clearInterval(this.autoCycleInterval);
+          this.autoCycleInterval = null;
+        }
         this.playNextStream();
       });
     }
@@ -3617,6 +3637,67 @@ const UI = {
     this.showSourceFeedbackPrompt(stream);
   },
 
+  startAutoCycleTimer(stream) {
+    if (this.autoCycleInterval) {
+      clearInterval(this.autoCycleInterval);
+      this.autoCycleInterval = null;
+    }
+
+    if (state.feedbackConfirmed) return;
+
+    state.isAutoCycling = true;
+    state.userInteractedWithCurrentStream = false;
+    state.autoCycleSecondsLeft = 7; // 7 seconds per server if idle
+
+    const questionEl = document.getElementById('hud-feedback-question');
+    if (questionEl) {
+      questionEl.textContent = `Testando (${state.autoCycleSecondsLeft}s...)`;
+    }
+
+    this.autoCycleInterval = setInterval(() => {
+      const playerOverlay = document.getElementById('player-overlay');
+      if (!state.isPlayerActive || !playerOverlay || playerOverlay.classList.contains('hidden') || state.feedbackConfirmed) {
+        clearInterval(this.autoCycleInterval);
+        this.autoCycleInterval = null;
+        return;
+      }
+
+      // If user moved mouse, touched screen, or clicked: STOP auto-cycling and keep this server!
+      if (state.userInteractedWithCurrentStream) {
+        clearInterval(this.autoCycleInterval);
+        this.autoCycleInterval = null;
+        if (questionEl) questionEl.textContent = 'Reproduzindo bem?';
+        return;
+      }
+
+      state.autoCycleSecondsLeft--;
+
+      if (questionEl) {
+        questionEl.textContent = `Testando (${state.autoCycleSecondsLeft}s...)`;
+      }
+
+      if (state.autoCycleSecondsLeft <= 0) {
+        clearInterval(this.autoCycleInterval);
+        this.autoCycleInterval = null;
+        // User didn't interact and didn't confirm -> automatically try next server!
+        this.showPlayerToast('Testando próximo servidor...', 1100);
+        this.playNextStream();
+      }
+    }, 1000);
+  },
+
+  onUserPlayerInteraction() {
+    if (state.isAutoCycling && !state.userInteractedWithCurrentStream) {
+      state.userInteractedWithCurrentStream = true;
+      if (this.autoCycleInterval) {
+        clearInterval(this.autoCycleInterval);
+        this.autoCycleInterval = null;
+      }
+      const questionEl = document.getElementById('hud-feedback-question');
+      if (questionEl) questionEl.textContent = 'Reproduzindo bem?';
+    }
+  },
+
   showSourceFeedbackPrompt(stream) {
     if (state.feedbackConfirmed) return;
     const feedbackPrompt = document.getElementById('hud-source-feedback');
@@ -3630,7 +3711,7 @@ const UI = {
     }
 
     if (serverBadge) {
-      serverBadge.textContent = `⚡ ${stream?.name || 'Servidor'}`;
+      serverBadge.textContent = `${stream?.name || 'Servidor'}`;
     }
     
     // Show on screen and KEEP IT VISIBLE until user clicks Sim / Trocar / Close
@@ -3638,6 +3719,9 @@ const UI = {
     feedbackPrompt.classList.remove('show');
     void feedbackPrompt.offsetWidth;
     feedbackPrompt.classList.add('show');
+
+    // Start auto-cycling timer (auto-switches every 7s if user does not touch mouse or click Sim)
+    this.startAutoCycleTimer(stream);
   },
 
   dismissFeedbackPrompt() {
@@ -3646,6 +3730,10 @@ const UI = {
     if (this.feedbackAutoHideTimer) {
       clearTimeout(this.feedbackAutoHideTimer);
       this.feedbackAutoHideTimer = null;
+    }
+    if (this.autoCycleInterval) {
+      clearInterval(this.autoCycleInterval);
+      this.autoCycleInterval = null;
     }
     feedbackPrompt.classList.remove('show');
     setTimeout(() => {
@@ -4105,7 +4193,12 @@ const UI = {
     
     // Stop all auto-play and watchdog timers immediately
     state.isPlayerActive = false;
+    state.isAutoCycling = false;
     state.autoPlaySessionId++;
+    if (this.autoCycleInterval) {
+      clearInterval(this.autoCycleInterval);
+      this.autoCycleInterval = null;
+    }
     if (this.autoTestTimer) {
       clearTimeout(this.autoTestTimer);
       this.autoTestTimer = null;
