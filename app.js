@@ -928,17 +928,18 @@ const API = {
         const rawInfo = `${s.name || ''} ${s.title || ''}`.toLowerCase();
         const isDub = rawInfo.includes('dublado') || rawInfo.includes('português') || rawInfo.includes('portugues') || rawInfo.includes('pt-br') || rawInfo.includes('dual');
         let quality = 'HD';
-        if (rawInfo.includes('4k') || rawInfo.includes('2160')) quality = '4K';
+        if (rawInfo.includes('720')) quality = '720p';
         else if (rawInfo.includes('1080')) quality = '1080p';
-        else if (rawInfo.includes('720')) quality = '720p';
+        else if (rawInfo.includes('4k') || rawInfo.includes('2160')) quality = '4K';
         directVideoSources.push({
           provider: 'FrostStream',
           name: `FrostStream ${quality}${isDub ? ' (Dublado PT-BR)' : ''}`,
           title: s.title || `FrostStream ${quality}`,
           url: s.url,
           isDub: isDub,
+          quality: quality,
           category: 'frost',
-          score: 100 + (quality === '4K' ? 30 : quality === '1080p' ? 20 : 10) + (isDub ? 40 : 0)
+          score: 120 + (quality === '720p' ? 60 : quality === '1080p' ? 30 : quality === '4K' ? 20 : 10) + (isDub ? 40 : 0)
         });
       });
       fenixStreams.forEach(s => {
@@ -1017,8 +1018,13 @@ const API = {
 
       streamsList.push(...webEmbedItems);
 
-      // Sort all streams: Direct FrostStream & Fenix first, Dubbed first, Highest score first
+      // Sort all streams: FrostStream 720p first, then FrostStream other resolutions, then Dubbed, then highest score
       streamsList.sort((a, b) => {
+        const aIsFrost720 = (a.category === 'frost' || a.provider === 'FrostStream') && (a.quality === '720p' || (a.name && a.name.includes('720p')));
+        const bIsFrost720 = (b.category === 'frost' || b.provider === 'FrostStream') && (b.quality === '720p' || (b.name && b.name.includes('720p')));
+        if (aIsFrost720 && !bIsFrost720) return -1;
+        if (!aIsFrost720 && bIsFrost720) return 1;
+
         if (a.category === 'frost' && b.category !== 'frost') return -1;
         if (a.category !== 'frost' && b.category === 'frost') return 1;
         if (a.isDub && !b.isDub) return -1;
@@ -3550,30 +3556,64 @@ const UI = {
       return;
     }
 
-    // Smart Server Prioritization & Pre-flight Responsiveness Check
-    let bestIndex = 0;
-    const directCandidates = rawStreams.filter(s => s.url && s.isDub);
-    const directAny = rawStreams.filter(s => s.url);
-    const trustedEmbeds = rawStreams.filter(s => s.embedUrl && (s.provider === 'WarezCDN' || s.provider === 'EmbedderNet' || s.provider === 'VidSrc'));
+    // 1. Explicitly check for FrostStream 720p FIRST
+    const frost720Candidates = rawStreams.filter(s => 
+      s.url && 
+      (s.provider === 'FrostStream' || s.category === 'frost') && 
+      (s.quality === '720p' || (s.name && s.name.includes('720p')) || (s.title && s.title.includes('720')))
+    );
 
-    if (directCandidates.length > 0) {
-      const candidate = directCandidates[0];
-      const pingOk = await this.probeStreamUrl(candidate.url, 2000);
+    let bestIndex = 0;
+    let foundTarget = false;
+
+    if (frost720Candidates.length > 0) {
+      // Prioritize Dublado 720p if present
+      const preferredFrost = frost720Candidates.find(s => s.isDub) || frost720Candidates[0];
+      const pingOk = await this.probeStreamUrl(preferredFrost.url, 1800);
       if (pingOk) {
-        bestIndex = rawStreams.indexOf(candidate);
-      } else if (directCandidates.length > 1) {
-        const ping2 = await this.probeStreamUrl(directCandidates[1].url, 1500);
-        if (ping2) bestIndex = rawStreams.indexOf(directCandidates[1]);
+        bestIndex = rawStreams.indexOf(preferredFrost);
+        foundTarget = true;
+      } else {
+        const altFrost = frost720Candidates.find(s => s !== preferredFrost);
+        if (altFrost) {
+          const ping2 = await this.probeStreamUrl(altFrost.url, 1500);
+          if (ping2) {
+            bestIndex = rawStreams.indexOf(altFrost);
+            foundTarget = true;
+          }
+        }
+        if (!foundTarget) {
+          bestIndex = rawStreams.indexOf(preferredFrost);
+          foundTarget = true;
+        }
+      }
+    }
+
+    // 2. If FrostStream 720p is not available, choose the best from any provider
+    if (!foundTarget) {
+      const directCandidates = rawStreams.filter(s => s.url && s.isDub);
+      const directAny = rawStreams.filter(s => s.url);
+      const trustedEmbeds = rawStreams.filter(s => s.embedUrl && (s.provider === 'WarezCDN' || s.provider === 'EmbedderNet' || s.provider === 'VidSrc'));
+
+      if (directCandidates.length > 0) {
+        const candidate = directCandidates[0];
+        const pingOk = await this.probeStreamUrl(candidate.url, 2000);
+        if (pingOk) {
+          bestIndex = rawStreams.indexOf(candidate);
+        } else if (directCandidates.length > 1) {
+          const ping2 = await this.probeStreamUrl(directCandidates[1].url, 1500);
+          if (ping2) bestIndex = rawStreams.indexOf(directCandidates[1]);
+          else if (trustedEmbeds.length > 0) bestIndex = rawStreams.indexOf(trustedEmbeds[0]);
+        } else if (trustedEmbeds.length > 0) {
+          bestIndex = rawStreams.indexOf(trustedEmbeds[0]);
+        }
+      } else if (directAny.length > 0) {
+        const ping = await this.probeStreamUrl(directAny[0].url, 2000);
+        if (ping) bestIndex = rawStreams.indexOf(directAny[0]);
         else if (trustedEmbeds.length > 0) bestIndex = rawStreams.indexOf(trustedEmbeds[0]);
       } else if (trustedEmbeds.length > 0) {
         bestIndex = rawStreams.indexOf(trustedEmbeds[0]);
       }
-    } else if (directAny.length > 0) {
-      const ping = await this.probeStreamUrl(directAny[0].url, 2000);
-      if (ping) bestIndex = rawStreams.indexOf(directAny[0]);
-      else if (trustedEmbeds.length > 0) bestIndex = rawStreams.indexOf(trustedEmbeds[0]);
-    } else if (trustedEmbeds.length > 0) {
-      bestIndex = rawStreams.indexOf(trustedEmbeds[0]);
     }
 
     if (bestIndex < 0 || bestIndex >= rawStreams.length) bestIndex = 0;
