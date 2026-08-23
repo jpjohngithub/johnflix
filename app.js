@@ -896,23 +896,26 @@ const API = {
       };
 
       const frostConfiguredUrl = 'https://froststream.cloutteam.com/providers.iptv=checked&providers.cdmoviedb=checked&providers.redeflix=checked&providers.tomato=checked&providers.myembed=checked&providers.anizone=checked&providers.superflix=checked&providers.overflix=checked';
-      const torrentioPtBrUrl = 'https://torrentio.strem.fun/sort=qualitysize|providers=yts,eztv,rarbg,1337x,thepiratebay,kickasstorrents,torrentgalaxy,bludv,meustorrents,commandotorrents';
+      const frostRailwayUrl = 'https://froststream.up.railway.app';
+      const torrentioPtBrUrl = 'https://torrentio.strem.fun/sort=qualitysize|providers=comando,bludv,micoleaodublado,brazuca,yts,torrentgalaxy,eztv,rarbg,1337x,thepiratebay';
 
-      const [fenixRes, frostRes, frostConfigRes, brazucaRes, micoLeaoRes, torrentioRes, torrentioPtBrRes, tpbPlusRes] = await Promise.allSettled([
-        fetchAddon('https://fenixflix.fenixhub.online'),
-        fetchAddon('https://froststream.cloutteam.com'),
-        fetchAddon(frostConfiguredUrl),
-        fetchAddon('https://94c8cb9f702d-brazuca-torrents.baby-beamup.club'),
-        fetchAddon(ADDONS.micoleao.baseUrl),
-        fetchAddon('https://torrentio.strem.fun'),
-        fetchAddon(torrentioPtBrUrl),
-        fetchAddon('https://thepiratebay-plus.strem.fun')
+      const [fenixRes, frostRes, frostConfigRes, frostRailRes, brazucaRes, micoLeaoRes, torrentioRes, torrentioPtBrRes, tpbPlusRes] = await Promise.allSettled([
+        fetchAddon('https://fenixflix.fenixhub.online', 2500),
+        fetchAddon('https://froststream.cloutteam.com', 2500),
+        fetchAddon(frostConfiguredUrl, 2500),
+        fetchAddon(frostRailwayUrl, 2500),
+        fetchAddon('https://94c8cb9f702d-brazuca-torrents.baby-beamup.club', 2500),
+        fetchAddon(ADDONS.micoleao ? ADDONS.micoleao.baseUrl : 'https://94c8cb9f702d-brazuca-torrents.baby-beamup.club', 2500),
+        fetchAddon('https://torrentio.strem.fun', 2500),
+        fetchAddon(torrentioPtBrUrl, 2500),
+        fetchAddon('https://thepiratebay-plus.strem.fun', 2500)
       ]);
 
       const fenixStreams = fenixRes.status === 'fulfilled' ? fenixRes.value : [];
       const frostBaseStreams = frostRes.status === 'fulfilled' ? frostRes.value : [];
       const frostConfigStreams = frostConfigRes.status === 'fulfilled' ? frostConfigRes.value : [];
-      const frostStreams = [...frostBaseStreams, ...frostConfigStreams];
+      const frostRailStreams = frostRailRes.status === 'fulfilled' ? frostRailRes.value : [];
+      const frostStreams = [...frostBaseStreams, ...frostConfigStreams, ...frostRailStreams];
       const brazucaStreams = brazucaRes.status === 'fulfilled' ? brazucaRes.value : [];
       const micoLeaoStreams = micoLeaoRes.status === 'fulfilled' ? micoLeaoRes.value : [];
       const torrentioStreams = torrentioRes.status === 'fulfilled' ? torrentioRes.value : [];
@@ -1046,16 +1049,21 @@ const API = {
 
     const norm = rawQuery.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
 
-    // Multilingual Translation / Alias Dictionary for Accurate Search
+    // Comprehensive Multilingual Portuguese-to-English Search Dictionary
     const ALIAS_MAP = {
+      'homem aranha sem volta para casa': 'spider-man no way home',
       'homem aranha': 'spider-man',
       'homem de ferro': 'iron man',
       'capitao america': 'captain america',
+      'vingadores ultimato': 'avengers endgame',
+      'vingadores guerra infinita': 'avengers infinity war',
       'vingadores': 'the avengers',
       'os vingadores': 'the avengers',
       'senhor dos aneis': 'the lord of the rings',
       'o senhor dos aneis': 'the lord of the rings',
       'guerra nas estrelas': 'star wars',
+      'velozes e furiosos 10': 'fast x',
+      'velozes e furiosos 9': 'f9',
       'velozes e furiosos': 'fast and furious',
       'planeta dos macacos': 'planet of the apes',
       'jogos vorazes': 'the hunger games',
@@ -1081,10 +1089,12 @@ const API = {
       'o silencio dos inocentes': 'the silence of the lambs',
       'gato de botas': 'puss in boots',
       'o gato de botas': 'puss in boots',
-      'monstros sa': 'monsters, inc.',
-      'monstros s.a.': 'monsters, inc.',
+      'monstros sa': 'monsters inc',
+      'monstros s.a.': 'monsters inc',
       'procurando nemo': 'finding nemo',
+      'divertida mente 2': 'inside out 2',
       'divertida mente': 'inside out',
+      'divertidamente 2': 'inside out 2',
       'divertidamente': 'inside out',
       'como treinar o seu dragao': 'how to train your dragon',
       'como treinar seu dragao': 'how to train your dragon',
@@ -1095,10 +1105,15 @@ const API = {
       'sobrenatural': 'supernatural',
       'la casa de papel': 'money heist',
       'a casa do dragao': 'house of the dragon',
+      'casa do dragao': 'house of the dragon',
       'doutor estranho': 'doctor strange',
       'pantera negra': 'black panther',
       'guardioes da galaxia': 'guardians of the galaxy',
       'guardioes': 'guardians of the galaxy',
+      'avatar o caminho da agua': 'avatar the way of water',
+      'avatar 2': 'avatar the way of water',
+      'creed 3': 'creed iii',
+      'creed iii': 'creed 3',
       'deadpool': 'deadpool',
       'wolverine': 'wolverine',
       'batman': 'batman',
@@ -1121,9 +1136,19 @@ const API = {
     const fetchPromises = [];
     uniqueQueries.forEach(q => {
       targetTypes.forEach(t => {
-        const url = `https://v3-cinemeta.strem.io/catalog/${t}/top/search=${encodeURIComponent(q)}.json`;
+        // Query both top catalog AND imdbRating catalog for 100% comprehensive coverage!
+        const urlTop = `https://v3-cinemeta.strem.io/catalog/${t}/top/search=${encodeURIComponent(q)}.json`;
+        const urlImdb = `https://v3-cinemeta.strem.io/catalog/${t}/imdbRating/search=${encodeURIComponent(q)}.json`;
+
         fetchPromises.push(
-          fetchWithTimeout(url, 4000)
+          fetchWithTimeout(urlTop, 4000)
+            .then(res => res.json())
+            .then(d => (d.metas || []).map(m => ({ ...m, type: m.type || t })))
+            .catch(() => [])
+        );
+
+        fetchPromises.push(
+          fetchWithTimeout(urlImdb, 4000)
             .then(res => res.json())
             .then(d => (d.metas || []).map(m => ({ ...m, type: m.type || t })))
             .catch(() => [])
@@ -1131,8 +1156,36 @@ const API = {
       });
     });
 
-    const resultsArray = await Promise.all(fetchPromises);
+    // Also include instant local catalog items match
+    const localDatabase = [
+      ...(state.catalogs.popular || []),
+      ...(state.catalogs.featured || []),
+      ...(state.catalogs.series || []),
+      ...(state.catalogs.anime || []),
+      ...(state.watchlist || [])
+    ];
+    if (typeof CINEMA_SAGAS !== 'undefined') {
+      CINEMA_SAGAS.forEach(saga => {
+        if (saga.items) localDatabase.push(...saga.items);
+      });
+    }
+
     const combinedMap = new Map();
+
+    // Check local database
+    localDatabase.forEach(item => {
+      if (!item || !item.id) return;
+      const n = (item.name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+      for (const q of uniqueQueries) {
+        const nq = q.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+        if (n.includes(nq) || nq.includes(n)) {
+          combinedMap.set(item.id, { ...item, type: item.type || 'movie' });
+          break;
+        }
+      }
+    });
+
+    const resultsArray = await Promise.all(fetchPromises);
     resultsArray.flat().forEach(item => {
       if (item && item.id && !combinedMap.has(item.id)) {
         combinedMap.set(item.id, item);
