@@ -3989,7 +3989,7 @@ const UI = {
     if (playerTitle) playerTitle.textContent = title;
     if (hudTitle) hudTitle.textContent = title;
     
-    iframe.removeAttribute('sandbox');
+    iframe.setAttribute('allow', 'autoplay; fullscreen; encrypted-media; picture-in-picture');
     iframe.setAttribute('referrerpolicy', 'no-referrer');
     
     let finalUrl = embedUrl;
