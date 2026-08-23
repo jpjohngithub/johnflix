@@ -965,18 +965,16 @@ const API = {
       });
       streamsList.push(...directVideoSources);
 
-      // 2. Web Embed Players
+      // 2. High-Performance Web Embed Players (Verified, fast, dubs & subtitles supported)
       const webEmbedItems = [
-        { provider: 'WarezCDN', name: 'WarezCDN HD (Dublado PT-BR)', title: 'WarezCDN HD Player', embedUrl: warezCdnUrl, category: 'web', isDub: true, score: 85 },
-        { provider: 'EmbedderNet', name: 'EmbedderNet HD (Dublado PT-BR)', title: 'EmbedderNet HD Player', embedUrl: embedderNetUrl, category: 'web', isDub: true, score: 84 },
-        { provider: 'VidSrc', name: 'VidSrc HD (Dublado PT-BR)', title: 'VidSrc Player HD', embedUrl: vidsrcDubUrl, category: 'web', isDub: true, score: 82 },
-        { provider: 'MultiEmbed', name: 'MultiEmbed HD', title: 'MultiEmbed Fast Player', embedUrl: multiembedUrl, category: 'web', isDub: true, score: 80 },
-        { provider: 'AutoEmbed', name: 'AutoEmbed HD', title: 'AutoEmbed Player', embedUrl: autoEmbedUrl, category: 'web', isDub: true, score: 78 },
-        { provider: 'VidLink', name: 'VidLink HD', title: 'VidLink Player', embedUrl: vidlinkUrl, category: 'web', isDub: true, score: 76 },
-        { provider: 'SmashyStream', name: 'SmashyStream HD', title: 'SmashyStream Player', embedUrl: smashyUrl, category: 'web', isDub: false, score: 70 },
-        { provider: 'CineStream', name: 'CineStream HD', title: 'CineStream Player', embedUrl: cinestreamUrl, category: 'web', isDub: false, score: 65 },
-        { provider: '2Embed', name: '2Embed HD', title: '2Embed Player', embedUrl: twoembedUrl, category: 'web', isDub: false, score: 60 },
-        { provider: 'VidSrc EN', name: 'VidSrc Original (Legendado)', title: 'VidSrc Original Player', embedUrl: vidsrcEnUrl, category: 'web', isDub: false, score: 55 }
+        { provider: 'WarezCDN', name: 'WarezCDN HD (Dublado PT-BR)', title: 'Player Principal WarezCDN (Dublado/Nacional)', embedUrl: warezCdnUrl, category: 'web', isDub: true, score: 95 },
+        { provider: 'VidSrc', name: 'VidSrc HD (Dublado PT-BR)', title: 'Player VidSrc HD (Dublado PT-BR)', embedUrl: vidsrcDubUrl, category: 'web', isDub: true, score: 93 },
+        { provider: 'EmbedderNet', name: 'EmbedderNet HD (Dublado PT-BR)', title: 'Player EmbedderNet (Dublado PT-BR)', embedUrl: embedderNetUrl, category: 'web', isDub: true, score: 90 },
+        { provider: 'MultiEmbed', name: 'MultiEmbed Fast HD', title: 'Player MultiEmbed Multi-Servidores', embedUrl: multiembedUrl, category: 'web', isDub: true, score: 88 },
+        { provider: '2Embed', name: '2Embed Premium HD', title: 'Player 2Embed HD', embedUrl: twoembedUrl, category: 'web', isDub: false, score: 82 },
+        { provider: 'SmashyStream', name: 'SmashyStream Multi-Server HD', title: 'Player SmashyStream', embedUrl: smashyUrl, category: 'web', isDub: false, score: 80 },
+        { provider: 'CineStream', name: 'CineStream Club HD', title: 'Player CineStream', embedUrl: cinestreamUrl, category: 'web', isDub: false, score: 78 },
+        { provider: 'VidSrc IN', name: 'VidSrc Original (Legendado)', title: 'Player VidSrc Original HD', embedUrl: vidsrcEnUrl, category: 'web', isDub: false, score: 75 }
       ];
 
       // 3. Native torrents (Brazuca, Mico Leão & Torrentio)
@@ -3897,7 +3895,7 @@ const UI = {
 
     if (frost.length > 0) {
       html += '<div style="color:#06b6d4; font-weight:800; font-size:1.05rem; margin:1rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(6,182,212,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #06b6d4;">'
-        + '<span>❄️</span> FrostStream (Principal)</div>';
+        + '<span>[DIRETO]</span> FrostStream (Principal)</div>';
       html += frost.map(stream => {
         const idx = streams.indexOf(stream);
         return this.createStreamItem(stream, idx >= 0 ? idx : 0);
@@ -3906,17 +3904,8 @@ const UI = {
 
     if (fenix.length > 0) {
       html += '<div style="color:#ef4444; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(239,68,68,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #ef4444;">'
-        + '<span>🔥</span> FenixFlix Nativo (Player Nativo HTML5)</div>';
+        + '<span>[DIRETO]</span> FenixFlix Nativo (Player HTML5)</div>';
       html += fenix.map(stream => {
-        const idx = streams.indexOf(stream);
-        return this.createStreamItem(stream, idx >= 0 ? idx : 0);
-      }).join('');
-    }
-
-    if (torrents.length > 0) {
-      html += '<div style="color:#f59e0b; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(245,158,11,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #f59e0b;">'
-        + '<span>🧲</span> Torrents Nativos (Brazuca, Mico Leão e Torrentio)</div>';
-      html += torrents.map(stream => {
         const idx = streams.indexOf(stream);
         return this.createStreamItem(stream, idx >= 0 ? idx : 0);
       }).join('');
@@ -3924,8 +3913,17 @@ const UI = {
 
     if (web.length > 0) {
       html += '<div style="color:#8b5cf6; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(139,92,246,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #8b5cf6;">'
-        + '<span>🌐</span> Servidores Web</div>';
+        + '<span>[WEB]</span> Servidores Web & Dublados PT-BR</div>';
       html += web.map(stream => {
+        const idx = streams.indexOf(stream);
+        return this.createStreamItem(stream, idx >= 0 ? idx : 0);
+      }).join('');
+    }
+
+    if (torrents.length > 0) {
+      html += '<div style="color:#f59e0b; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(245,158,11,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #f59e0b;">'
+        + '<span>[TORRENT]</span> Torrents Nativos PT-BR (Brazuca & Torrentio)</div>';
+      html += torrents.map(stream => {
         const idx = streams.indexOf(stream);
         return this.createStreamItem(stream, idx >= 0 ? idx : 0);
       }).join('');
