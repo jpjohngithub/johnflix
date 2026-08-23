@@ -877,27 +877,6 @@ const API = {
         ? `https://vidsrc.in/embed/movie/${cleanId}`
         : `https://vidsrc.in/embed/tv/${cleanId}/${season}/${episode}`;
 
-      // External Ad-Supported Hosting Providers (Byse, DoodStream, MixDrop, Streamtape, SuperFlix)
-      const byseUrl = isMovie
-        ? `https://byse.top/e/${cleanId}`
-        : `https://byse.top/e/${cleanId}/${season}/${episode}`;
-
-      const doodUrl = isMovie
-        ? `https://doods.pro/e/${cleanId}`
-        : `https://doods.pro/e/${cleanId}/${season}/${episode}`;
-
-      const mixdropUrl = isMovie
-        ? `https://mixdrop.co/e/${cleanId}`
-        : `https://mixdrop.co/e/${cleanId}/${season}/${episode}`;
-
-      const streamtapeUrl = isMovie
-        ? `https://streamtape.com/e/${cleanId}`
-        : `https://streamtape.com/e/${cleanId}/${season}/${episode}`;
-
-      const superflixUrl = isMovie
-        ? `https://superflixapi.top/filme/${cleanId}`
-        : `https://superflixapi.top/serie/${cleanId}/${season}/${episode}`;
-
 
       const fetchAddon = async (baseUrl, timeoutMs = 5000) => {
         const controller = new AbortController();
@@ -1038,17 +1017,7 @@ const API = {
         });
       });
 
-      // 4. External Ad-Supported Hosting Providers (Byse, DoodStream, MixDrop, Streamtape, SuperFlix)
-      const externalAdItems = [
-        { provider: 'Byse', name: '1. Byse HD (Dublado / Legendado)', title: 'Servidor Byse (Contém Anúncios Externos)', embedUrl: byseUrl, category: 'ad_hosts', hasAds: true, isDub: true, score: 35 },
-        { provider: 'DoodStream', name: '2. DoodStream HD (Dublado / Legendado)', title: 'Servidor DoodStream (Contém Anúncios Externos)', embedUrl: doodUrl, category: 'ad_hosts', hasAds: true, isDub: true, score: 34 },
-        { provider: 'MixDrop', name: '3. MixDrop HD (Dublado / Legendado)', title: 'Servidor MixDrop (Contém Anúncios Externos)', embedUrl: mixdropUrl, category: 'ad_hosts', hasAds: true, isDub: true, score: 33 },
-        { provider: 'Streamtape', name: '4. Streamtape HD (Dublado / Legendado)', title: 'Servidor Streamtape (Contém Anúncios Externos)', embedUrl: streamtapeUrl, category: 'ad_hosts', hasAds: true, isDub: true, score: 32 },
-        { provider: 'SuperFlix', name: '5. SuperFlix HD (Dublado PT-BR)', title: 'Servidor SuperFlix (Contém Anúncios Externos)', embedUrl: superflixUrl, category: 'ad_hosts', hasAds: true, isDub: true, score: 31 }
-      ];
-
       streamsList.push(...webEmbedItems);
-      streamsList.push(...externalAdItems);
 
       // Sort all streams: FrostStream 720p first, then FrostStream other resolutions, then Dubbed, then highest score
       streamsList.sort((a, b) => {
@@ -3919,9 +3888,8 @@ const UI = {
 
     const frost = streams.filter(s => s.category === 'frost' || s.provider === 'FrostStream' || (s.name && s.name.includes('FrostStream')));
     const fenix = streams.filter(s => (s.category === 'fenix' || s.provider === 'FenixFlix' || (s.name && s.name.includes('FenixFlix'))) && !frost.includes(s));
-    const adHosts = streams.filter(s => s.category === 'ad_hosts' || s.hasAds);
     const torrents = streams.filter(s => (s.category === 'torrent' || s.magnetUrl || s.infoHash) && !frost.includes(s) && !fenix.includes(s));
-    const web = streams.filter(s => !fenix.includes(s) && !frost.includes(s) && !torrents.includes(s) && !adHosts.includes(s));
+    const web = streams.filter(s => !fenix.includes(s) && !frost.includes(s) && !torrents.includes(s));
 
     let html = '';
 
@@ -3945,33 +3913,11 @@ const UI = {
 
     if (web.length > 0) {
       html += '<div style="color:#8b5cf6; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(139,92,246,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #8b5cf6;">'
-        + '<span>[WEB]</span> Servidores Web & Dublados PT-BR (Limpos)</div>';
+        + '<span>[WEB]</span> Servidores Web & Dublados PT-BR</div>';
       html += web.map(stream => {
         const idx = streams.indexOf(stream);
         return this.createStreamItem(stream, idx >= 0 ? idx : 0);
       }).join('');
-    }
-
-    if (adHosts.length > 0) {
-      html += `
-        <div style="margin: 1.8rem 0 1rem; background: #0f172a; border: 1px solid rgba(59, 130, 246, 0.4); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.4);">
-          <div style="background: linear-gradient(135deg, #1d4ed8, #2563eb); color: white; padding: 12px 16px; text-align: center;">
-            <div style="font-weight: 800; font-size: 0.92rem; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 4px; display: flex; align-items: center; justify-content: center; gap: 8px;">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-              SOBRE PROPAGANDAS +18 / ANÚNCIOS
-            </div>
-            <div style="font-size: 0.82rem; opacity: 0.95; line-height: 1.4;">
-              Não temos controle, são de <strong>empresas externas</strong>. Feche a propaganda e volte para o site oficial.
-            </div>
-          </div>
-          <div style="padding: 12px; display: flex; flex-direction: column; gap: 8px; background: rgba(15, 23, 42, 0.8);">
-            ${adHosts.map(stream => {
-              const idx = streams.indexOf(stream);
-              return this.createStreamItem(stream, idx >= 0 ? idx : 0);
-            }).join('')}
-          </div>
-        </div>
-      `;
     }
 
     if (torrents.length > 0) {
@@ -3991,23 +3937,17 @@ const UI = {
     const isFenix = name.includes('FenixFlix');
     const isFrost = name.includes('FrostStream') || stream.category === 'frost';
     const isTorrent = stream.category === 'torrent' || stream.magnetUrl || stream.infoHash;
-    const isAdHost = stream.category === 'ad_hosts' || stream.hasAds;
-    const accentColor = isFenix ? '#ef4444' : isFrost ? '#06b6d4' : isAdHost ? '#3b82f6' : isTorrent ? '#f59e0b' : '#8b5cf6';
+    const accentColor = isFenix ? '#ef4444' : isFrost ? '#06b6d4' : isTorrent ? '#f59e0b' : '#8b5cf6';
     const btnColor = isTorrent ? '#000000' : '#ffffff';
 
     return `
       <div class="stream-item" style="border-left: 4px solid ${accentColor}; cursor: pointer;" onclick="UI.selectAndPlayStream(${index})">
         <div class="stream-info">
-          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-            <span class="stream-name" style="font-weight:700;">${name}</span>
-            ${isAdHost ? '<span style="background:rgba(59,130,246,0.18); color:#60a5fa; font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:4px; border:1px solid rgba(59,130,246,0.4);">Anúncios Externos</span>' : ''}
-          </div>
+          <span class="stream-name" style="font-weight:700;">${name}</span>
           ${stream.title && stream.title !== name ? `<span class="stream-details" style="font-size:0.78rem; color:#9ca3af; white-space:pre-line;">${stream.title.replace(/</g, '&lt;')}</span>` : ''}
         </div>
         <button class="stream-play-btn" style="background:${accentColor}; color:${btnColor}; font-weight:800;"
-          onclick="event.stopPropagation(); UI.selectAndPlayStream(${index})">
-          ${isAdHost ? '▶ Assistir' : '▶ Assistir'}
-        </button>
+          onclick="event.stopPropagation(); UI.selectAndPlayStream(${index})">▶ Assistir</button>
       </div>
     `;
   },
