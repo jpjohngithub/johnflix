@@ -5,6 +5,7 @@ if (window.location.protocol === 'http:' && !window.location.hostname.includes('
 
 const ADDONS = {
   webplayer: { name: 'Player Web (HD)', baseUrl: '', icon: '🌐' },
+  kingvod: { name: 'King VOD', baseUrl: 'https://kingvod.wasmer.app/index.php', icon: '👑' },
   cinemeta: { name: 'Cinemeta', baseUrl: 'https://cinemeta-catalogs.strem.io' },
   micoleao: { name: 'Mico-Leão Dublado', baseUrl: 'https://27a5b2bfe3c0-stremio-brazilian-addon.baby-beamup.club', icon: '🦁' }
 };
@@ -1154,8 +1155,9 @@ const API = {
       const frostRailwayUrl = 'https://froststream.up.railway.app';
       const torrentioPtBrUrl = 'https://torrentio.strem.fun/sort=qualitysize|providers=comando,bludv,micoleaodublado,brazuca,yts,torrentgalaxy,eztv,rarbg,1337x,thepiratebay';
 
-      const [fenixRes, frostRes, frostConfigRes, frostRailRes, brazucaRes, micoLeaoRes, torrentioRes, torrentioPtBrRes, tpbPlusRes] = await Promise.allSettled([
+      const [fenixRes, kingVodRes, frostRes, frostConfigRes, frostRailRes, brazucaRes, micoLeaoRes, torrentioRes, torrentioPtBrRes, tpbPlusRes] = await Promise.allSettled([
         fetchAddon('https://fenixflix.fenixhub.online', 2500),
+        fetchAddon('https://kingvod.wasmer.app/index.php', 3000),
         fetchAddon('https://froststream.cloutteam.com', 2500),
         fetchAddon(frostConfiguredUrl, 2500),
         fetchAddon(frostRailwayUrl, 2500),
@@ -1167,6 +1169,7 @@ const API = {
       ]);
 
       const fenixStreams = fenixRes.status === 'fulfilled' ? fenixRes.value : [];
+      const kingVodStreams = kingVodRes.status === 'fulfilled' ? kingVodRes.value : [];
       const frostBaseStreams = frostRes.status === 'fulfilled' ? frostRes.value : [];
       const frostConfigStreams = frostConfigRes.status === 'fulfilled' ? frostConfigRes.value : [];
       const frostRailStreams = frostRailRes.status === 'fulfilled' ? frostRailRes.value : [];
@@ -1179,8 +1182,26 @@ const API = {
 
       const streamsList = [];
 
-      // 1. Direct MP4 / CDN Native Video Streams (FrostStream & FenixFlix)
+      // 1. Direct MP4 / HLS Native Video Streams (King VOD, FrostStream & FenixFlix)
       const directVideoSources = [];
+      kingVodStreams.forEach(s => {
+        if (!s.url) return;
+        const rawInfo = `${s.name || ''} ${s.title || ''}`.toLowerCase();
+        let quality = 'HD';
+        if (rawInfo.includes('1080')) quality = '1080p';
+        else if (rawInfo.includes('720')) quality = '720p';
+        else if (rawInfo.includes('4k') || rawInfo.includes('2160')) quality = '4K';
+        directVideoSources.push({
+          provider: 'King VOD',
+          name: `👑 King VOD ${quality} (Dublado PT-BR)`,
+          title: s.title || `King VOD ${quality} Dublado`,
+          url: s.url,
+          isDub: true,
+          quality: quality,
+          category: 'kingvod',
+          score: 135 + (quality === '720p' ? 50 : quality === '1080p' ? 40 : 20) + 40
+        });
+      });
       frostStreams.forEach(s => {
         if (!s.url) return;
         const rawInfo = `${s.name || ''} ${s.title || ''}`.toLowerCase();
@@ -4169,11 +4190,21 @@ const UI = {
     }
 
     const frost = streams.filter(s => s.category === 'frost' || s.provider === 'FrostStream' || (s.name && s.name.includes('FrostStream')));
-    const fenix = streams.filter(s => (s.category === 'fenix' || s.provider === 'FenixFlix' || (s.name && s.name.includes('FenixFlix'))) && !frost.includes(s));
-    const torrents = streams.filter(s => (s.category === 'torrent' || s.magnetUrl || s.infoHash) && !frost.includes(s) && !fenix.includes(s));
-    const web = streams.filter(s => !fenix.includes(s) && !frost.includes(s) && !torrents.includes(s));
+    const kingvod = streams.filter(s => s.category === 'kingvod' || s.provider === 'King VOD' || (s.name && s.name.includes('King VOD')));
+    const fenix = streams.filter(s => (s.category === 'fenix' || s.provider === 'FenixFlix' || (s.name && s.name.includes('FenixFlix'))) && !frost.includes(s) && !kingvod.includes(s));
+    const torrents = streams.filter(s => (s.category === 'torrent' || s.magnetUrl || s.infoHash) && !frost.includes(s) && !fenix.includes(s) && !kingvod.includes(s));
+    const web = streams.filter(s => !fenix.includes(s) && !frost.includes(s) && !kingvod.includes(s) && !torrents.includes(s));
 
     let html = '';
+
+    if (kingvod.length > 0) {
+      html += '<div style="color:#eab308; font-weight:800; font-size:1.05rem; margin:1rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(234,179,8,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #eab308;">'
+        + '<span>[DIRETO]</span> 👑 King VOD (Dublado PT-BR)</div>';
+      html += kingvod.map(stream => {
+        const idx = streams.indexOf(stream);
+        return this.createStreamItem(stream, idx >= 0 ? idx : 0);
+      }).join('');
+    }
 
     if (frost.length > 0) {
       html += '<div style="color:#06b6d4; font-weight:800; font-size:1.05rem; margin:1rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(6,182,212,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #06b6d4;">'
@@ -4216,11 +4247,12 @@ const UI = {
   
   createStreamItem(stream, index = 0) {
     const name = stream.name || 'Servidor';
+    const isKing = name.includes('King VOD') || stream.category === 'kingvod';
     const isFenix = name.includes('FenixFlix');
     const isFrost = name.includes('FrostStream') || stream.category === 'frost';
     const isTorrent = stream.category === 'torrent' || stream.magnetUrl || stream.infoHash;
-    const accentColor = isFenix ? '#ef4444' : isFrost ? '#06b6d4' : isTorrent ? '#f59e0b' : '#8b5cf6';
-    const btnColor = isTorrent ? '#000000' : '#ffffff';
+    const accentColor = isKing ? '#eab308' : isFenix ? '#ef4444' : isFrost ? '#06b6d4' : isTorrent ? '#f59e0b' : '#8b5cf6';
+    const btnColor = isTorrent || isKing ? '#000000' : '#ffffff';
 
     return `
       <div class="stream-item" style="border-left: 4px solid ${accentColor}; cursor: pointer;" onclick="UI.selectAndPlayStream(${index})">
