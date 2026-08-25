@@ -965,12 +965,22 @@ const API = {
       });
       streamsList.push(...directVideoSources);
 
+      const nontonGoUrl = isMovie
+        ? `https://www.nontongo.win/embed/movie/${cleanId}`
+        : `https://www.nontongo.win/embed/tv/${cleanId}/${season}/${episode}`;
+
+      const myEmbedUrl = isMovie
+        ? `https://embed.myembed.top/filme/${cleanId}`
+        : `https://embed.myembed.top/serie/${cleanId}/${season}/${episode}`;
+
       // 2. High-Performance Web Embed Players (Verified, fast, dubs & subtitles supported)
       const webEmbedItems = [
         { provider: 'WarezCDN', name: 'WarezCDN HD (Dublado PT-BR)', title: 'Player Principal WarezCDN (Dublado/Nacional)', embedUrl: warezCdnUrl, category: 'web', isDub: true, score: 95 },
         { provider: 'VidSrc', name: 'VidSrc HD (Dublado PT-BR)', title: 'Player VidSrc HD (Dublado PT-BR)', embedUrl: vidsrcDubUrl, category: 'web', isDub: true, score: 93 },
+        { provider: 'NontonGo', name: 'NontonGo Ultra HD (Multi-Áudio)', title: 'Player NontonGo Ultra HD', embedUrl: nontonGoUrl, category: 'web', isDub: true, score: 92 },
         { provider: 'EmbedderNet', name: 'EmbedderNet HD (Dublado PT-BR)', title: 'Player EmbedderNet (Dublado PT-BR)', embedUrl: embedderNetUrl, category: 'web', isDub: true, score: 90 },
         { provider: 'MultiEmbed', name: 'MultiEmbed Fast HD', title: 'Player MultiEmbed Multi-Servidores', embedUrl: multiembedUrl, category: 'web', isDub: true, score: 88 },
+        { provider: 'MyEmbed', name: 'MyEmbed HD (Dublado PT-BR)', title: 'Player MyEmbed Nacional', embedUrl: myEmbedUrl, category: 'web', isDub: true, score: 85 },
         { provider: '2Embed', name: '2Embed Premium HD', title: 'Player 2Embed HD', embedUrl: twoembedUrl, category: 'web', isDub: false, score: 82 },
         { provider: 'SmashyStream', name: 'SmashyStream Multi-Server HD', title: 'Player SmashyStream', embedUrl: smashyUrl, category: 'web', isDub: false, score: 80 },
         { provider: 'CineStream', name: 'CineStream Club HD', title: 'Player CineStream', embedUrl: cinestreamUrl, category: 'web', isDub: false, score: 78 },
