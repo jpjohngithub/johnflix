@@ -64,6 +64,253 @@ const Cache = {
   }
 };
 
+// --- Motor de Tradução e Localização Oficial PT-BR ---
+
+const PTBR_Engine = {
+  genresMap: {
+    'Action': 'Ação',
+    'Adventure': 'Aventura',
+    'Animation': 'Animação',
+    'Anime': 'Anime',
+    'Biography': 'Biografia',
+    'Comedy': 'Comédia',
+    'Crime': 'Crime',
+    'Documentary': 'Documentário',
+    'Drama': 'Drama',
+    'Family': 'Família',
+    'Fantasy': 'Fantasia',
+    'Film-Noir': 'Cinema Noir',
+    'Game-Show': 'Game Show',
+    'History': 'História',
+    'Horror': 'Terror',
+    'Music': 'Música',
+    'Musical': 'Musical',
+    'Mystery': 'Mistério',
+    'News': 'Notícias',
+    'Reality-TV': 'Reality Show',
+    'Romance': 'Romance',
+    'Sci-Fi': 'Ficção Científica',
+    'Science Fiction': 'Ficção Científica',
+    'Short': 'Curta-metragem',
+    'Sport': 'Esporte',
+    'Talk-Show': 'Talk Show',
+    'Thriller': 'Suspense',
+    'War': 'Guerra',
+    'Western': 'Faroeste'
+  },
+
+  titlesMap: {
+    'Spider-Man: No Way Home': 'Homem-Aranha: Sem Volta Para Casa',
+    'Spider-Man: Far From Home': 'Homem-Aranha: Longe de Casa',
+    'Spider-Man: Homecoming': 'Homem-Aranha: De Volta ao Lar',
+    'Spider-Man: Into the Spider-Verse': 'Homem-Aranha: No Aranhaverso',
+    'Spider-Man: Across the Spider-Verse': 'Homem-Aranha: Através do Aranhaverso',
+    'Spider-Man': 'Homem-Aranha',
+    'Spider-Man 2': 'Homem-Aranha 2',
+    'Spider-Man 3': 'Homem-Aranha 3',
+    'The Amazing Spider-Man': 'O Espetacular Homem-Aranha',
+    'The Amazing Spider-Man 2': 'O Espetacular Homem-Aranha 2: A Ameaça de Electro',
+    'Avengers: Endgame': 'Vingadores: Ultimato',
+    'Avengers: Infinity War': 'Vingadores: Guerra Infinita',
+    'The Avengers': 'Os Vingadores',
+    'Avengers: Age of Ultron': 'Vingadores: Era de Ultron',
+    'House of the Dragon': 'A Casa do Dragão',
+    'Game of Thrones': 'A Guerra dos Tronos',
+    'Breaking Bad': 'Breaking Bad: A Química do Mal',
+    'The Godfather': 'O Poderoso Chefão',
+    'The Godfather Part II': 'O Poderoso Chefão: Parte II',
+    'The Godfather Part III': 'O Poderoso Chefão: Parte III',
+    'The Lord of the Rings: The Fellowship of the Ring': 'O Senhor dos Anéis: A Sociedade do Anel',
+    'The Lord of the Rings: The Two Towers': 'O Senhor dos Anéis: As Duas Torres',
+    'The Lord of the Rings: The Return of the King': 'O Senhor dos Anéis: O Retorno do Rei',
+    'Inside Out': 'Divertida Mente',
+    'Inside Out 2': 'Divertida Mente 2',
+    'Avatar: The Way of Water': 'Avatar: O Caminho da Água',
+    'Avatar': 'Avatar',
+    'Fast X': 'Velozes e Furiosos 10',
+    'F9: The Fast Saga': 'Velozes e Furiosos 9',
+    'The Fate of the Furious': 'Velozes e Furiosos 8',
+    'Furious 7': 'Velozes e Furiosos 7',
+    'Fast Five': 'Velozes e Furiosos 5: Operação Rio',
+    'How to Train Your Dragon': 'Como Treinar o Seu Dragão',
+    'How to Train Your Dragon 2': 'Como Treinar o Seu Dragão 2',
+    'How to Train Your Dragon: The Hidden World': 'Como Treinar o Seu Dragão 3: O Mundo Escondido',
+    'Puss in Boots: The Last Wish': 'Gato de Botas 2: O Último Pedido',
+    'Finding Nemo': 'Procurando Nemo',
+    'Finding Dory': 'Procurando Dory',
+    'Monsters, Inc.': 'Monstros S.A.',
+    'Monsters University': 'Universidade Monstros',
+    'Spirited Away': 'A Viagem de Chihiro',
+    'Attack on Titan': 'Ataque dos Titãs (Shingeki no Kyojin)',
+    'Demon Slayer: Kimetsu no Yaiba': 'Demon Slayer: Kimetsu no Yaiba',
+    'Saving Private Ryan': 'O Resgate do Soldado Ryan',
+    'The Silence of the Lambs': 'O Silêncio dos Inocentes',
+    'Fight Club': 'Clube da Luta',
+    'The Dark Knight': 'Batman: O Cavaleiro das Trevas',
+    'The Dark Knight Rises': 'Batman: O Cavaleiro das Trevas Ressurge',
+    'Batman Begins': 'Batman Begins',
+    'Inception': 'A Origem',
+    'Interstellar': 'Interestelar',
+    'The Hunger Games': 'Jogos Vorazes',
+    'The Hunger Games: Catching Fire': 'Jogos Vorazes: Em Chamas',
+    'The Hunger Games: Mockingjay - Part 1': 'Jogos Vorazes: A Esperança - Parte 1',
+    'The Hunger Games: Mockingjay - Part 2': 'Jogos Vorazes: A Esperança - O Final',
+    'Pirates of the Caribbean: The Curse of the Black Pearl': 'Piratas do Caribe: A Maldição do Pérola Negra',
+    'Pirates of the Caribbean: Dead Man\'s Chest': 'Piratas do Caribe: O Baú da Morte',
+    'Pirates of the Caribbean: At World\'s End': 'Piratas do Caribe: No Fim do Mundo',
+    'Guardians of the Galaxy': 'Guardiões da Galáxia',
+    'Guardians of the Galaxy Vol. 2': 'Guardiões da Galáxia Vol. 2',
+    'Guardians of the Galaxy Vol. 3': 'Guardiões da Galáxia Vol. 3',
+    'Doctor Strange': 'Doutor Estranho',
+    'Doctor Strange in the Multiverse of Madness': 'Doutor Estranho no Multiverso da Loucura',
+    'Black Panther': 'Pantera Negra',
+    'Black Panther: Wakanda Forever': 'Pantera Negra: Wakanda Para Sempre',
+    'Money Heist': 'La Casa de Papel',
+    'Supernatural': 'Sobrenatural',
+    'Stranger Things': 'Stranger Things',
+    'The Boys': 'The Boys',
+    'Invincible': 'Invencível',
+    'Shrek': 'Shrek',
+    'Shrek 2': 'Shrek 2',
+    'Shrek the Third': 'Shrek Terceiro',
+    'Shrek Forever After': 'Shrek Para Sempre',
+    'Oppenheimer': 'Oppenheimer',
+    'Barbie': 'Barbie',
+    'The Matrix': 'Matrix',
+    'The Matrix Reloaded': 'Matrix Reloaded',
+    'The Matrix Revolutions': 'Matrix Revolutions',
+    'The Matrix Resurrections': 'Matrix Resurrections',
+    'Dune: Part Two': 'Duna: Parte 2',
+    'Dune': 'Duna',
+    'Gladiator': 'Gladiador',
+    'Gladiator II': 'Gladiador II',
+    'Moana': 'Moana: Um Mar de Aventuras',
+    'Moana 2': 'Moana 2',
+    'Wicked': 'Wicked',
+    'Joker': 'Coringa',
+    'Joker: Folie à Deux': 'Coringa: Delírio a Dois',
+    'Venom: The Last Dance': 'Venom: A Última Rodada',
+    'The Batman': 'Batman (2022)',
+    'Aquaman and the Lost Kingdom': 'Aquaman e o Reino Perdido',
+    'The Lion King': 'O Rei Leão',
+    'Toy Story': 'Toy Story: Um Mundo de Aventuras',
+    'Toy Story 2': 'Toy Story 2',
+    'Toy Story 3': 'Toy Story 3',
+    'Toy Story 4': 'Toy Story 4',
+    'Coco': 'Viva: A Vida é uma Festa',
+    'Frozen': 'Frozen: Uma Aventura Congelante',
+    'Frozen II': 'Frozen 2',
+    'Zootopia': 'Zootopia: Essa Cidade é o Bicho',
+    'Big Hero 6': 'Operação Big Hero',
+    'Tangled': 'Enrolados',
+    'The Incredibles': 'Os Incríveis',
+    'Incredibles 2': 'Os Incríveis 2',
+    'Cars': 'Carros',
+    'Cars 2': 'Carros 2',
+    'Cars 3': 'Carros 3',
+    'Ratatouille': 'Ratatouille',
+    'WALL·E': 'WALL-E',
+    'Up': 'Up: Altas Aventuras',
+    'Brave': 'Valente',
+    'Soul': 'Soul: Uma Vida com Propósito',
+    'Luca': 'Luca',
+    'Turning Red': 'Red: Crescer é uma Fera',
+    'Elemental': 'Elementos',
+    'The Shawshank Redemption': 'Um Sonho de Liberdade',
+    'Pulp Fiction': 'Pulp Fiction: Tempo de Violência',
+    'Forrest Gump': 'Forrest Gump: O Contador de Histórias',
+    'GoodFellas': 'Os Bons Companheiros',
+    'Se7en': 'Seven: Os Sete Crimes Capitais',
+    'The Usual Suspects': 'Os Suspeitos',
+    'Léon: The Professional': 'O Profissional',
+    'American History X': 'A Outra Face da Violência',
+    'The Pianist': 'O Pianista',
+    'The Departed': 'Os Infiltrados',
+    'The Prestige': 'O Grande Truque',
+    'Whiplash': 'Whiplash: Em Busca da Perfeição',
+    'Parasite': 'Parasita',
+    'Django Unchained': 'Django Livre',
+    'Inglourious Basterds': 'Bastardos Inglórios',
+    'The Wolf of Wall Street': 'O Lobo de Wall Street',
+    'Shutter Island': 'Ilha do Medo',
+    'Titanic': 'Titanic',
+    'Jurassic Park': 'Parque dos Dinossauros',
+    'Jurassic World': 'Jurassic World: O Mundo dos Dinossauros',
+    'Alien': 'Alien: O 8º Passageiro',
+    'Aliens': 'Aliens: O Resgate',
+    'The Terminator': 'O Exterminador do Futuro',
+    'Terminator 2: Judgment Day': 'O Exterminador do Futuro 2: O Julgamento Final',
+    'Back to the Future': 'De Volta Para o Futuro',
+    'Deadpool': 'Deadpool',
+    'Deadpool 2': 'Deadpool 2',
+    'Deadpool & Wolverine': 'Deadpool & Wolverine',
+    'Logan': 'Logan',
+    'The Wolf of Wall Street': 'O Lobo de Wall Street'
+  },
+
+  translateTitle(title) {
+    if (!title) return '';
+    const clean = title.trim();
+    if (this.titlesMap[clean]) return this.titlesMap[clean];
+    
+    // Strip trailing year like "Title (2024)"
+    const match = clean.match(/^(.+?)\s*\(\d{4}\)$/);
+    if (match && this.titlesMap[match[1].trim()]) {
+      return this.titlesMap[match[1].trim()];
+    }
+    return clean;
+  },
+
+  translateGenre(genre) {
+    if (!genre) return '';
+    return this.genresMap[genre.trim()] || genre.trim();
+  },
+
+  translateGenres(genres) {
+    if (!genres || !Array.isArray(genres)) return [];
+    return genres.map(g => this.translateGenre(g));
+  },
+
+  async translateText(text) {
+    if (!text || typeof text !== 'string' || text.length < 3) return text;
+    const cleanText = text.trim();
+    
+    // Check local storage cache
+    const cacheKey = 'jf_tr_' + cleanText.slice(0, 40).replace(/\W/g, '_');
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) return cached;
+
+    // If already in Portuguese, skip network call
+    if (/[áàâãéêíóôõúçÁÀÂÃÉÊÍÓÔÕÚÇ]/.test(cleanText) && /\b(que|para|com|uma|um|ele|ela|onde|quando|sua|seu|filme|série|história|após|sobre)\b/i.test(cleanText)) {
+      return cleanText;
+    }
+
+    try {
+      const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(cleanText.slice(0, 450))}&langpair=en|pt-BR`;
+      const res = await fetch(url).catch(() => null);
+      if (res && res.ok) {
+        const data = await res.json().catch(() => null);
+        const translated = data?.responseData?.translatedText;
+        if (translated && translated.length > 5 && !translated.includes('MYMEMORY WARNING')) {
+          localStorage.setItem(cacheKey, translated);
+          return translated;
+        }
+      }
+    } catch(e) {}
+    return cleanText;
+  },
+
+  localizeMeta(meta) {
+    if (!meta) return meta;
+    const localized = { ...meta };
+    localized.name = this.translateTitle(meta.name);
+    if (meta.genres) {
+      localized.genres = this.translateGenres(meta.genres);
+    }
+    return localized;
+  }
+};
+
 function getPosterUrl(meta) {
   if (!meta) return '';
   const cleanId = (meta.id || '').split(':')[0];
@@ -764,10 +1011,10 @@ const API = {
             return gLower === targetGenre || gLower.includes(targetGenre);
           });
         });
-        if (filtered.length > 0) return filtered;
+        if (filtered.length > 0) return filtered.map(item => PTBR_Engine.localizeMeta(item));
       }
 
-      return combined;
+      return combined.map(item => PTBR_Engine.localizeMeta(item));
     } catch (error) {
       console.error('Error fetching catalog:', error);
       return [];
@@ -784,7 +1031,11 @@ const API = {
       let data = res ? await res.json().catch(() => null) : null;
       
       if (data && data.meta) {
-        return data.meta;
+        const localized = PTBR_Engine.localizeMeta(data.meta);
+        if (localized.description) {
+          localized.description = await PTBR_Engine.translateText(localized.description);
+        }
+        return localized;
       }
       
       // Fallback: If requested type was 'movie' (or 'all'), try 'series'
@@ -794,7 +1045,11 @@ const API = {
       data = res ? await res.json().catch(() => null) : null;
       
       if (data && data.meta) {
-        return data.meta;
+        const localized = PTBR_Engine.localizeMeta(data.meta);
+        if (localized.description) {
+          localized.description = await PTBR_Engine.translateText(localized.description);
+        }
+        return localized;
       }
 
       // Fallback to local catalog items if Cinemeta network is down
@@ -2596,7 +2851,8 @@ const UI = {
         heroBackdrop.style.backgroundImage = `url('${bgUrl}')`;
       }
       if (heroTitle) {
-        const words = (meta.name || '').split(' ');
+        const translatedName = PTBR_Engine.translateTitle(meta.name || '');
+        const words = translatedName.split(' ');
         heroTitle.innerHTML = words.map((w, idx) => `<span class="kinetic-word" style="--i:${idx}">${w}</span>`).join(' ');
       }
       if (heroMeta) {
@@ -2610,6 +2866,14 @@ const UI = {
       }
       if (heroDescription) {
         heroDescription.innerHTML = `<span class="kinetic-desc">${meta.description || 'Sem descrição disponível.'}</span>`;
+        if (meta.description && !/[áàâãéêíóôõúçÁÀÂÃÉÊÍÓÔÕÚÇ]/.test(meta.description)) {
+          PTBR_Engine.translateText(meta.description).then(ptDesc => {
+            if (ptDesc && state.heroMeta && state.heroMeta.id === meta.id) {
+              state.heroMeta.description = ptDesc;
+              heroDescription.innerHTML = `<span class="kinetic-desc">${ptDesc}</span>`;
+            }
+          });
+        }
       }
 
       this.updateHeroWatchlistBtn();
@@ -2651,16 +2915,17 @@ const UI = {
     const isSeries = itemType === 'series';
     const rating = item.imdbRating ? `★ ${item.imdbRating}` : '★ 8.4';
     const matchScore = item.imdbRating ? `${Math.min(99, Math.round(parseFloat(item.imdbRating) * 11))}% Relevante` : '96% Relevante';
+    const displayName = PTBR_Engine.translateTitle(item.name || '');
     return `
       <div class="movie-card" onclick="UI.openModal('${item.id}', '${itemType}')">
         <div class="movie-poster-wrap">
-          <img class="movie-poster" src="${posterUrl}" alt="${item.name}" onerror="this.style.background='linear-gradient(135deg, #141520, #1f2032)'; this.style.minHeight='270px';" loading="lazy">
+          <img class="movie-poster" src="${posterUrl}" alt="${displayName}" onerror="this.style.background='linear-gradient(135deg, #141520, #1f2032)'; this.style.minHeight='270px';" loading="lazy">
           <span class="movie-card-badge">${rating}</span>
           <span class="movie-card-audio-tag">${isSeries ? 'Série' : '4K HDR'}</span>
         </div>
         <div class="movie-card-overlay">
           <div class="movie-card-details">
-            <span class="movie-card-title">${item.name}</span>
+            <span class="movie-card-title">${displayName}</span>
             <div class="movie-card-meta-row">
               <span class="movie-card-match">${matchScore}</span>
               <span>•</span>
@@ -3415,16 +3680,27 @@ const UI = {
     
     if (backdropImg) backdropImg.src = getBackgroundUrl(meta);
     if (poster) poster.src = getPosterUrl(meta);
-    if (title) title.textContent = meta.name;
+    if (title) title.textContent = PTBR_Engine.translateTitle(meta.name);
     if (metaInfo) {
       const year = meta.year || meta.releaseInfo || '';
       const rating = meta.imdbRating ? `<span class="rating">⭐ ${meta.imdbRating}</span>` : '';
       const runtime = meta.runtime ? `⏱ ${meta.runtime}` : '';
       metaInfo.innerHTML = [year, rating, runtime].filter(Boolean).join(' &nbsp;|&nbsp; ');
     }
-    if (description) description.textContent = meta.description || 'Sem descrição.';
+    if (description) {
+      description.textContent = meta.description || 'Sem descrição.';
+      if (meta.description && !/[áàâãéêíóôõúçÁÀÂÃÉÊÍÓÔÕÚÇ]/.test(meta.description)) {
+        PTBR_Engine.translateText(meta.description).then(ptText => {
+          if (ptText && state.currentMeta && state.currentMeta.id === meta.id) {
+            state.currentMeta.description = ptText;
+            description.textContent = ptText;
+          }
+        });
+      }
+    }
     if (genres && meta.genres) {
-      genres.innerHTML = meta.genres.map(g => `<span>${g}</span>`).join('');
+      const ptGenres = PTBR_Engine.translateGenres(meta.genres);
+      genres.innerHTML = ptGenres.map(g => `<span>${g}</span>`).join('');
     } else if (genres) {
       genres.innerHTML = '';
     }
