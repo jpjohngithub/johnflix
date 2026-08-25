@@ -3620,15 +3620,15 @@ const UI = {
     if (frost720Candidates.length > 0) {
       // Prioritize Dublado 720p if present
       const preferredFrost = frost720Candidates.find(s => s.isDub) || frost720Candidates[0];
-      const pingOk = await this.probeStreamUrl(preferredFrost.url, 1800);
-      if (pingOk) {
+      const res = await this.probeStreamUrl(preferredFrost.url, 1500);
+      if (res.ok) {
         bestIndex = rawStreams.indexOf(preferredFrost);
         foundTarget = true;
       } else {
         const altFrost = frost720Candidates.find(s => s !== preferredFrost);
         if (altFrost) {
-          const ping2 = await this.probeStreamUrl(altFrost.url, 1500);
-          if (ping2) {
+          const res2 = await this.probeStreamUrl(altFrost.url, 1200);
+          if (res2.ok) {
             bestIndex = rawStreams.indexOf(altFrost);
             foundTarget = true;
           }
@@ -3640,30 +3640,25 @@ const UI = {
       }
     }
 
-    // 2. If FrostStream 720p is not available, choose the best from any provider
+    // 2. If FrostStream 720p is not available, benchmark top candidates in parallel
     if (!foundTarget) {
-      const directCandidates = rawStreams.filter(s => s.url && s.isDub);
-      const directAny = rawStreams.filter(s => s.url);
-      const trustedEmbeds = rawStreams.filter(s => s.embedUrl && (s.provider === 'WarezCDN' || s.provider === 'EmbedderNet' || s.provider === 'VidSrc'));
+      const candidatesToProbe = rawStreams.slice(0, 6);
+      const probePromises = candidatesToProbe.map(async (candidate) => {
+        const urlToProbe = candidate.url || candidate.embedUrl;
+        if (!urlToProbe) return { candidate, ok: true, latency: 999 };
+        const probeResult = await this.probeStreamUrl(urlToProbe, 1200);
+        return { candidate, ok: probeResult.ok, latency: probeResult.latency };
+      });
 
-      if (directCandidates.length > 0) {
-        const candidate = directCandidates[0];
-        const pingOk = await this.probeStreamUrl(candidate.url, 2000);
-        if (pingOk) {
-          bestIndex = rawStreams.indexOf(candidate);
-        } else if (directCandidates.length > 1) {
-          const ping2 = await this.probeStreamUrl(directCandidates[1].url, 1500);
-          if (ping2) bestIndex = rawStreams.indexOf(directCandidates[1]);
-          else if (trustedEmbeds.length > 0) bestIndex = rawStreams.indexOf(trustedEmbeds[0]);
-        } else if (trustedEmbeds.length > 0) {
-          bestIndex = rawStreams.indexOf(trustedEmbeds[0]);
-        }
-      } else if (directAny.length > 0) {
-        const ping = await this.probeStreamUrl(directAny[0].url, 2000);
-        if (ping) bestIndex = rawStreams.indexOf(directAny[0]);
-        else if (trustedEmbeds.length > 0) bestIndex = rawStreams.indexOf(trustedEmbeds[0]);
-      } else if (trustedEmbeds.length > 0) {
-        bestIndex = rawStreams.indexOf(trustedEmbeds[0]);
+      const probeResults = await Promise.all(probePromises);
+      const working = probeResults.filter(r => r.ok);
+      if (working.length > 0) {
+        working.sort((a, b) => {
+          if (a.candidate.isDub && !b.candidate.isDub) return -1;
+          if (!a.candidate.isDub && b.candidate.isDub) return 1;
+          return a.latency - b.latency;
+        });
+        bestIndex = rawStreams.indexOf(working[0].candidate);
       }
     }
 
@@ -3681,16 +3676,17 @@ const UI = {
     this.testAndPlayStreamIndex(bestIndex);
   },
 
-  async probeStreamUrl(url, timeoutMs = 2000) {
-    if (!url) return false;
+  async probeStreamUrl(url, timeoutMs = 1500) {
+    if (!url) return { ok: false, latency: 9999 };
+    const startTime = Date.now();
     try {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeoutMs);
       await fetch(url, { method: 'HEAD', mode: 'no-cors', signal: controller.signal });
       clearTimeout(timer);
-      return true;
+      return { ok: true, latency: Date.now() - startTime };
     } catch(e) {
-      return false;
+      return { ok: false, latency: 9999 };
     }
   },
 
