@@ -1084,9 +1084,8 @@ const API = {
         : type;
 
       const streamId = realType === 'series' ? `${cleanId}:${season}:${episode}` : cleanId;
-      // New cache namespace ensures source lists are refreshed when a native
-      // provider is added instead of reusing an earlier list from localStorage.
-      const cacheKey = `st_v65_${streamId}`;
+      // Bump cache key to force-refresh stream lists with BestCine 4K/1080p
+      const cacheKey = `st_v100_${streamId}`;
       const cached = Cache.get(cacheKey);
       if (cached && cached.length > 0) return cached;
 
@@ -1157,7 +1156,7 @@ const API = {
 
       const [fenixRes, bestCineRes, frostRes, frostConfigRes, frostRailRes, brazucaRes, micoLeaoRes, torrentioRes, torrentioPtBrRes, tpbPlusRes] = await Promise.allSettled([
         fetchAddon('https://fenixflix.fenixhub.online', 2500),
-        fetchAddon('https://bestcine.alwaysdata.net', 3000),
+        fetchAddon('https://bestcine.alwaysdata.net', 3500),
         fetchAddon('https://froststream.cloutteam.com', 2500),
         fetchAddon(frostConfiguredUrl, 2500),
         fetchAddon(frostRailwayUrl, 2500),
@@ -1188,21 +1187,25 @@ const API = {
         if (!s.url) return;
         const rawInfo = `${s.name || ''} ${s.title || ''}`.toLowerCase();
         const isDub = rawInfo.includes('dublado') || rawInfo.includes('🇧🇷') || rawInfo.includes('português') || rawInfo.includes('portugues');
-        let quality = 'HD';
+        let quality = '1080p';
         if (rawInfo.includes('4k') || rawInfo.includes('2160')) quality = '4K HDR';
         else if (rawInfo.includes('1080')) quality = '1080p';
         else if (rawInfo.includes('720')) quality = '720p';
         
+        let serverName = '';
+        const serverMatch = (s.title || '').match(/⚡\s*Servidor\s*([^\n]+)/i) || (s.name || '').match(/\[(.*?)\]/);
+        if (serverMatch) serverName = ` [${serverMatch[1].trim()}]`;
+
         const cleanTitle = s.title ? s.title.replace(/\n/g, ' • ') : `BestCine ${quality}`;
         directVideoSources.push({
           provider: 'BestCine',
-          name: `🎬 BestCine ${quality} (${isDub ? 'Dublado PT-BR' : 'Legendado'})`,
+          name: `🎬 BestCine${serverName} ${quality} (${isDub ? 'Dublado PT-BR' : 'Legendado'})`,
           title: cleanTitle,
           url: s.url,
           isDub: isDub,
           quality: quality,
           category: 'bestcine',
-          score: 140 + (quality.includes('4K') ? 35 : quality === '1080p' ? 45 : quality === '720p' ? 50 : 20) + (isDub ? 40 : 0)
+          score: 150 + (quality.includes('4K') ? 35 : quality === '1080p' ? 45 : quality === '720p' ? 50 : 20) + (isDub ? 40 : 0)
         });
       });
       frostStreams.forEach(s => {
@@ -4000,62 +4003,15 @@ const UI = {
       return;
     }
 
-    // 1. Explicitly check for FrostStream 720p FIRST
-    const frost720Candidates = rawStreams.filter(s => 
-      s.url && 
-      (s.provider === 'FrostStream' || s.category === 'frost') && 
-      (s.quality === '720p' || (s.name && s.name.includes('720p')) || (s.title && s.title.includes('720')))
-    );
-
     let bestIndex = 0;
-    let foundTarget = false;
-
-    if (frost720Candidates.length > 0) {
-      // Prioritize Dublado 720p if present
-      const preferredFrost = frost720Candidates.find(s => s.isDub) || frost720Candidates[0];
-      const res = await this.probeStreamUrl(preferredFrost.url, 1500);
-      if (res.ok) {
-        bestIndex = rawStreams.indexOf(preferredFrost);
-        foundTarget = true;
-      } else {
-        const altFrost = frost720Candidates.find(s => s !== preferredFrost);
-        if (altFrost) {
-          const res2 = await this.probeStreamUrl(altFrost.url, 1200);
-          if (res2.ok) {
-            bestIndex = rawStreams.indexOf(altFrost);
-            foundTarget = true;
-          }
-        }
-        if (!foundTarget) {
-          bestIndex = rawStreams.indexOf(preferredFrost);
-          foundTarget = true;
-        }
-      }
+    // Prioritize BestCine / FrostStream Dublado (Fastest native streaming)
+    const directCandidate = rawStreams.findIndex(s => (s.category === 'bestcine' || s.category === 'frost') && s.isDub);
+    if (directCandidate >= 0) {
+      bestIndex = directCandidate;
+    } else {
+      const anyDirect = rawStreams.findIndex(s => s.url && (s.category === 'bestcine' || s.category === 'frost' || s.category === 'fenix'));
+      if (anyDirect >= 0) bestIndex = anyDirect;
     }
-
-    // 2. If FrostStream 720p is not available, benchmark top candidates in parallel
-    if (!foundTarget) {
-      const candidatesToProbe = rawStreams.slice(0, 6);
-      const probePromises = candidatesToProbe.map(async (candidate) => {
-        const urlToProbe = candidate.url || candidate.embedUrl;
-        if (!urlToProbe) return { candidate, ok: true, latency: 999 };
-        const probeResult = await this.probeStreamUrl(urlToProbe, 1200);
-        return { candidate, ok: probeResult.ok, latency: probeResult.latency };
-      });
-
-      const probeResults = await Promise.all(probePromises);
-      const working = probeResults.filter(r => r.ok);
-      if (working.length > 0) {
-        working.sort((a, b) => {
-          if (a.candidate.isDub && !b.candidate.isDub) return -1;
-          if (!a.candidate.isDub && b.candidate.isDub) return 1;
-          return a.latency - b.latency;
-        });
-        bestIndex = rawStreams.indexOf(working[0].candidate);
-      }
-    }
-
-    if (bestIndex < 0 || bestIndex >= rawStreams.length) bestIndex = 0;
 
     state.activeStreams = rawStreams;
     state.currentStreamIndex = bestIndex;
@@ -4063,7 +4019,7 @@ const UI = {
 
     const winner = rawStreams[bestIndex];
     if (playerLoading) {
-      playerLoading.querySelector('p').textContent = `Conectando ao servidor ${winner.name}...`;
+      playerLoading.querySelector('p').textContent = `Conectando a ${winner.name}...`;
     }
 
     this.testAndPlayStreamIndex(bestIndex);
