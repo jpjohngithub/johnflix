@@ -3035,6 +3035,9 @@ const UI = {
   quickToggleWatchlist(e, cleanId) {
     if (e && e.stopPropagation) e.stopPropagation();
     if (!cleanId) return;
+    if (this._togglingWatchlist) return;
+    this._togglingWatchlist = true;
+    setTimeout(() => { this._togglingWatchlist = false; }, 300);
 
     let meta = null;
     if (state.currentMeta && state.currentMeta.id.startsWith(cleanId)) {
@@ -3947,7 +3950,14 @@ const UI = {
   },
 
   toggleModalWatchlist(e) {
-    if (e && e.stopPropagation) e.stopPropagation();
+    if (e) {
+      if (e.stopPropagation) e.stopPropagation();
+      if (e.preventDefault) e.preventDefault();
+    }
+    if (this._togglingWatchlist) return;
+    this._togglingWatchlist = true;
+    setTimeout(() => { this._togglingWatchlist = false; }, 300);
+
     if (!state.currentMeta) return;
     const added = User.toggleWatchlist(state.currentMeta);
     this.updateModalWatchlistBtn();
