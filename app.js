@@ -473,7 +473,7 @@ const User = {
         const item = raw[key];
         if (!item) return;
         const cleanId = (item.id || key).split(':')[0];
-        if (!cleanId || !cleanId.startsWith('tt')) return;
+        if (!cleanId) return;
 
         let poster = item.poster;
         if (!poster || poster.includes(':') || poster === '') {
@@ -2946,14 +2946,9 @@ const UI = {
     const displayName = PTBR_Engine.translateTitle(item.name || '');
     const cleanId = (item.id || '').split(':')[0];
     const isSaved = User.isInWatchlist(cleanId);
-    
-    const escapedName = (item.name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-    const escapedPoster = (posterUrl || '').replace(/'/g, "\\'");
-    const itemYear = item.year || '';
-    const itemRating = item.imdbRating || '';
 
     return `
-      <div class="movie-card" onclick="UI.openModal('${item.id}', '${itemType}')">
+      <div class="movie-card" onclick="UI.openModal('${cleanId}', '${itemType}')">
         <div class="movie-poster-wrap">
           <img class="movie-poster" src="${posterUrl}" alt="${displayName}" onerror="this.style.background='linear-gradient(135deg, #141520, #1f2032)'; this.style.minHeight='270px';" loading="lazy">
           <span class="movie-card-badge">${rating}</span>
@@ -2968,11 +2963,11 @@ const UI = {
               <span class="movie-card-year">${item.year || (isSeries ? 'Série' : 'Filme')}</span>
             </div>
             <div class="movie-card-actions">
-              <button class="card-action-btn play" title="Assistir Agora" onclick="event.stopPropagation(); UI.quickPlayMovie('${item.id}', '${itemType}')">▶</button>
-              <button class="card-action-btn watchlist ${isSaved ? 'active' : ''}" title="${isSaved ? 'Remover da Minha Lista' : 'Salvar na Minha Lista'}" onclick="event.stopPropagation(); UI.quickToggleWatchlist(event, '${cleanId}', '${escapedName}', '${escapedPoster}', '${itemType}', '${itemYear}', '${itemRating}')">
+              <button class="card-action-btn play" title="Assistir Agora" onclick="event.stopPropagation(); UI.quickPlayMovie('${cleanId}', '${itemType}')">▶</button>
+              <button class="card-action-btn watchlist ${isSaved ? 'active' : ''}" title="${isSaved ? 'Remover da Minha Lista' : 'Salvar na Minha Lista'}" onclick="event.stopPropagation(); UI.quickToggleWatchlist(event, '${cleanId}')">
                 ${isSaved ? '★' : '☆'}
               </button>
-              <button class="card-action-btn" title="Mais Informações" onclick="event.stopPropagation(); UI.openModal('${item.id}', '${itemType}')">ℹ</button>
+              <button class="card-action-btn" title="Mais Informações" onclick="event.stopPropagation(); UI.openModal('${cleanId}', '${itemType}')">ℹ</button>
             </div>
           </div>
         </div>
@@ -2990,19 +2985,45 @@ const UI = {
     }
   },
 
-  quickToggleWatchlist(e, id, name, poster, type, year, imdbRating) {
+  quickToggleWatchlist(e, cleanId) {
     if (e && e.stopPropagation) e.stopPropagation();
-    const cleanId = (id || '').split(':')[0];
-    const meta = {
-      id: cleanId,
-      name: name || 'Filme / Série',
-      poster: poster || `https://images.metahub.space/poster/medium/${cleanId}/img`,
-      type: type || 'movie',
-      year: year || '',
-      imdbRating: imdbRating || ''
-    };
+    if (!cleanId) return;
+
+    let meta = null;
+    if (state.currentMeta && state.currentMeta.id.startsWith(cleanId)) {
+      meta = state.currentMeta;
+    }
+    if (!meta && state.heroMeta && state.heroMeta.id.startsWith(cleanId)) {
+      meta = state.heroMeta;
+    }
+    if (!meta) {
+      const allPool = [
+        ...(state.catalogs.popular || []),
+        ...(state.catalogs.featured || []),
+        ...(state.catalogs.series || []),
+        ...(state.catalogs.anime || [])
+      ];
+      meta = allPool.find(x => x && x.id && x.id.startsWith(cleanId));
+    }
+    if (!meta && typeof CINEMA_SAGAS !== 'undefined') {
+      for (const saga of CINEMA_SAGAS) {
+        const match = (saga.items || []).find(i => i.id && i.id.startsWith(cleanId));
+        if (match) { meta = match; break; }
+      }
+    }
+    if (!meta) {
+      const existing = User.getWatchlist();
+      meta = existing[cleanId] || {
+        id: cleanId,
+        name: 'Filme / Série',
+        poster: `https://images.metahub.space/poster/medium/${cleanId}/img`,
+        type: state.currentType === 'series' ? 'series' : 'movie'
+      };
+    }
+
     const added = User.toggleWatchlist(meta);
-    Toast.show(added ? `⭐ Adicionado à sua lista!` : `Removido da sua lista`, added ? 'success' : 'info');
+    const displayName = PTBR_Engine.translateTitle(meta.name || '');
+    Toast.show(added ? `⭐ "${displayName}" salvo na Minha Lista!` : `Removido da Minha Lista`, added ? 'success' : 'info');
     
     const btn = e?.currentTarget;
     if (btn) {
@@ -4128,26 +4149,41 @@ const UI = {
   
   async loadStreams() {
     if (!state.currentMeta) return;
-    
+
+    const targetMetaId = state.currentMeta.id;
+    const targetSeason = state.currentSeason || 1;
+    const targetEpisode = state.currentEpisode || 1;
+
+    state.streamLoadSeq = (state.streamLoadSeq || 0) + 1;
+    const currentSeq = state.streamLoadSeq;
+
     const streamsLoading = document.getElementById('streams-loading');
     const streamsList = document.getElementById('streams-list');
-    
+
     if (streamsLoading) streamsLoading.classList.remove('hidden');
-    if (streamsList) streamsList.innerHTML = '';
-    
+
     const streams = await API.fetchStreams(
       state.currentType, 
-      state.currentMeta.id, 
-      state.currentSeason, 
-      state.currentEpisode
+      targetMetaId, 
+      targetSeason, 
+      targetEpisode
     );
-    
+
+    // If query is stale or user closed modal, ignore!
+    if (currentSeq !== state.streamLoadSeq || !state.currentMeta || state.currentMeta.id !== targetMetaId) {
+      return;
+    }
+
     if (streamsLoading) streamsLoading.classList.add('hidden');
-    
+
     if (streams && streams.length > 0) {
       state.activeStreams = streams;
       this.updateHudStreamSelector(streams, 0);
       this.renderStreams(streams);
+    } else {
+      if (streamsList) {
+        streamsList.innerHTML = '<p style="color:#a0a0b0; text-align:center; padding:2rem;">Nenhuma fonte encontrada para este episódio/filme no momento. Tente outro servidor.</p>';
+      }
     }
   },
   
