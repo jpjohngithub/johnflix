@@ -2994,10 +2994,17 @@ const UI = {
     const cleanId = (item.id || '').split(':')[0];
     const isSaved = User.isInWatchlist(cleanId);
 
+    const bookmarkIcon = isSaved
+      ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="#facc15" stroke="none"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>'
+      : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>';
+
     return `
       <div class="movie-card" onclick="UI.openModal('${cleanId}', '${itemType}')">
         <div class="movie-poster-wrap">
           <img class="movie-poster" src="${posterUrl}" alt="${displayName}" onerror="this.style.background='linear-gradient(135deg, #141520, #1f2032)'; this.style.minHeight='270px';" loading="lazy">
+          <button class="card-bookmark-btn ${isSaved ? 'saved' : ''}" data-id="${cleanId}" title="${isSaved ? 'Remover da Minha Lista' : 'Salvar na Minha Lista'}" onclick="event.stopPropagation(); UI.quickToggleWatchlist(event, '${cleanId}')">
+            ${bookmarkIcon}
+          </button>
           <span class="movie-card-badge">${rating}</span>
           <span class="movie-card-audio-tag">${isSeries ? 'Série' : '4K HDR'}</span>
         </div>
@@ -3011,7 +3018,7 @@ const UI = {
             </div>
             <div class="movie-card-actions">
               <button class="card-action-btn play" title="Assistir Agora" onclick="event.stopPropagation(); UI.quickPlayMovie('${cleanId}', '${itemType}')">▶</button>
-              <button class="card-action-btn watchlist ${isSaved ? 'active' : ''}" title="${isSaved ? 'Remover da Minha Lista' : 'Salvar na Minha Lista'}" onclick="event.stopPropagation(); UI.quickToggleWatchlist(event, '${cleanId}')">
+              <button class="card-action-btn watchlist ${isSaved ? 'active' : ''}" data-id="${cleanId}" title="${isSaved ? 'Remover da Minha Lista' : 'Salvar na Minha Lista'}" onclick="event.stopPropagation(); UI.quickToggleWatchlist(event, '${cleanId}')">
                 ${isSaved ? '★' : '☆'}
               </button>
               <button class="card-action-btn" title="Mais Informações" onclick="event.stopPropagation(); UI.openModal('${cleanId}', '${itemType}')">ℹ</button>
@@ -3037,7 +3044,7 @@ const UI = {
     if (!cleanId) return;
     if (this._togglingWatchlist) return;
     this._togglingWatchlist = true;
-    setTimeout(() => { this._togglingWatchlist = false; }, 300);
+    setTimeout(() => { this._togglingWatchlist = false; }, 280);
 
     let meta = null;
     if (state.currentMeta && state.currentMeta.id.startsWith(cleanId)) {
@@ -3051,7 +3058,8 @@ const UI = {
         ...(state.catalogs.popular || []),
         ...(state.catalogs.featured || []),
         ...(state.catalogs.series || []),
-        ...(state.catalogs.anime || [])
+        ...(state.catalogs.anime || []),
+        ...(state.catalogs.recents || [])
       ];
       meta = allPool.find(x => x && x.id && x.id.startsWith(cleanId));
     }
@@ -3075,8 +3083,20 @@ const UI = {
     const displayName = PTBR_Engine.translateTitle(meta.name || '');
     Toast.show(added ? `⭐ "${displayName}" salvo na Minha Lista!` : `Removido da Minha Lista`, added ? 'success' : 'info');
     
-    const btn = e?.currentTarget;
-    if (btn) {
+    // Update all matching bookmark & overlay buttons on screen
+    document.querySelectorAll(`.card-bookmark-btn[data-id="${cleanId}"]`).forEach(btn => {
+      if (added) {
+        btn.classList.add('saved');
+        btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="#facc15" stroke="none"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>';
+        btn.title = 'Remover da Minha Lista';
+      } else {
+        btn.classList.remove('saved');
+        btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>';
+        btn.title = 'Salvar na Minha Lista';
+      }
+    });
+
+    document.querySelectorAll(`.card-action-btn.watchlist[data-id="${cleanId}"]`).forEach(btn => {
       if (added) {
         btn.classList.add('active');
         btn.textContent = '★';
@@ -3086,10 +3106,14 @@ const UI = {
         btn.textContent = '☆';
         btn.title = 'Salvar na Minha Lista';
       }
-    }
+    });
     
     if (state.heroMeta && state.heroMeta.id.startsWith(cleanId)) {
       this.updateHeroWatchlistBtn();
+    }
+
+    if (state.currentMeta && state.currentMeta.id.startsWith(cleanId)) {
+      this.updateModalWatchlistBtn();
     }
     
     if (state.currentType === 'watchlist' || state.currentType === 'favorites') {
@@ -3103,10 +3127,18 @@ const UI = {
     const num = index + 1;
     const formattedNum = num < 10 ? `#0${num}` : `#${num}`;
     const mediaType = item.type || 'movie';
+    const isSaved = User.isInWatchlist(cleanId);
+    const bookmarkIcon = isSaved
+      ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="#facc15" stroke="none"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>'
+      : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>';
+
     return `
       <div class="movie-card cinema-card" onclick="UI.openModal('${cleanId}', '${mediaType}')">
         <div class="movie-poster-wrap">
           <img class="movie-poster" src="${posterUrl}" alt="${item.name}" onerror="this.style.background='linear-gradient(135deg, #141520, #1f2032)'; this.style.minHeight='270px';" loading="lazy">
+          <button class="card-bookmark-btn ${isSaved ? 'saved' : ''}" data-id="${cleanId}" title="${isSaved ? 'Remover da Minha Lista' : 'Salvar na Minha Lista'}" onclick="event.stopPropagation(); UI.quickToggleWatchlist(event, '${cleanId}')">
+            ${bookmarkIcon}
+          </button>
           <span class="movie-card-badge" style="background:${accent}; color:white;">${formattedNum}</span>
           <span class="movie-card-audio-tag">${item.year}</span>
         </div>
@@ -3117,8 +3149,11 @@ const UI = {
               <span class="movie-card-year">${item.timeline || `${item.year} • Capítulo ${num}`}</span>
             </div>
             <div class="movie-card-actions">
-              <button class="card-action-btn play" title="Assistir">▶</button>
-              <button class="card-action-btn" title="Mais Informações">ℹ</button>
+              <button class="card-action-btn play" title="Assistir Agora" onclick="event.stopPropagation(); UI.quickPlayMovie('${cleanId}', '${mediaType}')">▶</button>
+              <button class="card-action-btn watchlist ${isSaved ? 'active' : ''}" data-id="${cleanId}" title="${isSaved ? 'Remover da Minha Lista' : 'Salvar na Minha Lista'}" onclick="event.stopPropagation(); UI.quickToggleWatchlist(event, '${cleanId}')">
+                ${isSaved ? '★' : '☆'}
+              </button>
+              <button class="card-action-btn" title="Mais Informações" onclick="event.stopPropagation(); UI.openModal('${cleanId}', '${mediaType}')">ℹ</button>
             </div>
           </div>
         </div>
@@ -3284,31 +3319,66 @@ const UI = {
     if (state.currentType === 'favorites' || state.currentType === 'watchlist') {
       const watchlistMap = User.getWatchlist();
       const favorites = Object.values(watchlistMap).sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+      
+      const recentsPool = [
+        ...(state.catalogs.popular || []),
+        ...(state.catalogs.featured || [])
+      ].slice(0, 10);
+
+      const suggestionsHtml = recentsPool
+        .filter(item => item && !User.isInWatchlist(item.id))
+        .slice(0, 6)
+        .map(item => this.createMovieCard(item))
+        .join('');
+
+      html += `
+        <div class="search-results watchlist-container" style="padding-top: 100px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; margin-bottom:2rem; padding: 0 4%;">
+            <div>
+              <h1 class="section-title" style="margin-bottom:0.25rem; padding-left:0; font-size:2rem; color:#ffffff; display:flex; align-items:center; gap:10px;">
+                <span>⭐</span> Minha Lista (${favorites.length})
+              </h1>
+              <p style="color:var(--text-secondary); font-size:0.9rem;">Seus filmes e séries favoritos salvos para assistir quando quiser.</p>
+            </div>
+            <div style="display:flex; gap:10px; align-items:center;">
+              <button class="btn btn-primary" onclick="document.getElementById('search-toggle')?.click(); document.getElementById('search-input')?.focus();" style="padding:10px 20px; font-size:0.9rem; gap:8px;">
+                🔍 Buscar & Adicionar
+              </button>
+            </div>
+          </div>
+      `;
+
       if (favorites.length > 0) {
         const cardsHtml = favorites.map(item => this.createMovieCard(item)).join('');
         html += `
-          <div class="search-results watchlist-container">
-            <h2 class="section-title">Minha Lista (${favorites.length})</h2>
-            <div class="search-grid">
+            <div class="search-grid" style="padding: 0 4%;">
               ${cardsHtml}
             </div>
           </div>
         `;
       } else {
         html += `
-          <div class="empty-state watchlist-container" style="text-align:center; padding: 120px 20px 80px;">
-            <div style="font-size: 3rem; margin-bottom: 1rem; color: var(--accent);">
-              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+          <div class="empty-state watchlist-container" style="text-align:center; padding: 60px 20px 40px;">
+            <div style="font-size: 3.5rem; margin-bottom: 1rem; color: #facc15;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#facc15" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
             </div>
-            <h2 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 0.5rem; color: white;">Sua lista está vazia</h2>
-            <p style="color: var(--text-secondary); max-width: 500px; margin: 0 auto 1.5rem; line-height: 1.6;">
-              Navegue pelos filmes e séries e clique no botão <strong>"Salvar na Lista"</strong> para montar sua coleção personalizada!
+            <h2 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 0.5rem; color: white;">Sua lista ainda está vazia</h2>
+            <p style="color: var(--text-secondary); max-width: 540px; margin: 0 auto 1.5rem; line-height: 1.6;">
+              Clique no ícone de <strong>Bookmark (🔖)</strong> no canto de qualquer filme ou no botão <strong>"Adicionar à Minha Lista"</strong> dentro dos detalhes!
             </p>
-            <button class="btn btn-primary" onclick="document.querySelector('[data-type=\\'movie\\']').click();" style="margin: 0 auto; padding: 12px 28px;">
-              Explorar Filmes e Séries
-            </button>
           </div>
         `;
+        if (suggestionsHtml) {
+          html += `
+            <div style="margin-top: 2rem; padding: 0 4%;">
+              <h3 style="color:#ffffff; font-size:1.2rem; font-weight:700; margin-bottom:1rem;">Sugestões Populares para sua Lista:</h3>
+              <div class="search-grid">
+                ${suggestionsHtml}
+              </div>
+            </div>
+          `;
+        }
+        html += `</div>`;
       }
       container.innerHTML = html;
       this.afterCatalogPaint(container);
@@ -3937,15 +4007,17 @@ const UI = {
     const cleanId = (state.currentMeta.id || '').split(':')[0];
     const isSaved = User.isInWatchlist(cleanId);
     if (isSaved) {
-      watchlistBtn.innerHTML = '⭐ Na Minha Lista ✓';
-      watchlistBtn.style.background = 'rgba(139, 92, 246, 0.45)';
-      watchlistBtn.style.borderColor = 'var(--accent)';
-      watchlistBtn.style.color = '#ffffff';
+      watchlistBtn.className = 'btn btn-secondary modal-watchlist-btn in-list';
+      watchlistBtn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        <span>Salvo na Minha Lista</span>
+      `;
     } else {
-      watchlistBtn.innerHTML = '⭐ + Minha Lista';
-      watchlistBtn.style.background = 'rgba(255, 255, 255, 0.08)';
-      watchlistBtn.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-      watchlistBtn.style.color = 'var(--text-primary)';
+      watchlistBtn.className = 'btn btn-secondary modal-watchlist-btn';
+      watchlistBtn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        <span>Adicionar à Minha Lista</span>
+      `;
     }
   },
 
