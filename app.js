@@ -338,6 +338,46 @@ function openMagnet(infoHash, name) {
 
 
 
+// --- Toast Notifications Module ---
+const Toast = {
+  show(message, type = 'info', duration = 2400) {
+    try {
+      let container = document.getElementById('johnflix-toast-container');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'johnflix-toast-container';
+        container.style.cssText = 'position:fixed; bottom:24px; right:24px; z-index:99999; display:flex; flex-direction:column; gap:10px; pointer-events:none;';
+        document.body.appendChild(container);
+      }
+
+      const toast = document.createElement('div');
+      toast.className = `johnflix-toast toast-${type}`;
+      const bg = type === 'success' 
+        ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(5, 150, 105, 0.95))' 
+        : 'linear-gradient(135deg, rgba(139, 92, 246, 0.95), rgba(109, 40, 217, 0.95))';
+      toast.style.cssText = `background:${bg}; color:#ffffff; padding:12px 20px; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.5), 0 0 15px rgba(139,92,246,0.3); font-weight:600; font-size:0.92rem; display:flex; align-items:center; gap:10px; backdrop-filter:blur(12px); border:1px solid rgba(255,255,255,0.2); transform:translateY(20px); opacity:0; transition:all 0.3s cubic-bezier(0.16, 1, 0.3, 1);`;
+      toast.innerHTML = `<span>${message}</span>`;
+
+      container.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.style.transform = 'translateY(0)';
+        toast.style.opacity = '1';
+      });
+
+      setTimeout(() => {
+        toast.style.transform = 'translateY(20px)';
+        toast.style.opacity = '0';
+        setTimeout(() => {
+          if (toast.parentNode) toast.remove();
+        }, 350);
+      }, duration);
+    } catch(e) {
+      console.log('Toast:', message);
+    }
+  }
+};
+
 // --- Automatic Watch Progress Engine (No Account Required) ---
 
 function formatTime(seconds) {
@@ -2197,6 +2237,10 @@ const UI = {
     document.getElementById('modal-auto-play-btn')?.addEventListener('click', () => {
       this.autoPlayBestStream();
     });
+
+    document.getElementById('modal-watchlist-btn')?.addEventListener('click', (e) => {
+      this.toggleModalWatchlist(e);
+    });
     
     document.getElementById('hero-info-btn')?.addEventListener('click', () => {
       if (state.heroMeta) this.openModal(state.heroMeta.id);
@@ -3769,17 +3813,47 @@ const UI = {
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
     
+    const cleanId = (id || '').split(':')[0];
     const reqType = explicitType || state.currentType;
+
+    // Fast instant placeholder from memory so user can click watchlist immediately
+    let initialMeta = null;
+    if (state.heroMeta && state.heroMeta.id.startsWith(cleanId)) initialMeta = state.heroMeta;
+    if (!initialMeta) {
+      const allPool = [
+        ...(state.catalogs.popular || []),
+        ...(state.catalogs.featured || []),
+        ...(state.catalogs.series || []),
+        ...(state.catalogs.anime || [])
+      ];
+      initialMeta = allPool.find(x => x && x.id && x.id.startsWith(cleanId));
+    }
+    if (!initialMeta && typeof CINEMA_SAGAS !== 'undefined') {
+      for (const saga of CINEMA_SAGAS) {
+        const match = (saga.items || []).find(i => i.id && i.id.startsWith(cleanId));
+        if (match) { initialMeta = match; break; }
+      }
+    }
+    if (!initialMeta) {
+      const existing = User.getWatchlist();
+      if (existing[cleanId]) initialMeta = existing[cleanId];
+    }
+    if (initialMeta) {
+      state.currentMeta = initialMeta;
+      this.updateModalWatchlistBtn();
+    }
+
     const meta = await API.fetchMeta(reqType, id);
-    if (!meta) {
+    if (!meta && !initialMeta) {
       alert('Erro ao carregar detalhes.');
       this.closeModal();
       return;
     }
     
-    state.currentMeta = meta;
+    state.currentMeta = meta || initialMeta;
     state.feedbackConfirmed = false;
     
+    const activeMeta = state.currentMeta;
     const backdropImg = document.getElementById('modal-backdrop-img');
     const poster = document.getElementById('modal-poster');
     const title = document.getElementById('modal-title');
@@ -3788,44 +3862,43 @@ const UI = {
     const genres = document.getElementById('modal-genres');
     const cast = document.getElementById('modal-cast');
     
-    if (backdropImg) backdropImg.src = getBackgroundUrl(meta);
-    if (poster) poster.src = getPosterUrl(meta);
-    if (title) title.textContent = PTBR_Engine.translateTitle(meta.name);
+    if (backdropImg) backdropImg.src = getBackgroundUrl(activeMeta);
+    if (poster) poster.src = getPosterUrl(activeMeta);
+    if (title) title.textContent = PTBR_Engine.translateTitle(activeMeta.name);
     if (metaInfo) {
-      const year = meta.year || meta.releaseInfo || '';
-      const rating = meta.imdbRating ? `<span class="rating">⭐ ${meta.imdbRating}</span>` : '';
-      const runtime = meta.runtime ? `⏱ ${meta.runtime}` : '';
+      const year = activeMeta.year || activeMeta.releaseInfo || '';
+      const rating = activeMeta.imdbRating ? `<span class="rating">⭐ ${activeMeta.imdbRating}</span>` : '';
+      const runtime = activeMeta.runtime ? `⏱ ${activeMeta.runtime}` : '';
       metaInfo.innerHTML = [year, rating, runtime].filter(Boolean).join(' &nbsp;|&nbsp; ');
     }
     if (description) {
-      description.textContent = meta.description || 'Sem descrição.';
-      if (meta.description && !/[áàâãéêíóôõúçÁÀÂÃÉÊÍÓÔÕÚÇ]/.test(meta.description)) {
-        PTBR_Engine.translateText(meta.description).then(ptText => {
-          if (ptText && state.currentMeta && state.currentMeta.id === meta.id) {
+      description.textContent = activeMeta.description || 'Sem descrição.';
+      if (activeMeta.description && !/[áàâãéêíóôõúçÁÀÂÃÉÊÍÓÔÕÚÇ]/.test(activeMeta.description)) {
+        PTBR_Engine.translateText(activeMeta.description).then(ptText => {
+          if (ptText && state.currentMeta && state.currentMeta.id === activeMeta.id) {
             state.currentMeta.description = ptText;
             description.textContent = ptText;
           }
         });
       }
     }
-    if (genres && meta.genres) {
-      const ptGenres = PTBR_Engine.translateGenres(meta.genres);
+    if (genres && activeMeta.genres) {
+      const ptGenres = PTBR_Engine.translateGenres(activeMeta.genres);
       genres.innerHTML = ptGenres.map(g => `<span>${g}</span>`).join('');
     } else if (genres) {
       genres.innerHTML = '';
     }
-    if (cast) cast.textContent = meta.cast ? `Elenco: ${meta.cast.slice(0, 6).join(', ')}` : '';
+    if (cast) cast.textContent = activeMeta.cast ? `Elenco: ${activeMeta.cast.slice(0, 6).join(', ')}` : '';
     
-    // Show/hide series controls based on content type
     // Dynamic Series Seasons & Episodes Controls
-    this.setupSeriesControls(meta);
+    this.setupSeriesControls(activeMeta);
 
     // Check saved watch progress
-    const progress = User.getProgress(meta.id);
+    const progress = User.getProgress(activeMeta.id);
     const autoPlayBtn = document.getElementById('modal-auto-play-btn');
     if (autoPlayBtn) {
       if (progress && progress.currentTime > 10) {
-        const epInfo = (meta.type === 'series' || state.currentType === 'series') ? ` [T${state.currentSeason}:E${state.currentEpisode}]` : '';
+        const epInfo = (activeMeta.type === 'series' || state.currentType === 'series') ? ` [T${state.currentSeason}:E${state.currentEpisode}]` : '';
         autoPlayBtn.innerHTML = `
           <span class="btn-autoplay-icon">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
@@ -3848,34 +3921,45 @@ const UI = {
       }
     }
 
-    // Watchlist button state & click listener
-    const watchlistBtn = document.getElementById('modal-watchlist-btn');
-    if (watchlistBtn) {
-      const updateWatchlistBtnUI = () => {
-        const isSaved = User.isInWatchlist(meta.id);
-        if (isSaved) {
-          watchlistBtn.innerHTML = '⭐ Na Minha Lista ✓';
-          watchlistBtn.style.background = 'rgba(139, 92, 246, 0.4)';
-          watchlistBtn.style.borderColor = 'var(--accent)';
-        } else {
-          watchlistBtn.innerHTML = '⭐ + Minha Lista';
-          watchlistBtn.style.background = 'rgba(255, 255, 255, 0.08)';
-          watchlistBtn.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-        }
-      };
-
-      updateWatchlistBtnUI();
-
-      watchlistBtn.onclick = () => {
-        if (!state.currentMeta) return;
-        User.toggleWatchlist(state.currentMeta);
-        updateWatchlistBtnUI();
-        this.renderCatalogs();
-      };
-    }
+    // Update watchlist button state
+    this.updateModalWatchlistBtn();
 
     // Load streams
     this.loadStreams();
+  },
+
+  updateModalWatchlistBtn() {
+    const watchlistBtn = document.getElementById('modal-watchlist-btn');
+    if (!watchlistBtn || !state.currentMeta) return;
+    const cleanId = (state.currentMeta.id || '').split(':')[0];
+    const isSaved = User.isInWatchlist(cleanId);
+    if (isSaved) {
+      watchlistBtn.innerHTML = '⭐ Na Minha Lista ✓';
+      watchlistBtn.style.background = 'rgba(139, 92, 246, 0.45)';
+      watchlistBtn.style.borderColor = 'var(--accent)';
+      watchlistBtn.style.color = '#ffffff';
+    } else {
+      watchlistBtn.innerHTML = '⭐ + Minha Lista';
+      watchlistBtn.style.background = 'rgba(255, 255, 255, 0.08)';
+      watchlistBtn.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+      watchlistBtn.style.color = 'var(--text-primary)';
+    }
+  },
+
+  toggleModalWatchlist(e) {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (!state.currentMeta) return;
+    const added = User.toggleWatchlist(state.currentMeta);
+    this.updateModalWatchlistBtn();
+    const displayName = PTBR_Engine.translateTitle(state.currentMeta.name || '');
+    Toast.show(added ? `⭐ "${displayName}" salvo na Minha Lista!` : `Removido da Minha Lista`, added ? 'success' : 'info');
+    
+    // Also sync hero watchlist button if it matches
+    if (state.heroMeta && state.heroMeta.id.startsWith((state.currentMeta.id || '').split(':')[0])) {
+      this.updateHeroWatchlistBtn();
+    }
+
+    this.renderCatalogs();
   },
 
   setupSeriesControls(meta) {
