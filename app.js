@@ -502,7 +502,7 @@ const User = {
   },
 
   clearAllProgress() {
-    localStorage.removeItem('johnflix_progress');
+    try { localStorage.removeItem('johnflix_progress'); } catch(e) {}
   },
 
   getWatchlist() {
@@ -528,38 +528,79 @@ const User = {
         };
       });
       return sanitized;
-    } catch(e) { return {}; }
+    } catch(e) { 
+      return window._johnflix_memory_watchlist || {}; 
+    }
   },
 
   isInWatchlist(metaId) {
     if (!metaId) return false;
-    const cleanId = metaId.split(':')[0];
+    const cleanId = (typeof metaId === 'string' ? metaId : (metaId.id || '')).split(':')[0];
+    if (!cleanId) return false;
     const watchlist = this.getWatchlist();
     return !!watchlist[cleanId];
   },
 
-  toggleWatchlist(meta) {
-    if (!meta || !meta.id) return false;
-    const cleanId = meta.id.split(':')[0];
-    const watchlist = this.getWatchlist();
+  toggleWatchlist(input) {
+    try {
+      if (!input) return false;
+      let cleanId = '';
+      let itemMeta = null;
 
-    if (watchlist[cleanId]) {
-      delete watchlist[cleanId];
-      localStorage.setItem('johnflix_watchlist', JSON.stringify(watchlist));
+      if (typeof input === 'string') {
+        cleanId = input.split(':')[0];
+      } else if (typeof input === 'object') {
+        cleanId = (input.id || '').split(':')[0];
+        itemMeta = input;
+      }
+
+      if (!cleanId) return false;
+
+      // Check UI cache if metadata object is missing
+      if (!itemMeta && typeof UI !== 'undefined' && UI.metaCache && UI.metaCache[cleanId]) {
+        itemMeta = UI.metaCache[cleanId];
+      }
+      if (!itemMeta && state.heroMeta && state.heroMeta.id.startsWith(cleanId)) {
+        itemMeta = state.heroMeta;
+      }
+      if (!itemMeta && state.currentMeta && state.currentMeta.id.startsWith(cleanId)) {
+        itemMeta = state.currentMeta;
+      }
+
+      const watchlist = this.getWatchlist();
+
+      if (watchlist[cleanId]) {
+        delete watchlist[cleanId];
+        try {
+          localStorage.setItem('johnflix_watchlist', JSON.stringify(watchlist));
+        } catch(e) {
+          window._johnflix_memory_watchlist = watchlist;
+        }
+        return false;
+      } else {
+        const title = (itemMeta && (itemMeta.name || itemMeta.title)) ? (itemMeta.name || itemMeta.title) : 'Filme / Série';
+        const posterUrl = itemMeta ? getPosterUrl(itemMeta) : `https://images.metahub.space/poster/medium/${cleanId}/img`;
+        const itemType = (itemMeta && itemMeta.type) ? itemMeta.type : (state.currentType === 'series' ? 'series' : 'movie');
+        const year = (itemMeta && (itemMeta.year || itemMeta.releaseInfo)) ? (itemMeta.year || itemMeta.releaseInfo) : '';
+
+        watchlist[cleanId] = {
+          id: cleanId,
+          name: title,
+          poster: posterUrl || `https://images.metahub.space/poster/medium/${cleanId}/img`,
+          type: itemType,
+          year: year,
+          addedAt: Date.now()
+        };
+        try {
+          localStorage.setItem('johnflix_watchlist', JSON.stringify(watchlist));
+        } catch(e) {
+          window._johnflix_memory_watchlist = watchlist;
+        }
+        return true;
+      }
+    } catch(e) {
+      console.error('Error toggling watchlist:', e);
       return false;
-    } else {
-      const posterUrl = getPosterUrl(meta) || `https://images.metahub.space/poster/medium/${cleanId}/img`;
-      watchlist[cleanId] = {
-        id: cleanId,
-        name: meta.name || 'Filme / Série',
-        poster: posterUrl,
-        type: meta.type || (state.currentType === 'series' ? 'series' : 'movie'),
-        year: meta.year || meta.releaseInfo || '',
-        imdbRating: meta.imdbRating || '',
-        addedAt: Date.now()
-      };
-      localStorage.setItem('johnflix_watchlist', JSON.stringify(watchlist));
-      return true;
     }
   }
 };
@@ -1997,6 +2038,7 @@ const Motion = {
 };
 
 const UI = {
+  metaCache: {},
   init() {
     this.bindEvents();
     this.loadInitialData();
@@ -2932,12 +2974,12 @@ const UI = {
       }
       if (heroMeta) {
         const year = meta.year || meta.releaseInfo || '';
-        const rating = meta.imdbRating ? `<span class="hero-meta-badge imdb kinetic-badge" style="--i:0">IMDb ${meta.imdbRating}</span>` : '<span class="hero-meta-badge imdb kinetic-badge" style="--i:0">IMDb 8.6</span>';
+        const formatBadge = `<span class="hero-meta-badge quality kinetic-badge" style="--i:0">${itemType === 'series' ? 'Série' : 'Filme'}</span>`;
         const quality = `<span class="hero-meta-badge quality kinetic-badge" style="--i:1">4K Ultra HD</span>`;
         const audio = `<span class="hero-meta-badge audio kinetic-badge" style="--i:2">Dublado PT-BR</span>`;
         const runtime = meta.runtime ? `<span class="kinetic-badge" style="--i:3; color:#cbd5e1; font-weight:600;">${meta.runtime}</span>` : '';
         const yearBadge = year ? `<span class="kinetic-badge" style="--i:4; color:#cbd5e1; font-weight:600;">${year}</span>` : '';
-        heroMeta.innerHTML = [rating, quality, audio, yearBadge, runtime].filter(Boolean).join(' &nbsp; ');
+        heroMeta.innerHTML = [formatBadge, quality, audio, yearBadge, runtime].filter(Boolean).join(' &nbsp; ');
       }
       if (heroDescription) {
         heroDescription.innerHTML = `<span class="kinetic-desc">${meta.description || 'Sem descrição disponível.'}</span>`;
@@ -2985,13 +3027,14 @@ const UI = {
   },
 
   createMovieCard(item) {
+    if (!item) return '';
+    const cleanId = (item.id || '').split(':')[0];
+    if (cleanId) this.metaCache[cleanId] = item;
+
     const posterUrl = getPosterUrl(item);
     const itemType = item.type || (state.currentType === 'series' ? 'series' : 'movie');
     const isSeries = itemType === 'series';
-    const rating = item.imdbRating ? `★ ${item.imdbRating}` : '★ 8.4';
-    const matchScore = item.imdbRating ? `${Math.min(99, Math.round(parseFloat(item.imdbRating) * 11))}% Relevante` : '96% Relevante';
     const displayName = PTBR_Engine.translateTitle(item.name || '');
-    const cleanId = (item.id || '').split(':')[0];
     const isSaved = User.isInWatchlist(cleanId);
 
     const bookmarkIcon = isSaved
@@ -3005,16 +3048,15 @@ const UI = {
           <button class="card-bookmark-btn ${isSaved ? 'saved' : ''}" data-id="${cleanId}" title="${isSaved ? 'Remover da Minha Lista' : 'Salvar na Minha Lista'}" onclick="event.stopPropagation(); UI.quickToggleWatchlist(event, '${cleanId}')">
             ${bookmarkIcon}
           </button>
-          <span class="movie-card-badge">${rating}</span>
           <span class="movie-card-audio-tag">${isSeries ? 'Série' : '4K HDR'}</span>
         </div>
         <div class="movie-card-overlay">
           <div class="movie-card-details">
             <span class="movie-card-title">${displayName}</span>
             <div class="movie-card-meta-row">
-              <span class="movie-card-match">${matchScore}</span>
-              <span>•</span>
               <span class="movie-card-year">${item.year || (isSeries ? 'Série' : 'Filme')}</span>
+              <span>•</span>
+              <span class="movie-card-audio-label">Dublado PT-BR</span>
             </div>
             <div class="movie-card-actions">
               <button class="card-action-btn play" title="Assistir Agora" onclick="event.stopPropagation(); UI.quickPlayMovie('${cleanId}', '${itemType}')">▶</button>
@@ -3875,7 +3917,9 @@ const UI = {
     const resultsArea = document.getElementById('search-results');
     if (resultsArea) resultsArea.classList.add('hidden');
     document.getElementById('catalog-container')?.classList.remove('hidden');
-    document.getElementById('hero-section')?.classList.remove('hidden');
+    if (state.currentType !== 'watchlist' && state.currentType !== 'explore') {
+      document.getElementById('hero-section')?.classList.remove('hidden');
+    }
   },
   
   async openModal(id, explicitType) {
@@ -3940,9 +3984,10 @@ const UI = {
     if (title) title.textContent = PTBR_Engine.translateTitle(activeMeta.name);
     if (metaInfo) {
       const year = activeMeta.year || activeMeta.releaseInfo || '';
-      const rating = activeMeta.imdbRating ? `<span class="rating">⭐ ${activeMeta.imdbRating}</span>` : '';
       const runtime = activeMeta.runtime ? `⏱ ${activeMeta.runtime}` : '';
-      metaInfo.innerHTML = [year, rating, runtime].filter(Boolean).join(' &nbsp;|&nbsp; ');
+      const format = (activeMeta.type === 'series' || state.currentType === 'series') ? 'Série' : 'Filme 4K';
+      const audioTag = '<span style="color:#10b981; font-weight:600;">Dublado PT-BR</span>';
+      metaInfo.innerHTML = [year, format, runtime, audioTag].filter(Boolean).join(' &nbsp;|&nbsp; ');
     }
     if (description) {
       description.textContent = activeMeta.description || 'Sem descrição.';
