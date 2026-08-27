@@ -2098,7 +2098,11 @@ const UI = {
       });
 
       searchInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const val = searchInput.value.trim();
+          if (val.length > 0) this.performSearch(val);
+        } else if (e.key === 'Escape') {
           searchInput.value = '';
           state.searchSeq = (state.searchSeq || 0) + 1;
           if (searchContainer) searchContainer.classList.remove('active');
@@ -2940,6 +2944,14 @@ const UI = {
     const rating = item.imdbRating ? `★ ${item.imdbRating}` : '★ 8.4';
     const matchScore = item.imdbRating ? `${Math.min(99, Math.round(parseFloat(item.imdbRating) * 11))}% Relevante` : '96% Relevante';
     const displayName = PTBR_Engine.translateTitle(item.name || '');
+    const cleanId = (item.id || '').split(':')[0];
+    const isSaved = User.isInWatchlist(cleanId);
+    
+    const escapedName = (item.name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    const escapedPoster = (posterUrl || '').replace(/'/g, "\\'");
+    const itemYear = item.year || '';
+    const itemRating = item.imdbRating || '';
+
     return `
       <div class="movie-card" onclick="UI.openModal('${item.id}', '${itemType}')">
         <div class="movie-poster-wrap">
@@ -2956,13 +2968,62 @@ const UI = {
               <span class="movie-card-year">${item.year || (isSeries ? 'Série' : 'Filme')}</span>
             </div>
             <div class="movie-card-actions">
-              <button class="card-action-btn play" title="Assistir">▶</button>
-              <button class="card-action-btn" title="Mais Informações">ℹ</button>
+              <button class="card-action-btn play" title="Assistir Agora" onclick="event.stopPropagation(); UI.quickPlayMovie('${item.id}', '${itemType}')">▶</button>
+              <button class="card-action-btn watchlist ${isSaved ? 'active' : ''}" title="${isSaved ? 'Remover da Minha Lista' : 'Salvar na Minha Lista'}" onclick="event.stopPropagation(); UI.quickToggleWatchlist(event, '${cleanId}', '${escapedName}', '${escapedPoster}', '${itemType}', '${itemYear}', '${itemRating}')">
+                ${isSaved ? '★' : '☆'}
+              </button>
+              <button class="card-action-btn" title="Mais Informações" onclick="event.stopPropagation(); UI.openModal('${item.id}', '${itemType}')">ℹ</button>
             </div>
           </div>
         </div>
       </div>
     `;
+  },
+
+  async quickPlayMovie(id, type) {
+    const meta = await API.fetchMeta(type || 'movie', id);
+    if (meta) {
+      state.currentMeta = meta;
+      this.autoPlayBestStream();
+    } else {
+      this.openModal(id, type);
+    }
+  },
+
+  quickToggleWatchlist(e, id, name, poster, type, year, imdbRating) {
+    if (e && e.stopPropagation) e.stopPropagation();
+    const cleanId = (id || '').split(':')[0];
+    const meta = {
+      id: cleanId,
+      name: name || 'Filme / Série',
+      poster: poster || `https://images.metahub.space/poster/medium/${cleanId}/img`,
+      type: type || 'movie',
+      year: year || '',
+      imdbRating: imdbRating || ''
+    };
+    const added = User.toggleWatchlist(meta);
+    Toast.show(added ? `⭐ Adicionado à sua lista!` : `Removido da sua lista`, added ? 'success' : 'info');
+    
+    const btn = e?.currentTarget;
+    if (btn) {
+      if (added) {
+        btn.classList.add('active');
+        btn.textContent = '★';
+        btn.title = 'Remover da Minha Lista';
+      } else {
+        btn.classList.remove('active');
+        btn.textContent = '☆';
+        btn.title = 'Salvar na Minha Lista';
+      }
+    }
+    
+    if (state.heroMeta && state.heroMeta.id.startsWith(cleanId)) {
+      this.updateHeroWatchlistBtn();
+    }
+    
+    if (state.currentType === 'watchlist' || state.currentType === 'favorites') {
+      this.renderCatalogs();
+    }
   },
 
   createCinemaMovieCard(item, index, accent = '#8b5cf6') {
@@ -3217,8 +3278,9 @@ const UI = {
     // Normal Movies / Series Catalog Mode
     const typeName = state.currentType === 'all' ? 'Filmes & Séries' : (state.currentType === 'movie' ? 'Filmes' : 'Séries');
 
-    // 1. Continuar Assistindo & 2. Minha Lista Carousel (ONLY on 'all' home tab)
-    if (state.currentType === 'all') {
+    // 1. Continuar Assistindo & 2. Minha Lista Carousel
+    const showPersonalRows = state.currentType === 'all' || state.currentType === 'movie' || state.currentType === 'series';
+    if (showPersonalRows) {
       const allProgressMap = User.getAllProgress();
       const progressList = Object.values(allProgressMap)
         .filter(item => item && item.currentTime > 10 && item.percentage < 95)
@@ -4029,96 +4091,6 @@ const UI = {
     } else if (stream.magnetUrl || stream.infoHash) {
       this.playTorrent(stream.magnetUrl, stream.name);
     }
-
-    // Display health-check feedback prompt
-    this.showSourceFeedbackPrompt(stream);
-  },
-
-  startAutoCycleTimer(stream) {
-    if (this.autoCycleInterval) {
-      clearInterval(this.autoCycleInterval);
-      this.autoCycleInterval = null;
-    }
-
-    if (state.feedbackConfirmed) return;
-
-    state.isAutoCycling = true;
-    state.userInteractedWithCurrentStream = false;
-    state.autoCycleSecondsLeft = 7; // 7 seconds per server if idle
-
-    const questionEl = document.getElementById('hud-feedback-question');
-    if (questionEl) {
-      questionEl.textContent = `Testando (${state.autoCycleSecondsLeft}s...)`;
-    }
-
-    this.autoCycleInterval = setInterval(() => {
-      const playerOverlay = document.getElementById('player-overlay');
-      if (!state.isPlayerActive || !playerOverlay || playerOverlay.classList.contains('hidden') || state.feedbackConfirmed) {
-        clearInterval(this.autoCycleInterval);
-        this.autoCycleInterval = null;
-        return;
-      }
-
-      // If user moved mouse, touched screen, or clicked: STOP auto-cycling and keep this server!
-      if (state.userInteractedWithCurrentStream) {
-        clearInterval(this.autoCycleInterval);
-        this.autoCycleInterval = null;
-        if (questionEl) questionEl.textContent = 'Reproduzindo bem?';
-        return;
-      }
-
-      state.autoCycleSecondsLeft--;
-
-      if (questionEl) {
-        questionEl.textContent = `Testando (${state.autoCycleSecondsLeft}s...)`;
-      }
-
-      if (state.autoCycleSecondsLeft <= 0) {
-        clearInterval(this.autoCycleInterval);
-        this.autoCycleInterval = null;
-        // User didn't interact and didn't confirm -> automatically try next server!
-        this.showPlayerToast('Testando próximo servidor...', 1100);
-        this.playNextStream();
-      }
-    }, 1000);
-  },
-
-  onUserPlayerInteraction() {
-    if (state.isAutoCycling && !state.userInteractedWithCurrentStream) {
-      state.userInteractedWithCurrentStream = true;
-      if (this.autoCycleInterval) {
-        clearInterval(this.autoCycleInterval);
-        this.autoCycleInterval = null;
-      }
-      const questionEl = document.getElementById('hud-feedback-question');
-      if (questionEl) questionEl.textContent = 'Reproduzindo bem?';
-    }
-  },
-
-  showSourceFeedbackPrompt(stream) {
-    if (state.feedbackConfirmed) return;
-    const feedbackPrompt = document.getElementById('hud-source-feedback');
-    const serverBadge = document.getElementById('hud-feedback-server-badge');
-    const playerOverlay = document.getElementById('player-overlay');
-    if (!feedbackPrompt || !playerOverlay || playerOverlay.classList.contains('hidden')) return;
-
-    if (this.feedbackAutoHideTimer) {
-      clearTimeout(this.feedbackAutoHideTimer);
-      this.feedbackAutoHideTimer = null;
-    }
-
-    if (serverBadge) {
-      serverBadge.textContent = `${stream?.name || 'Servidor'}`;
-    }
-    
-    // Show on screen and KEEP IT VISIBLE until user clicks Sim / Trocar / Close
-    feedbackPrompt.classList.remove('hidden');
-    feedbackPrompt.classList.remove('show');
-    void feedbackPrompt.offsetWidth;
-    feedbackPrompt.classList.add('show');
-
-    // Start auto-cycling timer (auto-switches every 7s if user does not touch mouse or click Sim)
-    this.startAutoCycleTimer(stream);
   },
 
   dismissFeedbackPrompt() {
@@ -4127,10 +4099,6 @@ const UI = {
     if (this.feedbackAutoHideTimer) {
       clearTimeout(this.feedbackAutoHideTimer);
       this.feedbackAutoHideTimer = null;
-    }
-    if (this.autoCycleInterval) {
-      clearInterval(this.autoCycleInterval);
-      this.autoCycleInterval = null;
     }
     feedbackPrompt.classList.remove('show');
     setTimeout(() => {
@@ -4269,6 +4237,30 @@ const UI = {
     `;
   },
 
+  resetMediaState() {
+    const video = document.getElementById('video-player');
+    const iframe = document.getElementById('iframe-player');
+    if (window.currentHls) {
+      window.currentHls.destroy();
+      window.currentHls = null;
+    }
+    if (window.currentTorrent) {
+      try { window.currentTorrent.destroy(); } catch(e) {}
+      window.currentTorrent = null;
+    }
+    if (iframe) {
+      iframe.src = 'about:blank';
+      iframe.classList.add('hidden');
+    }
+    if (video) {
+      video.pause();
+      video.removeAttribute('src');
+      video.src = '';
+      try { video.load(); } catch(e) {}
+      video.classList.add('hidden');
+    }
+  },
+
   playIframe(embedUrl, title) {
     const video = document.getElementById('video-player');
     const iframe = document.getElementById('iframe-player');
@@ -4282,7 +4274,7 @@ const UI = {
     
     if (!playerOverlay || !iframe) return;
     
-    this.closePlayer();
+    this.resetMediaState();
     state.isPlayerActive = true;
     
     playerOverlay.classList.remove('hidden');
@@ -4347,7 +4339,7 @@ const UI = {
     
     if (!video || !playerOverlay) return;
     
-    this.closePlayer(); // Reset any previous playback
+    this.resetMediaState();
     state.isPlayerActive = true;
     
     if (openTabBtn) {
@@ -4528,7 +4520,8 @@ const UI = {
     
     if (!video || !playerOverlay) return;
 
-    this.closePlayer(); // Reset any previous torrent or video stream
+    this.resetMediaState();
+    state.isPlayerActive = true;
 
     playerOverlay.classList.remove('hidden');
     video.classList.remove('hidden');
