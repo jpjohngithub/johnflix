@@ -4,10 +4,11 @@ if (window.location.protocol === 'http:' && !window.location.hostname.includes('
 }
 
 const ADDONS = {
+  bestcine: { name: 'BestCine', baseUrl: 'https://c2bba09da496-bestcine-app.baby-beamup.club', icon: '🎬' },
+  froststream: { name: 'FrostStream', baseUrl: 'https://froststream.cloutteam.com', icon: '❄️' },
+  kingvod: { name: 'King VOD', baseUrl: 'https://kingvod.wasmer.app/index.php', icon: '👑' },
   webplayer: { name: 'Player Web (HD)', baseUrl: '', icon: '🌐' },
-  bestcine: { name: 'BestCine', baseUrl: 'https://bestcine.alwaysdata.net', icon: '🎬' },
-  cinemeta: { name: 'Cinemeta', baseUrl: 'https://cinemeta-catalogs.strem.io' },
-  micoleao: { name: 'Mico-Leão Dublado', baseUrl: 'https://27a5b2bfe3c0-stremio-brazilian-addon.baby-beamup.club', icon: '🦁' }
+  cinemeta: { name: 'Cinemeta', baseUrl: 'https://cinemeta-catalogs.strem.io' }
 };
 
 // --- Helpers ---
@@ -1165,8 +1166,8 @@ const API = {
         : type;
 
       const streamId = realType === 'series' ? `${cleanId}:${season}:${episode}` : cleanId;
-      // Bump cache key to force-refresh stream lists with BestCine 4K/1080p
-      const cacheKey = `st_v100_${streamId}`;
+      // Bump cache key to force-refresh stream lists with active BestCine 4K/1080p and FrostStream
+      const cacheKey = `st_v110_${streamId}`;
       const cached = Cache.get(cacheKey);
       if (cached && cached.length > 0) return cached;
 
@@ -1235,25 +1236,30 @@ const API = {
       const frostRailwayUrl = 'https://froststream.up.railway.app';
       const torrentioPtBrUrl = 'https://torrentio.strem.fun/sort=qualitysize|providers=comando,bludv,micoleaodublado,brazuca,yts,torrentgalaxy,eztv,rarbg,1337x,thepiratebay';
 
-      const [fenixRes, bestCineRes, frostRes, frostConfigRes, frostRailRes, brazucaRes, micoLeaoRes, torrentioRes, torrentioPtBrRes, tpbPlusRes] = await Promise.allSettled([
+      const [bestCineBeamRes, bestCineAltRes, frostRes, frostConfigRes, frostRailRes, kingRes, fenixRes, brazucaRes, micoLeaoRes, torrentioRes, torrentioPtBrRes, tpbPlusRes] = await Promise.allSettled([
+        fetchAddon('https://c2bba09da496-bestcine-app.baby-beamup.club', 4000),
+        fetchAddon('https://bestcine.alwaysdata.net', 3000),
+        fetchAddon('https://froststream.cloutteam.com', 3000),
+        fetchAddon(frostConfiguredUrl, 3000),
+        fetchAddon(frostRailwayUrl, 3000),
+        fetchAddon('https://kingvod.wasmer.app/index.php', 3000),
         fetchAddon('https://fenixflix.fenixhub.online', 2500),
-        fetchAddon('https://bestcine.alwaysdata.net', 3500),
-        fetchAddon('https://froststream.cloutteam.com', 2500),
-        fetchAddon(frostConfiguredUrl, 2500),
-        fetchAddon(frostRailwayUrl, 2500),
         fetchAddon('https://94c8cb9f702d-brazuca-torrents.baby-beamup.club', 2500),
-        fetchAddon(ADDONS.micoleao ? ADDONS.micoleao.baseUrl : 'https://94c8cb9f702d-brazuca-torrents.baby-beamup.club', 2500),
+        fetchAddon('https://27a5b2bfe3c0-stremio-brazilian-addon.baby-beamup.club', 2500),
         fetchAddon('https://torrentio.strem.fun', 2500),
         fetchAddon(torrentioPtBrUrl, 2500),
         fetchAddon('https://thepiratebay-plus.strem.fun', 2500)
       ]);
 
-      const fenixStreams = fenixRes.status === 'fulfilled' ? fenixRes.value : [];
-      const bestCineStreams = bestCineRes.status === 'fulfilled' ? bestCineRes.value : [];
+      const bestCineStreams = (bestCineBeamRes.status === 'fulfilled' && bestCineBeamRes.value.length > 0)
+        ? bestCineBeamRes.value
+        : (bestCineAltRes.status === 'fulfilled' ? bestCineAltRes.value : []);
       const frostBaseStreams = frostRes.status === 'fulfilled' ? frostRes.value : [];
       const frostConfigStreams = frostConfigRes.status === 'fulfilled' ? frostConfigRes.value : [];
       const frostRailStreams = frostRailRes.status === 'fulfilled' ? frostRailRes.value : [];
       const frostStreams = [...frostBaseStreams, ...frostConfigStreams, ...frostRailStreams];
+      const kingStreams = kingRes.status === 'fulfilled' ? kingRes.value : [];
+      const fenixStreams = fenixRes.status === 'fulfilled' ? fenixRes.value : [];
       const brazucaStreams = brazucaRes.status === 'fulfilled' ? brazucaRes.value : [];
       const micoLeaoStreams = micoLeaoRes.status === 'fulfilled' ? micoLeaoRes.value : [];
       const torrentioStreams = torrentioRes.status === 'fulfilled' ? torrentioRes.value : [];
@@ -1262,7 +1268,7 @@ const API = {
 
       const streamsList = [];
 
-      // 1. Direct MP4 / HLS Native Video Streams (BestCine, FrostStream & FenixFlix)
+      // 1. Direct MP4 / HLS Native Video Streams (BestCine, FrostStream, KingVOD & FenixFlix)
       const directVideoSources = [];
       bestCineStreams.forEach(s => {
         if (!s.url) return;
@@ -1286,7 +1292,7 @@ const API = {
           isDub: isDub,
           quality: quality,
           category: 'bestcine',
-          score: 150 + (quality.includes('4K') ? 35 : quality === '1080p' ? 45 : quality === '720p' ? 50 : 20) + (isDub ? 40 : 0)
+          score: 160 + (quality.includes('4K') ? 40 : quality === '1080p' ? 45 : quality === '720p' ? 50 : 20) + (isDub ? 40 : 0)
         });
       });
       frostStreams.forEach(s => {
@@ -1299,13 +1305,28 @@ const API = {
         else if (rawInfo.includes('4k') || rawInfo.includes('2160')) quality = '4K';
         directVideoSources.push({
           provider: 'FrostStream',
-          name: `FrostStream ${quality}${isDub ? ' (Dublado PT-BR)' : ''}`,
+          name: `❄️ FrostStream ${quality}${isDub ? ' (Dublado PT-BR)' : ''}`,
           title: s.title || `FrostStream ${quality}`,
           url: s.url,
           isDub: isDub,
           quality: quality,
           category: 'frost',
-          score: 120 + (quality === '720p' ? 60 : quality === '1080p' ? 30 : quality === '4K' ? 20 : 10) + (isDub ? 40 : 0)
+          score: 140 + (quality === '720p' ? 60 : quality === '1080p' ? 35 : quality === '4K' ? 25 : 10) + (isDub ? 40 : 0)
+        });
+      });
+      kingStreams.forEach(s => {
+        if (!s.url) return;
+        const rawInfo = `${s.name || ''} ${s.title || ''}`.toLowerCase();
+        const isDub = rawInfo.includes('dublado') || rawInfo.includes('🇧🇷') || rawInfo.includes('português') || rawInfo.includes('portugues') || !rawInfo.includes('legendado');
+        directVideoSources.push({
+          provider: 'KingVOD',
+          name: `👑 King VOD HD (${isDub ? 'Dublado PT-BR' : 'Legendado'})`,
+          title: s.title ? s.title.replace(/\n/g, ' • ') : 'King VOD Stream',
+          url: s.url,
+          isDub: isDub,
+          quality: '1080p',
+          category: 'kingvod',
+          score: 135 + (isDub ? 40 : 0)
         });
       });
       fenixStreams.forEach(s => {
@@ -1318,7 +1339,7 @@ const API = {
         else if (rawInfo.includes('720')) quality = '720p';
         directVideoSources.push({
           provider: 'FenixFlix',
-          name: `FenixFlix ${quality}${isDub ? ' (Dublado PT-BR)' : ''}`,
+          name: `🔥 FenixFlix ${quality}${isDub ? ' (Dublado PT-BR)' : ''}`,
           title: s.title || `FenixFlix ${quality}`,
           url: s.url,
           isDub: isDub,
@@ -4365,9 +4386,10 @@ const UI = {
 
     const bestcine = streams.filter(s => s.category === 'bestcine' || s.provider === 'BestCine' || (s.name && s.name.includes('BestCine')));
     const frost = streams.filter(s => (s.category === 'frost' || s.provider === 'FrostStream' || (s.name && s.name.includes('FrostStream'))) && !bestcine.includes(s));
-    const fenix = streams.filter(s => (s.category === 'fenix' || s.provider === 'FenixFlix' || (s.name && s.name.includes('FenixFlix'))) && !frost.includes(s) && !bestcine.includes(s));
-    const torrents = streams.filter(s => (s.category === 'torrent' || s.magnetUrl || s.infoHash) && !frost.includes(s) && !fenix.includes(s) && !bestcine.includes(s));
-    const web = streams.filter(s => !fenix.includes(s) && !frost.includes(s) && !bestcine.includes(s) && !torrents.includes(s));
+    const kingvod = streams.filter(s => (s.category === 'kingvod' || s.provider === 'KingVOD' || (s.name && s.name.includes('King VOD'))) && !bestcine.includes(s) && !frost.includes(s));
+    const fenix = streams.filter(s => (s.category === 'fenix' || s.provider === 'FenixFlix' || (s.name && s.name.includes('FenixFlix'))) && !frost.includes(s) && !bestcine.includes(s) && !kingvod.includes(s));
+    const torrents = streams.filter(s => (s.category === 'torrent' || s.magnetUrl || s.infoHash) && !frost.includes(s) && !fenix.includes(s) && !bestcine.includes(s) && !kingvod.includes(s));
+    const web = streams.filter(s => !fenix.includes(s) && !frost.includes(s) && !bestcine.includes(s) && !kingvod.includes(s) && !torrents.includes(s));
 
     let html = '';
 
@@ -4382,16 +4404,25 @@ const UI = {
 
     if (frost.length > 0) {
       html += '<div style="color:#06b6d4; font-weight:800; font-size:1.05rem; margin:1rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(6,182,212,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #06b6d4;">'
-        + '<span>[DIRETO]</span> FrostStream (Principal)</div>';
+        + '<span>[DIRETO]</span> ❄️ FrostStream (Dublado & Legendado)</div>';
       html += frost.map(stream => {
         const idx = streams.indexOf(stream);
         return this.createStreamItem(stream, idx >= 0 ? idx : 0);
       }).join('');
     }
 
+    if (kingvod.length > 0) {
+      html += '<div style="color:#eab308; font-weight:800; font-size:1.05rem; margin:1rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(234,179,8,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #eab308;">'
+        + '<span>[DIRETO]</span> 👑 King VOD (Nativo PT-BR)</div>';
+      html += kingvod.map(stream => {
+        const idx = streams.indexOf(stream);
+        return this.createStreamItem(stream, idx >= 0 ? idx : 0);
+      }).join('');
+    }
+
     if (fenix.length > 0) {
-      html += '<div style="color:#ef4444; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(239,68,68,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #ef4444;">'
-        + '<span>[DIRETO]</span> FenixFlix Nativo (Player HTML5)</div>';
+      html += '<div style="color:#ef4444; font-weight:800; font-size:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(239,68,68,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #ef4444;">'
+        + '<span>[DIRETO]</span> 🔥 FenixFlix Nativo (Player HTML5)</div>';
       html += fenix.map(stream => {
         const idx = streams.indexOf(stream);
         return this.createStreamItem(stream, idx >= 0 ? idx : 0);
