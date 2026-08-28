@@ -4375,7 +4375,18 @@ const UI = {
     }
   },
   
-  renderStreams(streams) {
+  filterModalStreams(filterKey = 'all') {
+    state.currentStreamFilter = filterKey;
+    document.querySelectorAll('.streams-filter-btn').forEach(btn => {
+      if (btn.dataset.filter === filterKey) btn.classList.add('active');
+      else btn.classList.remove('active');
+    });
+    if (state.activeStreams) {
+      this.renderStreams(state.activeStreams, filterKey);
+    }
+  },
+
+  renderStreams(streams, filterKey) {
     const streamsList = document.getElementById('streams-list');
     if (!streamsList) return;
 
@@ -4384,6 +4395,8 @@ const UI = {
       return;
     }
 
+    const currentFilter = filterKey || state.currentStreamFilter || 'all';
+
     const bestcine = streams.filter(s => s.category === 'bestcine' || s.provider === 'BestCine' || (s.name && s.name.includes('BestCine')));
     const frost = streams.filter(s => (s.category === 'frost' || s.provider === 'FrostStream' || (s.name && s.name.includes('FrostStream'))) && !bestcine.includes(s));
     const kingvod = streams.filter(s => (s.category === 'kingvod' || s.provider === 'KingVOD' || (s.name && s.name.includes('King VOD'))) && !bestcine.includes(s) && !frost.includes(s));
@@ -4391,60 +4404,74 @@ const UI = {
     const torrents = streams.filter(s => (s.category === 'torrent' || s.magnetUrl || s.infoHash) && !frost.includes(s) && !fenix.includes(s) && !bestcine.includes(s) && !kingvod.includes(s));
     const web = streams.filter(s => !fenix.includes(s) && !frost.includes(s) && !bestcine.includes(s) && !kingvod.includes(s) && !torrents.includes(s));
 
+    // Update counts on filter buttons
+    const bestcineBtn = document.querySelector('.streams-filter-btn.bestcine-tab');
+    if (bestcineBtn) bestcineBtn.textContent = `🎬 BestCine (${bestcine.length})`;
+
+    const frostBtn = document.querySelector('.streams-filter-btn.frost-tab');
+    if (frostBtn) frostBtn.textContent = `❄️ FrostStream (${frost.length})`;
+
+    const kingBtn = document.querySelector('.streams-filter-btn.king-tab');
+    if (kingBtn) kingBtn.textContent = `👑 King VOD (${kingvod.length})`;
+
     let html = '';
 
-    if (bestcine.length > 0) {
-      html += '<div style="color:#10b981; font-weight:800; font-size:1.05rem; margin:1rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(16,185,129,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #10b981;">'
-        + '<span>[DIRETO]</span> 🎬 BestCine HD/4K (Dublado & Legendado)</div>';
+    if ((currentFilter === 'all' || currentFilter === 'bestcine') && bestcine.length > 0) {
+      html += '<div style="color:#10b981; font-weight:800; font-size:1.05rem; margin:1rem 0 0.5rem; display:flex; align-items:center; justify-content:space-between; background:rgba(16,185,129,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #10b981;">'
+        + '<span>🎬 BestCine HD/4K (Dublado & Legendado)</span><span style="font-size:0.8rem; background:#10b981; color:#000; padding:2px 8px; border-radius:10px; font-weight:900;">' + bestcine.length + ' OPÇÕES</span></div>';
       html += bestcine.map(stream => {
         const idx = streams.indexOf(stream);
         return this.createStreamItem(stream, idx >= 0 ? idx : 0);
       }).join('');
     }
 
-    if (frost.length > 0) {
-      html += '<div style="color:#06b6d4; font-weight:800; font-size:1.05rem; margin:1rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(6,182,212,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #06b6d4;">'
-        + '<span>[DIRETO]</span> ❄️ FrostStream (Dublado & Legendado)</div>';
+    if ((currentFilter === 'all' || currentFilter === 'frost') && frost.length > 0) {
+      html += '<div style="color:#06b6d4; font-weight:800; font-size:1.05rem; margin:1rem 0 0.5rem; display:flex; align-items:center; justify-content:space-between; background:rgba(6,182,212,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #06b6d4;">'
+        + '<span>❄️ FrostStream (Dublado & Legendado)</span><span style="font-size:0.8rem; background:#06b6d4; color:#000; padding:2px 8px; border-radius:10px; font-weight:900;">' + frost.length + ' OPÇÕES</span></div>';
       html += frost.map(stream => {
         const idx = streams.indexOf(stream);
         return this.createStreamItem(stream, idx >= 0 ? idx : 0);
       }).join('');
     }
 
-    if (kingvod.length > 0) {
-      html += '<div style="color:#eab308; font-weight:800; font-size:1.05rem; margin:1rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(234,179,8,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #eab308;">'
-        + '<span>[DIRETO]</span> 👑 King VOD (Nativo PT-BR)</div>';
+    if ((currentFilter === 'all' || currentFilter === 'kingvod') && kingvod.length > 0) {
+      html += '<div style="color:#eab308; font-weight:800; font-size:1.05rem; margin:1rem 0 0.5rem; display:flex; align-items:center; justify-content:space-between; background:rgba(234,179,8,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #eab308;">'
+        + '<span>👑 King VOD (Nativo PT-BR)</span><span style="font-size:0.8rem; background:#eab308; color:#000; padding:2px 8px; border-radius:10px; font-weight:900;">' + kingvod.length + ' OPÇÃO</span></div>';
       html += kingvod.map(stream => {
         const idx = streams.indexOf(stream);
         return this.createStreamItem(stream, idx >= 0 ? idx : 0);
       }).join('');
     }
 
-    if (fenix.length > 0) {
-      html += '<div style="color:#ef4444; font-weight:800; font-size:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(239,68,68,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #ef4444;">'
-        + '<span>[DIRETO]</span> 🔥 FenixFlix Nativo (Player HTML5)</div>';
+    if ((currentFilter === 'all' || currentFilter === 'fenix') && fenix.length > 0) {
+      html += '<div style="color:#ef4444; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(239,68,68,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #ef4444;">'
+        + '<span>🔥 FenixFlix Nativo (Player HTML5)</span></div>';
       html += fenix.map(stream => {
         const idx = streams.indexOf(stream);
         return this.createStreamItem(stream, idx >= 0 ? idx : 0);
       }).join('');
     }
 
-    if (web.length > 0) {
+    if ((currentFilter === 'all' || currentFilter === 'web') && web.length > 0) {
       html += '<div style="color:#8b5cf6; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(139,92,246,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #8b5cf6;">'
-        + '<span>[WEB]</span> Servidores Web & Dublados PT-BR</div>';
+        + '<span>🌐 Servidores Web & Dublados PT-BR</span></div>';
       html += web.map(stream => {
         const idx = streams.indexOf(stream);
         return this.createStreamItem(stream, idx >= 0 ? idx : 0);
       }).join('');
     }
 
-    if (torrents.length > 0) {
+    if ((currentFilter === 'all' || currentFilter === 'web') && torrents.length > 0) {
       html += '<div style="color:#f59e0b; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(245,158,11,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #f59e0b;">'
-        + '<span>[TORRENT]</span> Torrents Nativos PT-BR (Brazuca & Torrentio)</div>';
+        + '<span>🧲 Torrents Nativos PT-BR (Brazuca & Torrentio)</span></div>';
       html += torrents.map(stream => {
         const idx = streams.indexOf(stream);
         return this.createStreamItem(stream, idx >= 0 ? idx : 0);
       }).join('');
+    }
+
+    if (html === '') {
+      html = '<p style="color:#a0a0b0; text-align:center; padding:2rem;">Nenhuma fonte encontrada nesta categoria. Clique em "Todas" acima.</p>';
     }
 
     streamsList.innerHTML = html;

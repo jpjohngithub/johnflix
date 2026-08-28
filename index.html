@@ -182,6 +182,15 @@
               </div>
             </div>
 
+            <div class="streams-filter-bar" id="streams-filter-bar">
+              <button class="streams-filter-btn active" data-filter="all" onclick="UI.filterModalStreams('all')">🌟 Todas</button>
+              <button class="streams-filter-btn bestcine-tab" data-filter="bestcine" onclick="UI.filterModalStreams('bestcine')">🎬 BestCine (4K/1080p)</button>
+              <button class="streams-filter-btn frost-tab" data-filter="frost" onclick="UI.filterModalStreams('frost')">❄️ FrostStream</button>
+              <button class="streams-filter-btn king-tab" data-filter="kingvod" onclick="UI.filterModalStreams('kingvod')">👑 King VOD</button>
+              <button class="streams-filter-btn fenix-tab" data-filter="fenix" onclick="UI.filterModalStreams('fenix')">🔥 FenixFlix</button>
+              <button class="streams-filter-btn" data-filter="web" onclick="UI.filterModalStreams('web')">🌐 Web / Torrents</button>
+            </div>
+
             <div class="streams-loading hidden" id="streams-loading">
               <div class="spinner"></div>
               <span>Carregando servidores...</span>

@@ -2870,6 +2870,63 @@ body {
   color: #ffffff;
   box-shadow: 0 0 18px rgba(239, 68, 68, 0.45);
 }
+
+/* Streams Filter Bar */
+.streams-filter-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 1rem 0 1.2rem;
+}
+
+.streams-filter-btn {
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #cbd5e1;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.streams-filter-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.streams-filter-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+  box-shadow: 0 0 15px var(--accent-glow);
+}
+
+.streams-filter-btn.bestcine-tab.active {
+  background: #10b981;
+  border-color: #10b981;
+  color: #ffffff;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+}
+
+.streams-filter-btn.frost-tab.active {
+  background: #06b6d4;
+  border-color: #06b6d4;
+  color: #ffffff;
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.4);
+}
+
+.streams-filter-btn.king-tab.active {
+  background: #eab308;
+  border-color: #eab308;
+  color: #000000;
+  box-shadow: 0 0 15px rgba(234, 179, 8, 0.4);
+}
 .modal-back-wrap {
   margin-top: 2rem;
   display: flex;
