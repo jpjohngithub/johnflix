@@ -4,7 +4,7 @@ if (window.location.protocol === 'http:' && !window.location.hostname.includes('
 }
 
 const ADDONS = {
-  bestcine: { name: 'BestCine', baseUrl: 'https://c2bba09da496-bestcine-app.baby-beamup.club', icon: '🎬' },
+  bestcine: { name: 'BestCine', baseUrl: 'https://bestcine.dpdns.org', icon: '🎬' },
   froststream: { name: 'FrostStream', baseUrl: 'https://froststream.cloutteam.com', icon: '❄️' },
   kingvod: { name: 'King VOD', baseUrl: 'https://kingvod.wasmer.app/index.php', icon: '👑' },
   webplayer: { name: 'Player Web (HD)', baseUrl: '', icon: '🌐' },
@@ -1160,14 +1160,19 @@ const API = {
   
   async fetchStreams(type, id, season = 1, episode = 1) {
     try {
-      const cleanId = (id || '').split(':')[0];
-      const realType = (type === 'all' || !type) 
-        ? (state.currentMeta?.type || (id?.includes(':') ? 'series' : 'movie')) 
-        : type;
+      const cleanId = (id || '').split(':')[0].trim();
+      let realType = 'movie';
+      if (type === 'series' || type === 'tv') {
+        realType = 'series';
+      } else if (state.currentMeta && (state.currentMeta.type === 'series' || state.currentMeta.type === 'tv')) {
+        realType = 'series';
+      } else if (id && typeof id === 'string' && (id.includes(':1') || (id.split(':').length > 1))) {
+        realType = 'series';
+      }
 
       const streamId = realType === 'series' ? `${cleanId}:${season}:${episode}` : cleanId;
       // Bump cache key to force-refresh stream lists with active BestCine 4K/1080p and FrostStream
-      const cacheKey = `st_v110_${streamId}`;
+      const cacheKey = `st_v120_${streamId}`;
       const cached = Cache.get(cacheKey);
       if (cached && cached.length > 0) return cached;
 
@@ -1215,7 +1220,7 @@ const API = {
         : `https://vidsrc.in/embed/tv/${cleanId}/${season}/${episode}`;
 
 
-      const fetchAddon = async (baseUrl, timeoutMs = 5000) => {
+      const fetchAddon = async (baseUrl, timeoutMs = 4000) => {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), timeoutMs);
         try {
@@ -1236,9 +1241,10 @@ const API = {
       const frostRailwayUrl = 'https://froststream.up.railway.app';
       const torrentioPtBrUrl = 'https://torrentio.strem.fun/sort=qualitysize|providers=comando,bludv,micoleaodublado,brazuca,yts,torrentgalaxy,eztv,rarbg,1337x,thepiratebay';
 
-      const [bestCineBeamRes, bestCineAltRes, frostRes, frostConfigRes, frostRailRes, kingRes, fenixRes, brazucaRes, micoLeaoRes, torrentioRes, torrentioPtBrRes, tpbPlusRes] = await Promise.allSettled([
-        fetchAddon('https://c2bba09da496-bestcine-app.baby-beamup.club', 4000),
-        fetchAddon('https://bestcine.alwaysdata.net', 3000),
+      const [bestCineDpdnsRes, bestCineBeamRes, bestCineAltRes, frostRes, frostConfigRes, frostRailRes, kingRes, fenixRes, brazucaRes, micoLeaoRes, torrentioRes, torrentioPtBrRes, tpbPlusRes] = await Promise.allSettled([
+        fetchAddon('https://bestcine.dpdns.org', 4000),
+        fetchAddon('https://c2bba09da496-bestcine-app.baby-beamup.club', 2500),
+        fetchAddon('https://bestcine.alwaysdata.net', 2500),
         fetchAddon('https://froststream.cloutteam.com', 3000),
         fetchAddon(frostConfiguredUrl, 3000),
         fetchAddon(frostRailwayUrl, 3000),
@@ -1251,9 +1257,11 @@ const API = {
         fetchAddon('https://thepiratebay-plus.strem.fun', 2500)
       ]);
 
-      const bestCineStreams = (bestCineBeamRes.status === 'fulfilled' && bestCineBeamRes.value.length > 0)
-        ? bestCineBeamRes.value
-        : (bestCineAltRes.status === 'fulfilled' ? bestCineAltRes.value : []);
+      const bestCineStreams = (bestCineDpdnsRes.status === 'fulfilled' && bestCineDpdnsRes.value.length > 0)
+        ? bestCineDpdnsRes.value
+        : ((bestCineBeamRes.status === 'fulfilled' && bestCineBeamRes.value.length > 0)
+          ? bestCineBeamRes.value
+          : (bestCineAltRes.status === 'fulfilled' ? bestCineAltRes.value : []));
       const frostBaseStreams = frostRes.status === 'fulfilled' ? frostRes.value : [];
       const frostConfigStreams = frostConfigRes.status === 'fulfilled' ? frostConfigRes.value : [];
       const frostRailStreams = frostRailRes.status === 'fulfilled' ? frostRailRes.value : [];
@@ -4235,26 +4243,55 @@ const UI = {
       return;
     }
 
-    let bestIndex = 0;
-    // Prioritize BestCine / FrostStream Dublado (Fastest native streaming)
-    const directCandidate = rawStreams.findIndex(s => (s.category === 'bestcine' || s.category === 'frost') && s.isDub);
-    if (directCandidate >= 0) {
-      bestIndex = directCandidate;
-    } else {
-      const anyDirect = rawStreams.findIndex(s => s.url && (s.category === 'bestcine' || s.category === 'frost' || s.category === 'fenix'));
-      if (anyDirect >= 0) bestIndex = anyDirect;
-    }
-
     state.activeStreams = rawStreams;
-    state.currentStreamIndex = bestIndex;
-    this.updateHudStreamSelector(rawStreams, bestIndex);
 
-    const winner = rawStreams[bestIndex];
-    if (playerLoading) {
-      playerLoading.querySelector('p').textContent = `Conectando a ${winner.name}...`;
+    // Collect top direct candidate streams (BestCine Dublado 1080p, FrostStream Dublado, KingVOD, FenixFlix)
+    const directCandidates = [];
+    rawStreams.forEach((s, idx) => {
+      if (s.url && (s.category === 'bestcine' || s.category === 'frost' || s.category === 'kingvod' || s.category === 'fenix')) {
+        directCandidates.push({ index: idx, stream: s });
+      }
+    });
+
+    let chosenIndex = 0;
+
+    if (directCandidates.length > 0) {
+      // Prioritize Dublado 1080p / 4K
+      directCandidates.sort((a, b) => (b.stream.score || 0) - (a.stream.score || 0));
+      const topCandidates = directCandidates.slice(0, 4);
+
+      if (playerLoading) {
+        playerLoading.querySelector('p').textContent = '⚡ Testando resposta dos servidores em tempo real...';
+      }
+
+      // Pre-test candidate streams in parallel with a fast probe (1200ms)
+      const probePromises = topCandidates.map(async (c) => {
+        const probeResult = await this.probeStreamUrl(c.stream.url, 1200);
+        return { ...c, ok: probeResult.ok, latency: probeResult.latency };
+      });
+
+      const tested = await Promise.all(probePromises);
+
+      // Pick the first working tested candidate or fallback to highest scored
+      const working = tested.find(t => t.ok);
+      if (working) {
+        chosenIndex = working.index;
+      } else {
+        chosenIndex = topCandidates[0].index;
+      }
+    } else {
+      chosenIndex = 0;
     }
 
-    this.testAndPlayStreamIndex(bestIndex);
+    state.currentStreamIndex = chosenIndex;
+    this.updateHudStreamSelector(rawStreams, chosenIndex);
+
+    const winner = rawStreams[chosenIndex];
+    if (playerLoading) {
+      playerLoading.querySelector('p').textContent = `⚡ Conectando a ${winner.name}...`;
+    }
+
+    this.testAndPlayStreamIndex(chosenIndex);
   },
 
   async probeStreamUrl(url, timeoutMs = 1500) {
