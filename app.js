@@ -1367,16 +1367,17 @@ const API = {
 
       // 2. High-Performance Web Embed Players (Verified, fast, dubs & subtitles supported)
       const webEmbedItems = [
-        { provider: 'WarezCDN', name: 'WarezCDN HD (Dublado PT-BR)', title: 'Player Principal WarezCDN (Dublado/Nacional)', embedUrl: warezCdnUrl, category: 'web', isDub: true, score: 95 },
-        { provider: 'VidSrc', name: 'VidSrc HD (Dublado PT-BR)', title: 'Player VidSrc HD (Dublado PT-BR)', embedUrl: vidsrcDubUrl, category: 'web', isDub: true, score: 93 },
-        { provider: 'NontonGo', name: 'NontonGo Ultra HD (Multi-Áudio)', title: 'Player NontonGo Ultra HD', embedUrl: nontonGoUrl, category: 'web', isDub: true, score: 92 },
-        { provider: 'EmbedderNet', name: 'EmbedderNet HD (Dublado PT-BR)', title: 'Player EmbedderNet (Dublado PT-BR)', embedUrl: embedderNetUrl, category: 'web', isDub: true, score: 90 },
-        { provider: 'MultiEmbed', name: 'MultiEmbed Fast HD', title: 'Player MultiEmbed Multi-Servidores', embedUrl: multiembedUrl, category: 'web', isDub: true, score: 88 },
-        { provider: 'MyEmbed', name: 'MyEmbed HD (Dublado PT-BR)', title: 'Player MyEmbed Nacional', embedUrl: myEmbedUrl, category: 'web', isDub: true, score: 85 },
-        { provider: '2Embed', name: '2Embed Premium HD', title: 'Player 2Embed HD', embedUrl: twoembedUrl, category: 'web', isDub: false, score: 82 },
-        { provider: 'SmashyStream', name: 'SmashyStream Multi-Server HD', title: 'Player SmashyStream', embedUrl: smashyUrl, category: 'web', isDub: false, score: 80 },
-        { provider: 'CineStream', name: 'CineStream Club HD', title: 'Player CineStream', embedUrl: cinestreamUrl, category: 'web', isDub: false, score: 78 },
-        { provider: 'VidSrc IN', name: 'VidSrc Original (Legendado)', title: 'Player VidSrc Original HD', embedUrl: vidsrcEnUrl, category: 'web', isDub: false, score: 75 }
+        { provider: 'WarezCDN', name: '⚡ WarezCDN HD (Dublado PT-BR)', title: 'Player Principal WarezCDN (Dublado/Nacional)', embedUrl: warezCdnUrl, category: 'web', isDub: true, score: 175 },
+        { provider: 'AutoEmbed', name: '⚡ AutoEmbed HD (Dublado / Multi)', title: 'Player AutoEmbed HD Multi-Servidores', embedUrl: autoEmbedUrl, category: 'web', isDub: true, score: 170 },
+        { provider: 'VidLink', name: '⚡ VidLink Pro HD (Rápido)', title: 'Player VidLink Pro HD', embedUrl: vidlinkUrl, category: 'web', isDub: true, score: 165 },
+        { provider: 'VidSrc', name: '⚡ VidSrc HD (Dublado PT-BR)', title: 'Player VidSrc HD (Dublado PT-BR)', embedUrl: vidsrcDubUrl, category: 'web', isDub: true, score: 160 },
+        { provider: 'MultiEmbed', name: '⚡ MultiEmbed Fast HD', title: 'Player MultiEmbed Multi-Servidores', embedUrl: multiembedUrl, category: 'web', isDub: true, score: 155 },
+        { provider: 'EmbedderNet', name: 'EmbedderNet HD (Dublado PT-BR)', title: 'Player EmbedderNet (Dublado PT-BR)', embedUrl: embedderNetUrl, category: 'web', isDub: true, score: 150 },
+        { provider: 'NontonGo', name: 'NontonGo Ultra HD (Multi-Áudio)', title: 'Player NontonGo Ultra HD', embedUrl: nontonGoUrl, category: 'web', isDub: true, score: 145 },
+        { provider: 'SmashyStream', name: 'SmashyStream Multi-Server HD', title: 'Player SmashyStream', embedUrl: smashyUrl, category: 'web', isDub: false, score: 140 },
+        { provider: '2Embed', name: '2Embed Premium HD', title: 'Player 2Embed HD', embedUrl: twoembedUrl, category: 'web', isDub: false, score: 130 },
+        { provider: 'CineStream', name: 'CineStream Club HD', title: 'Player CineStream', embedUrl: cinestreamUrl, category: 'web', isDub: false, score: 125 },
+        { provider: 'VidSrc IN', name: 'VidSrc Original (Legendado)', title: 'Player VidSrc Original HD', embedUrl: vidsrcEnUrl, category: 'web', isDub: false, score: 120 }
       ];
 
       // 3. Native torrents (Brazuca, Mico Leão & Torrentio)
@@ -4245,42 +4246,37 @@ const UI = {
 
     state.activeStreams = rawStreams;
 
-    // Collect top direct candidate streams (BestCine Dublado 1080p, FrostStream Dublado, KingVOD, FenixFlix)
-    const directCandidates = [];
-    rawStreams.forEach((s, idx) => {
-      if (s.url && (s.category === 'bestcine' || s.category === 'frost' || s.category === 'kingvod' || s.category === 'fenix')) {
-        directCandidates.push({ index: idx, stream: s });
-      }
-    });
+    // Filter all streams with either direct URL or embed URL
+    const playableCandidates = rawStreams
+      .map((s, idx) => ({ index: idx, stream: s }))
+      .filter(c => c.stream && (c.stream.url || c.stream.embedUrl));
 
-    let chosenIndex = 0;
+    // Sort by priority score (WarezCDN Dublado, BestCine 4K/1080p, AutoEmbed, KingVOD, FrostStream, VidLink, etc.)
+    playableCandidates.sort((a, b) => (b.stream.score || 0) - (a.stream.score || 0));
 
-    if (directCandidates.length > 0) {
-      // Prioritize Dublado 1080p / 4K
-      directCandidates.sort((a, b) => (b.stream.score || 0) - (a.stream.score || 0));
-      const topCandidates = directCandidates.slice(0, 4);
+    let chosenIndex = playableCandidates.length > 0 ? playableCandidates[0].index : 0;
+
+    if (playableCandidates.length > 0) {
+      const topCandidates = playableCandidates.slice(0, 4);
 
       if (playerLoading) {
         playerLoading.querySelector('p').textContent = '⚡ Testando resposta dos servidores em tempo real...';
       }
 
-      // Pre-test candidate streams in parallel with a fast probe (1200ms)
+      // Fast pre-test probe in parallel (1000ms race)
       const probePromises = topCandidates.map(async (c) => {
-        const probeResult = await this.probeStreamUrl(c.stream.url, 1200);
+        const targetUrl = c.stream.url || c.stream.embedUrl;
+        const probeResult = await this.probeStreamUrl(targetUrl, 1000);
         return { ...c, ok: probeResult.ok, latency: probeResult.latency };
       });
 
       const tested = await Promise.all(probePromises);
-
-      // Pick the first working tested candidate or fallback to highest scored
       const working = tested.find(t => t.ok);
       if (working) {
         chosenIndex = working.index;
       } else {
         chosenIndex = topCandidates[0].index;
       }
-    } else {
-      chosenIndex = 0;
     }
 
     state.currentStreamIndex = chosenIndex;
@@ -4294,13 +4290,13 @@ const UI = {
     this.testAndPlayStreamIndex(chosenIndex);
   },
 
-  async probeStreamUrl(url, timeoutMs = 1500) {
+  async probeStreamUrl(url, timeoutMs = 1200) {
     if (!url) return { ok: false, latency: 9999 };
     const startTime = Date.now();
     try {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeoutMs);
-      await fetch(url, { method: 'HEAD', mode: 'no-cors', signal: controller.signal });
+      await fetch(url, { method: 'GET', mode: 'no-cors', signal: controller.signal });
       clearTimeout(timer);
       return { ok: true, latency: Date.now() - startTime };
     } catch(e) {
