@@ -1172,7 +1172,7 @@ const API = {
 
       const streamId = realType === 'series' ? `${cleanId}:${season}:${episode}` : cleanId;
       // Bump cache key to force-refresh stream lists with active BestCine 4K/1080p and FrostStream
-      const cacheKey = `st_v140_${streamId}`;
+      const cacheKey = `st_v150_${streamId}`;
       const cached = Cache.get(cacheKey);
       if (cached && cached.length > 0) return cached;
 
@@ -1276,32 +1276,31 @@ const API = {
 
       const streamsList = [];
 
-      const nontonGoUrl = isMovie
-        ? `https://www.nontongo.win/embed/movie/${cleanId}`
-        : `https://www.nontongo.win/embed/tv/${cleanId}/${season}/${episode}`;
-
-      const myEmbedUrl = isMovie
-        ? `https://embed.myembed.top/filme/${cleanId}`
-        : `https://embed.myembed.top/serie/${cleanId}/${season}/${episode}`;
-
-      // 1. High-Performance Web Embed Players (Verified, 100% playable in browser, dubs & subtitles supported)
-      const webEmbedItems = [
-        { provider: 'WarezCDN', name: '⚡ WarezCDN HD (Dublado PT-BR)', title: 'Player Principal WarezCDN (Dublado/Nacional)', embedUrl: warezCdnUrl, category: 'web', isDub: true, score: 1000 },
-        { provider: 'VidSrc', name: '⚡ VidSrc HD (Dublado PT-BR)', title: 'Player VidSrc HD (Dublado PT-BR)', embedUrl: vidsrcDubUrl, category: 'web', isDub: true, score: 900 },
-        { provider: 'AutoEmbed', name: '⚡ AutoEmbed HD (Dublado / Multi)', title: 'Player AutoEmbed HD Multi-Servidores', embedUrl: autoEmbedUrl, category: 'web', isDub: true, score: 800 },
-        { provider: 'EmbedderNet', name: 'EmbedderNet HD (Dublado PT-BR)', title: 'Player EmbedderNet (Dublado PT-BR)', embedUrl: embedderNetUrl, category: 'web', isDub: true, score: 750 },
-        { provider: 'MultiEmbed', name: '⚡ MultiEmbed Fast HD', title: 'Player MultiEmbed Multi-Servidores', embedUrl: multiembedUrl, category: 'web', isDub: true, score: 700 },
-        { provider: 'VidLink', name: '⚡ VidLink Pro HD (Rápido)', title: 'Player VidLink Pro HD', embedUrl: vidlinkUrl, category: 'web', isDub: true, score: 650 },
-        { provider: 'NontonGo', name: 'NontonGo Ultra HD (Multi-Áudio)', title: 'Player NontonGo Ultra HD', embedUrl: nontonGoUrl, category: 'web', isDub: true, score: 600 },
-        { provider: 'SmashyStream', name: 'SmashyStream Multi-Server HD', title: 'Player SmashyStream', embedUrl: smashyUrl, category: 'web', isDub: false, score: 550 },
-        { provider: '2Embed', name: '2Embed Premium HD', title: 'Player 2Embed HD', embedUrl: twoembedUrl, category: 'web', isDub: false, score: 500 },
-        { provider: 'CineStream', name: 'CineStream Club HD', title: 'Player CineStream', embedUrl: cinestreamUrl, category: 'web', isDub: false, score: 450 },
-        { provider: 'VidSrc IN', name: 'VidSrc Original (Legendado)', title: 'Player VidSrc Original HD', embedUrl: vidsrcEnUrl, category: 'web', isDub: false, score: 400 }
-      ];
-      streamsList.push(...webEmbedItems);
-
-      // 2. Direct Stremio streams (BestCine, FrostStream, KingVOD, FenixFlix)
+      // 1. TOP 1 & TOP 2 Direct Stremio Streams: FrostStream (Top 1) & BestCine (Top 2)
       const directVideoSources = [];
+
+      // TOP 1: FrostStream
+      frostStreams.forEach(s => {
+        if (!s.url) return;
+        const rawInfo = `${s.name || ''} ${s.title || ''}`.toLowerCase();
+        const isDub = rawInfo.includes('dublado') || rawInfo.includes('português') || rawInfo.includes('portugues') || rawInfo.includes('pt-br') || rawInfo.includes('dual');
+        let quality = 'HD';
+        if (rawInfo.includes('720')) quality = '720p';
+        else if (rawInfo.includes('1080')) quality = '1080p';
+        else if (rawInfo.includes('4k') || rawInfo.includes('2160')) quality = '4K';
+        directVideoSources.push({
+          provider: 'FrostStream',
+          name: `❄️ FrostStream ${quality}${isDub ? ' (Dublado PT-BR)' : ''}`,
+          title: s.title || `FrostStream ${quality}`,
+          url: s.url,
+          isDub: isDub,
+          quality: quality,
+          category: 'frost',
+          score: 2000 + (quality === '1080p' ? 60 : quality === '720p' ? 50 : quality === '4K' ? 40 : 20) + (isDub ? 100 : 0)
+        });
+      });
+
+      // TOP 2: BestCine
       bestCineStreams.forEach(s => {
         if (!s.url) return;
         const rawInfo = `${s.name || ''} ${s.title || ''}`.toLowerCase();
@@ -1324,28 +1323,10 @@ const API = {
           isDub: isDub,
           quality: quality,
           category: 'bestcine',
-          score: 160 + (quality.includes('4K') ? 40 : quality === '1080p' ? 45 : quality === '720p' ? 50 : 20) + (isDub ? 40 : 0)
+          score: 1800 + (quality === '1080p' ? 60 : quality.includes('4K') ? 50 : quality === '720p' ? 40 : 20) + (isDub ? 100 : 0)
         });
       });
-      frostStreams.forEach(s => {
-        if (!s.url) return;
-        const rawInfo = `${s.name || ''} ${s.title || ''}`.toLowerCase();
-        const isDub = rawInfo.includes('dublado') || rawInfo.includes('português') || rawInfo.includes('portugues') || rawInfo.includes('pt-br') || rawInfo.includes('dual');
-        let quality = 'HD';
-        if (rawInfo.includes('720')) quality = '720p';
-        else if (rawInfo.includes('1080')) quality = '1080p';
-        else if (rawInfo.includes('4k') || rawInfo.includes('2160')) quality = '4K';
-        directVideoSources.push({
-          provider: 'FrostStream',
-          name: `❄️ FrostStream ${quality}${isDub ? ' (Dublado PT-BR)' : ''}`,
-          title: s.title || `FrostStream ${quality}`,
-          url: s.url,
-          isDub: isDub,
-          quality: quality,
-          category: 'frost',
-          score: 140 + (quality === '720p' ? 60 : quality === '1080p' ? 35 : quality === '4K' ? 25 : 10) + (isDub ? 40 : 0)
-        });
-      });
+
       kingStreams.forEach(s => {
         if (!s.url) return;
         const rawInfo = `${s.name || ''} ${s.title || ''}`.toLowerCase();
@@ -1358,9 +1339,10 @@ const API = {
           isDub: isDub,
           quality: '1080p',
           category: 'kingvod',
-          score: 135 + (isDub ? 40 : 0)
+          score: 1200 + (isDub ? 80 : 0)
         });
       });
+
       fenixStreams.forEach(s => {
         if (!s.url) return;
         const rawInfo = `${s.name || ''} ${s.title || ''}`.toLowerCase();
@@ -1376,10 +1358,35 @@ const API = {
           url: s.url,
           isDub: isDub,
           category: 'fenix',
-          score: 90 + (quality === '4K' ? 30 : quality === '1080p' ? 20 : 10) + (isDub ? 40 : 0)
+          score: 900 + (quality === '4K' ? 30 : quality === '1080p' ? 20 : 10) + (isDub ? 40 : 0)
         });
       });
+
       streamsList.push(...directVideoSources);
+
+      const nontonGoUrl = isMovie
+        ? `https://www.nontongo.win/embed/movie/${cleanId}`
+        : `https://www.nontongo.win/embed/tv/${cleanId}/${season}/${episode}`;
+
+      const myEmbedUrl = isMovie
+        ? `https://embed.myembed.top/filme/${cleanId}`
+        : `https://embed.myembed.top/serie/${cleanId}/${season}/${episode}`;
+
+      // 2. High-Performance Web Embed Players (Dublado PT-BR & Multi)
+      const webEmbedItems = [
+        { provider: 'WarezCDN', name: '⚡ WarezCDN HD (Dublado PT-BR)', title: 'Player Principal WarezCDN (Dublado/Nacional)', embedUrl: warezCdnUrl, category: 'web', isDub: true, score: 1500 },
+        { provider: 'VidSrc', name: '⚡ VidSrc HD (Dublado PT-BR)', title: 'Player VidSrc HD (Dublado PT-BR)', embedUrl: vidsrcDubUrl, category: 'web', isDub: true, score: 1400 },
+        { provider: 'AutoEmbed', name: '⚡ AutoEmbed HD (Dublado / Multi)', title: 'Player AutoEmbed HD Multi-Servidores', embedUrl: autoEmbedUrl, category: 'web', isDub: true, score: 1300 },
+        { provider: 'EmbedderNet', name: 'EmbedderNet HD (Dublado PT-BR)', title: 'Player EmbedderNet (Dublado PT-BR)', embedUrl: embedderNetUrl, category: 'web', isDub: true, score: 1100 },
+        { provider: 'MultiEmbed', name: '⚡ MultiEmbed Fast HD', title: 'Player MultiEmbed Multi-Servidores', embedUrl: multiembedUrl, category: 'web', isDub: true, score: 1000 },
+        { provider: 'VidLink', name: '⚡ VidLink Pro HD (Rápido)', title: 'Player VidLink Pro HD', embedUrl: vidlinkUrl, category: 'web', isDub: true, score: 950 },
+        { provider: 'NontonGo', name: 'NontonGo Ultra HD (Multi-Áudio)', title: 'Player NontonGo Ultra HD', embedUrl: nontonGoUrl, category: 'web', isDub: true, score: 850 },
+        { provider: 'SmashyStream', name: 'SmashyStream Multi-Server HD', title: 'Player SmashyStream', embedUrl: smashyUrl, category: 'web', isDub: false, score: 750 },
+        { provider: '2Embed', name: '2Embed Premium HD', title: 'Player 2Embed HD', embedUrl: twoembedUrl, category: 'web', isDub: false, score: 650 },
+        { provider: 'CineStream', name: 'CineStream Club HD', title: 'Player CineStream', embedUrl: cinestreamUrl, category: 'web', isDub: false, score: 550 },
+        { provider: 'VidSrc IN', name: 'VidSrc Original (Legendado)', title: 'Player VidSrc Original HD', embedUrl: vidsrcEnUrl, category: 'web', isDub: false, score: 450 }
+      ];
+      streamsList.push(...webEmbedItems);
 
       // 3. Native torrents (Brazuca, Mico Leão & Torrentio)
       const torrentSources = [
