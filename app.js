@@ -4387,7 +4387,35 @@ const UI = {
     const playerOverlay = document.getElementById('player-overlay');
     if (!state.isPlayerActive || !playerOverlay || playerOverlay.classList.contains('hidden')) return;
     if (!state.activeStreams || state.activeStreams.length === 0) return;
-    const nextIdx = ((state.currentStreamIndex || 0) + 1) % state.activeStreams.length;
+
+    let nextIdx = (state.currentStreamIndex || 0) + 1;
+    let attempts = 0;
+    while (attempts < state.activeStreams.length) {
+      const candidate = state.activeStreams[nextIdx % state.activeStreams.length];
+      if (candidate && (candidate.url || candidate.embedUrl)) {
+        nextIdx = nextIdx % state.activeStreams.length;
+        break;
+      }
+      nextIdx++;
+      attempts++;
+    }
+
+    if (attempts >= state.activeStreams.length) {
+      console.warn('No more playable streams available.');
+      return;
+    }
+
+    const nextStream = state.activeStreams[nextIdx];
+    const playerLoading = document.getElementById('player-loading');
+    if (playerLoading) {
+      playerLoading.classList.remove('hidden');
+      playerLoading.innerHTML = `
+        <div class="spinner large" style="margin-bottom:12px;"></div>
+        <div style="font-size:1.15rem; font-weight:800; color:#ffffff; margin-bottom:6px;">⚡ Alternando Servidor</div>
+        <div style="font-size:0.85rem; color:#9ca3af;">Conectando a ${nextStream.name}...</div>
+      `;
+    }
+
     this.selectAndPlayStream(nextIdx);
   },
   
@@ -4790,22 +4818,25 @@ const UI = {
     video.onerror = (e) => {
       const overlay = document.getElementById('player-overlay');
       if (!state.isPlayerActive || !overlay || overlay.classList.contains('hidden') || !video.src || video.src === 'about:blank') return;
-      console.warn('Direct video playback error:', e);
-      if (playerLoading) playerLoading.classList.add('hidden');
+      console.warn('Direct video playback error, switching to next server...', e);
+      if (typeof this.playNextStream === 'function') {
+        this.playNextStream();
+      }
     };
 
-    // 12s stall watchdog: only notify/advance if completely stalled
+    // 3.5s Rapid Health & Gray Screen Watchdog
     if (this.streamWatchdogTimer) clearTimeout(this.streamWatchdogTimer);
     this.streamWatchdogTimer = setTimeout(() => {
       const overlay = document.getElementById('player-overlay');
       if (!state.isPlayerActive || !overlay || overlay.classList.contains('hidden')) return;
-      if (video && video.readyState === 0 && video.paused) {
-        console.warn('Stream stall detected (>12s), auto-advancing to next stream...');
+      // If after 3.5s video has no buffered data, or has error, or is paused at 0s:
+      if (video && (video.readyState < 2 || video.currentTime === 0 || video.error)) {
+        console.warn('Playback stalled / gray screen detected (>3.5s), auto-advancing to next stream...');
         if (typeof this.playNextStream === 'function') {
           this.playNextStream();
         }
       }
-    }, 12000);
+    }, 3500);
 
     if (url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
       const hls = new Hls({ enableWorker: true, lowLatencyMode: true });
@@ -4816,8 +4847,10 @@ const UI = {
       });
       hls.on(Hls.Events.ERROR, (event, data) => {
         if (data.fatal) {
-          console.warn('HLS fatal error:', data);
-          if (playerLoading) playerLoading.classList.add('hidden');
+          console.warn('HLS fatal error, auto-advancing to next stream:', data);
+          if (typeof this.playNextStream === 'function') {
+            this.playNextStream();
+          }
         }
       });
       window.currentHls = hls;
