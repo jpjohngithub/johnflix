@@ -4353,6 +4353,8 @@ const UI = {
       `;
     }
 
+    this.showSourceFeedbackPrompt(stream, index);
+
     if (stream.url) {
       this.playStream(stream.url, stream.name);
     } else if (stream.embedUrl) {
@@ -4360,6 +4362,56 @@ const UI = {
     } else if (stream.magnetUrl || stream.infoHash) {
       this.playTorrent(stream.magnetUrl, stream.name);
     }
+  },
+
+  showSourceFeedbackPrompt(stream, index) {
+    const feedbackPrompt = document.getElementById('hud-source-feedback');
+    const serverBadge = document.getElementById('hud-feedback-server-badge');
+    const questionEl = document.getElementById('hud-feedback-question');
+    const yesBtn = document.getElementById('hud-feedback-yes-btn');
+    const noBtn = document.getElementById('hud-feedback-no-btn');
+
+    if (!feedbackPrompt || !state.isPlayerActive) return;
+
+    if (this.feedbackAutoHideTimer) {
+      clearTimeout(this.feedbackAutoHideTimer);
+      this.feedbackAutoHideTimer = null;
+    }
+
+    const total = state.activeStreams ? state.activeStreams.length : 1;
+    const currentNum = (index || 0) + 1;
+    const streamName = stream ? stream.name.replace(/⚡|🎬|❄️|👑|🔥/g, '').trim() : 'Servidor';
+
+    if (serverBadge) {
+      serverBadge.textContent = `⚡ Servidor ${currentNum}/${total}: ${streamName}`;
+    }
+    if (questionEl) {
+      questionEl.textContent = 'O vídeo está rodando bem?';
+    }
+
+    feedbackPrompt.classList.remove('hidden');
+    requestAnimationFrame(() => {
+      feedbackPrompt.classList.add('show');
+    });
+
+    if (yesBtn) {
+      yesBtn.onclick = (e) => {
+        e.stopPropagation();
+        this.dismissFeedbackPrompt();
+      };
+    }
+
+    if (noBtn) {
+      noBtn.onclick = (e) => {
+        e.stopPropagation();
+        this.playNextStream();
+      };
+    }
+
+    // Auto-dismiss after 15s so it doesn't stay on screen forever
+    this.feedbackAutoHideTimer = setTimeout(() => {
+      this.dismissFeedbackPrompt();
+    }, 15000);
   },
 
   dismissFeedbackPrompt() {
