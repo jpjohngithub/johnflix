@@ -4218,7 +4218,11 @@ const UI = {
     if (playerOverlay) playerOverlay.classList.remove('hidden');
     if (playerLoading) {
       playerLoading.classList.remove('hidden');
-      playerLoading.querySelector('p').textContent = 'Analisando e conectando ao melhor servidor...';
+      playerLoading.innerHTML = `
+        <div class="spinner large" style="margin-bottom:12px;"></div>
+        <div style="font-size:1.15rem; font-weight:800; color:#ffffff; margin-bottom:6px;">⚡ Testando Servidores em Tempo Real</div>
+        <div style="font-size:0.85rem; color:#9ca3af;" id="benchmark-status">Verificando latência e fontes Dublado PT-BR...</div>
+      `;
     }
 
     const titleText = state.currentMeta.name;
@@ -4251,42 +4255,57 @@ const UI = {
       .map((s, idx) => ({ index: idx, stream: s }))
       .filter(c => c.stream && (c.stream.url || c.stream.embedUrl));
 
-    // Sort by priority score (WarezCDN Dublado, BestCine 4K/1080p, AutoEmbed, KingVOD, FrostStream, VidLink, etc.)
+    if (playableCandidates.length === 0) {
+      this.testAndPlayStreamIndex(0);
+      return;
+    }
+
+    const statusEl = document.getElementById('benchmark-status');
+    if (statusEl) statusEl.textContent = `Testando ${Math.min(6, playableCandidates.length)} melhores servidores...`;
+
+    // Prioritize testing top candidates (Dublado first, verified players)
     playableCandidates.sort((a, b) => (b.stream.score || 0) - (a.stream.score || 0));
+    const testPool = playableCandidates.slice(0, 6);
 
-    let chosenIndex = playableCandidates.length > 0 ? playableCandidates[0].index : 0;
-
-    if (playableCandidates.length > 0) {
-      const topCandidates = playableCandidates.slice(0, 4);
-
-      if (playerLoading) {
-        playerLoading.querySelector('p').textContent = '⚡ Testando resposta dos servidores em tempo real...';
+    const testPromises = testPool.map(async (item) => {
+      const targetUrl = item.stream.url || item.stream.embedUrl;
+      const startTime = Date.now();
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 1200);
+        await fetch(targetUrl, { method: 'GET', mode: 'no-cors', signal: controller.signal });
+        clearTimeout(timer);
+        const latency = Date.now() - startTime;
+        return {
+          ...item,
+          ok: true,
+          latency: latency,
+          finalScore: (item.stream.score || 0) + (item.stream.isDub ? 50 : 0) + Math.max(0, 1000 - latency)
+        };
+      } catch(e) {
+        return {
+          ...item,
+          ok: false,
+          latency: 9999,
+          finalScore: (item.stream.score || 0) - 50
+        };
       }
+    });
 
-      // Fast pre-test probe in parallel (1000ms race)
-      const probePromises = topCandidates.map(async (c) => {
-        const targetUrl = c.stream.url || c.stream.embedUrl;
-        const probeResult = await this.probeStreamUrl(targetUrl, 1000);
-        return { ...c, ok: probeResult.ok, latency: probeResult.latency };
-      });
+    const testedResults = await Promise.all(testPromises);
 
-      const tested = await Promise.all(probePromises);
-      const working = tested.find(t => t.ok);
-      if (working) {
-        chosenIndex = working.index;
-      } else {
-        chosenIndex = topCandidates[0].index;
-      }
+    // Sort by tested final score (verified responsive first)
+    testedResults.sort((a, b) => b.finalScore - a.finalScore);
+
+    const winnerItem = testedResults[0] || testPool[0];
+    const chosenIndex = winnerItem.index;
+
+    if (statusEl) {
+      statusEl.textContent = `Conectando a ${winnerItem.stream.name}...`;
     }
 
     state.currentStreamIndex = chosenIndex;
     this.updateHudStreamSelector(rawStreams, chosenIndex);
-
-    const winner = rawStreams[chosenIndex];
-    if (playerLoading) {
-      playerLoading.querySelector('p').textContent = `⚡ Conectando a ${winner.name}...`;
-    }
-
     this.testAndPlayStreamIndex(chosenIndex);
   },
 
@@ -4323,7 +4342,11 @@ const UI = {
     const playerLoading = document.getElementById('player-loading');
     if (playerLoading) {
       playerLoading.classList.remove('hidden');
-      playerLoading.querySelector('p').textContent = `⚡ Conectando a ${stream.name}...`;
+      playerLoading.innerHTML = `
+        <div class="spinner large" style="margin-bottom:12px;"></div>
+        <div style="font-size:1.15rem; font-weight:800; color:#ffffff; margin-bottom:6px;">⚡ Conectando</div>
+        <div style="font-size:0.85rem; color:#9ca3af;">${stream.name}</div>
+      `;
     }
 
     if (stream.url) {
