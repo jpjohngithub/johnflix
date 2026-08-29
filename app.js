@@ -4347,6 +4347,10 @@ const UI = {
     }
 
     state.currentStreamIndex = index;
+    if (!state.visitedServerIndices) {
+      state.visitedServerIndices = new Set();
+    }
+    state.visitedServerIndices.add(index);
     this.updateHudStreamSelector(state.activeStreams, index);
 
     const stream = state.activeStreams[index];
@@ -4409,14 +4413,20 @@ const UI = {
 
     if (yesBtn) {
       yesBtn.onclick = (e) => {
-        e.stopPropagation();
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
         this.dismissFeedbackPrompt();
       };
     }
 
     if (noBtn) {
       noBtn.onclick = (e) => {
-        e.stopPropagation();
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
         this.playNextStream();
       };
     }
@@ -4456,6 +4466,19 @@ const UI = {
     const playerOverlay = document.getElementById('player-overlay');
     if (!state.isPlayerActive || !playerOverlay || playerOverlay.classList.contains('hidden')) return;
     if (!state.activeStreams || state.activeStreams.length === 0) return;
+
+    // Prevent rapid double-triggering / flickering glitches (minimum 800ms cooldown)
+    const now = Date.now();
+    if (this._lastStreamSwitchTime && (now - this._lastStreamSwitchTime) < 800) {
+      return;
+    }
+    this._lastStreamSwitchTime = now;
+
+    // Clear any existing stream watchdogs before switching
+    if (this.streamWatchdogTimer) {
+      clearTimeout(this.streamWatchdogTimer);
+      this.streamWatchdogTimer = null;
+    }
 
     if (!state.visitedServerIndices) {
       state.visitedServerIndices = new Set();
@@ -4911,25 +4934,31 @@ const UI = {
     video.onerror = (e) => {
       const overlay = document.getElementById('player-overlay');
       if (!state.isPlayerActive || !overlay || overlay.classList.contains('hidden') || !video.src || video.src === 'about:blank') return;
-      console.warn('Direct video playback error, switching to next server...', e);
-      if (typeof this.playNextStream === 'function') {
-        this.playNextStream();
+      console.warn('Direct video playback error, preparing clean transition to next server...', e);
+      if (this.streamWatchdogTimer) {
+        clearTimeout(this.streamWatchdogTimer);
+        this.streamWatchdogTimer = null;
       }
+      setTimeout(() => {
+        if (state.isPlayerActive && typeof this.playNextStream === 'function') {
+          this.playNextStream();
+        }
+      }, 400);
     };
 
-    // 3.5s Rapid Health & Gray Screen Watchdog
+    // 4s Rapid Health & Gray Screen Watchdog
     if (this.streamWatchdogTimer) clearTimeout(this.streamWatchdogTimer);
     this.streamWatchdogTimer = setTimeout(() => {
       const overlay = document.getElementById('player-overlay');
       if (!state.isPlayerActive || !overlay || overlay.classList.contains('hidden')) return;
-      // If after 3.5s video has no buffered data, or has error, or is paused at 0s:
+      // If after 4s video has no buffered data, or has error, or is paused at 0s:
       if (video && (video.readyState < 2 || video.currentTime === 0 || video.error)) {
-        console.warn('Playback stalled / gray screen detected (>3.5s), auto-advancing to next stream...');
+        console.warn('Playback stalled / gray screen detected (>4s), auto-advancing to next stream...');
         if (typeof this.playNextStream === 'function') {
           this.playNextStream();
         }
       }
-    }, 3500);
+    }, 4000);
 
     if (url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
       const hls = new Hls({ enableWorker: true, lowLatencyMode: true });
