@@ -4378,12 +4378,18 @@ const UI = {
       this.feedbackAutoHideTimer = null;
     }
 
-    const total = state.activeStreams ? state.activeStreams.length : 1;
-    const currentNum = (index || 0) + 1;
+    const playable = (state.activeStreams || [])
+      .map((s, idx) => ({ index: idx, stream: s }))
+      .filter(c => c.stream && (c.stream.url || c.stream.embedUrl));
+    playable.sort((a, b) => (b.stream.score || 0) - (a.stream.score || 0));
+
+    const totalPlayable = Math.min(10, playable.length);
+    const rankIndex = playable.findIndex(p => p.index === index);
+    const currentRank = rankIndex >= 0 ? rankIndex + 1 : (index + 1);
     const streamName = stream ? stream.name.replace(/⚡|🎬|❄️|👑|🔥/g, '').trim() : 'Servidor';
 
     if (serverBadge) {
-      serverBadge.textContent = `⚡ Servidor ${currentNum}/${total}: ${streamName}`;
+      serverBadge.textContent = `⚡ Top ${currentRank}/${totalPlayable}: ${streamName}`;
     }
     if (questionEl) {
       questionEl.textContent = 'O vídeo está rodando bem?';
@@ -4444,35 +4450,47 @@ const UI = {
     if (!state.isPlayerActive || !playerOverlay || playerOverlay.classList.contains('hidden')) return;
     if (!state.activeStreams || state.activeStreams.length === 0) return;
 
-    let nextIdx = (state.currentStreamIndex || 0) + 1;
-    let attempts = 0;
-    while (attempts < state.activeStreams.length) {
-      const candidate = state.activeStreams[nextIdx % state.activeStreams.length];
-      if (candidate && (candidate.url || candidate.embedUrl)) {
-        nextIdx = nextIdx % state.activeStreams.length;
-        break;
-      }
-      nextIdx++;
-      attempts++;
+    if (!state.visitedServerIndices) {
+      state.visitedServerIndices = new Set();
     }
+    state.visitedServerIndices.add(state.currentStreamIndex);
 
-    if (attempts >= state.activeStreams.length) {
-      console.warn('No more playable streams available.');
+    const playable = state.activeStreams
+      .map((s, idx) => ({ index: idx, stream: s }))
+      .filter(c => c.stream && (c.stream.url || c.stream.embedUrl));
+
+    // Sort strictly by Quality & Portuguese Dubbing Score
+    playable.sort((a, b) => (b.stream.score || 0) - (a.stream.score || 0));
+
+    if (playable.length === 0) {
+      console.warn('No playable streams available.');
       return;
     }
 
-    const nextStream = state.activeStreams[nextIdx];
+    // Find the next BEST server that hasn't been tried yet in this session
+    let nextBest = playable.find(c => !state.visitedServerIndices.has(c.index));
+
+    if (!nextBest) {
+      // If all servers in top list were visited, reset history and cycle back to #1 top server
+      state.visitedServerIndices.clear();
+      state.visitedServerIndices.add(state.currentStreamIndex);
+      nextBest = playable.find(c => c.index !== state.currentStreamIndex) || playable[0];
+    }
+
+    state.visitedServerIndices.add(nextBest.index);
+
+    const nextStream = nextBest.stream;
     const playerLoading = document.getElementById('player-loading');
     if (playerLoading) {
       playerLoading.classList.remove('hidden');
       playerLoading.innerHTML = `
         <div class="spinner large" style="margin-bottom:12px;"></div>
-        <div style="font-size:1.15rem; font-weight:800; color:#ffffff; margin-bottom:6px;">⚡ Alternando Servidor</div>
-        <div style="font-size:0.85rem; color:#9ca3af;">Conectando a ${nextStream.name}...</div>
+        <div style="font-size:1.15rem; font-weight:800; color:#ffffff; margin-bottom:6px;">⚡ Conectando ao Próximo Melhor Servidor</div>
+        <div style="font-size:0.85rem; color:#a78bfa;">${nextStream.name}</div>
       `;
     }
 
-    this.selectAndPlayStream(nextIdx);
+    this.selectAndPlayStream(nextBest.index);
   },
   
   async loadStreams() {
