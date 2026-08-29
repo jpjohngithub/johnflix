@@ -1172,7 +1172,7 @@ const API = {
 
       const streamId = realType === 'series' ? `${cleanId}:${season}:${episode}` : cleanId;
       // Bump cache key to force-refresh stream lists with active BestCine 4K/1080p and FrostStream
-      const cacheKey = `st_v120_${streamId}`;
+      const cacheKey = `st_v130_${streamId}`;
       const cached = Cache.get(cacheKey);
       if (cached && cached.length > 0) return cached;
 
@@ -1276,7 +1276,31 @@ const API = {
 
       const streamsList = [];
 
-      // 1. Direct MP4 / HLS Native Video Streams (BestCine, FrostStream, KingVOD & FenixFlix)
+      const nontonGoUrl = isMovie
+        ? `https://www.nontongo.win/embed/movie/${cleanId}`
+        : `https://www.nontongo.win/embed/tv/${cleanId}/${season}/${episode}`;
+
+      const myEmbedUrl = isMovie
+        ? `https://embed.myembed.top/filme/${cleanId}`
+        : `https://embed.myembed.top/serie/${cleanId}/${season}/${episode}`;
+
+      // 1. High-Performance Web Embed Players (Verified, 100% playable in browser, dubs & subtitles supported)
+      const webEmbedItems = [
+        { provider: 'WarezCDN', name: '⚡ WarezCDN HD (Dublado PT-BR)', title: 'Player Principal WarezCDN (Dublado/Nacional)', embedUrl: warezCdnUrl, category: 'web', isDub: true, score: 300 },
+        { provider: 'AutoEmbed', name: '⚡ AutoEmbed HD (Dublado / Multi)', title: 'Player AutoEmbed HD Multi-Servidores', embedUrl: autoEmbedUrl, category: 'web', isDub: true, score: 290 },
+        { provider: 'VidLink', name: '⚡ VidLink Pro HD (Rápido)', title: 'Player VidLink Pro HD', embedUrl: vidlinkUrl, category: 'web', isDub: true, score: 280 },
+        { provider: 'VidSrc', name: '⚡ VidSrc HD (Dublado PT-BR)', title: 'Player VidSrc HD (Dublado PT-BR)', embedUrl: vidsrcDubUrl, category: 'web', isDub: true, score: 270 },
+        { provider: 'MultiEmbed', name: '⚡ MultiEmbed Fast HD', title: 'Player MultiEmbed Multi-Servidores', embedUrl: multiembedUrl, category: 'web', isDub: true, score: 260 },
+        { provider: 'EmbedderNet', name: 'EmbedderNet HD (Dublado PT-BR)', title: 'Player EmbedderNet (Dublado PT-BR)', embedUrl: embedderNetUrl, category: 'web', isDub: true, score: 250 },
+        { provider: 'NontonGo', name: 'NontonGo Ultra HD (Multi-Áudio)', title: 'Player NontonGo Ultra HD', embedUrl: nontonGoUrl, category: 'web', isDub: true, score: 240 },
+        { provider: 'SmashyStream', name: 'SmashyStream Multi-Server HD', title: 'Player SmashyStream', embedUrl: smashyUrl, category: 'web', isDub: false, score: 230 },
+        { provider: '2Embed', name: '2Embed Premium HD', title: 'Player 2Embed HD', embedUrl: twoembedUrl, category: 'web', isDub: false, score: 220 },
+        { provider: 'CineStream', name: 'CineStream Club HD', title: 'Player CineStream', embedUrl: cinestreamUrl, category: 'web', isDub: false, score: 210 },
+        { provider: 'VidSrc IN', name: 'VidSrc Original (Legendado)', title: 'Player VidSrc Original HD', embedUrl: vidsrcEnUrl, category: 'web', isDub: false, score: 200 }
+      ];
+      streamsList.push(...webEmbedItems);
+
+      // 2. Direct Stremio streams (BestCine, FrostStream, KingVOD, FenixFlix)
       const directVideoSources = [];
       bestCineStreams.forEach(s => {
         if (!s.url) return;
@@ -1356,29 +1380,6 @@ const API = {
         });
       });
       streamsList.push(...directVideoSources);
-
-      const nontonGoUrl = isMovie
-        ? `https://www.nontongo.win/embed/movie/${cleanId}`
-        : `https://www.nontongo.win/embed/tv/${cleanId}/${season}/${episode}`;
-
-      const myEmbedUrl = isMovie
-        ? `https://embed.myembed.top/filme/${cleanId}`
-        : `https://embed.myembed.top/serie/${cleanId}/${season}/${episode}`;
-
-      // 2. High-Performance Web Embed Players (Verified, fast, dubs & subtitles supported)
-      const webEmbedItems = [
-        { provider: 'WarezCDN', name: '⚡ WarezCDN HD (Dublado PT-BR)', title: 'Player Principal WarezCDN (Dublado/Nacional)', embedUrl: warezCdnUrl, category: 'web', isDub: true, score: 175 },
-        { provider: 'AutoEmbed', name: '⚡ AutoEmbed HD (Dublado / Multi)', title: 'Player AutoEmbed HD Multi-Servidores', embedUrl: autoEmbedUrl, category: 'web', isDub: true, score: 170 },
-        { provider: 'VidLink', name: '⚡ VidLink Pro HD (Rápido)', title: 'Player VidLink Pro HD', embedUrl: vidlinkUrl, category: 'web', isDub: true, score: 165 },
-        { provider: 'VidSrc', name: '⚡ VidSrc HD (Dublado PT-BR)', title: 'Player VidSrc HD (Dublado PT-BR)', embedUrl: vidsrcDubUrl, category: 'web', isDub: true, score: 160 },
-        { provider: 'MultiEmbed', name: '⚡ MultiEmbed Fast HD', title: 'Player MultiEmbed Multi-Servidores', embedUrl: multiembedUrl, category: 'web', isDub: true, score: 155 },
-        { provider: 'EmbedderNet', name: 'EmbedderNet HD (Dublado PT-BR)', title: 'Player EmbedderNet (Dublado PT-BR)', embedUrl: embedderNetUrl, category: 'web', isDub: true, score: 150 },
-        { provider: 'NontonGo', name: 'NontonGo Ultra HD (Multi-Áudio)', title: 'Player NontonGo Ultra HD', embedUrl: nontonGoUrl, category: 'web', isDub: true, score: 145 },
-        { provider: 'SmashyStream', name: 'SmashyStream Multi-Server HD', title: 'Player SmashyStream', embedUrl: smashyUrl, category: 'web', isDub: false, score: 140 },
-        { provider: '2Embed', name: '2Embed Premium HD', title: 'Player 2Embed HD', embedUrl: twoembedUrl, category: 'web', isDub: false, score: 130 },
-        { provider: 'CineStream', name: 'CineStream Club HD', title: 'Player CineStream', embedUrl: cinestreamUrl, category: 'web', isDub: false, score: 125 },
-        { provider: 'VidSrc IN', name: 'VidSrc Original (Legendado)', title: 'Player VidSrc Original HD', embedUrl: vidsrcEnUrl, category: 'web', isDub: false, score: 120 }
-      ];
 
       // 3. Native torrents (Brazuca, Mico Leão & Torrentio)
       const torrentSources = [
@@ -4640,7 +4641,13 @@ const UI = {
 
     if (playerLoading) {
       playerLoading.classList.remove('hidden');
-      playerLoading.querySelector('p').textContent = 'Carregando Player Web HD...';
+      playerLoading.innerHTML = `
+        <div style="text-align:center; max-width:380px; padding:24px 28px; background:rgba(18,18,30,0.92); backdrop-filter:blur(20px); border-radius:18px; border:1px solid rgba(255,255,255,0.12); box-shadow:0 16px 48px rgba(0,0,0,0.7);">
+          <div class="spinner large" style="margin:0 auto 16px; border-top-color:#8b5cf6;"></div>
+          <div style="font-size:1.2rem; font-weight:800; color:#ffffff; margin-bottom:6px;">⚡ Conectando Player Web HD</div>
+          <div style="font-size:0.85rem; color:#a78bfa;">${title}</div>
+        </div>
+      `;
     }
     if (playerError) playerError.classList.add('hidden');
     if (playerTitle) playerTitle.textContent = title;
@@ -4671,7 +4678,7 @@ const UI = {
     // Auto-hide loading spinner quickly so iframe is 100% visible and ready for interaction
     setTimeout(() => {
       if (playerLoading) playerLoading.classList.add('hidden');
-    }, 1200);
+    }, 1000);
   },
   
   playStream(url, title) {
@@ -4709,16 +4716,22 @@ const UI = {
 
     if (playerLoading) {
       playerLoading.classList.remove('hidden');
-      playerLoading.querySelector('p').textContent = 'Carregando transmissão...';
+      playerLoading.innerHTML = `
+        <div style="text-align:center; max-width:380px; padding:24px 28px; background:rgba(18,18,30,0.92); backdrop-filter:blur(20px); border-radius:18px; border:1px solid rgba(255,255,255,0.12); box-shadow:0 16px 48px rgba(0,0,0,0.7);">
+          <div class="spinner large" style="margin:0 auto 16px; border-top-color:#8b5cf6;"></div>
+          <div style="font-size:1.2rem; font-weight:800; color:#ffffff; margin-bottom:6px;">⚡ Iniciando Transmissão</div>
+          <div style="font-size:0.85rem; color:#a78bfa;">${title}</div>
+        </div>
+      `;
     }
     if (playerError) playerError.classList.add('hidden');
     if (playerTitle) playerTitle.textContent = title;
     if (hudTitle) hudTitle.textContent = title;
     
-    // Always hide spinner after 1.5 seconds so it never blocks the video
+    // Always hide spinner after 1.2 seconds so it never blocks the video
     setTimeout(() => {
       if (playerLoading) playerLoading.classList.add('hidden');
-    }, 1500);
+    }, 1200);
 
     // Subtitles (disabled by default on video start)
     if (state.currentMeta) {
