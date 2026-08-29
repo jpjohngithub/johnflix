@@ -4219,9 +4219,12 @@ const UI = {
     if (playerLoading) {
       playerLoading.classList.remove('hidden');
       playerLoading.innerHTML = `
-        <div class="spinner large" style="margin-bottom:12px;"></div>
-        <div style="font-size:1.15rem; font-weight:800; color:#ffffff; margin-bottom:6px;">⚡ Testando Servidores em Tempo Real</div>
-        <div style="font-size:0.85rem; color:#9ca3af;" id="benchmark-status">Verificando latência e fontes Dublado PT-BR...</div>
+        <div style="text-align:center; max-width:380px; padding:24px 28px; background:rgba(18,18,30,0.92); backdrop-filter:blur(20px); border-radius:18px; border:1px solid rgba(255,255,255,0.12); box-shadow:0 16px 48px rgba(0,0,0,0.7);">
+          <div class="spinner large" style="margin:0 auto 16px; border-top-color:#8b5cf6;"></div>
+          <div style="font-size:1.25rem; font-weight:800; color:#ffffff; margin-bottom:6px; letter-spacing:-0.3px;">⚡ Conectando ao Melhor Servidor</div>
+          <div style="font-size:0.85rem; color:#a78bfa; font-weight:600; margin-bottom:8px;">Testando fontes em segundo plano...</div>
+          <div style="font-size:0.75rem; color:#9ca3af;" id="benchmark-status">Verificando WarezCDN, BestCine, AutoEmbed e King VOD...</div>
+        </div>
       `;
     }
 
@@ -4250,7 +4253,7 @@ const UI = {
 
     state.activeStreams = rawStreams;
 
-    // Filter all streams with either direct URL or embed URL
+    // Filter all playable streams
     const playableCandidates = rawStreams
       .map((s, idx) => ({ index: idx, stream: s }))
       .filter(c => c.stream && (c.stream.url || c.stream.embedUrl));
@@ -4260,19 +4263,19 @@ const UI = {
       return;
     }
 
-    const statusEl = document.getElementById('benchmark-status');
-    if (statusEl) statusEl.textContent = `Testando ${Math.min(6, playableCandidates.length)} melhores servidores...`;
-
-    // Prioritize testing top candidates (Dublado first, verified players)
+    // Rank candidate pool: Dublado PT-BR first, top tier engines
     playableCandidates.sort((a, b) => (b.stream.score || 0) - (a.stream.score || 0));
     const testPool = playableCandidates.slice(0, 6);
 
+    const statusEl = document.getElementById('benchmark-status');
+
+    // Super-fast 700ms concurrent race
     const testPromises = testPool.map(async (item) => {
       const targetUrl = item.stream.url || item.stream.embedUrl;
       const startTime = Date.now();
       try {
         const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 1200);
+        const timer = setTimeout(() => controller.abort(), 700);
         await fetch(targetUrl, { method: 'GET', mode: 'no-cors', signal: controller.signal });
         clearTimeout(timer);
         const latency = Date.now() - startTime;
@@ -4280,28 +4283,28 @@ const UI = {
           ...item,
           ok: true,
           latency: latency,
-          finalScore: (item.stream.score || 0) + (item.stream.isDub ? 50 : 0) + Math.max(0, 1000 - latency)
+          finalScore: (item.stream.score || 0) + (item.stream.isDub ? 60 : 0) + Math.max(0, 800 - latency)
         };
       } catch(e) {
         return {
           ...item,
           ok: false,
           latency: 9999,
-          finalScore: (item.stream.score || 0) - 50
+          finalScore: (item.stream.score || 0) - 30
         };
       }
     });
 
     const testedResults = await Promise.all(testPromises);
 
-    // Sort by tested final score (verified responsive first)
+    // Sort by tested final score (verified fast & Dublado first)
     testedResults.sort((a, b) => b.finalScore - a.finalScore);
 
     const winnerItem = testedResults[0] || testPool[0];
     const chosenIndex = winnerItem.index;
 
     if (statusEl) {
-      statusEl.textContent = `Conectando a ${winnerItem.stream.name}...`;
+      statusEl.textContent = `Iniciando ${winnerItem.stream.name}...`;
     }
 
     state.currentStreamIndex = chosenIndex;
