@@ -1172,7 +1172,7 @@ const API = {
 
       const streamId = realType === 'series' ? `${cleanId}:${season}:${episode}` : cleanId;
       // Bump cache key to force-refresh stream lists with active BestCine 4K/1080p and FrostStream
-      const cacheKey = `st_v130_${streamId}`;
+      const cacheKey = `st_v140_${streamId}`;
       const cached = Cache.get(cacheKey);
       if (cached && cached.length > 0) return cached;
 
@@ -1286,17 +1286,17 @@ const API = {
 
       // 1. High-Performance Web Embed Players (Verified, 100% playable in browser, dubs & subtitles supported)
       const webEmbedItems = [
-        { provider: 'WarezCDN', name: '⚡ WarezCDN HD (Dublado PT-BR)', title: 'Player Principal WarezCDN (Dublado/Nacional)', embedUrl: warezCdnUrl, category: 'web', isDub: true, score: 300 },
-        { provider: 'AutoEmbed', name: '⚡ AutoEmbed HD (Dublado / Multi)', title: 'Player AutoEmbed HD Multi-Servidores', embedUrl: autoEmbedUrl, category: 'web', isDub: true, score: 290 },
-        { provider: 'VidLink', name: '⚡ VidLink Pro HD (Rápido)', title: 'Player VidLink Pro HD', embedUrl: vidlinkUrl, category: 'web', isDub: true, score: 280 },
-        { provider: 'VidSrc', name: '⚡ VidSrc HD (Dublado PT-BR)', title: 'Player VidSrc HD (Dublado PT-BR)', embedUrl: vidsrcDubUrl, category: 'web', isDub: true, score: 270 },
-        { provider: 'MultiEmbed', name: '⚡ MultiEmbed Fast HD', title: 'Player MultiEmbed Multi-Servidores', embedUrl: multiembedUrl, category: 'web', isDub: true, score: 260 },
-        { provider: 'EmbedderNet', name: 'EmbedderNet HD (Dublado PT-BR)', title: 'Player EmbedderNet (Dublado PT-BR)', embedUrl: embedderNetUrl, category: 'web', isDub: true, score: 250 },
-        { provider: 'NontonGo', name: 'NontonGo Ultra HD (Multi-Áudio)', title: 'Player NontonGo Ultra HD', embedUrl: nontonGoUrl, category: 'web', isDub: true, score: 240 },
-        { provider: 'SmashyStream', name: 'SmashyStream Multi-Server HD', title: 'Player SmashyStream', embedUrl: smashyUrl, category: 'web', isDub: false, score: 230 },
-        { provider: '2Embed', name: '2Embed Premium HD', title: 'Player 2Embed HD', embedUrl: twoembedUrl, category: 'web', isDub: false, score: 220 },
-        { provider: 'CineStream', name: 'CineStream Club HD', title: 'Player CineStream', embedUrl: cinestreamUrl, category: 'web', isDub: false, score: 210 },
-        { provider: 'VidSrc IN', name: 'VidSrc Original (Legendado)', title: 'Player VidSrc Original HD', embedUrl: vidsrcEnUrl, category: 'web', isDub: false, score: 200 }
+        { provider: 'WarezCDN', name: '⚡ WarezCDN HD (Dublado PT-BR)', title: 'Player Principal WarezCDN (Dublado/Nacional)', embedUrl: warezCdnUrl, category: 'web', isDub: true, score: 1000 },
+        { provider: 'VidSrc', name: '⚡ VidSrc HD (Dublado PT-BR)', title: 'Player VidSrc HD (Dublado PT-BR)', embedUrl: vidsrcDubUrl, category: 'web', isDub: true, score: 900 },
+        { provider: 'AutoEmbed', name: '⚡ AutoEmbed HD (Dublado / Multi)', title: 'Player AutoEmbed HD Multi-Servidores', embedUrl: autoEmbedUrl, category: 'web', isDub: true, score: 800 },
+        { provider: 'EmbedderNet', name: 'EmbedderNet HD (Dublado PT-BR)', title: 'Player EmbedderNet (Dublado PT-BR)', embedUrl: embedderNetUrl, category: 'web', isDub: true, score: 750 },
+        { provider: 'MultiEmbed', name: '⚡ MultiEmbed Fast HD', title: 'Player MultiEmbed Multi-Servidores', embedUrl: multiembedUrl, category: 'web', isDub: true, score: 700 },
+        { provider: 'VidLink', name: '⚡ VidLink Pro HD (Rápido)', title: 'Player VidLink Pro HD', embedUrl: vidlinkUrl, category: 'web', isDub: true, score: 650 },
+        { provider: 'NontonGo', name: 'NontonGo Ultra HD (Multi-Áudio)', title: 'Player NontonGo Ultra HD', embedUrl: nontonGoUrl, category: 'web', isDub: true, score: 600 },
+        { provider: 'SmashyStream', name: 'SmashyStream Multi-Server HD', title: 'Player SmashyStream', embedUrl: smashyUrl, category: 'web', isDub: false, score: 550 },
+        { provider: '2Embed', name: '2Embed Premium HD', title: 'Player 2Embed HD', embedUrl: twoembedUrl, category: 'web', isDub: false, score: 500 },
+        { provider: 'CineStream', name: 'CineStream Club HD', title: 'Player CineStream', embedUrl: cinestreamUrl, category: 'web', isDub: false, score: 450 },
+        { provider: 'VidSrc IN', name: 'VidSrc Original (Legendado)', title: 'Player VidSrc Original HD', embedUrl: vidsrcEnUrl, category: 'web', isDub: false, score: 400 }
       ];
       streamsList.push(...webEmbedItems);
 
@@ -4284,14 +4284,14 @@ const UI = {
           ...item,
           ok: true,
           latency: latency,
-          finalScore: (item.stream.score || 0) + (item.stream.isDub ? 60 : 0) + Math.max(0, 800 - latency)
+          finalScore: (item.stream.score || 0) + (item.stream.isDub ? 100 : 0) + Math.min(50, Math.max(0, 50 - Math.floor(latency / 20)))
         };
       } catch(e) {
         return {
           ...item,
           ok: false,
           latency: 9999,
-          finalScore: (item.stream.score || 0) - 30
+          finalScore: (item.stream.score || 0) - 200
         };
       }
     });
