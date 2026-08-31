@@ -5121,7 +5121,14 @@ const UI = {
 
       if (matchedIdx >= 0 && matchedIdx < window.currentHls.levels.length) {
         window.currentHls.currentLevel = matchedIdx;
-        const h = window.currentHls.levels[matchedIdx].height || '1080';
+        if (video) {
+          video.muted = false;
+          video.volume = 1.0;
+        }
+        if (window.currentHls.audioTracks && window.currentHls.audioTracks.length > 0 && window.currentHls.audioTrack === -1) {
+          window.currentHls.audioTrack = 0;
+        }
+        const h = window.currentHls.levels[matchedIdx].height || '4K';
         this.showPlayerToast(`📺 Qualidade travada em: ${h}p`, 1800);
         return;
       }
@@ -5161,6 +5168,8 @@ const UI = {
             const vid = document.getElementById('video-player');
             if (vid && vid.readyState >= 1) {
               vid.currentTime = currentTime;
+              vid.muted = false;
+              vid.volume = 1.0;
               clearInterval(restoreTimer);
             }
           }, 250);
@@ -5853,6 +5862,26 @@ const UI = {
           }
         }
         triggerAutoPlay();
+      });
+
+      hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, (event, data) => {
+        if (video) {
+          video.muted = false;
+          video.volume = 1.0;
+        }
+        if (hls.audioTracks && hls.audioTracks.length > 0 && hls.audioTrack === -1) {
+          hls.audioTrack = 0;
+        }
+      });
+
+      hls.on(Hls.Events.LEVEL_SWITCHED, (event, data) => {
+        if (video) {
+          video.muted = false;
+          video.volume = 1.0;
+        }
+        if (hls.audioTracks && hls.audioTracks.length > 0 && hls.audioTrack === -1) {
+          hls.audioTrack = 0;
+        }
       });
 
       hls.on(Hls.Events.ERROR, (event, data) => {
