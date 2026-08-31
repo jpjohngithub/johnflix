@@ -368,120 +368,14 @@
 
               <!-- Right Controls -->
               <div class="hud-right-controls">
-                <!-- Video Enhancement Filter Dropdown / Modal Trigger -->
-                <div class="hud-enhancer-group" id="hud-enhancer-group">
-                  <button id="hud-enhancer-toggle-btn" class="hud-btn hud-enhancer-btn active" title="Menu de Otimização de Vídeo (Nitidez, Cor, HDR)">
-                    <span class="enhancer-sparkle">✨</span>
-                    <span class="enhancer-label" id="hud-enhancer-text">HDR Ultra</span>
-                  </button>
-                  
-                  <!-- Floating Enhancement Customization Panel -->
-                  <div class="hud-enhancer-panel hidden" id="hud-enhancer-panel">
-                    <div class="hud-enhancer-header">
-                      <div class="enhancer-header-title">
-                        <span>✨ Otimizador de Qualidade & Nitidez</span>
-                        <span class="enhancer-badge-pro">PRO 4K</span>
-                      </div>
-                      <button class="hud-enhancer-close" id="hud-enhancer-close" title="Fechar">&times;</button>
-                    </div>
-                    <div class="hud-enhancer-presets">
-                      <button class="hud-preset-btn active" data-preset="hdr_ultra">
-                        <div class="preset-title">✨ HDR Ultra Pro</div>
-                        <div class="preset-desc">Nitidez Máxima + Cores Vivas + Contraste OLED</div>
-                      </button>
-                      <button class="hud-preset-btn" data-preset="super_sharp">
-                        <div class="preset-title">🔍 Super Nitidez 4K</div>
-                        <div class="preset-desc">Filtro ótico unsharp mask de textura e detalhes finos</div>
-                      </button>
-                      <button class="hud-preset-btn" data-preset="vivid_colors">
-                        <div class="preset-title">🎨 Cores Vívidas</div>
-                        <div class="preset-desc">Saturação enriquecida e realce de tons quentes</div>
-                      </button>
-                      <button class="hud-preset-btn" data-preset="cinema">
-                        <div class="preset-title">🎬 Cinema 4K</div>
-                        <div class="preset-desc">Gradação cinematográfica de filme e sombras profundas</div>
-                      </button>
-                      <button class="hud-preset-btn" data-preset="extreme">
-                        <div class="preset-title">⚡ Nitidez Extrema (Ultra Crisp)</div>
-                        <div class="preset-desc">Máxima definição de arestas, olhos e micro-texturas</div>
-                      </button>
-                      <button class="hud-preset-btn" data-preset="shadow_boost">
-                        <div class="preset-title">👁️ Clarear Sombras / Menos Preto</div>
-                        <div class="preset-desc">Revela detalhes em cenas escuras sem estourar o brilho</div>
-                      </button>
-                      <button class="hud-preset-btn" data-preset="oled">
-                        <div class="preset-title">🌌 Preto Absoluto OLED</div>
-                        <div class="preset-desc">Contraste profundo com realce de pretos e sombras</div>
-                      </button>
-                      <button class="hud-preset-btn" data-preset="night">
-                        <div class="preset-title">🌙 Conforto Noturno</div>
-                        <div class="preset-desc">Redução de cansaço visual e realce suave no escuro</div>
-                      </button>
-                      <button class="hud-preset-btn" data-preset="off">
-                        <div class="preset-title">🚫 Imagem Original</div>
-                        <div class="preset-desc">Sem filtros aplicados (Transmissão original)</div>
-                      </button>
-                    </div>
-                    
-                    <!-- Custom Tuning Sliders -->
-                    <div class="hud-enhancer-custom">
-                      <div class="hud-custom-header">
-                        <span>Ajuste Fino Personalizado</span>
-                        <button id="hud-enhancer-reset-btn" class="hud-enhancer-reset-btn" title="Restaurar padrão">Resetar</button>
-                      </div>
-                      <div class="hud-slider-row">
-                        <label for="filter-sharpness-slider">Nitidez / Realce:</label>
-                        <input type="range" id="filter-sharpness-slider" min="0" max="150" value="85">
-                        <span id="filter-sharpness-val">85%</span>
-                      </div>
-                      <div class="hud-slider-row">
-                        <label for="filter-shadow-slider">Diminuir Preto / Sombras:</label>
-                        <input type="range" id="filter-shadow-slider" min="-30" max="50" value="15">
-                        <span id="filter-shadow-val">+15%</span>
-                      </div>
-                      <div class="hud-slider-row">
-                        <label for="filter-saturation-slider">Cores / Saturação:</label>
-                        <input type="range" id="filter-saturation-slider" min="80" max="200" value="136">
-                        <span id="filter-saturation-val">136%</span>
-                      </div>
-                      <div class="hud-slider-row">
-                        <label for="filter-contrast-slider">Contraste HDR:</label>
-                        <input type="range" id="filter-contrast-slider" min="80" max="180" value="120">
-                        <span id="filter-contrast-val">120%</span>
-                      </div>
-                      <div class="hud-slider-row">
-                        <label for="filter-brightness-slider">Brilho:</label>
-                        <input type="range" id="filter-brightness-slider" min="80" max="140" value="103">
-                        <span id="filter-brightness-val">103%</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Subtitles Group -->
-                <div class="hud-subtitles-group">
-                  <span class="hud-control-label">💬</span>
-                  <select id="hud-subtitle-select" class="hud-select" title="Legendas">
-                    <option value="off" selected>🚫 Sem Legenda</option>
-                    <option value="pob">🇧🇷 Português</option>
-                    <option value="eng">🇺🇸 English</option>
-                    <option value="spa">🇪🇸 Español</option>
-                  </select>
-                  <button id="hud-sub-auto-sync" class="hud-sub-sync-btn" title="Sincronizar fala e legenda automaticamente">
-                    ✨ Sync
-                  </button>
-                </div>
-
-                <!-- Quality Selector -->
-                <div class="hud-quality-group" id="hud-quality-group">
-                  <span class="hud-control-label">📺</span>
-                  <select id="hud-quality-select" class="hud-select hud-quality-select" title="Qualidade da Transmissão">
-                    <option value="4k">👑 4K Ultra HD</option>
-                    <option value="1080" selected>🌟 1080p Full HD</option>
-                    <option value="720">⚡ 720p HD</option>
-                    <option value="auto">🔄 Auto (Melhor)</option>
-                  </select>
-                </div>
+                <!-- Master Settings Gear Button (All-in-One: Audio, Video, Quality, Subtitles) -->
+                <button id="hud-master-settings-btn" class="hud-btn hud-settings-btn" title="Configurações (⚙️ Qualidade, Áudio, Cor e Legenda)">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                  </svg>
+                  <span class="settings-btn-label">⚙️ Ajustes</span>
+                </button>
 
                 <!-- Speed Selector -->
                 <div class="hud-speed-group">
@@ -498,6 +392,221 @@
                 <button class="hud-btn" id="hud-fullscreen-btn" title="Alternar Tela Cheia (F)">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Master Settings Modal (⚙️ Painel Central Unificado) -->
+        <div class="hud-settings-modal hidden" id="hud-settings-modal">
+          <div class="hud-settings-backdrop" id="hud-settings-backdrop"></div>
+          <div class="hud-settings-content">
+            <div class="hud-settings-header">
+              <div class="hud-settings-title">
+                <span class="settings-gear-icon">⚙️</span>
+                <span>Configurações do Player</span>
+                <span class="settings-pro-badge">PRO 4K</span>
+              </div>
+              <button class="hud-settings-close" id="hud-settings-close" title="Fechar (Esc)">&times;</button>
+            </div>
+
+            <!-- Tabs Navigation -->
+            <div class="hud-settings-tabs">
+              <button class="settings-tab-btn active" data-tab="tab-audio">
+                <span>🔊</span> Áudio & Equalizador
+              </button>
+              <button class="settings-tab-btn" data-tab="tab-video">
+                <span>🎨</span> Cor & Nitidez
+              </button>
+              <button class="settings-tab-btn" data-tab="tab-quality">
+                <span>📺</span> Qualidade & Fonte
+              </button>
+              <button class="settings-tab-btn" data-tab="tab-subtitles">
+                <span>💬</span> Legendas
+              </button>
+            </div>
+
+            <!-- TAB 1: Áudio & Equalizador PRO -->
+            <div class="settings-tab-panel active" id="tab-audio">
+              <div class="settings-panel-desc">🔊 Equalizador de frequências em tempo real, reforço de graves e clareza de falas:</div>
+              
+              <div class="settings-preset-grid">
+                <button class="audio-preset-btn active" data-preset="surround">
+                  <div class="preset-title">🎬 Cinema Surround Pro</div>
+                  <div class="preset-desc">Graves potentes + Diálogos nítidos de filme</div>
+                </button>
+                <button class="audio-preset-btn" data-preset="voice_boost">
+                  <div class="preset-title">🗣️ Realce de Voz / Diálogos</div>
+                  <div class="preset-desc">Destaca dublagem e falas abafadas</div>
+                </button>
+                <button class="audio-preset-btn" data-preset="bass_boost">
+                  <div class="preset-title">💣 Super Bass Impact</div>
+                  <div class="preset-desc">Graves profundos de subwoofer e explosões</div>
+                </button>
+                <button class="audio-preset-btn" data-preset="night_mode">
+                  <div class="preset-title">🌙 Modo Noturno (Sem Sustos)</div>
+                  <div class="preset-desc">Nivela sussurros e reduz barulhos repentinos</div>
+                </button>
+                <button class="audio-preset-btn" data-preset="music">
+                  <div class="preset-title">🎵 Música & Trilha Sonora</div>
+                  <div class="preset-desc">Máxima fidelidade estéreo e harmônicos</div>
+                </button>
+                <button class="audio-preset-btn" data-preset="flat">
+                  <div class="preset-title">🚫 Áudio Original (Flat)</div>
+                  <div class="preset-desc">Sem equalização adicional</div>
+                </button>
+              </div>
+
+              <div class="hud-enhancer-custom">
+                <div class="hud-custom-header">
+                  <span>Ajuste Específico de Frequências</span>
+                  <button id="audio-reset-btn" class="hud-enhancer-reset-btn" title="Restaurar áudio">Resetar</button>
+                </div>
+                <div class="hud-slider-row">
+                  <label for="audio-volume-boost">🔊 Amplificador de Volume (Boost):</label>
+                  <input type="range" id="audio-volume-boost" min="100" max="250" value="100">
+                  <span id="audio-volume-boost-val">100%</span>
+                </div>
+                <div class="hud-slider-row">
+                  <label for="audio-voice-boost">🗣️ Clareza de Voz / Falas (1-3.5 kHz):</label>
+                  <input type="range" id="audio-voice-boost" min="-12" max="15" value="4">
+                  <span id="audio-voice-boost-val">+4 dB</span>
+                </div>
+                <div class="hud-slider-row">
+                  <label for="audio-bass-boost">💣 Graves / Subwoofer (60-250 Hz):</label>
+                  <input type="range" id="audio-bass-boost" min="-12" max="15" value="5">
+                  <span id="audio-bass-boost-val">+5 dB</span>
+                </div>
+                <div class="hud-slider-row">
+                  <label for="audio-treble-boost">✨ Agudos & Detalhes (6-14 kHz):</label>
+                  <input type="range" id="audio-treble-boost" min="-12" max="15" value="3">
+                  <span id="audio-treble-boost-val">+3 dB</span>
+                </div>
+                <div class="hud-slider-row">
+                  <label for="audio-night-compressor">🌙 Compressor Anti-Picos:</label>
+                  <input type="range" id="audio-night-compressor" min="0" max="100" value="20">
+                  <span id="audio-night-compressor-val">20%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 2: Cor, Vídeo & Nitidez -->
+            <div class="settings-tab-panel" id="tab-video">
+              <div class="settings-panel-desc">🎨 Super-resolução GPU, aprimoramento ótico de contraste e cores:</div>
+              <div class="hud-enhancer-presets">
+                <button class="hud-preset-btn active" data-preset="hdr_ultra">
+                  <div class="preset-title">✨ HDR Ultra Pro</div>
+                  <div class="preset-desc">Nitidez Máxima + Cores Vivas + Contraste OLED</div>
+                </button>
+                <button class="hud-preset-btn" data-preset="super_sharp">
+                  <div class="preset-title">🔍 Super Nitidez 4K</div>
+                  <div class="preset-desc">Filtro ótico unsharp mask de textura e detalhes finos</div>
+                </button>
+                <button class="hud-preset-btn" data-preset="vivid_colors">
+                  <div class="preset-title">🎨 Cores Vívidas</div>
+                  <div class="preset-desc">Saturação enriquecida e realce de tons quentes</div>
+                </button>
+                <button class="hud-preset-btn" data-preset="cinema">
+                  <div class="preset-title">🎬 Cinema 4K</div>
+                  <div class="preset-desc">Gradação cinematográfica de filme e sombras profundas</div>
+                </button>
+                <button class="hud-preset-btn" data-preset="extreme">
+                  <div class="preset-title">⚡ Nitidez Extrema (Ultra Crisp)</div>
+                  <div class="preset-desc">Máxima definição de arestas, olhos e micro-texturas</div>
+                </button>
+                <button class="hud-preset-btn" data-preset="shadow_boost">
+                  <div class="preset-title">👁️ Clarear Sombras / Menos Preto</div>
+                  <div class="preset-desc">Revela detalhes em cenas escuras sem estourar o brilho</div>
+                </button>
+                <button class="hud-preset-btn" data-preset="oled">
+                  <div class="preset-title">🌌 Preto Absoluto OLED</div>
+                  <div class="preset-desc">Contraste profundo com realce de pretos e sombras</div>
+                </button>
+                <button class="hud-preset-btn" data-preset="night">
+                  <div class="preset-title">🌙 Conforto Noturno</div>
+                  <div class="preset-desc">Redução de cansaço visual e realce suave no escuro</div>
+                </button>
+                <button class="hud-preset-btn" data-preset="off">
+                  <div class="preset-title">🚫 Imagem Original</div>
+                  <div class="preset-desc">Sem filtros aplicados (Transmissão original)</div>
+                </button>
+              </div>
+              
+              <!-- Custom Tuning Sliders -->
+              <div class="hud-enhancer-custom">
+                <div class="hud-custom-header">
+                  <span>Ajuste Fino de Imagem</span>
+                  <button id="hud-enhancer-reset-btn" class="hud-enhancer-reset-btn" title="Restaurar padrão">Resetar</button>
+                </div>
+                <div class="hud-slider-row">
+                  <label for="filter-sharpness-slider">Nitidez / Realce:</label>
+                  <input type="range" id="filter-sharpness-slider" min="0" max="150" value="85">
+                  <span id="filter-sharpness-val">85%</span>
+                </div>
+                <div class="hud-slider-row">
+                  <label for="filter-shadow-slider">Diminuir Preto / Sombras:</label>
+                  <input type="range" id="filter-shadow-slider" min="-30" max="50" value="15">
+                  <span id="filter-shadow-val">+15%</span>
+                </div>
+                <div class="hud-slider-row">
+                  <label for="filter-saturation-slider">Cores / Saturação:</label>
+                  <input type="range" id="filter-saturation-slider" min="80" max="200" value="136">
+                  <span id="filter-saturation-val">136%</span>
+                </div>
+                <div class="hud-slider-row">
+                  <label for="filter-contrast-slider">Contraste HDR:</label>
+                  <input type="range" id="filter-contrast-slider" min="80" max="180" value="120">
+                  <span id="filter-contrast-val">120%</span>
+                </div>
+                <div class="hud-slider-row">
+                  <label for="filter-brightness-slider">Brilho:</label>
+                  <input type="range" id="filter-brightness-slider" min="80" max="140" value="103">
+                  <span id="filter-brightness-val">103%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 3: Qualidade & Fonte -->
+            <div class="settings-tab-panel" id="tab-quality">
+              <div class="settings-panel-desc">📺 Escolha a resolução da transmissão e o servidor de streaming:</div>
+              <div class="settings-group-box">
+                <div class="settings-box-row">
+                  <label for="hud-quality-select">Resolução da Transmissão:</label>
+                  <select id="hud-quality-select" class="hud-select hud-quality-select" title="Qualidade da Transmissão">
+                    <option value="4k">👑 4K Ultra HD (2160p)</option>
+                    <option value="1080" selected>🌟 1080p Full HD</option>
+                    <option value="720">⚡ 720p HD</option>
+                    <option value="auto">🔄 Auto (Melhor Bitrate)</option>
+                  </select>
+                </div>
+                <div class="settings-box-row" style="margin-top: 14px;">
+                  <label>Servidor / Fonte Ativa:</label>
+                  <button class="btn btn-secondary" id="settings-next-server-btn" style="padding: 6px 14px; font-size: 0.85rem;">
+                    🔄 Trocar de Servidor (Próximo Melhor)
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 4: Legendas & Sincronia -->
+            <div class="settings-tab-panel" id="tab-subtitles">
+              <div class="settings-panel-desc">💬 Idioma das legendas, tamanho e sincronização automática:</div>
+              <div class="settings-group-box">
+                <div class="settings-box-row">
+                  <label for="hud-subtitle-select">Idioma das Legendas:</label>
+                  <select id="hud-subtitle-select" class="hud-select" title="Legendas">
+                    <option value="off" selected>🚫 Sem Legenda</option>
+                    <option value="pob">🇧🇷 Português (Brasil)</option>
+                    <option value="eng">🇺🇸 English</option>
+                    <option value="spa">🇪🇸 Español</option>
+                  </select>
+                </div>
+                <div class="settings-box-row" style="margin-top: 14px;">
+                  <label>Sincronia Automática com a Fala:</label>
+                  <button id="hud-sub-auto-sync" class="hud-sub-sync-btn" title="Sincronizar fala e legenda automaticamente">
+                    ✨ Sincronizar Agora
+                  </button>
+                </div>
               </div>
             </div>
           </div>

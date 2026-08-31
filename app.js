@@ -2042,6 +2042,152 @@ const WebGLUpscaler = {
   }
 };
 
+// --- Real-Time Web Audio Equalizer & Sound Enhancement Engine ---
+
+const AudioEngine = {
+  ctx: null,
+  sourceNode: null,
+  gainNode: null,
+  bassFilter: null,
+  voiceFilter: null,
+  trebleFilter: null,
+  compressorNode: null,
+  isInitialized: false,
+  settings: {
+    volumeBoost: 100, // 100% to 250%
+    voice: 4, // -12dB to +15dB (peaking at 2.5kHz)
+    bass: 5, // -12dB to +15dB (lowshelf at 120Hz)
+    treble: 3, // -12dB to +15dB (highshelf at 8kHz)
+    compressor: 20 // 0% to 100%
+  },
+  presets: {
+    surround: { name: 'Cinema Surround Pro', voice: 5, bass: 7, treble: 4, volumeBoost: 110, compressor: 25 },
+    voice_boost: { name: 'Realce de Voz / Diálogos', voice: 12, bass: -2, treble: 6, volumeBoost: 115, compressor: 40 },
+    bass_boost: { name: 'Super Bass Impact', voice: 2, bass: 14, treble: 2, volumeBoost: 110, compressor: 15 },
+    night_mode: { name: 'Modo Noturno (Anti-Susto)', voice: 8, bass: -4, treble: 0, volumeBoost: 100, compressor: 85 },
+    music: { name: 'Música & Trilha Sonora', voice: 2, bass: 6, treble: 8, volumeBoost: 105, compressor: 10 },
+    flat: { name: 'Áudio Original (Flat)', voice: 0, bass: 0, treble: 0, volumeBoost: 100, compressor: 0 }
+  },
+  currentPreset: 'surround',
+
+  init() {
+    const video = document.getElementById('video-player');
+    if (this.isInitialized || !video) return;
+
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      this.ctx = new AudioCtx();
+
+      this.sourceNode = this.ctx.createMediaElementSource(video);
+
+      // 1. Bass LowShelf Filter (120 Hz)
+      this.bassFilter = this.ctx.createBiquadFilter();
+      this.bassFilter.type = 'lowshelf';
+      this.bassFilter.frequency.value = 120;
+      this.bassFilter.gain.value = this.settings.bass;
+
+      // 2. Voice / Dialogue Peaking Filter (2500 Hz, Q = 1.2)
+      this.voiceFilter = this.ctx.createBiquadFilter();
+      this.voiceFilter.type = 'peaking';
+      this.voiceFilter.frequency.value = 2500;
+      this.voiceFilter.Q.value = 1.2;
+      this.voiceFilter.gain.value = this.settings.voice;
+
+      // 3. Treble HighShelf Filter (8000 Hz)
+      this.trebleFilter = this.ctx.createBiquadFilter();
+      this.trebleFilter.type = 'highshelf';
+      this.trebleFilter.frequency.value = 8000;
+      this.trebleFilter.gain.value = this.settings.treble;
+
+      // 4. Dynamics Compressor (Night Mode / Loudness leveling)
+      this.compressorNode = this.ctx.createDynamicsCompressor();
+      this.compressorNode.threshold.value = -35;
+      this.compressorNode.knee.value = 25;
+      this.compressorNode.ratio.value = 8;
+      this.compressorNode.attack.value = 0.003;
+      this.compressorNode.release.value = 0.25;
+
+      // 5. Volume Gain Booster (1.0x to 2.5x)
+      this.gainNode = this.ctx.createGain();
+      this.gainNode.gain.value = this.settings.volumeBoost / 100;
+
+      // Connect graph: Source -> Bass -> Voice -> Treble -> Compressor -> Gain -> Destination
+      this.sourceNode.connect(this.bassFilter);
+      this.bassFilter.connect(this.voiceFilter);
+      this.voiceFilter.connect(this.trebleFilter);
+      this.trebleFilter.connect(this.compressorNode);
+      this.compressorNode.connect(this.gainNode);
+      this.gainNode.connect(this.ctx.destination);
+
+      this.isInitialized = true;
+      this.apply();
+    } catch(e) {
+      console.warn('AudioEngine init note:', e);
+    }
+  },
+
+  resume() {
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume().catch(() => {});
+    }
+  },
+
+  apply() {
+    if (!this.isInitialized) return;
+    this.resume();
+
+    if (this.bassFilter) this.bassFilter.gain.value = this.settings.bass;
+    if (this.voiceFilter) this.voiceFilter.gain.value = this.settings.voice;
+    if (this.trebleFilter) this.trebleFilter.gain.value = this.settings.treble;
+    if (this.gainNode) this.gainNode.gain.value = (this.settings.volumeBoost || 100) / 100;
+    if (this.compressorNode) {
+      const compVal = this.settings.compressor || 0;
+      this.compressorNode.threshold.value = -60 + (compVal * 0.45);
+    }
+    this.updateUI();
+  },
+
+  setPreset(key, showToast = true) {
+    if (!this.presets[key]) return;
+    this.currentPreset = key;
+    const p = this.presets[key];
+    this.settings.voice = p.voice;
+    this.settings.bass = p.bass;
+    this.settings.treble = p.treble;
+    this.settings.volumeBoost = p.volumeBoost;
+    this.settings.compressor = p.compressor;
+    this.apply();
+
+    if (showToast && typeof UI.showPlayerToast === 'function') {
+      UI.showPlayerToast(`🔊 Equalizador: ${p.name}`, 1800);
+    }
+  },
+
+  updateUI() {
+    document.querySelectorAll('.audio-preset-btn').forEach(b => {
+      if (b.dataset.preset === this.currentPreset) b.classList.add('active');
+      else b.classList.remove('active');
+    });
+
+    const setSlider = (id, val, suffix = ' dB', isPlus = true) => {
+      const el = document.getElementById(id);
+      const valEl = document.getElementById(id + '-val');
+      if (el && valEl) {
+        el.value = val;
+        const sign = (isPlus && val > 0) ? '+' : '';
+        valEl.textContent = `${sign}${val}${suffix}`;
+      }
+    };
+
+    setSlider('audio-volume-boost', this.settings.volumeBoost, '%', false);
+    setSlider('audio-voice-boost', this.settings.voice, ' dB', true);
+    setSlider('audio-bass-boost', this.settings.bass, ' dB', true);
+    setSlider('audio-treble-boost', this.settings.treble, ' dB', true);
+    setSlider('audio-night-compressor', this.settings.compressor, '%', false);
+  }
+};
+
 // --- Subtitles Engine ---
 
 const Subtitles = {
@@ -2932,6 +3078,25 @@ const UI = {
       } else if (e.key === 'e' || e.key === 'E') {
         e.preventDefault();
         VideoEnhancer.toggleNext();
+      } else if (e.key === 's' || e.key === 'S' || e.key === 'g' || e.key === 'G') {
+        e.preventDefault();
+        const masterModal = document.getElementById('hud-settings-modal');
+        if (masterModal) {
+          if (masterModal.classList.contains('hidden')) {
+            AudioEngine.init();
+            masterModal.classList.remove('hidden');
+          } else {
+            masterModal.classList.add('hidden');
+          }
+        }
+      } else if (e.key === 'Escape') {
+        const masterModal = document.getElementById('hud-settings-modal');
+        if (masterModal && !masterModal.classList.contains('hidden')) {
+          e.preventDefault();
+          e.stopPropagation();
+          masterModal.classList.add('hidden');
+          return;
+        }
       }
     });
 
@@ -3008,14 +3173,116 @@ const UI = {
     bindEnhancerSlider('filter-contrast-slider', 'contrast', 'filter-contrast-val');
     bindEnhancerSlider('filter-brightness-slider', 'brightness', 'filter-brightness-val');
 
-    // Close enhancer panel when clicking outside
-    document.addEventListener('click', (e) => {
-      if (enhancerPanel && !enhancerPanel.classList.contains('hidden')) {
-        if (!e.target.closest('#hud-enhancer-group')) {
-          enhancerPanel.classList.add('hidden');
-        }
+    // --- Master Settings Modal Hub (⚙️ Áudio, Vídeo, Qualidade, Legendas) ---
+    const masterSettingsModal = document.getElementById('hud-settings-modal');
+    const masterSettingsBtn = document.getElementById('hud-master-settings-btn');
+    const masterSettingsClose = document.getElementById('hud-settings-close');
+    const masterSettingsBackdrop = document.getElementById('hud-settings-backdrop');
+
+    const openMasterSettings = (targetTab = null) => {
+      if (!masterSettingsModal) return;
+      AudioEngine.init();
+      masterSettingsModal.classList.remove('hidden');
+      if (targetTab) {
+        document.querySelectorAll('.settings-tab-btn').forEach(btn => {
+          if (btn.dataset.tab === targetTab) btn.classList.add('active');
+          else btn.classList.remove('active');
+        });
+        document.querySelectorAll('.settings-tab-panel').forEach(panel => {
+          if (panel.id === targetTab) panel.classList.add('active');
+          else panel.classList.remove('active');
+        });
       }
+    };
+
+    const closeMasterSettings = () => {
+      if (masterSettingsModal) masterSettingsModal.classList.add('hidden');
+    };
+
+    if (masterSettingsBtn) {
+      masterSettingsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openMasterSettings();
+      });
+    }
+
+    if (masterSettingsClose) {
+      masterSettingsClose.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeMasterSettings();
+      });
+    }
+
+    if (masterSettingsBackdrop) {
+      masterSettingsBackdrop.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeMasterSettings();
+      });
+    }
+
+    // Tabs switching
+    document.querySelectorAll('.settings-tab-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const tabId = btn.dataset.tab;
+        document.querySelectorAll('.settings-tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.settings-tab-panel').forEach(p => {
+          if (p.id === tabId) p.classList.add('active');
+          else p.classList.remove('active');
+        });
+      });
     });
+
+    // Audio Presets
+    document.querySelectorAll('.audio-preset-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        AudioEngine.init();
+        const preset = btn.dataset.preset;
+        if (preset) AudioEngine.setPreset(preset);
+      });
+    });
+
+    // Audio Equalizer Sliders
+    const bindAudioSlider = (id, prop, valId, suffix = ' dB', isPlus = true) => {
+      const slider = document.getElementById(id);
+      const valEl = document.getElementById(valId);
+      if (slider && valEl) {
+        slider.addEventListener('input', (e) => {
+          e.stopPropagation();
+          AudioEngine.init();
+          const num = parseInt(e.target.value, 10);
+          AudioEngine.settings[prop] = num;
+          const sign = (isPlus && num > 0) ? '+' : '';
+          valEl.textContent = `${sign}${num}${suffix}`;
+          AudioEngine.apply();
+        });
+      }
+    };
+
+    bindAudioSlider('audio-volume-boost', 'volumeBoost', 'audio-volume-boost-val', '%', false);
+    bindAudioSlider('audio-voice-boost', 'voice', 'audio-voice-boost-val', ' dB', true);
+    bindAudioSlider('audio-bass-boost', 'bass', 'audio-bass-boost-val', ' dB', true);
+    bindAudioSlider('audio-treble-boost', 'treble', 'audio-treble-boost-val', ' dB', true);
+    bindAudioSlider('audio-night-compressor', 'compressor', 'audio-night-compressor-val', '%', false);
+
+    const audioResetBtn = document.getElementById('audio-reset-btn');
+    if (audioResetBtn) {
+      audioResetBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        AudioEngine.setPreset('surround');
+      });
+    }
+
+    const settingsNextServerBtn = document.getElementById('settings-next-server-btn');
+    if (settingsNextServerBtn) {
+      settingsNextServerBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeMasterSettings();
+        this.playNextStream();
+      });
+    }
 
     // Native Stream Quality Selector
     const qualitySelect = document.getElementById('hud-quality-select');
@@ -5441,6 +5708,10 @@ const UI = {
 
     video.onplay = () => {
       if (typeof WebGLUpscaler !== 'undefined') WebGLUpscaler.start();
+      if (typeof AudioEngine !== 'undefined') {
+        AudioEngine.init();
+        AudioEngine.resume();
+      }
     };
     video.onpause = () => {
       if (typeof WebGLUpscaler !== 'undefined') WebGLUpscaler.stop();
@@ -5450,6 +5721,10 @@ const UI = {
       if (playerLoading) playerLoading.classList.add('hidden');
       if (playerError) playerError.classList.add('hidden');
       if (typeof WebGLUpscaler !== 'undefined') WebGLUpscaler.start();
+      if (typeof AudioEngine !== 'undefined') {
+        AudioEngine.init();
+        AudioEngine.resume();
+      }
     };
 
     const triggerAutoPlay = () => {
