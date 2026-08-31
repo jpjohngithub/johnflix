@@ -1677,7 +1677,7 @@ const API = {
 // --- 4K Video Visual Enhancement Filter & Post-Processing Engine ---
 
 const VideoEnhancer = {
-  currentPreset: 'hdr_ultra',
+  currentPreset: 'custom',
   settings: {
     sharpness: 85,
     shadow: 15,
@@ -1686,6 +1686,7 @@ const VideoEnhancer = {
     brightness: 103
   },
   presets: {
+    custom: { name: 'Personalizada', sharpness: 85, shadow: 15, saturation: 136, contrast: 120, brightness: 103, filterId: 'johnflix-hdr-ultra' },
     hdr_ultra: { name: 'HDR Ultra Pro', sharpness: 85, shadow: 15, saturation: 136, contrast: 120, brightness: 103, filterId: 'johnflix-hdr-ultra' },
     shadow_boost: { name: 'Clarear Sombras / Menos Preto', sharpness: 70, shadow: 35, saturation: 125, contrast: 110, brightness: 106, filterId: 'johnflix-shadow-boost' },
     super_sharp: { name: 'Super Nitidez 4K', sharpness: 100, shadow: 10, saturation: 122, contrast: 115, brightness: 102, filterId: 'johnflix-sharpen-4k' },
@@ -1704,12 +1705,19 @@ const VideoEnhancer = {
         const parsed = JSON.parse(saved);
         if (parsed.preset && this.presets[parsed.preset]) {
           this.currentPreset = parsed.preset;
+        } else {
+          this.currentPreset = 'custom';
         }
         if (parsed.settings) {
           this.settings = { ...this.settings, ...parsed.settings };
+          this.presets.custom = { ...this.presets.custom, ...parsed.settings };
         }
+      } else {
+        this.currentPreset = 'custom';
       }
-    } catch(e) {}
+    } catch(e) {
+      this.currentPreset = 'custom';
+    }
     this.apply();
   },
 
@@ -3130,7 +3138,13 @@ const UI = {
     if (enhancerResetBtn) {
       enhancerResetBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        VideoEnhancer.setPreset('hdr_ultra');
+        VideoEnhancer.settings = { sharpness: 85, shadow: 15, saturation: 136, contrast: 120, brightness: 103 };
+        if (VideoEnhancer.presets.custom) {
+          VideoEnhancer.presets.custom = { ...VideoEnhancer.presets.custom, ...VideoEnhancer.settings };
+        }
+        VideoEnhancer.currentPreset = 'custom';
+        VideoEnhancer.apply();
+        this.showPlayerToast('🛠️ Configuração personalizada restaurada', 1500);
       });
     }
 
@@ -3151,7 +3165,11 @@ const UI = {
         slider.addEventListener('input', (e) => {
           e.stopPropagation();
           const num = parseInt(e.target.value, 10);
+          VideoEnhancer.currentPreset = 'custom';
           VideoEnhancer.settings[prop] = num;
+          if (VideoEnhancer.presets.custom) {
+            VideoEnhancer.presets.custom[prop] = num;
+          }
           const sign = (prop === 'shadow' && num > 0) ? '+' : '';
           valEl.textContent = `${sign}${num}${suffix}`;
           VideoEnhancer.apply();
