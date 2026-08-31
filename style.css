@@ -4017,8 +4017,7 @@ body {
   height: 100%;
   object-fit: contain;
   z-index: 6;
-  pointer-events: auto;
-  cursor: pointer;
+  pointer-events: none !important;
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
   transform: translateZ(0);

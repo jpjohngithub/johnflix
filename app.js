@@ -1966,14 +1966,6 @@ const WebGLUpscaler = {
       this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
       this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
       this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
-
-      // Canvas click forwarding
-      this.canvas.addEventListener('click', () => {
-        if (this.video) {
-          if (this.video.paused) this.video.play();
-          else this.video.pause();
-        }
-      });
     } catch(e) {
       console.warn('WebGL Upscaler not available:', e);
     }
@@ -2952,15 +2944,16 @@ const UI = {
       const playBtn = document.getElementById('hud-play-btn');
       const playIcon = document.getElementById('hud-play-icon');
       if (video.paused) {
+        video.muted = false;
         video.play().catch(err => {
-          console.warn("Play error fallback:", err);
-          video.muted = true;
-          video.play();
+          console.warn("Play request notice:", err);
         });
         if (playIcon) playIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>';
+        this.showPlayerToast('▶ Reproduzindo', 900);
       } else {
         video.pause();
         if (playIcon) playIcon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
+        this.showPlayerToast('⏸️ Pausado', 900);
       }
     };
 
@@ -5793,19 +5786,10 @@ const UI = {
       }, 400);
     };
 
-    // 4s Rapid Health & Gray Screen Watchdog
-    if (this.streamWatchdogTimer) clearTimeout(this.streamWatchdogTimer);
-    this.streamWatchdogTimer = setTimeout(() => {
-      const overlay = document.getElementById('player-overlay');
-      if (!state.isPlayerActive || !overlay || overlay.classList.contains('hidden')) return;
-      // If after 4s video has no buffered data, or has error, or is paused at 0s:
-      if (video && (video.readyState < 2 || video.currentTime === 0 || video.error)) {
-        console.warn('Playback stalled / gray screen detected (>4s), auto-advancing to next stream...');
-        if (typeof this.playNextStream === 'function') {
-          this.playNextStream();
-        }
-      }
-    }, 4000);
+    if (this.streamWatchdogTimer) {
+      clearTimeout(this.streamWatchdogTimer);
+      this.streamWatchdogTimer = null;
+    }
 
     if (url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
       const hls = new Hls({
