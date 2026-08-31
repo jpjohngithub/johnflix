@@ -1284,10 +1284,22 @@ const API = {
         if (!s.url) return;
         const rawInfo = `${s.name || ''} ${s.title || ''}`.toLowerCase();
         const isDub = rawInfo.includes('dublado') || rawInfo.includes('português') || rawInfo.includes('portugues') || rawInfo.includes('pt-br') || rawInfo.includes('dual');
-        let quality = 'HD';
-        if (rawInfo.includes('720')) quality = '720p';
-        else if (rawInfo.includes('1080')) quality = '1080p';
-        else if (rawInfo.includes('4k') || rawInfo.includes('2160')) quality = '4K';
+        let quality = '1080p Full HD';
+        let qScore = 200;
+        if (rawInfo.includes('4k') || rawInfo.includes('2160') || rawInfo.includes('uhd')) {
+          quality = '4K Ultra HD';
+          qScore = 350;
+        } else if (rawInfo.includes('1080') || rawInfo.includes('fhd') || rawInfo.includes('bluray') || rawInfo.includes('remux')) {
+          quality = '1080p Full HD';
+          qScore = 250;
+        } else if (rawInfo.includes('720')) {
+          quality = '720p HD';
+          qScore = 80;
+        } else if (rawInfo.includes('480') || rawInfo.includes('360') || rawInfo.includes('cam') || rawInfo.includes('ts')) {
+          quality = 'SD';
+          qScore = -400;
+        }
+
         directVideoSources.push({
           provider: 'FrostStream',
           name: `❄️ FrostStream ${quality}${isDub ? ' (Dublado PT-BR)' : ''}`,
@@ -1296,7 +1308,7 @@ const API = {
           isDub: isDub,
           quality: quality,
           category: 'frost',
-          score: 2000 + (quality === '1080p' ? 60 : quality === '720p' ? 50 : quality === '4K' ? 40 : 20) + (isDub ? 100 : 0)
+          score: 2000 + qScore + (isDub ? 120 : 0)
         });
       });
 
@@ -1305,10 +1317,18 @@ const API = {
         if (!s.url) return;
         const rawInfo = `${s.name || ''} ${s.title || ''}`.toLowerCase();
         const isDub = rawInfo.includes('dublado') || rawInfo.includes('🇧🇷') || rawInfo.includes('português') || rawInfo.includes('portugues');
-        let quality = '1080p';
-        if (rawInfo.includes('4k') || rawInfo.includes('2160')) quality = '4K HDR';
-        else if (rawInfo.includes('1080')) quality = '1080p';
-        else if (rawInfo.includes('720')) quality = '720p';
+        let quality = '1080p Full HD';
+        let qScore = 200;
+        if (rawInfo.includes('4k') || rawInfo.includes('2160') || rawInfo.includes('uhd')) {
+          quality = '4K Ultra HD';
+          qScore = 350;
+        } else if (rawInfo.includes('1080') || rawInfo.includes('fhd') || rawInfo.includes('bluray') || rawInfo.includes('remux')) {
+          quality = '1080p Full HD';
+          qScore = 250;
+        } else if (rawInfo.includes('720')) {
+          quality = '720p HD';
+          qScore = 80;
+        }
         
         let serverName = '';
         const serverMatch = (s.title || '').match(/⚡\s*Servidor\s*([^\n]+)/i) || (s.name || '').match(/\[(.*?)\]/);
@@ -1323,7 +1343,7 @@ const API = {
           isDub: isDub,
           quality: quality,
           category: 'bestcine',
-          score: 1800 + (quality === '1080p' ? 60 : quality.includes('4K') ? 50 : quality === '720p' ? 40 : 20) + (isDub ? 100 : 0)
+          score: 1800 + qScore + (isDub ? 120 : 0)
         });
       });
 
@@ -1428,20 +1448,20 @@ const API = {
         });
       });
 
-      streamsList.push(...webEmbedItems);
-
-      // Sort all streams: FrostStream 720p first, then FrostStream other resolutions, then Dubbed, then highest score
+      // Sort streams strictly by highest quality resolution, provider reliability & audio
       streamsList.sort((a, b) => {
-        const aIsFrost720 = (a.category === 'frost' || a.provider === 'FrostStream') && (a.quality === '720p' || (a.name && a.name.includes('720p')));
-        const bIsFrost720 = (b.category === 'frost' || b.provider === 'FrostStream') && (b.quality === '720p' || (b.name && b.name.includes('720p')));
-        if (aIsFrost720 && !bIsFrost720) return -1;
-        if (!aIsFrost720 && bIsFrost720) return 1;
+        const getQualityWeight = (s) => {
+          const n = `${s.name || ''} ${s.title || ''} ${s.quality || ''}`.toLowerCase();
+          if (n.includes('4k') || n.includes('2160') || n.includes('uhd')) return 400;
+          if (n.includes('1080') || n.includes('fhd') || n.includes('bluray') || n.includes('remux')) return 280;
+          if (n.includes('720') || n.includes('hd')) return 120;
+          if (n.includes('480') || n.includes('sd') || n.includes('cam')) return -300;
+          return 80;
+        };
 
-        if (a.category === 'frost' && b.category !== 'frost') return -1;
-        if (a.category !== 'frost' && b.category === 'frost') return 1;
-        if (a.isDub && !b.isDub) return -1;
-        if (!a.isDub && b.isDub) return 1;
-        return (b.score || 0) - (a.score || 0);
+        const scoreA = (a.score || 0) + getQualityWeight(a) + (a.isDub ? 80 : 0);
+        const scoreB = (b.score || 0) + getQualityWeight(b) + (b.isDub ? 80 : 0);
+        return scoreB - scoreA;
       });
 
       Cache.set(cacheKey, streamsList);
@@ -2784,6 +2804,26 @@ const UI = {
         }
       }
     });
+
+    // Native Stream Quality Selector
+    const qualitySelect = document.getElementById('hud-quality-select');
+    if (qualitySelect) {
+      qualitySelect.addEventListener('change', (e) => {
+        e.stopPropagation();
+        const lvl = parseInt(e.target.value, 10);
+        if (window.currentHls) {
+          window.currentHls.currentLevel = lvl;
+          if (lvl >= 0 && window.currentHls.levels && window.currentHls.levels[lvl]) {
+            const h = window.currentHls.levels[lvl].height || '1080';
+            this.showPlayerToast(`📺 Qualidade travada em: ${h}p Full HD`, 1800);
+          } else {
+            this.showPlayerToast('📺 Qualidade: Automática (Melhor Bitrate)', 1600);
+          }
+        } else {
+          this.showPlayerToast('📺 Qualidade Máxima HD Selecionada', 1500);
+        }
+      });
+    }
 
     // Source Health & Fast Feedback buttons (ONLY closes on 'Sim'!)
     const feedbackPrompt = document.getElementById('hud-source-feedback');
@@ -5203,12 +5243,41 @@ const UI = {
     }, 4000);
 
     if (url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
-      const hls = new Hls({ enableWorker: true, lowLatencyMode: true });
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: false,
+        abrEwmaDefaultEstimate: 80000000, // 80 Mbps estimate to immediately lock 1080p/4K
+        abrBandWidthFactor: 0.95,
+        abrBandWidthUpFactor: 0.9,
+        abrMaxWithRealBitrate: true,
+        capLevelToPlayerSize: false, // Never downsample based on player window size!
+        maxBufferLength: 60,
+        maxMaxBufferLength: 120,
+        maxBufferSize: 100 * 1000 * 1000,
+        startLevel: -1
+      });
       hls.loadSource(url);
       hls.attachMedia(video);
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+
+      hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
+        // Auto lock to the highest available resolution level (1080p / 4K)
+        if (hls.levels && hls.levels.length > 0) {
+          const highestLevelIdx = hls.levels.length - 1;
+          hls.currentLevel = highestLevelIdx;
+          hls.loadLevel = highestLevelIdx;
+
+          const qualitySelect = document.getElementById('hud-quality-select');
+          if (qualitySelect) {
+            qualitySelect.innerHTML = hls.levels.map((lvl, idx) => {
+              const res = lvl.height ? `${lvl.height}p` : 'HD';
+              const kbps = lvl.bitrate ? ` (${Math.round(lvl.bitrate / 1000)}k)` : '';
+              return `<option value="${idx}" ${idx === highestLevelIdx ? 'selected' : ''}>🌟 ${res}${kbps}</option>`;
+            }).reverse().join('') + '<option value="-1">⚡ Auto (Melhor Bitrate)</option>';
+          }
+        }
         triggerAutoPlay();
       });
+
       hls.on(Hls.Events.ERROR, (event, data) => {
         if (data.fatal) {
           console.warn('HLS fatal error, auto-advancing to next stream:', data);

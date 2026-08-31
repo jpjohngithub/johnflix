@@ -1877,13 +1877,30 @@ body {
   transform: translateY(-1px);
 }
 
+.hud-quality-group,
+.hud-speed-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hud-quality-select,
 .hud-speed-select {
-  background: rgba(15, 16, 24, 0.8) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  background: rgba(15, 16, 24, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
   border-radius: var(--radius-full) !important;
   padding: 4px 8px !important;
   font-size: 0.78rem !important;
-  color: white;
+  font-weight: 700 !important;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.hud-quality-select:hover,
+.hud-speed-select:hover {
+  border-color: rgba(168, 85, 247, 0.6) !important;
+  background: rgba(25, 26, 40, 0.95) !important;
 }
 
 /* Floating Source Health Check & Quick Switch (Super Compact Glass Pill) */
