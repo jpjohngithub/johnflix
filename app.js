@@ -3022,18 +3022,7 @@ const UI = {
     if (qualitySelect) {
       qualitySelect.addEventListener('change', (e) => {
         e.stopPropagation();
-        const lvl = parseInt(e.target.value, 10);
-        if (window.currentHls) {
-          window.currentHls.currentLevel = lvl;
-          if (lvl >= 0 && window.currentHls.levels && window.currentHls.levels[lvl]) {
-            const h = window.currentHls.levels[lvl].height || '1080';
-            this.showPlayerToast(`📺 Qualidade travada em: ${h}p Full HD`, 1800);
-          } else {
-            this.showPlayerToast('📺 Qualidade: Automática (Melhor Bitrate)', 1600);
-          }
-        } else {
-          this.showPlayerToast('📺 Qualidade Máxima HD Selecionada', 1500);
-        }
+        this.switchQuality(e.target.value);
       });
     }
 
@@ -4830,6 +4819,85 @@ const UI = {
     this.testAndPlayStreamIndex(index);
   },
 
+  switchQuality(targetQuality) {
+    const video = document.getElementById('video-player');
+    const currentTime = (video && !isNaN(video.currentTime)) ? video.currentTime : 0;
+
+    // 1. If HLS is active and has multiple variant levels
+    if (window.currentHls && window.currentHls.levels && window.currentHls.levels.length > 1) {
+      if (targetQuality === 'auto' || targetQuality === '-1') {
+        window.currentHls.currentLevel = -1;
+        this.showPlayerToast('📺 Qualidade: Automática (Melhor Taxa)', 1600);
+        return;
+      }
+
+      let matchedIdx = -1;
+      if (targetQuality === '4k') {
+        matchedIdx = window.currentHls.levels.findIndex(l => (l.height && l.height >= 2160) || (l.bitrate && l.bitrate >= 12000000));
+      } else if (targetQuality === '1080') {
+        matchedIdx = window.currentHls.levels.findIndex(l => (l.height && l.height >= 1080) || (l.bitrate && l.bitrate >= 4000000));
+      } else if (targetQuality === '720') {
+        matchedIdx = window.currentHls.levels.findIndex(l => (l.height && l.height >= 720 && l.height < 1080));
+      } else if (!isNaN(parseInt(targetQuality, 10))) {
+        matchedIdx = parseInt(targetQuality, 10);
+      }
+
+      if (matchedIdx >= 0 && matchedIdx < window.currentHls.levels.length) {
+        window.currentHls.currentLevel = matchedIdx;
+        const h = window.currentHls.levels[matchedIdx].height || '1080';
+        this.showPlayerToast(`📺 Qualidade travada em: ${h}p`, 1800);
+        return;
+      }
+    }
+
+    // 2. Search in active streams list for a stream matching requested quality
+    const streams = state.activeStreams || state.currentStreams;
+    if (Array.isArray(streams) && streams.length > 0) {
+      let targetIndex = -1;
+      const q = String(targetQuality).toLowerCase();
+
+      if (q === '4k' || q === '2160') {
+        targetIndex = streams.findIndex(s => {
+          const raw = `${s.name || ''} ${s.title || ''} ${s.quality || ''}`.toLowerCase();
+          return raw.includes('4k') || raw.includes('2160') || raw.includes('uhd');
+        });
+      } else if (q === '1080' || q === 'fhd') {
+        targetIndex = streams.findIndex(s => {
+          const raw = `${s.name || ''} ${s.title || ''} ${s.quality || ''}`.toLowerCase();
+          return raw.includes('1080') || raw.includes('fhd') || raw.includes('bluray') || raw.includes('remux');
+        });
+      } else if (q === '720' || q === 'hd') {
+        targetIndex = streams.findIndex(s => {
+          const raw = `${s.name || ''} ${s.title || ''} ${s.quality || ''}`.toLowerCase();
+          return raw.includes('720') || raw.includes('hd');
+        });
+      }
+
+      if (targetIndex >= 0 && targetIndex !== state.currentStreamIndex) {
+        const stream = streams[targetIndex];
+        const resLabel = q.includes('4k') ? '4K Ultra HD' : q.includes('1080') ? '1080p Full HD' : '720p HD';
+        this.showPlayerToast(`📺 Alternando para ${resLabel} (${stream.provider})...`, 2000);
+        this.selectAndPlayStream(targetIndex);
+
+        if (currentTime > 0) {
+          const restoreTimer = setInterval(() => {
+            const vid = document.getElementById('video-player');
+            if (vid && vid.readyState >= 1) {
+              vid.currentTime = currentTime;
+              clearInterval(restoreTimer);
+            }
+          }, 250);
+          setTimeout(() => clearInterval(restoreTimer), 6000);
+        }
+        return;
+      }
+    }
+
+    // 3. Fallback toast
+    const resName = targetQuality === '4k' ? '4K Ultra HD' : targetQuality === '1080' ? '1080p Full HD' : '720p HD';
+    this.showPlayerToast(`📺 Qualidade Máxima Selecionada: ${resName}`, 1800);
+  },
+
   testAndPlayStreamIndex(index) {
     state.isPlayerActive = true;
     if (!state.activeStreams || index >= state.activeStreams.length) {
@@ -5491,11 +5559,21 @@ const UI = {
 
           const qualitySelect = document.getElementById('hud-quality-select');
           if (qualitySelect) {
-            qualitySelect.innerHTML = hls.levels.map((lvl, idx) => {
-              const res = lvl.height ? `${lvl.height}p` : 'HD';
-              const kbps = lvl.bitrate ? ` (${Math.round(lvl.bitrate / 1000)}k)` : '';
-              return `<option value="${idx}" ${idx === highestLevelIdx ? 'selected' : ''}>🌟 ${res}${kbps}</option>`;
-            }).reverse().join('') + '<option value="-1">⚡ Auto (Melhor Bitrate)</option>';
+            if (hls.levels.length > 1) {
+              qualitySelect.innerHTML = hls.levels.map((lvl, idx) => {
+                const res = lvl.height ? `${lvl.height}p` : 'HD';
+                const kbps = lvl.bitrate ? ` (${Math.round(lvl.bitrate / 1000)}k)` : '';
+                return `<option value="${idx}" ${idx === highestLevelIdx ? 'selected' : ''}>🌟 ${res}${kbps}</option>`;
+              }).reverse().join('') + '<option value="auto">🔄 Auto (Melhor Bitrate)</option>';
+            } else {
+              const h = hls.levels[0].height || 1080;
+              qualitySelect.innerHTML = `
+                <option value="4k">👑 4K Ultra HD</option>
+                <option value="1080" ${h >= 1080 ? 'selected' : ''}>🌟 1080p Full HD</option>
+                <option value="720" ${h < 1080 ? 'selected' : ''}>⚡ 720p HD</option>
+                <option value="auto">🔄 Auto (Melhor)</option>
+              `;
+            }
           }
         }
         triggerAutoPlay();
