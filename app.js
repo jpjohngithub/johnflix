@@ -2055,20 +2055,20 @@ const AudioEngine = {
   isInitialized: false,
   settings: {
     volumeBoost: 100, // 100% to 250%
-    voice: 4, // -12dB to +15dB (peaking at 2.5kHz)
-    bass: 5, // -12dB to +15dB (lowshelf at 120Hz)
-    treble: 3, // -12dB to +15dB (highshelf at 8kHz)
-    compressor: 20 // 0% to 100%
+    voice: 0,
+    bass: 0,
+    treble: 0,
+    compressor: 0
   },
   presets: {
-    surround: { name: 'Cinema Surround Pro', voice: 5, bass: 7, treble: 4, volumeBoost: 110, compressor: 25 },
-    voice_boost: { name: 'Realce de Voz / Diálogos', voice: 12, bass: -2, treble: 6, volumeBoost: 115, compressor: 40 },
-    bass_boost: { name: 'Super Bass Impact', voice: 2, bass: 14, treble: 2, volumeBoost: 110, compressor: 15 },
-    night_mode: { name: 'Modo Noturno (Anti-Susto)', voice: 8, bass: -4, treble: 0, volumeBoost: 100, compressor: 85 },
-    music: { name: 'Música & Trilha Sonora', voice: 2, bass: 6, treble: 8, volumeBoost: 105, compressor: 10 },
+    surround: { name: 'Cinema Surround Pro', voice: 4, bass: 6, treble: 3, volumeBoost: 110, compressor: 20 },
+    voice_boost: { name: 'Realce de Voz / Diálogos', voice: 10, bass: -2, treble: 5, volumeBoost: 115, compressor: 35 },
+    bass_boost: { name: 'Super Bass Impact', voice: 1, bass: 12, treble: 2, volumeBoost: 110, compressor: 10 },
+    night_mode: { name: 'Modo Noturno (Anti-Susto)', voice: 6, bass: -4, treble: 0, volumeBoost: 100, compressor: 80 },
+    music: { name: 'Música & Trilha Sonora', voice: 2, bass: 5, treble: 6, volumeBoost: 105, compressor: 10 },
     flat: { name: 'Áudio Original (Flat)', voice: 0, bass: 0, treble: 0, volumeBoost: 100, compressor: 0 }
   },
-  currentPreset: 'surround',
+  currentPreset: 'flat',
 
   init() {
     const video = document.getElementById('video-player');
@@ -2079,28 +2079,25 @@ const AudioEngine = {
       if (!AudioCtx) return;
       this.ctx = new AudioCtx();
 
+      // Only attach if user explicitly requests custom EQ
       this.sourceNode = this.ctx.createMediaElementSource(video);
 
-      // 1. Bass LowShelf Filter (120 Hz)
       this.bassFilter = this.ctx.createBiquadFilter();
       this.bassFilter.type = 'lowshelf';
       this.bassFilter.frequency.value = 120;
       this.bassFilter.gain.value = this.settings.bass;
 
-      // 2. Voice / Dialogue Peaking Filter (2500 Hz, Q = 1.2)
       this.voiceFilter = this.ctx.createBiquadFilter();
       this.voiceFilter.type = 'peaking';
       this.voiceFilter.frequency.value = 2500;
       this.voiceFilter.Q.value = 1.2;
       this.voiceFilter.gain.value = this.settings.voice;
 
-      // 3. Treble HighShelf Filter (8000 Hz)
       this.trebleFilter = this.ctx.createBiquadFilter();
       this.trebleFilter.type = 'highshelf';
       this.trebleFilter.frequency.value = 8000;
       this.trebleFilter.gain.value = this.settings.treble;
 
-      // 4. Dynamics Compressor (Night Mode / Loudness leveling)
       this.compressorNode = this.ctx.createDynamicsCompressor();
       this.compressorNode.threshold.value = -35;
       this.compressorNode.knee.value = 25;
@@ -2108,11 +2105,9 @@ const AudioEngine = {
       this.compressorNode.attack.value = 0.003;
       this.compressorNode.release.value = 0.25;
 
-      // 5. Volume Gain Booster (1.0x to 2.5x)
       this.gainNode = this.ctx.createGain();
-      this.gainNode.gain.value = this.settings.volumeBoost / 100;
+      this.gainNode.gain.value = (this.settings.volumeBoost || 100) / 100;
 
-      // Connect graph: Source -> Bass -> Voice -> Treble -> Compressor -> Gain -> Destination
       this.sourceNode.connect(this.bassFilter);
       this.bassFilter.connect(this.voiceFilter);
       this.voiceFilter.connect(this.trebleFilter);
@@ -2123,7 +2118,7 @@ const AudioEngine = {
       this.isInitialized = true;
       this.apply();
     } catch(e) {
-      console.warn('AudioEngine init note:', e);
+      console.warn('Web Audio direct connection info:', e);
     }
   },
 
@@ -2134,6 +2129,10 @@ const AudioEngine = {
   },
 
   apply() {
+    const video = document.getElementById('video-player');
+    if (video) {
+      video.muted = false;
+    }
     if (!this.isInitialized) return;
     this.resume();
 
@@ -5708,8 +5707,8 @@ const UI = {
 
     video.onplay = () => {
       if (typeof WebGLUpscaler !== 'undefined') WebGLUpscaler.start();
-      if (typeof AudioEngine !== 'undefined') {
-        AudioEngine.init();
+      video.muted = false;
+      if (typeof AudioEngine !== 'undefined' && AudioEngine.isInitialized) {
         AudioEngine.resume();
       }
     };
@@ -5721,8 +5720,8 @@ const UI = {
       if (playerLoading) playerLoading.classList.add('hidden');
       if (playerError) playerError.classList.add('hidden');
       if (typeof WebGLUpscaler !== 'undefined') WebGLUpscaler.start();
-      if (typeof AudioEngine !== 'undefined') {
-        AudioEngine.init();
+      video.muted = false;
+      if (typeof AudioEngine !== 'undefined' && AudioEngine.isInitialized) {
         AudioEngine.resume();
       }
     };
