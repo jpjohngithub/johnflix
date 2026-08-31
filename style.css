@@ -4009,6 +4009,28 @@ body {
    JOHNFLIX 4K VIDEO ENHANCEMENT FILTER & OPTICAL POST-PROCESSING ENGINE
    ========================================================================== */
 
+/* WebGL Super-Resolution / AI-Upscaler Canvas */
+.upscale-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  z-index: 6;
+  pointer-events: auto;
+  cursor: pointer;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  transform: translateZ(0);
+}
+
+#video-player,
+#iframe-player {
+  image-rendering: -webkit-optimize-contrast !important;
+  image-rendering: crisp-edges !important;
+  transform: translateZ(0);
+}
+
 /* Enhancement Layer sitting in front of Video / Iframe */
 .player-enhancement-overlay {
   position: absolute;
@@ -4022,97 +4044,107 @@ body {
 
 /* Dynamic Preset Modes applied to #player-container */
 .enhancement-hdr-ultra #video-player,
-.enhancement-hdr-ultra #iframe-player {
-  filter: contrast(1.20) saturate(1.36) brightness(1.03) url(#johnflix-hdr-ultra);
-  transition: filter 0.25s ease;
+.enhancement-hdr-ultra #iframe-player,
+.enhancement-hdr-ultra .upscale-canvas {
+  filter: contrast(1.28) saturate(1.48) brightness(1.04) drop-shadow(0 0 1px rgba(0,0,0,0.5)) url(#johnflix-hdr-ultra) !important;
+  transition: filter 0.2s ease;
 }
 .enhancement-hdr-ultra .player-enhancement-overlay {
   background: radial-gradient(circle at center, rgba(255, 255, 255, 0.05) 0%, rgba(0, 0, 0, 0.12) 100%);
-  backdrop-filter: contrast(1.06) saturate(1.08);
-  -webkit-backdrop-filter: contrast(1.06) saturate(1.08);
+  backdrop-filter: contrast(1.08) saturate(1.10);
+  -webkit-backdrop-filter: contrast(1.08) saturate(1.10);
   mix-blend-mode: soft-light;
-  opacity: 0.9;
+  opacity: 0.92;
 }
 
 .enhancement-super-sharp #video-player,
-.enhancement-super-sharp #iframe-player {
-  filter: contrast(1.15) saturate(1.22) brightness(1.02) url(#johnflix-sharpen-4k);
-  transition: filter 0.25s ease;
+.enhancement-super-sharp #iframe-player,
+.enhancement-super-sharp .upscale-canvas {
+  filter: contrast(1.24) saturate(1.30) brightness(1.03) drop-shadow(0 0 1px rgba(0,0,0,0.4)) url(#johnflix-sharpen-4k) !important;
+  transition: filter 0.2s ease;
 }
 .enhancement-super-sharp .player-enhancement-overlay {
   background: transparent;
-  backdrop-filter: contrast(1.05);
-  -webkit-backdrop-filter: contrast(1.05);
-  opacity: 0.8;
+  backdrop-filter: contrast(1.08);
+  -webkit-backdrop-filter: contrast(1.08);
+  opacity: 0.85;
 }
 
 .enhancement-vivid-colors #video-player,
-.enhancement-vivid-colors #iframe-player {
-  filter: contrast(1.22) saturate(1.52) brightness(1.04);
-  transition: filter 0.25s ease;
+.enhancement-vivid-colors #iframe-player,
+.enhancement-vivid-colors .upscale-canvas {
+  filter: contrast(1.30) saturate(1.75) brightness(1.06) !important;
+  transition: filter 0.2s ease;
 }
 .enhancement-vivid-colors .player-enhancement-overlay {
   background: linear-gradient(135deg, rgba(255, 120, 50, 0.04), rgba(50, 160, 255, 0.04));
-  backdrop-filter: saturate(1.12);
-  -webkit-backdrop-filter: saturate(1.12);
+  backdrop-filter: saturate(1.16);
+  -webkit-backdrop-filter: saturate(1.16);
   mix-blend-mode: color-dodge;
-  opacity: 0.75;
+  opacity: 0.8;
 }
 
 .enhancement-cinema #video-player,
-.enhancement-cinema #iframe-player {
-  filter: contrast(1.16) saturate(1.20) brightness(1.00) url(#johnflix-cinema-4k);
-  transition: filter 0.25s ease;
+.enhancement-cinema #iframe-player,
+.enhancement-cinema .upscale-canvas {
+  filter: contrast(1.24) saturate(1.28) brightness(1.01) sepia(0.04) url(#johnflix-cinema-4k) !important;
+  transition: filter 0.2s ease;
 }
 .enhancement-cinema .player-enhancement-overlay {
   background: radial-gradient(ellipse at center, rgba(255, 240, 220, 0.04) 0%, rgba(10, 15, 30, 0.18) 100%);
-  backdrop-filter: contrast(1.08);
-  -webkit-backdrop-filter: contrast(1.08);
+  backdrop-filter: contrast(1.10);
+  -webkit-backdrop-filter: contrast(1.10);
   mix-blend-mode: soft-light;
   opacity: 0.95;
 }
 
 .enhancement-extreme #video-player,
-.enhancement-extreme #iframe-player {
-  filter: contrast(1.22) saturate(1.28) brightness(1.02) url(#johnflix-extreme-sharp);
-  transition: filter 0.25s ease;
+.enhancement-extreme #iframe-player,
+.enhancement-extreme .upscale-canvas {
+  filter: contrast(1.35) saturate(1.45) brightness(1.04) drop-shadow(0 0 2px rgba(0,0,0,0.6)) url(#johnflix-extreme-sharp) !important;
+  transition: filter 0.2s ease;
 }
 .enhancement-extreme .player-enhancement-overlay {
   background: transparent;
-  backdrop-filter: contrast(1.08);
-  -webkit-backdrop-filter: contrast(1.08);
-  opacity: 0.85;
+  backdrop-filter: contrast(1.12);
+  -webkit-backdrop-filter: contrast(1.12);
+  opacity: 0.9;
 }
 
 .enhancement-shadow-boost #video-player,
-.enhancement-shadow-boost #iframe-player {
-  filter: contrast(1.10) saturate(1.25) brightness(1.06) url(#johnflix-shadow-boost);
-  transition: filter 0.25s ease;
+.enhancement-shadow-boost #iframe-player,
+.enhancement-shadow-boost .upscale-canvas {
+  filter: contrast(1.16) saturate(1.35) brightness(1.14) url(#johnflix-shadow-boost) !important;
+  transition: filter 0.2s ease;
 }
 .enhancement-shadow-boost .player-enhancement-overlay {
-  background: rgba(255, 255, 255, 0.035);
-  backdrop-filter: contrast(1.04) brightness(1.03);
-  -webkit-backdrop-filter: contrast(1.04) brightness(1.03);
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: contrast(1.05) brightness(1.06);
+  -webkit-backdrop-filter: contrast(1.05) brightness(1.06);
   mix-blend-mode: screen;
-  opacity: 0.85;
+  opacity: 0.88;
 }
 
 .enhancement-oled #video-player,
-.enhancement-oled #iframe-player {
-  filter: contrast(1.28) saturate(1.25) brightness(0.97);
-  transition: filter 0.25s ease;
+.enhancement-oled #iframe-player,
+.enhancement-oled .upscale-canvas {
+  filter: contrast(1.42) saturate(1.35) brightness(0.95) !important;
+  transition: filter 0.2s ease;
 }
 .enhancement-oled .player-enhancement-overlay {
   background: radial-gradient(circle at center, transparent 35%, rgba(0, 0, 0, 0.32) 100%);
-  backdrop-filter: contrast(1.12);
-  -webkit-backdrop-filter: contrast(1.12);
+  backdrop-filter: contrast(1.15);
+  -webkit-backdrop-filter: contrast(1.15);
   mix-blend-mode: multiply;
-  opacity: 0.85;
+  opacity: 0.88;
 }
 
 .enhancement-night #video-player,
-.enhancement-night #iframe-player {
-  filter: contrast(1.05) saturate(1.05) brightness(0.92) sepia(0.08);
+.enhancement-night #iframe-player,
+.enhancement-night .upscale-canvas {
+  filter: contrast(1.08) saturate(1.08) brightness(0.92) sepia(0.10) !important;
+  transition: filter 0.2s ease;
+}
   transition: filter 0.25s ease;
 }
 .enhancement-night .player-enhancement-overlay {

@@ -1860,6 +1860,188 @@ const VideoEnhancer = {
   }
 };
 
+// --- Real-Time Hardware-Accelerated WebGL Super-Resolution / CAS Upscaler ---
+
+const WebGLUpscaler = {
+  gl: null,
+  canvas: null,
+  video: null,
+  program: null,
+  texture: null,
+  positionBuffer: null,
+  isRunning: false,
+  _rafId: null,
+
+  init() {
+    this.canvas = document.getElementById('upscale-canvas');
+    this.video = document.getElementById('video-player');
+    if (!this.canvas || !this.video) return;
+
+    try {
+      this.gl = this.canvas.getContext('webgl', { preserveDrawingBuffer: false, powerPreference: 'high-performance' })
+        || this.canvas.getContext('experimental-webgl');
+      if (!this.gl) return;
+
+      const vs = `
+        attribute vec2 a_pos;
+        varying vec2 v_uv;
+        void main() {
+          v_uv = (a_pos + 1.0) * 0.5;
+          v_uv.y = 1.0 - v_uv.y;
+          gl_Position = vec4(a_pos, 0.0, 1.0);
+        }
+      `;
+
+      const fs = `
+        precision mediump float;
+        varying vec2 v_uv;
+        uniform sampler2D u_tex;
+        uniform vec2 u_resolution;
+        uniform float u_sharpness;
+        uniform float u_saturation;
+        uniform float u_contrast;
+        uniform float u_brightness;
+        uniform float u_shadow;
+
+        void main() {
+          vec2 texel = 1.0 / u_resolution;
+          vec3 c = texture2D(u_tex, v_uv).rgb;
+          
+          if (u_sharpness > 0.0) {
+            vec3 a = texture2D(u_tex, v_uv + vec2(0.0, -texel.y)).rgb;
+            vec3 b = texture2D(u_tex, v_uv + vec2(-texel.x, 0.0)).rgb;
+            vec3 d = texture2D(u_tex, v_uv + vec2(texel.x, 0.0)).rgb;
+            vec3 e = texture2D(u_tex, v_uv + vec2(0.0, texel.y)).rgb;
+
+            vec3 min_rgb = min(min(min(a, b), min(d, e)), c);
+            vec3 max_rgb = max(max(max(a, b), max(d, e)), c);
+            vec3 amp = clamp(min(min_rgb, 2.0 - max_rgb) / (max_rgb + 0.0001), 0.0, 1.0);
+            vec3 w = -sqrt(amp) * (u_sharpness * 0.28);
+            c = (a * w.r + b * w.g + c + d * w.b + e * w.r) / (1.0 + 4.0 * w.r);
+          }
+
+          c = clamp(c * u_brightness, 0.0, 1.0);
+          c = clamp((c - 0.5) * u_contrast + 0.5, 0.0, 1.0);
+
+          if (u_shadow != 0.0) {
+            float lum = dot(c, vec3(0.299, 0.587, 0.114));
+            float shadowMask = clamp(1.0 - lum * 1.8, 0.0, 1.0);
+            c = clamp(c + u_shadow * shadowMask * 0.25, 0.0, 1.0);
+          }
+
+          float gray = dot(c, vec3(0.299, 0.587, 0.114));
+          c = clamp(mix(vec3(gray), c, u_saturation), 0.0, 1.0);
+
+          gl_FragColor = vec4(c, 1.0);
+        }
+      `;
+
+      const createShader = (gl, type, source) => {
+        const s = gl.createShader(type);
+        gl.shaderSource(s, source);
+        gl.compileShader(s);
+        return s;
+      };
+
+      const program = this.gl.createProgram();
+      this.gl.attachShader(program, createShader(this.gl, this.gl.VERTEX_SHADER, vs));
+      this.gl.attachShader(program, createShader(this.gl, this.gl.FRAGMENT_SHADER, fs));
+      this.gl.linkProgram(program);
+      this.program = program;
+
+      this.positionBuffer = this.gl.createBuffer();
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
+      this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array([
+        -1, -1,
+         1, -1,
+        -1,  1,
+        -1,  1,
+         1, -1,
+         1,  1
+      ]), this.gl.STATIC_DRAW);
+
+      this.texture = this.gl.createTexture();
+      this.gl.bindTexture(this.gl.TEXTURE_2D, this.texture);
+      this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
+      this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
+      this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
+      this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
+
+      // Canvas click forwarding
+      this.canvas.addEventListener('click', () => {
+        if (this.video) {
+          if (this.video.paused) this.video.play();
+          else this.video.pause();
+        }
+      });
+    } catch(e) {
+      console.warn('WebGL Upscaler not available:', e);
+    }
+  },
+
+  start() {
+    if (!this.gl || !this.program || !this.video) return;
+    if (this.isRunning) return;
+    this.isRunning = true;
+    if (this.canvas) this.canvas.classList.remove('hidden');
+
+    const render = () => {
+      if (!this.isRunning) return;
+      if (this.video.readyState >= 2 && !this.video.paused && !this.video.ended) {
+        this.drawFrame();
+      }
+      this._rafId = requestAnimationFrame(render);
+    };
+    render();
+  },
+
+  stop() {
+    this.isRunning = false;
+    if (this._rafId) cancelAnimationFrame(this._rafId);
+    if (this.canvas) this.canvas.classList.add('hidden');
+  },
+
+  drawFrame() {
+    if (!this.gl || !this.program || !this.video) return;
+    const gl = this.gl;
+    const vW = this.video.videoWidth || 1920;
+    const vH = this.video.videoHeight || 1080;
+
+    if (this.canvas.width !== vW || this.canvas.height !== vH) {
+      this.canvas.width = vW;
+      this.canvas.height = vH;
+      gl.viewport(0, 0, vW, vH);
+    }
+
+    gl.useProgram(this.program);
+    gl.bindTexture(gl.TEXTURE_2D, this.texture);
+    try {
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.video);
+    } catch(e) { return; }
+
+    const posLoc = gl.getAttribLocation(this.program, 'a_pos');
+    gl.enableVertexAttribArray(posLoc);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
+    gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+
+    const p = VideoEnhancer.presets[VideoEnhancer.currentPreset] || VideoEnhancer.presets.hdr_ultra;
+    const sharp = (VideoEnhancer.settings.sharpness || p.sharpness || 0) / 100.0;
+    const sat = (VideoEnhancer.settings.saturation || p.saturation || 100) / 100.0;
+    const con = (VideoEnhancer.settings.contrast || p.contrast || 100) / 100.0;
+    const bri = (VideoEnhancer.settings.brightness || p.brightness || 100) / 100.0;
+    const shd = ((VideoEnhancer.settings.shadow !== undefined) ? VideoEnhancer.settings.shadow : (p.shadow || 0)) / 100.0;
+
+    gl.uniform2f(gl.getUniformLocation(this.program, 'u_resolution'), vW, vH);
+    gl.uniform1f(gl.getUniformLocation(this.program, 'u_sharpness'), sharp);
+    gl.uniform1f(gl.getUniformLocation(this.program, 'u_saturation'), sat);
+    gl.uniform1f(gl.getUniformLocation(this.program, 'u_contrast'), con);
+    gl.uniform1f(gl.getUniformLocation(this.program, 'u_brightness'), bri);
+    gl.uniform1f(gl.getUniformLocation(this.program, 'u_shadow'), shd);
+
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+  }
+};
+
 // --- Subtitles Engine ---
 
 const Subtitles = {
@@ -2285,6 +2467,7 @@ const UI = {
   metaCache: {},
   init() {
     VideoEnhancer.init();
+    WebGLUpscaler.init();
     this.bindEvents();
     this.loadInitialData();
   },
@@ -4997,6 +5180,9 @@ const UI = {
   resetMediaState() {
     const video = document.getElementById('video-player');
     const iframe = document.getElementById('iframe-player');
+    if (typeof WebGLUpscaler !== 'undefined') {
+      WebGLUpscaler.stop();
+    }
     if (window.currentHls) {
       window.currentHls.destroy();
       window.currentHls = null;
@@ -5185,9 +5371,17 @@ const UI = {
     video.onseeking = () => Subtitles.syncOverlay(video.currentTime);
     video.onseeked = () => Subtitles.syncOverlay(video.currentTime);
 
+    video.onplay = () => {
+      if (typeof WebGLUpscaler !== 'undefined') WebGLUpscaler.start();
+    };
+    video.onpause = () => {
+      if (typeof WebGLUpscaler !== 'undefined') WebGLUpscaler.stop();
+    };
+
     const onPlaySuccess = () => {
       if (playerLoading) playerLoading.classList.add('hidden');
       if (playerError) playerError.classList.add('hidden');
+      if (typeof WebGLUpscaler !== 'undefined') WebGLUpscaler.start();
     };
 
     const triggerAutoPlay = () => {
