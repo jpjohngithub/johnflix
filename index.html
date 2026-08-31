@@ -400,6 +400,10 @@
                         <div class="preset-title">🎬 Cinema 4K</div>
                         <div class="preset-desc">Gradação cinematográfica de filme e sombras profundas</div>
                       </button>
+                      <button class="hud-preset-btn" data-preset="extreme">
+                        <div class="preset-title">⚡ Nitidez Extrema (Ultra Crisp)</div>
+                        <div class="preset-desc">Máxima definição de arestas, olhos e micro-texturas</div>
+                      </button>
                       <button class="hud-preset-btn" data-preset="oled">
                         <div class="preset-title">🌌 Preto Absoluto OLED</div>
                         <div class="preset-desc">Contraste profundo com realce de pretos e sombras</div>
@@ -422,23 +426,23 @@
                       </div>
                       <div class="hud-slider-row">
                         <label for="filter-sharpness-slider">Nitidez / Realce:</label>
-                        <input type="range" id="filter-sharpness-slider" min="0" max="100" value="60">
-                        <span id="filter-sharpness-val">60%</span>
+                        <input type="range" id="filter-sharpness-slider" min="0" max="150" value="85">
+                        <span id="filter-sharpness-val">85%</span>
                       </div>
                       <div class="hud-slider-row">
                         <label for="filter-saturation-slider">Cores / Saturação:</label>
-                        <input type="range" id="filter-saturation-slider" min="80" max="180" value="128">
-                        <span id="filter-saturation-val">128%</span>
+                        <input type="range" id="filter-saturation-slider" min="80" max="200" value="136">
+                        <span id="filter-saturation-val">136%</span>
                       </div>
                       <div class="hud-slider-row">
                         <label for="filter-contrast-slider">Contraste HDR:</label>
-                        <input type="range" id="filter-contrast-slider" min="80" max="160" value="114">
-                        <span id="filter-contrast-val">114%</span>
+                        <input type="range" id="filter-contrast-slider" min="80" max="180" value="120">
+                        <span id="filter-contrast-val">120%</span>
                       </div>
                       <div class="hud-slider-row">
                         <label for="filter-brightness-slider">Brilho:</label>
-                        <input type="range" id="filter-brightness-slider" min="80" max="130" value="102">
-                        <span id="filter-brightness-val">102%</span>
+                        <input type="range" id="filter-brightness-slider" min="80" max="140" value="103">
+                        <span id="filter-brightness-val">103%</span>
                       </div>
                     </div>
                   </div>
@@ -513,30 +517,49 @@
     <!-- SVG Filter Definitions for Optical Video Sharpening & Post-Processing -->
     <svg id="svg-video-filters" style="display:none; position:absolute; width:0; height:0; pointer-events:none;" aria-hidden="true">
       <defs>
-        <!-- Super Nitidez 4K / Optical Unsharp Mask Kernel -->
-        <filter id="johnflix-sharpen-4k" x="-10%" y="-10%" width="120%" height="120%">
+        <!-- Super Nitidez 4K / High-Pass Edge Realce (Adaptive Sharpness) -->
+        <filter id="johnflix-sharpen-4k" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
           <feConvolveMatrix order="3,3" kernelMatrix="
-            0   -0.35   0
-           -0.35 2.4   -0.35
-            0   -0.35   0" 
+             0   -0.55   0
+           -0.55  3.2  -0.55
+             0   -0.55   0" 
             divisor="1" bias="0" preserveAlpha="true"/>
         </filter>
         
-        <!-- HDR Ultra (Crisp Edges + Color Enhancement) -->
-        <filter id="johnflix-hdr-ultra" x="-10%" y="-10%" width="120%" height="120%">
+        <!-- HDR Ultra Pro (Micro-Contrast + 3x3 Edge Sharpness) -->
+        <filter id="johnflix-hdr-ultra" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
           <feConvolveMatrix order="3,3" kernelMatrix="
-            -0.18 -0.18 -0.18
-            -0.18  2.44 -0.18
-            -0.18 -0.18 -0.18" 
+            -0.3 -0.3 -0.3
+            -0.3  3.4 -0.3
+            -0.3 -0.3 -0.3" 
             divisor="1" bias="0" preserveAlpha="true"/>
+          <feComponentTransfer>
+            <feFuncR type="linear" slope="1.06" intercept="-0.01"/>
+            <feFuncG type="linear" slope="1.06" intercept="-0.01"/>
+            <feFuncB type="linear" slope="1.06" intercept="-0.01"/>
+          </feComponentTransfer>
         </filter>
 
-        <!-- Cinema 4K Filmic Depth -->
-        <filter id="johnflix-cinema-4k" x="-10%" y="-10%" width="120%" height="120%">
+        <!-- Cinema 4K Filmic Depth & Textures -->
+        <filter id="johnflix-cinema-4k" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
           <feConvolveMatrix order="3,3" kernelMatrix="
-            0   -0.2   0
-           -0.2  1.8  -0.2
-            0   -0.2   0" 
+             0   -0.4   0
+           -0.4  2.6  -0.4
+             0   -0.4   0" 
+            divisor="1" bias="0" preserveAlpha="true"/>
+          <feComponentTransfer>
+            <feFuncR type="linear" slope="1.05" intercept="0.01"/>
+            <feFuncG type="linear" slope="1.02" intercept="0.01"/>
+            <feFuncB type="linear" slope="0.97" intercept="0"/>
+          </feComponentTransfer>
+        </filter>
+
+        <!-- Extreme Detail Booster (Extra Sharp) -->
+        <filter id="johnflix-extreme-sharp" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+          <feConvolveMatrix order="3,3" kernelMatrix="
+            -0.45 -0.45 -0.45
+            -0.45  4.6  -0.45
+            -0.45 -0.45 -0.45" 
             divisor="1" bias="0" preserveAlpha="true"/>
         </filter>
       </defs>

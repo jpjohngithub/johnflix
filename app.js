@@ -1659,18 +1659,19 @@ const API = {
 const VideoEnhancer = {
   currentPreset: 'hdr_ultra',
   settings: {
-    sharpness: 60,
-    saturation: 128,
-    contrast: 114,
-    brightness: 102
+    sharpness: 85,
+    saturation: 136,
+    contrast: 120,
+    brightness: 103
   },
   presets: {
-    hdr_ultra: { name: 'HDR Ultra Pro', sharpness: 60, saturation: 128, contrast: 114, brightness: 102, filterId: 'johnflix-hdr-ultra' },
-    super_sharp: { name: 'Super Nitidez 4K', sharpness: 90, saturation: 116, contrast: 110, brightness: 101, filterId: 'johnflix-sharpen-4k' },
-    vivid_colors: { name: 'Cores Vívidas', sharpness: 40, saturation: 142, contrast: 116, brightness: 103, filterId: null },
-    cinema: { name: 'Cinema 4K', sharpness: 50, saturation: 115, contrast: 112, brightness: 99, filterId: 'johnflix-cinema-4k' },
-    oled: { name: 'Preto OLED', sharpness: 55, saturation: 120, contrast: 122, brightness: 98, filterId: null },
-    night: { name: 'Modo Noturno', sharpness: 20, saturation: 105, contrast: 105, brightness: 92, filterId: null, sepia: 8 },
+    hdr_ultra: { name: 'HDR Ultra Pro', sharpness: 85, saturation: 136, contrast: 120, brightness: 103, filterId: 'johnflix-hdr-ultra' },
+    super_sharp: { name: 'Super Nitidez 4K', sharpness: 100, saturation: 122, contrast: 115, brightness: 102, filterId: 'johnflix-sharpen-4k' },
+    vivid_colors: { name: 'Cores Vívidas', sharpness: 70, saturation: 152, contrast: 122, brightness: 104, filterId: null },
+    cinema: { name: 'Cinema 4K', sharpness: 75, saturation: 120, contrast: 116, brightness: 100, filterId: 'johnflix-cinema-4k' },
+    extreme: { name: 'Nitidez Extrema', sharpness: 120, saturation: 128, contrast: 122, brightness: 102, filterId: 'johnflix-extreme-sharp' },
+    oled: { name: 'Preto OLED', sharpness: 75, saturation: 125, contrast: 128, brightness: 97, filterId: null },
+    night: { name: 'Modo Noturno', sharpness: 30, saturation: 105, contrast: 105, brightness: 92, filterId: null, sepia: 8 },
     off: { name: 'Imagem Original', sharpness: 0, saturation: 100, contrast: 100, brightness: 100, filterId: null }
   },
 
