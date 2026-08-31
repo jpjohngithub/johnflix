@@ -4084,6 +4084,19 @@ body {
   opacity: 0.85;
 }
 
+.enhancement-shadow-boost #video-player,
+.enhancement-shadow-boost #iframe-player {
+  filter: contrast(1.10) saturate(1.25) brightness(1.06) url(#johnflix-shadow-boost);
+  transition: filter 0.25s ease;
+}
+.enhancement-shadow-boost .player-enhancement-overlay {
+  background: rgba(255, 255, 255, 0.035);
+  backdrop-filter: contrast(1.04) brightness(1.03);
+  -webkit-backdrop-filter: contrast(1.04) brightness(1.03);
+  mix-blend-mode: screen;
+  opacity: 0.85;
+}
+
 .enhancement-oled #video-player,
 .enhancement-oled #iframe-player {
   filter: contrast(1.28) saturate(1.25) brightness(0.97);

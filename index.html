@@ -404,6 +404,10 @@
                         <div class="preset-title">⚡ Nitidez Extrema (Ultra Crisp)</div>
                         <div class="preset-desc">Máxima definição de arestas, olhos e micro-texturas</div>
                       </button>
+                      <button class="hud-preset-btn" data-preset="shadow_boost">
+                        <div class="preset-title">👁️ Clarear Sombras / Menos Preto</div>
+                        <div class="preset-desc">Revela detalhes em cenas escuras sem estourar o brilho</div>
+                      </button>
                       <button class="hud-preset-btn" data-preset="oled">
                         <div class="preset-title">🌌 Preto Absoluto OLED</div>
                         <div class="preset-desc">Contraste profundo com realce de pretos e sombras</div>
@@ -428,6 +432,11 @@
                         <label for="filter-sharpness-slider">Nitidez / Realce:</label>
                         <input type="range" id="filter-sharpness-slider" min="0" max="150" value="85">
                         <span id="filter-sharpness-val">85%</span>
+                      </div>
+                      <div class="hud-slider-row">
+                        <label for="filter-shadow-slider">Diminuir Preto / Sombras:</label>
+                        <input type="range" id="filter-shadow-slider" min="-30" max="50" value="15">
+                        <span id="filter-shadow-val">+15%</span>
                       </div>
                       <div class="hud-slider-row">
                         <label for="filter-saturation-slider">Cores / Saturação:</label>
@@ -572,6 +581,20 @@
             -0.45 -0.45 -0.45
             -0.45  4.6  -0.45
             -0.45 -0.45 -0.45" 
+            divisor="1" bias="0" preserveAlpha="true"/>
+        </filter>
+
+        <!-- Shadow Boost / Anti Black-Crush (Lifts Shadows & Reveals Dark Scene Details) -->
+        <filter id="johnflix-shadow-boost" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+          <feComponentTransfer>
+            <feFuncR type="gamma" exponent="0.80" amplitude="1" offset="0.04"/>
+            <feFuncG type="gamma" exponent="0.80" amplitude="1" offset="0.04"/>
+            <feFuncB type="gamma" exponent="0.80" amplitude="1" offset="0.04"/>
+          </feComponentTransfer>
+          <feConvolveMatrix order="3,3" kernelMatrix="
+             0   -0.35   0
+           -0.35  2.4  -0.35
+             0   -0.35   0" 
             divisor="1" bias="0" preserveAlpha="true"/>
         </filter>
       </defs>

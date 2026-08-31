@@ -1680,19 +1680,21 @@ const VideoEnhancer = {
   currentPreset: 'hdr_ultra',
   settings: {
     sharpness: 85,
+    shadow: 15,
     saturation: 136,
     contrast: 120,
     brightness: 103
   },
   presets: {
-    hdr_ultra: { name: 'HDR Ultra Pro', sharpness: 85, saturation: 136, contrast: 120, brightness: 103, filterId: 'johnflix-hdr-ultra' },
-    super_sharp: { name: 'Super Nitidez 4K', sharpness: 100, saturation: 122, contrast: 115, brightness: 102, filterId: 'johnflix-sharpen-4k' },
-    vivid_colors: { name: 'Cores Vívidas', sharpness: 70, saturation: 152, contrast: 122, brightness: 104, filterId: null },
-    cinema: { name: 'Cinema 4K', sharpness: 75, saturation: 120, contrast: 116, brightness: 100, filterId: 'johnflix-cinema-4k' },
-    extreme: { name: 'Nitidez Extrema', sharpness: 120, saturation: 128, contrast: 122, brightness: 102, filterId: 'johnflix-extreme-sharp' },
-    oled: { name: 'Preto OLED', sharpness: 75, saturation: 125, contrast: 128, brightness: 97, filterId: null },
-    night: { name: 'Modo Noturno', sharpness: 30, saturation: 105, contrast: 105, brightness: 92, filterId: null, sepia: 8 },
-    off: { name: 'Imagem Original', sharpness: 0, saturation: 100, contrast: 100, brightness: 100, filterId: null }
+    hdr_ultra: { name: 'HDR Ultra Pro', sharpness: 85, shadow: 15, saturation: 136, contrast: 120, brightness: 103, filterId: 'johnflix-hdr-ultra' },
+    shadow_boost: { name: 'Clarear Sombras / Menos Preto', sharpness: 70, shadow: 35, saturation: 125, contrast: 110, brightness: 106, filterId: 'johnflix-shadow-boost' },
+    super_sharp: { name: 'Super Nitidez 4K', sharpness: 100, shadow: 10, saturation: 122, contrast: 115, brightness: 102, filterId: 'johnflix-sharpen-4k' },
+    vivid_colors: { name: 'Cores Vívidas', sharpness: 70, shadow: 15, saturation: 152, contrast: 122, brightness: 104, filterId: null },
+    cinema: { name: 'Cinema 4K', sharpness: 75, shadow: 10, saturation: 120, contrast: 116, brightness: 100, filterId: 'johnflix-cinema-4k' },
+    extreme: { name: 'Nitidez Extrema', sharpness: 120, shadow: 15, saturation: 128, contrast: 122, brightness: 102, filterId: 'johnflix-extreme-sharp' },
+    oled: { name: 'Preto OLED', sharpness: 75, shadow: -15, saturation: 125, contrast: 128, brightness: 97, filterId: null },
+    night: { name: 'Modo Noturno', sharpness: 30, shadow: 25, saturation: 105, contrast: 105, brightness: 92, filterId: null, sepia: 8 },
+    off: { name: 'Imagem Original', sharpness: 0, shadow: 0, saturation: 100, contrast: 100, brightness: 100, filterId: null }
   },
 
   init() {
@@ -1751,6 +1753,7 @@ const VideoEnhancer = {
     const sat = (this.settings.saturation || p.saturation || 100) / 100;
     const con = (this.settings.contrast || p.contrast || 100) / 100;
     const bri = (this.settings.brightness || p.brightness || 100) / 100;
+    const shadowVal = (this.settings.shadow !== undefined) ? this.settings.shadow : (p.shadow || 0);
     const svgFilter = p.filterId ? ` url(#${p.filterId})` : '';
     const sepiaStr = p.sepia ? ` sepia(${p.sepia}%)` : '';
 
@@ -1758,7 +1761,22 @@ const VideoEnhancer = {
 
     if (video) video.style.filter = filterString;
     if (iframe) iframe.style.filter = filterString;
-    if (overlay) overlay.style.display = 'block';
+    if (overlay) {
+      overlay.style.display = 'block';
+      // Dynamically lift shadows / decrease black crush or deepen blacks
+      if (shadowVal > 0) {
+        const opacity = Math.min(0.12, shadowVal * 0.0022);
+        overlay.style.background = `rgba(255, 255, 255, ${opacity})`;
+        overlay.style.mixBlendMode = 'screen';
+      } else if (shadowVal < 0) {
+        const opacity = Math.min(0.25, Math.abs(shadowVal) * 0.004);
+        overlay.style.background = `rgba(0, 0, 0, ${opacity})`;
+        overlay.style.mixBlendMode = 'multiply';
+      } else {
+        overlay.style.background = '';
+        overlay.style.mixBlendMode = 'soft-light';
+      }
+    }
 
     this.updateUI();
 
@@ -1775,6 +1793,7 @@ const VideoEnhancer = {
     this.currentPreset = presetKey;
     const p = this.presets[presetKey];
     this.settings.sharpness = p.sharpness;
+    this.settings.shadow = p.shadow || 0;
     this.settings.saturation = p.saturation;
     this.settings.contrast = p.contrast;
     this.settings.brightness = p.brightness;
@@ -1805,11 +1824,13 @@ const VideoEnhancer = {
 
     // Update sliders
     const sharpnessSlider = document.getElementById('filter-sharpness-slider');
+    const shadowSlider = document.getElementById('filter-shadow-slider');
     const saturationSlider = document.getElementById('filter-saturation-slider');
     const contrastSlider = document.getElementById('filter-contrast-slider');
     const brightnessSlider = document.getElementById('filter-brightness-slider');
 
     const sharpnessVal = document.getElementById('filter-sharpness-val');
+    const shadowVal = document.getElementById('filter-shadow-val');
     const saturationVal = document.getElementById('filter-saturation-val');
     const contrastVal = document.getElementById('filter-contrast-val');
     const brightnessVal = document.getElementById('filter-brightness-val');
@@ -1817,6 +1838,12 @@ const VideoEnhancer = {
     if (sharpnessSlider && sharpnessVal) {
       sharpnessSlider.value = this.settings.sharpness;
       sharpnessVal.textContent = `${this.settings.sharpness}%`;
+    }
+    if (shadowSlider && shadowVal) {
+      const s = (this.settings.shadow !== undefined) ? this.settings.shadow : 15;
+      shadowSlider.value = s;
+      const sign = s > 0 ? '+' : '';
+      shadowVal.textContent = `${sign}${s}%`;
     }
     if (saturationSlider && saturationVal) {
       saturationSlider.value = this.settings.saturation;
@@ -2785,13 +2812,15 @@ const UI = {
           e.stopPropagation();
           const num = parseInt(e.target.value, 10);
           VideoEnhancer.settings[prop] = num;
-          valEl.textContent = `${num}${suffix}`;
+          const sign = (prop === 'shadow' && num > 0) ? '+' : '';
+          valEl.textContent = `${sign}${num}${suffix}`;
           VideoEnhancer.apply();
         });
       }
     };
 
     bindEnhancerSlider('filter-sharpness-slider', 'sharpness', 'filter-sharpness-val');
+    bindEnhancerSlider('filter-shadow-slider', 'shadow', 'filter-shadow-val');
     bindEnhancerSlider('filter-saturation-slider', 'saturation', 'filter-saturation-val');
     bindEnhancerSlider('filter-contrast-slider', 'contrast', 'filter-contrast-val');
     bindEnhancerSlider('filter-brightness-slider', 'brightness', 'filter-brightness-val');
