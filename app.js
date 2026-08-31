@@ -1654,6 +1654,164 @@ const API = {
   }
 };
 
+// --- 4K Video Visual Enhancement Filter & Post-Processing Engine ---
+
+const VideoEnhancer = {
+  currentPreset: 'hdr_ultra',
+  settings: {
+    sharpness: 60,
+    saturation: 128,
+    contrast: 114,
+    brightness: 102
+  },
+  presets: {
+    hdr_ultra: { name: 'HDR Ultra Pro', sharpness: 60, saturation: 128, contrast: 114, brightness: 102, filterId: 'johnflix-hdr-ultra' },
+    super_sharp: { name: 'Super Nitidez 4K', sharpness: 90, saturation: 116, contrast: 110, brightness: 101, filterId: 'johnflix-sharpen-4k' },
+    vivid_colors: { name: 'Cores Vívidas', sharpness: 40, saturation: 142, contrast: 116, brightness: 103, filterId: null },
+    cinema: { name: 'Cinema 4K', sharpness: 50, saturation: 115, contrast: 112, brightness: 99, filterId: 'johnflix-cinema-4k' },
+    oled: { name: 'Preto OLED', sharpness: 55, saturation: 120, contrast: 122, brightness: 98, filterId: null },
+    night: { name: 'Modo Noturno', sharpness: 20, saturation: 105, contrast: 105, brightness: 92, filterId: null, sepia: 8 },
+    off: { name: 'Imagem Original', sharpness: 0, saturation: 100, contrast: 100, brightness: 100, filterId: null }
+  },
+
+  init() {
+    try {
+      const saved = localStorage.getItem('johnflix_video_enhancer');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.preset && this.presets[parsed.preset]) {
+          this.currentPreset = parsed.preset;
+        }
+        if (parsed.settings) {
+          this.settings = { ...this.settings, ...parsed.settings };
+        }
+      }
+    } catch(e) {}
+    this.apply();
+  },
+
+  apply() {
+    const video = document.getElementById('video-player');
+    const iframe = document.getElementById('iframe-player');
+    const container = document.getElementById('player-container');
+    const overlay = document.getElementById('player-enhancement-overlay');
+    const toggleText = document.getElementById('hud-enhancer-text');
+    const quickPillName = document.getElementById('hud-quick-enhancer-name');
+    const toggleBtn = document.getElementById('hud-enhancer-toggle-btn');
+    const quickPill = document.getElementById('hud-quick-enhancer-pill');
+
+    if (!container) return;
+
+    // Remove existing mode classes
+    container.className = container.className.replace(/\benhancement-[\w-]+\b/g, '').trim();
+
+    if (this.currentPreset === 'off') {
+      container.classList.add('enhancement-off');
+      if (video) video.style.filter = '';
+      if (iframe) iframe.style.filter = '';
+      if (overlay) overlay.style.display = 'none';
+      if (toggleBtn) toggleBtn.classList.remove('active');
+      if (quickPill) quickPill.classList.remove('active');
+      if (toggleText) toggleText.textContent = 'Filtro: Off';
+      if (quickPillName) quickPillName.textContent = 'Filtro: Off';
+      this.updateUI();
+      return;
+    }
+
+    container.classList.add(`enhancement-${this.currentPreset.replace(/_/g, '-')}`);
+    if (toggleBtn) toggleBtn.classList.add('active');
+    if (quickPill) quickPill.classList.add('active');
+
+    const p = this.presets[this.currentPreset] || this.presets.hdr_ultra;
+    if (toggleText) toggleText.textContent = p.name;
+    if (quickPillName) quickPillName.textContent = p.name;
+
+    // Calculate dynamic filter parameters
+    const sat = (this.settings.saturation || p.saturation || 100) / 100;
+    const con = (this.settings.contrast || p.contrast || 100) / 100;
+    const bri = (this.settings.brightness || p.brightness || 100) / 100;
+    const svgFilter = p.filterId ? ` url(#${p.filterId})` : '';
+    const sepiaStr = p.sepia ? ` sepia(${p.sepia}%)` : '';
+
+    const filterString = `contrast(${con}) saturate(${sat}) brightness(${bri})${sepiaStr}${svgFilter}`;
+
+    if (video) video.style.filter = filterString;
+    if (iframe) iframe.style.filter = filterString;
+    if (overlay) overlay.style.display = 'block';
+
+    this.updateUI();
+
+    try {
+      localStorage.setItem('johnflix_video_enhancer', JSON.stringify({
+        preset: this.currentPreset,
+        settings: this.settings
+      }));
+    } catch(e) {}
+  },
+
+  setPreset(presetKey, showToast = true) {
+    if (!this.presets[presetKey]) return;
+    this.currentPreset = presetKey;
+    const p = this.presets[presetKey];
+    this.settings.sharpness = p.sharpness;
+    this.settings.saturation = p.saturation;
+    this.settings.contrast = p.contrast;
+    this.settings.brightness = p.brightness;
+    this.apply();
+
+    if (showToast && typeof UI.showPlayerToast === 'function') {
+      const icon = presetKey === 'off' ? '🚫' : '✨';
+      UI.showPlayerToast(`${icon} Filtro: ${p.name}`, 1800);
+    }
+  },
+
+  toggleNext() {
+    const keys = Object.keys(this.presets);
+    const currIdx = keys.indexOf(this.currentPreset);
+    const nextKey = keys[(currIdx + 1) % keys.length];
+    this.setPreset(nextKey, true);
+  },
+
+  updateUI() {
+    // Update active preset button in panel
+    document.querySelectorAll('.hud-preset-btn').forEach(btn => {
+      if (btn.dataset.preset === this.currentPreset) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+
+    // Update sliders
+    const sharpnessSlider = document.getElementById('filter-sharpness-slider');
+    const saturationSlider = document.getElementById('filter-saturation-slider');
+    const contrastSlider = document.getElementById('filter-contrast-slider');
+    const brightnessSlider = document.getElementById('filter-brightness-slider');
+
+    const sharpnessVal = document.getElementById('filter-sharpness-val');
+    const saturationVal = document.getElementById('filter-saturation-val');
+    const contrastVal = document.getElementById('filter-contrast-val');
+    const brightnessVal = document.getElementById('filter-brightness-val');
+
+    if (sharpnessSlider && sharpnessVal) {
+      sharpnessSlider.value = this.settings.sharpness;
+      sharpnessVal.textContent = `${this.settings.sharpness}%`;
+    }
+    if (saturationSlider && saturationVal) {
+      saturationSlider.value = this.settings.saturation;
+      saturationVal.textContent = `${this.settings.saturation}%`;
+    }
+    if (contrastSlider && contrastVal) {
+      contrastSlider.value = this.settings.contrast;
+      contrastVal.textContent = `${this.settings.contrast}%`;
+    }
+    if (brightnessSlider && brightnessVal) {
+      brightnessSlider.value = this.settings.brightness;
+      brightnessVal.textContent = `${this.settings.brightness}%`;
+    }
+  }
+};
+
 // --- Subtitles Engine ---
 
 const Subtitles = {
@@ -2078,6 +2236,7 @@ const Motion = {
 const UI = {
   metaCache: {},
   init() {
+    VideoEnhancer.init();
     this.bindEvents();
     this.loadInitialData();
   },
@@ -2539,12 +2698,91 @@ const UI = {
           video.muted = !video.muted;
           this.showPlayerToast(video.muted ? '🔇 Mudo' : '🔊 Áudio Ativado', 1500);
         }
+      } else if (e.key === 'e' || e.key === 'E') {
+        e.preventDefault();
+        VideoEnhancer.toggleNext();
       }
     });
 
     if (hudBackBtn) {
       hudBackBtn.addEventListener('click', () => this.closePlayer());
     }
+
+    // Video Visual Enhancement Filter HUD Controls
+    const quickEnhancerPill = document.getElementById('hud-quick-enhancer-pill');
+    if (quickEnhancerPill) {
+      quickEnhancerPill.addEventListener('click', (e) => {
+        e.stopPropagation();
+        VideoEnhancer.toggleNext();
+      });
+    }
+
+    const enhancerToggleBtn = document.getElementById('hud-enhancer-toggle-btn');
+    const enhancerPanel = document.getElementById('hud-enhancer-panel');
+    const enhancerCloseBtn = document.getElementById('hud-enhancer-close');
+    const enhancerResetBtn = document.getElementById('hud-enhancer-reset-btn');
+
+    if (enhancerToggleBtn && enhancerPanel) {
+      enhancerToggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        enhancerPanel.classList.toggle('hidden');
+        if (!enhancerPanel.classList.contains('hidden')) {
+          VideoEnhancer.updateUI();
+        }
+      });
+    }
+
+    if (enhancerCloseBtn && enhancerPanel) {
+      enhancerCloseBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        enhancerPanel.classList.add('hidden');
+      });
+    }
+
+    if (enhancerResetBtn) {
+      enhancerResetBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        VideoEnhancer.setPreset('hdr_ultra');
+      });
+    }
+
+    document.querySelectorAll('.hud-preset-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const preset = btn.dataset.preset;
+        if (preset) {
+          VideoEnhancer.setPreset(preset);
+        }
+      });
+    });
+
+    const bindEnhancerSlider = (id, prop, valId, suffix = '%') => {
+      const slider = document.getElementById(id);
+      const valEl = document.getElementById(valId);
+      if (slider && valEl) {
+        slider.addEventListener('input', (e) => {
+          e.stopPropagation();
+          const num = parseInt(e.target.value, 10);
+          VideoEnhancer.settings[prop] = num;
+          valEl.textContent = `${num}${suffix}`;
+          VideoEnhancer.apply();
+        });
+      }
+    };
+
+    bindEnhancerSlider('filter-sharpness-slider', 'sharpness', 'filter-sharpness-val');
+    bindEnhancerSlider('filter-saturation-slider', 'saturation', 'filter-saturation-val');
+    bindEnhancerSlider('filter-contrast-slider', 'contrast', 'filter-contrast-val');
+    bindEnhancerSlider('filter-brightness-slider', 'brightness', 'filter-brightness-val');
+
+    // Close enhancer panel when clicking outside
+    document.addEventListener('click', (e) => {
+      if (enhancerPanel && !enhancerPanel.classList.contains('hidden')) {
+        if (!e.target.closest('#hud-enhancer-group')) {
+          enhancerPanel.classList.add('hidden');
+        }
+      }
+    });
 
     // Source Health & Fast Feedback buttons (ONLY closes on 'Sim'!)
     const feedbackPrompt = document.getElementById('hud-source-feedback');
@@ -4774,6 +5012,7 @@ const UI = {
     }
 
     iframe.src = finalUrl;
+    VideoEnhancer.apply();
     
     // Auto-hide loading spinner quickly so iframe is 100% visible and ready for interaction
     setTimeout(() => {
@@ -4806,6 +5045,8 @@ const UI = {
     video.classList.remove('hidden');
     if (iframe) iframe.classList.add('hidden');
     if (hudBottom) hudBottom.classList.remove('hidden');
+
+    VideoEnhancer.apply();
 
     video.autoplay = true;
     video.muted = false;

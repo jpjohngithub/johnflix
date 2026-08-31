@@ -3987,3 +3987,354 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .hero-backdrop { animation: kenBurns 28s linear infinite alternate !important; }
 }
+
+/* ==========================================================================
+   JOHNFLIX 4K VIDEO ENHANCEMENT FILTER & OPTICAL POST-PROCESSING ENGINE
+   ========================================================================== */
+
+/* Enhancement Layer sitting in front of Video / Iframe */
+.player-enhancement-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 15;
+  transition: opacity 0.3s ease, background 0.3s ease;
+  mix-blend-mode: soft-light;
+  opacity: 0.85;
+}
+
+/* Dynamic Preset Modes applied to #player-container */
+.enhancement-hdr-ultra #video-player,
+.enhancement-hdr-ultra #iframe-player {
+  filter: contrast(1.14) saturate(1.28) brightness(1.02) url(#johnflix-hdr-ultra);
+  transition: filter 0.25s ease;
+}
+.enhancement-hdr-ultra .player-enhancement-overlay {
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.04) 0%, rgba(0, 0, 0, 0.09) 100%);
+  mix-blend-mode: soft-light;
+  opacity: 0.85;
+}
+
+.enhancement-super-sharp #video-player,
+.enhancement-super-sharp #iframe-player {
+  filter: contrast(1.10) saturate(1.16) brightness(1.01) url(#johnflix-sharpen-4k);
+  transition: filter 0.25s ease;
+}
+.enhancement-super-sharp .player-enhancement-overlay {
+  background: transparent;
+  opacity: 0;
+}
+
+.enhancement-vivid-colors #video-player,
+.enhancement-vivid-colors #iframe-player {
+  filter: contrast(1.16) saturate(1.42) brightness(1.03);
+  transition: filter 0.25s ease;
+}
+.enhancement-vivid-colors .player-enhancement-overlay {
+  background: linear-gradient(135deg, rgba(255, 120, 50, 0.03), rgba(50, 160, 255, 0.03));
+  mix-blend-mode: color-dodge;
+  opacity: 0.6;
+}
+
+.enhancement-cinema #video-player,
+.enhancement-cinema #iframe-player {
+  filter: contrast(1.12) saturate(1.15) brightness(0.99) url(#johnflix-cinema-4k);
+  transition: filter 0.25s ease;
+}
+.enhancement-cinema .player-enhancement-overlay {
+  background: radial-gradient(ellipse at center, rgba(255, 240, 220, 0.03) 0%, rgba(10, 15, 30, 0.14) 100%);
+  mix-blend-mode: soft-light;
+  opacity: 0.9;
+}
+
+.enhancement-oled #video-player,
+.enhancement-oled #iframe-player {
+  filter: contrast(1.22) saturate(1.20) brightness(0.98);
+  transition: filter 0.25s ease;
+}
+.enhancement-oled .player-enhancement-overlay {
+  background: radial-gradient(circle at center, transparent 40%, rgba(0, 0, 0, 0.25) 100%);
+  mix-blend-mode: multiply;
+  opacity: 0.75;
+}
+
+.enhancement-night #video-player,
+.enhancement-night #iframe-player {
+  filter: contrast(1.05) saturate(1.05) brightness(0.92) sepia(0.08);
+  transition: filter 0.25s ease;
+}
+.enhancement-night .player-enhancement-overlay {
+  background: rgba(255, 180, 50, 0.03);
+  mix-blend-mode: multiply;
+  opacity: 0.6;
+}
+
+.enhancement-off #video-player,
+.enhancement-off #iframe-player {
+  filter: none !important;
+}
+.enhancement-off .player-enhancement-overlay {
+  display: none !important;
+  opacity: 0 !important;
+}
+
+/* Quick Enhancer Pill in HUD Top Right */
+.hud-quick-enhancer-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(168, 85, 247, 0.15));
+  border: 1px solid rgba(168, 85, 247, 0.45);
+  border-radius: var(--radius-full);
+  padding: 4px 10px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #e9d5ff;
+  cursor: pointer;
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.25);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+.hud-quick-enhancer-pill:hover {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.45), rgba(168, 85, 247, 0.3));
+  border-color: rgba(168, 85, 247, 0.7);
+  box-shadow: 0 0 18px rgba(168, 85, 247, 0.45);
+  transform: translateY(-1px);
+}
+.hud-quick-enhancer-pill .enhancer-icon {
+  font-size: 0.85rem;
+  animation: pulseSparkle 2s ease-in-out infinite;
+}
+
+@keyframes pulseSparkle {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.15); opacity: 1; filter: drop-shadow(0 0 4px #c084fc); }
+}
+
+/* Bottom HUD Enhancer Group & Dropdown */
+.hud-enhancer-group {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.hud-enhancer-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(15, 16, 24, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-full);
+  padding: 5px 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.hud-enhancer-btn:hover {
+  background: rgba(25, 26, 40, 0.95);
+  border-color: rgba(168, 85, 247, 0.5);
+  color: #e9d5ff;
+}
+.hud-enhancer-btn.active {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(79, 70, 229, 0.25));
+  border-color: rgba(168, 85, 247, 0.6);
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(139, 92, 246, 0.35);
+}
+
+.enhancer-sparkle {
+  font-size: 0.9rem;
+}
+.enhancer-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: -0.1px;
+}
+
+/* Floating Enhancement Customization Panel */
+.hud-enhancer-panel {
+  position: absolute;
+  bottom: calc(100% + 14px);
+  right: 0;
+  width: 340px;
+  max-width: 90vw;
+  max-height: 80vh;
+  overflow-y: auto;
+  background: rgba(12, 13, 22, 0.96);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.85), 0 0 24px rgba(139, 92, 246, 0.25);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: auto;
+  animation: slideUpFade 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hud-enhancer-panel.hidden {
+  display: none !important;
+}
+
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.hud-enhancer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 10px;
+}
+
+.enhancer-header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.enhancer-badge-pro {
+  background: linear-gradient(135deg, #a855f7, #6366f1);
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 900;
+  padding: 2px 6px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
+
+.hud-enhancer-close {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+.hud-enhancer-close:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.hud-enhancer-presets {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hud-preset-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+.hud-preset-btn:hover {
+  background: rgba(168, 85, 247, 0.12);
+  border-color: rgba(168, 85, 247, 0.35);
+  transform: translateX(2px);
+}
+.hud-preset-btn.active {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(79, 70, 229, 0.2));
+  border-color: rgba(168, 85, 247, 0.7);
+  box-shadow: 0 0 14px rgba(139, 92, 246, 0.3);
+}
+
+.hud-preset-btn .preset-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+.hud-preset-btn.active .preset-title {
+  color: #e9d5ff;
+}
+.hud-preset-btn .preset-desc {
+  font-size: 0.7rem;
+  color: #9ca3af;
+  line-height: 1.25;
+}
+
+.hud-enhancer-custom {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hud-custom-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #d1d5db;
+  margin-bottom: 2px;
+}
+
+.hud-enhancer-reset-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #9ca3af;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.hud-enhancer-reset-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.hud-slider-row {
+  display: grid;
+  grid-template-columns: 110px 1fr 42px;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.72rem;
+  color: #e5e7eb;
+}
+.hud-slider-row label {
+  white-space: nowrap;
+}
+.hud-slider-row input[type="range"] {
+  accent-color: #a855f7;
+  cursor: pointer;
+  height: 4px;
+}
+.hud-slider-row span:last-child {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #c084fc;
+  text-align: right;
+}
+

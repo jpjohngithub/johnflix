@@ -288,6 +288,9 @@
         <iframe name="hidden_redirect_target" id="hidden-redirect-target" style="display:none !important; width:0 !important; height:0 !important; opacity:0 !important; pointer-events:none !important; position:absolute !important; top:-9999px !important; left:-9999px !important;"></iframe>
         <video id="video-player" controls autoplay></video>
 
+        <!-- Video Visual Enhancement Layer (HDR, Super Nitidez 4K, Cores Vívidas) -->
+        <div id="player-enhancement-overlay" class="player-enhancement-overlay"></div>
+
         <!-- Custom Subtitles Overlay (Crisp, high-contrast, fully centered) -->
         <div id="custom-subtitles-overlay" class="custom-subtitles-overlay hidden">
           <div id="custom-subtitles-text"></div>
@@ -307,6 +310,12 @@
 
             <!-- Top Right: Clean Stream Selector & Quick Actions -->
             <div class="hud-top-right">
+              <!-- Quick Video Enhancer Preset Pill -->
+              <button id="hud-quick-enhancer-pill" class="hud-quick-enhancer-pill" title="Alternar Filtro de Qualidade, Cor e Nitidez (Tecla E)">
+                <span class="enhancer-icon">✨</span>
+                <span id="hud-quick-enhancer-name">HDR Ultra</span>
+              </button>
+
               <div class="hud-stream-capsule">
                 <span class="hud-stream-icon">⚡</span>
                 <select id="hud-stream-select" class="hud-select hud-stream-select" title="Selecionar servidor de reprodução">
@@ -358,6 +367,83 @@
 
               <!-- Right Controls -->
               <div class="hud-right-controls">
+                <!-- Video Enhancement Filter Dropdown / Modal Trigger -->
+                <div class="hud-enhancer-group" id="hud-enhancer-group">
+                  <button id="hud-enhancer-toggle-btn" class="hud-btn hud-enhancer-btn active" title="Menu de Otimização de Vídeo (Nitidez, Cor, HDR)">
+                    <span class="enhancer-sparkle">✨</span>
+                    <span class="enhancer-label" id="hud-enhancer-text">HDR Ultra</span>
+                  </button>
+                  
+                  <!-- Floating Enhancement Customization Panel -->
+                  <div class="hud-enhancer-panel hidden" id="hud-enhancer-panel">
+                    <div class="hud-enhancer-header">
+                      <div class="enhancer-header-title">
+                        <span>✨ Otimizador de Qualidade & Nitidez</span>
+                        <span class="enhancer-badge-pro">PRO 4K</span>
+                      </div>
+                      <button class="hud-enhancer-close" id="hud-enhancer-close" title="Fechar">&times;</button>
+                    </div>
+                    <div class="hud-enhancer-presets">
+                      <button class="hud-preset-btn active" data-preset="hdr_ultra">
+                        <div class="preset-title">✨ HDR Ultra Pro</div>
+                        <div class="preset-desc">Nitidez Máxima + Cores Vivas + Contraste OLED</div>
+                      </button>
+                      <button class="hud-preset-btn" data-preset="super_sharp">
+                        <div class="preset-title">🔍 Super Nitidez 4K</div>
+                        <div class="preset-desc">Filtro ótico unsharp mask de textura e detalhes finos</div>
+                      </button>
+                      <button class="hud-preset-btn" data-preset="vivid_colors">
+                        <div class="preset-title">🎨 Cores Vívidas</div>
+                        <div class="preset-desc">Saturação enriquecida e realce de tons quentes</div>
+                      </button>
+                      <button class="hud-preset-btn" data-preset="cinema">
+                        <div class="preset-title">🎬 Cinema 4K</div>
+                        <div class="preset-desc">Gradação cinematográfica de filme e sombras profundas</div>
+                      </button>
+                      <button class="hud-preset-btn" data-preset="oled">
+                        <div class="preset-title">🌌 Preto Absoluto OLED</div>
+                        <div class="preset-desc">Contraste profundo com realce de pretos e sombras</div>
+                      </button>
+                      <button class="hud-preset-btn" data-preset="night">
+                        <div class="preset-title">🌙 Conforto Noturno</div>
+                        <div class="preset-desc">Redução de cansaço visual e realce suave no escuro</div>
+                      </button>
+                      <button class="hud-preset-btn" data-preset="off">
+                        <div class="preset-title">🚫 Imagem Original</div>
+                        <div class="preset-desc">Sem filtros aplicados (Transmissão original)</div>
+                      </button>
+                    </div>
+                    
+                    <!-- Custom Tuning Sliders -->
+                    <div class="hud-enhancer-custom">
+                      <div class="hud-custom-header">
+                        <span>Ajuste Fino Personalizado</span>
+                        <button id="hud-enhancer-reset-btn" class="hud-enhancer-reset-btn" title="Restaurar padrão">Resetar</button>
+                      </div>
+                      <div class="hud-slider-row">
+                        <label for="filter-sharpness-slider">Nitidez / Realce:</label>
+                        <input type="range" id="filter-sharpness-slider" min="0" max="100" value="60">
+                        <span id="filter-sharpness-val">60%</span>
+                      </div>
+                      <div class="hud-slider-row">
+                        <label for="filter-saturation-slider">Cores / Saturação:</label>
+                        <input type="range" id="filter-saturation-slider" min="80" max="180" value="128">
+                        <span id="filter-saturation-val">128%</span>
+                      </div>
+                      <div class="hud-slider-row">
+                        <label for="filter-contrast-slider">Contraste HDR:</label>
+                        <input type="range" id="filter-contrast-slider" min="80" max="160" value="114">
+                        <span id="filter-contrast-val">114%</span>
+                      </div>
+                      <div class="hud-slider-row">
+                        <label for="filter-brightness-slider">Brilho:</label>
+                        <input type="range" id="filter-brightness-slider" min="80" max="130" value="102">
+                        <span id="filter-brightness-val">102%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- Subtitles Group -->
                 <div class="hud-subtitles-group">
                   <span class="hud-control-label">💬</span>
@@ -423,6 +509,38 @@
       <div class="loading-logo">John<span>Flix</span></div>
       <div class="spinner large"></div>
     </div>
+
+    <!-- SVG Filter Definitions for Optical Video Sharpening & Post-Processing -->
+    <svg id="svg-video-filters" style="display:none; position:absolute; width:0; height:0; pointer-events:none;" aria-hidden="true">
+      <defs>
+        <!-- Super Nitidez 4K / Optical Unsharp Mask Kernel -->
+        <filter id="johnflix-sharpen-4k" x="-10%" y="-10%" width="120%" height="120%">
+          <feConvolveMatrix order="3,3" kernelMatrix="
+            0   -0.35   0
+           -0.35 2.4   -0.35
+            0   -0.35   0" 
+            divisor="1" bias="0" preserveAlpha="true"/>
+        </filter>
+        
+        <!-- HDR Ultra (Crisp Edges + Color Enhancement) -->
+        <filter id="johnflix-hdr-ultra" x="-10%" y="-10%" width="120%" height="120%">
+          <feConvolveMatrix order="3,3" kernelMatrix="
+            -0.18 -0.18 -0.18
+            -0.18  2.44 -0.18
+            -0.18 -0.18 -0.18" 
+            divisor="1" bias="0" preserveAlpha="true"/>
+        </filter>
+
+        <!-- Cinema 4K Filmic Depth -->
+        <filter id="johnflix-cinema-4k" x="-10%" y="-10%" width="120%" height="120%">
+          <feConvolveMatrix order="3,3" kernelMatrix="
+            0   -0.2   0
+           -0.2  1.8  -0.2
+            0   -0.2   0" 
+            divisor="1" bias="0" preserveAlpha="true"/>
+        </filter>
+      </defs>
+    </svg>
   </div>
 </body>
 </html>
