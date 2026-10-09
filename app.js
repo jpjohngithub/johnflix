@@ -1678,10 +1678,751 @@ const API = {
 
 // --- Admin & Theming Customization Engine (4 Designs, Logo, Paleta, Layout) ---
 
+
+/* ==========================================================================
+   PLAYLIST ENGINE (CONTINUOUS PLAYBACK, LOOP, MULTI-PLAYLISTS)
+   ========================================================================== */
+const PlaylistEngine = {
+  activePlaylistId: null,
+  activeItemIndex: 0,
+  currentDetailPlaylistId: null,
+
+  getPlaylists() {
+    try {
+      const data = localStorage.getItem('johnflix_playlists_v1');
+      if (data) {
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch(e) {}
+
+    // Initial Default Curated Playlist
+    const defaults = [
+      {
+        id: 'pl_marathon_cinema',
+        name: 'Maratona Sucessos do Cinema',
+        description: 'Coleção cinematográfica épica para maratonar sem parar em sequência automática contínua.',
+        coverUrl: 'https://images.metahub.space/background/medium/tt0816692/img',
+        loop: true,
+        createdAt: Date.now(),
+        items: [
+          {
+            id: 'tt0816692',
+            title: 'Interestelar',
+            type: 'movie',
+            year: '2014',
+            poster: 'https://images.metahub.space/poster/medium/tt0816692/img',
+            backdrop: 'https://images.metahub.space/background/medium/tt0816692/img'
+          },
+          {
+            id: 'tt1375666',
+            title: 'A Origem',
+            type: 'movie',
+            year: '2010',
+            poster: 'https://images.metahub.space/poster/medium/tt1375666/img',
+            backdrop: 'https://images.metahub.space/background/medium/tt1375666/img'
+          },
+          {
+            id: 'tt0468569',
+            title: 'Batman: O Cavaleiro das Trevas',
+            type: 'movie',
+            year: '2008',
+            poster: 'https://images.metahub.space/poster/medium/tt0468569/img',
+            backdrop: 'https://images.metahub.space/background/medium/tt0468569/img'
+          }
+        ]
+      }
+    ];
+    this.savePlaylists(defaults);
+    return defaults;
+  },
+
+  savePlaylists(list) {
+    try {
+      localStorage.setItem('johnflix_playlists_v1', JSON.stringify(list));
+    } catch(e) {}
+  },
+
+  getPlaylist(id) {
+    const list = this.getPlaylists();
+    return list.find(p => p.id === id) || null;
+  },
+
+  createPlaylist({ name, description, coverUrl, loop }) {
+    const list = this.getPlaylists();
+    const newPl = {
+      id: 'pl_' + Date.now(),
+      name: (name || '').trim() || 'Minha Playlist',
+      description: (description || '').trim(),
+      coverUrl: (coverUrl || '').trim(),
+      loop: Boolean(loop),
+      createdAt: Date.now(),
+      items: []
+    };
+    list.unshift(newPl);
+    this.savePlaylists(list);
+    return newPl;
+  },
+
+  updatePlaylist(id, updates) {
+    const list = this.getPlaylists();
+    const idx = list.findIndex(p => p.id === id);
+    if (idx !== -1) {
+      list[idx] = { ...list[idx], ...updates };
+      this.savePlaylists(list);
+      return list[idx];
+    }
+    return null;
+  },
+
+  deletePlaylist(id) {
+    let list = this.getPlaylists();
+    list = list.filter(p => p.id !== id);
+    this.savePlaylists(list);
+    if (this.activePlaylistId === id) {
+      this.activePlaylistId = null;
+    }
+    if (this.currentDetailPlaylistId === id) {
+      this.currentDetailPlaylistId = null;
+    }
+  },
+
+  addItem(playlistId, item) {
+    const list = this.getPlaylists();
+    const pl = list.find(p => p.id === playlistId);
+    if (!pl) return false;
+    
+    // Guard against duplicates
+    const exists = pl.items.some(i => {
+      if (item.season && item.episode) {
+        return i.id === item.id && i.season === item.season && i.episode === item.episode;
+      }
+      return i.id === item.id;
+    });
+
+    if (exists) {
+      if (typeof Toast !== 'undefined' && Toast.show) {
+        Toast.show('⚠️ "' + (item.title || item.name) + '" já está nesta playlist!', 'info');
+      }
+      return false;
+    }
+
+    if (!pl.coverUrl && (item.backdrop || item.poster)) {
+      pl.coverUrl = item.backdrop || item.poster;
+    }
+
+    const cleanItem = {
+      id: item.id,
+      title: item.title || item.name || 'Sem título',
+      type: item.type || 'movie',
+      year: item.year || '',
+      poster: item.poster || '',
+      backdrop: item.backdrop || item.poster || '',
+      season: item.season || null,
+      episode: item.episode || null
+    };
+
+    pl.items.push(cleanItem);
+    this.savePlaylists(list);
+
+    if (this.activePlaylistId === playlistId) {
+      this.updatePlayerHud();
+    }
+    return true;
+  },
+
+  removeItem(playlistId, itemIdx) {
+    const list = this.getPlaylists();
+    const pl = list.find(p => p.id === playlistId);
+    if (!pl || !pl.items[itemIdx]) return false;
+
+    pl.items.splice(itemIdx, 1);
+    this.savePlaylists(list);
+
+    if (this.activePlaylistId === playlistId) {
+      if (this.activeItemIndex >= pl.items.length) {
+        this.activeItemIndex = Math.max(0, pl.items.length - 1);
+      }
+      this.updatePlayerHud();
+    }
+    return true;
+  },
+
+  toggleLoop(playlistId) {
+    const list = this.getPlaylists();
+    const pl = list.find(p => p.id === playlistId);
+    if (pl) {
+      pl.loop = !pl.loop;
+      this.savePlaylists(list);
+      return pl.loop;
+    }
+    return false;
+  },
+
+  toggleActiveLoop() {
+    if (!this.activePlaylistId) return;
+    const newLoop = this.toggleLoop(this.activePlaylistId);
+    this.updatePlayerHud();
+    if (typeof Toast !== 'undefined' && Toast.show) {
+      Toast.show(newLoop ? '🔁 Loop Ativado: A playlist vai repetir continuamente' : '➡️ Loop Desativado: Para ao fim da playlist', 'info');
+    }
+  },
+
+  startPlayback(playlistId, startIndex = 0) {
+    const pl = this.getPlaylist(playlistId);
+    if (!pl || !pl.items || pl.items.length === 0) {
+      if (typeof Toast !== 'undefined' && Toast.show) {
+        Toast.show('⚠️ Esta playlist está vazia! Adicione filmes ou episódios primeiro.', 'warning');
+      }
+      return;
+    }
+
+    this.activePlaylistId = playlistId;
+    this.activeItemIndex = Math.max(0, Math.min(startIndex, pl.items.length - 1));
+    this.playCurrentItem();
+  },
+
+  async playCurrentItem() {
+    const pl = this.getPlaylist(this.activePlaylistId);
+    if (!pl || !pl.items || !pl.items[this.activeItemIndex]) return;
+
+    const item = pl.items[this.activeItemIndex];
+    this.updatePlayerHud();
+
+    if (typeof Toast !== 'undefined' && Toast.show) {
+      Toast.show('▶ [' + pl.name + '] Reproduzindo (' + (this.activeItemIndex + 1) + '/' + pl.items.length + '): ' + item.title, 'info');
+    }
+
+    if (item.type === 'series' && item.season && item.episode) {
+      state.currentSeason = item.season;
+      state.currentEpisode = item.episode;
+    }
+    
+    await UI.openModal(item.id, item.type);
+    if (item.type === 'series' && item.season && item.episode) {
+      const seasonSel = document.getElementById('season-select');
+      const epSel = document.getElementById('episode-select');
+      if (seasonSel) seasonSel.value = item.season;
+      if (epSel) epSel.value = item.episode;
+    }
+
+    UI.autoPlayBestStream();
+  },
+
+  playNext() {
+    const pl = this.getPlaylist(this.activePlaylistId);
+    if (!pl || !pl.items || pl.items.length === 0) return;
+
+    if (this.activeItemIndex < pl.items.length - 1) {
+      this.activeItemIndex++;
+      this.playCurrentItem();
+    } else if (pl.loop) {
+      this.activeItemIndex = 0;
+      if (typeof Toast !== 'undefined' && Toast.show) {
+        Toast.show('🔁 Reiniciando playlist em loop: ' + pl.name, 'info');
+      }
+      this.playCurrentItem();
+    } else {
+      if (typeof Toast !== 'undefined' && Toast.show) {
+        Toast.show('✅ Fim da playlist: ' + pl.name + '!', 'success');
+      }
+      this.updatePlayerHud();
+    }
+  },
+
+  playPrev() {
+    const pl = this.getPlaylist(this.activePlaylistId);
+    if (!pl || !pl.items || pl.items.length === 0) return;
+
+    if (this.activeItemIndex > 0) {
+      this.activeItemIndex--;
+      this.playCurrentItem();
+    } else if (pl.loop) {
+      this.activeItemIndex = pl.items.length - 1;
+      this.playCurrentItem();
+    }
+  },
+
+  onItemEnded() {
+    if (!this.activePlaylistId) return;
+    const pl = this.getPlaylist(this.activePlaylistId);
+    if (!pl) return;
+
+    if (typeof Toast !== 'undefined' && Toast.show) {
+      Toast.show('⏭️ Item finalizado! Reproduzindo próximo da playlist...', 'info');
+    }
+    setTimeout(() => {
+      this.playNext();
+    }, 1200);
+  },
+
+  updatePlayerHud() {
+    const hudControls = document.getElementById('hud-playlist-controls');
+    const plNameEl = document.getElementById('hud-playlist-pill-name');
+    const plCounterEl = document.getElementById('hud-playlist-pill-counter');
+    const loopBtn = document.getElementById('hud-loop-btn');
+
+    if (!hudControls) return;
+
+    if (!this.activePlaylistId) {
+      hudControls.classList.add('hidden');
+      return;
+    }
+
+    const pl = this.getPlaylist(this.activePlaylistId);
+    if (!pl) {
+      hudControls.classList.add('hidden');
+      return;
+    }
+
+    hudControls.classList.remove('hidden');
+    if (plNameEl) plNameEl.textContent = pl.name;
+    if (plCounterEl) plCounterEl.textContent = '(' + (this.activeItemIndex + 1) + '/' + pl.items.length + ')';
+
+    if (loopBtn) {
+      if (pl.loop) {
+        loopBtn.classList.add('active');
+        loopBtn.title = 'Repetir Playlist em Loop (Ativado)';
+        loopBtn.style.color = '#38bdf8';
+      } else {
+        loopBtn.classList.remove('active');
+        loopBtn.title = 'Repetir Playlist em Loop (Desativado)';
+        loopBtn.style.color = 'inherit';
+      }
+    }
+
+    this.renderQueueDrawer();
+  },
+
+  toggleQueueDrawer(forceState) {
+    const drawer = document.getElementById('player-playlist-drawer');
+    if (!drawer) return;
+
+    const isHidden = drawer.classList.contains('hidden');
+    const shouldOpen = forceState !== undefined ? forceState : isHidden;
+
+    if (shouldOpen) {
+      this.renderQueueDrawer();
+      drawer.classList.remove('hidden');
+    } else {
+      drawer.classList.add('hidden');
+    }
+  },
+
+  renderQueueDrawer() {
+    const drawer = document.getElementById('player-playlist-drawer');
+    if (!drawer || !this.activePlaylistId) return;
+
+    const pl = this.getPlaylist(this.activePlaylistId);
+    if (!pl) return;
+
+    const nameEl = document.getElementById('drawer-playlist-name');
+    const metaEl = document.getElementById('drawer-playlist-meta');
+    const listEl = document.getElementById('drawer-items-list');
+
+    if (nameEl) nameEl.textContent = pl.name;
+    if (metaEl) metaEl.textContent = pl.items.length + (pl.items.length === 1 ? ' item' : ' itens') + (pl.loop ? ' • 🔁 Loop Ativo' : ' • ➡️ Sem Loop');
+
+    if (listEl) {
+      if (pl.items.length === 0) {
+        listEl.innerHTML = '<div class="drawer-empty-msg">Nenhum item na fila da playlist.</div>';
+        return;
+      }
+
+      listEl.innerHTML = pl.items.map((item, idx) => {
+        const isCurrent = idx === this.activeItemIndex;
+        const sub = item.season && item.episode ? ('T' + item.season + ' : E' + item.episode) : (item.year || 'Filme');
+        return `
+          <div class="drawer-queue-item ${isCurrent ? 'active-item' : ''}" data-index="${idx}">
+            <div class="drawer-item-left">
+              <span class="drawer-item-num">${isCurrent ? '▶' : (idx + 1)}</span>
+              <img src="${item.poster || 'assets/placeholder.jpg'}" class="drawer-item-thumb" alt="${item.title}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 150%22><rect fill=%22%23222%22 width=%22100%22 height=%22150%22/></svg>'">
+              <div class="drawer-item-info">
+                <span class="drawer-item-title">${item.title}</span>
+                <span class="drawer-item-sub">${sub}</span>
+              </div>
+            </div>
+            ${isCurrent ? '<span class="drawer-playing-badge">Tocando</span>' : ('<button class="drawer-play-btn" data-index="' + idx + '">▶</button>')}
+          </div>
+        `;
+      }).join('');
+
+      listEl.querySelectorAll('.drawer-queue-item, .drawer-play-btn').forEach(el => {
+        el.addEventListener('click', (e) => {
+          const idx = parseInt(el.dataset.index, 10);
+          if (!isNaN(idx)) {
+            PlaylistEngine.activeItemIndex = idx;
+            PlaylistEngine.playCurrentItem();
+          }
+        });
+      });
+    }
+  },
+
+  renderPlaylistsHub() {
+    if (this.currentDetailPlaylistId) {
+      return this.renderPlaylistDetail(this.currentDetailPlaylistId);
+    }
+
+    const playlists = this.getPlaylists();
+
+    return `
+      <div class="playlists-hub-container">
+        <div class="playlists-hub-header">
+          <div class="hub-header-info">
+            <h1 class="playlists-page-title">
+              <span class="title-icon">📋</span> Playlists de Filmes & Séries
+            </h1>
+            <p class="playlists-page-sub">Crie coleções personalizadas para maratonar em reprodução contínua ou loop infinito.</p>
+          </div>
+          <button class="btn btn-primary btn-create-pl" id="hub-create-pl-btn">
+            ➕ Criar Nova Playlist
+          </button>
+        </div>
+
+        ${playlists.length === 0 ? `
+          <div class="playlists-empty-state">
+            <div class="empty-icon">📁</div>
+            <h3>Você ainda não possui nenhuma playlist criada</h3>
+            <p>Organize suas maratonas favoritas, configure repetição em loop e assista sem interrupções.</p>
+            <button class="btn btn-primary" onclick="PlaylistEngine.openCreateModal()">Criar Minha Primeira Playlist</button>
+          </div>
+        ` : `
+          <div class="playlists-grid">
+            ${playlists.map(pl => {
+              const bg = pl.coverUrl || (pl.items[0] && (pl.items[0].backdrop || pl.items[0].poster)) || '';
+              const count = pl.items ? pl.items.length : 0;
+              return `
+                <div class="playlist-card" data-id="${pl.id}">
+                  <div class="playlist-card-cover" style="background-image: ${bg ? ("url('" + bg + "')") : 'linear-gradient(135deg, #1e2230, #111420)'};">
+                    <div class="playlist-card-cover-overlay"></div>
+                    ${pl.loop ? '<span class="playlist-loop-badge">🔁 Loop Ativo</span>' : ''}
+                    <span class="playlist-count-badge">${count} ${count === 1 ? 'item' : 'itens'}</span>
+                    <button class="playlist-card-play-fab" title="Reproduzir Playlist Agora" data-id="${pl.id}">
+                      ▶
+                    </button>
+                  </div>
+                  <div class="playlist-card-body">
+                    <h3 class="playlist-card-title">${pl.name}</h3>
+                    <p class="playlist-card-desc">${pl.description || 'Playlist personalizada sem descrição.'}</p>
+                    <div class="playlist-card-actions">
+                      <button class="btn btn-sm btn-secondary pl-btn-view" data-id="${pl.id}">👁️ Ver Itens</button>
+                      <button class="btn btn-sm btn-secondary pl-btn-edit" data-id="${pl.id}">✏️ Editar</button>
+                      <button class="btn btn-sm btn-danger-ghost pl-btn-del" data-id="${pl.id}">🗑️</button>
+                    </div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `}
+      </div>
+    `;
+  },
+
+  renderPlaylistDetail(id) {
+    const pl = this.getPlaylist(id);
+    if (!pl) {
+      this.currentDetailPlaylistId = null;
+      return this.renderPlaylistsHub();
+    }
+
+    const bg = pl.coverUrl || (pl.items[0] && (pl.items[0].backdrop || pl.items[0].poster)) || '';
+
+    return `
+      <div class="playlist-detail-container">
+        <button class="btn btn-secondary btn-back-pl" id="detail-back-btn">
+          ← Voltar para Todas as Playlists
+        </button>
+
+        <div class="playlist-detail-hero" style="background-image: ${bg ? ("linear-gradient(to top, var(--bg-primary, #040714) 0%, rgba(4,7,20,0.7) 100%), url('" + bg + "')") : 'none'};">
+          <div class="detail-hero-content">
+            <span class="detail-badge">PLAYLIST</span>
+            <h1 class="detail-title">${pl.name}</h1>
+            <p class="detail-desc">${pl.description || 'Playlist personalizada JohnFlix.'}</p>
+            <div class="detail-meta">
+              <span><strong>${pl.items.length}</strong> ${pl.items.length === 1 ? 'item' : 'itens'}</span>
+              <span>•</span>
+              <button class="detail-loop-toggle" id="detail-loop-toggle" data-id="${pl.id}">
+                ${pl.loop ? '🔁 Loop: Ativado' : '➡️ Loop: Desativado'}
+              </button>
+            </div>
+            <div class="detail-hero-buttons">
+              <button class="btn btn-primary btn-play-all" id="detail-play-all-btn" data-id="${pl.id}" ${pl.items.length === 0 ? 'disabled' : ''}>
+                ▶ Reproduzir Playlist
+              </button>
+              <button class="btn btn-secondary" id="detail-edit-btn" data-id="${pl.id}">
+                ✏️ Editar Informações
+              </button>
+              <button class="btn btn-danger-ghost" id="detail-del-btn" data-id="${pl.id}">
+                🗑️ Excluir Playlist
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="playlist-items-section">
+          <h2 class="items-section-title">Itens da Playlist (${pl.items.length})</h2>
+          ${pl.items.length === 0 ? `
+            <div class="playlist-items-empty">
+              <p>Nenhum filme ou episódio adicionado nesta playlist ainda.</p>
+              <p class="hint">Navegue pelo catálogo e clique em <strong>📋 + Playlist</strong> em qualquer título ou episódio para adicionar aqui!</p>
+            </div>
+          ` : `
+            <div class="playlist-items-table">
+              ${pl.items.map((item, idx) => {
+                const sub = item.season && item.episode ? ('Série • Temporada ' + item.season + ', Episódio ' + item.episode) : (item.year ? ('Filme • ' + item.year) : 'Filme');
+                return `
+                  <div class="pl-item-row" data-index="${idx}">
+                    <span class="pl-item-num">${idx + 1}</span>
+                    <img src="${item.poster || 'assets/placeholder.jpg'}" class="pl-item-thumb" alt="${item.title}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 150%22><rect fill=%22%23222%22 width=%22100%22 height=%22150%22/></svg>'">
+                    <div class="pl-item-details">
+                      <span class="pl-item-title">${item.title}</span>
+                      <span class="pl-item-sub">${sub}</span>
+                    </div>
+                    <div class="pl-item-actions">
+                      <button class="btn btn-sm btn-primary pl-row-play-btn" data-id="${pl.id}" data-index="${idx}" title="Reproduzir a partir deste item">
+                        ▶ Tocar
+                      </button>
+                      <button class="btn btn-sm btn-danger-ghost pl-row-remove-btn" data-id="${pl.id}" data-index="${idx}" title="Remover da Playlist">
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          `}
+        </div>
+      </div>
+    `;
+  },
+
+  bindHubEvents() {
+    document.getElementById('hub-create-pl-btn')?.addEventListener('click', () => {
+      this.openCreateModal();
+    });
+
+    document.getElementById('detail-back-btn')?.addEventListener('click', () => {
+      this.currentDetailPlaylistId = null;
+      UI.renderCatalogs();
+    });
+
+    document.getElementById('detail-play-all-btn')?.addEventListener('click', (e) => {
+      const id = e.currentTarget.dataset.id;
+      this.startPlayback(id, 0);
+    });
+
+    document.getElementById('detail-loop-toggle')?.addEventListener('click', (e) => {
+      const id = e.currentTarget.dataset.id;
+      const newLoop = this.toggleLoop(id);
+      UI.renderCatalogs();
+      if (typeof Toast !== 'undefined' && Toast.show) {
+        Toast.show(newLoop ? '🔁 Loop ativado para esta playlist!' : '➡️ Loop desativado.', 'info');
+      }
+    });
+
+    document.getElementById('detail-edit-btn')?.addEventListener('click', (e) => {
+      const id = e.currentTarget.dataset.id;
+      this.openCreateModal(id);
+    });
+
+    document.getElementById('detail-del-btn')?.addEventListener('click', (e) => {
+      const id = e.currentTarget.dataset.id;
+      if (confirm('Tem certeza que deseja excluir esta playlist?')) {
+        this.deletePlaylist(id);
+        this.currentDetailPlaylistId = null;
+        UI.renderCatalogs();
+        if (typeof Toast !== 'undefined' && Toast.show) {
+          Toast.show('🗑️ Playlist excluída.', 'info');
+        }
+      }
+    });
+
+    document.querySelectorAll('.playlist-card-play-fab').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.startPlayback(btn.dataset.id, 0);
+      });
+    });
+
+    document.querySelectorAll('.pl-btn-view').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.currentDetailPlaylistId = btn.dataset.id;
+        UI.renderCatalogs();
+      });
+    });
+
+    document.querySelectorAll('.pl-btn-edit').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.openCreateModal(btn.dataset.id);
+      });
+    });
+
+    document.querySelectorAll('.pl-btn-del').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (confirm('Tem certeza que deseja excluir esta playlist?')) {
+          this.deletePlaylist(btn.dataset.id);
+          UI.renderCatalogs();
+          if (typeof Toast !== 'undefined' && Toast.show) {
+            Toast.show('🗑️ Playlist excluída.', 'info');
+          }
+        }
+      });
+    });
+
+    document.querySelectorAll('.playlist-card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('button')) return;
+        this.currentDetailPlaylistId = card.dataset.id;
+        UI.renderCatalogs();
+      });
+    });
+
+    document.querySelectorAll('.pl-row-play-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = btn.dataset.id;
+        const idx = parseInt(btn.dataset.index, 10);
+        this.startPlayback(id, idx);
+      });
+    });
+
+    document.querySelectorAll('.pl-row-remove-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = btn.dataset.id;
+        const idx = parseInt(btn.dataset.index, 10);
+        this.removeItem(id, idx);
+        UI.renderCatalogs();
+        if (typeof Toast !== 'undefined' && Toast.show) {
+          Toast.show('Item removido da playlist.', 'info');
+        }
+      });
+    });
+  },
+
+  openCreateModal(editId = null) {
+    const modal = document.getElementById('playlist-edit-modal');
+    if (!modal) return;
+
+    const titleEl = document.getElementById('playlist-modal-title');
+    const idInp = document.getElementById('pl-edit-id');
+    const nameInp = document.getElementById('pl-name-input');
+    const descInp = document.getElementById('pl-desc-input');
+    const coverInp = document.getElementById('pl-cover-input');
+    const loopInp = document.getElementById('pl-loop-input');
+
+    if (editId) {
+      const pl = this.getPlaylist(editId);
+      if (pl) {
+        if (titleEl) titleEl.textContent = 'Editar Playlist';
+        if (idInp) idInp.value = pl.id;
+        if (nameInp) nameInp.value = pl.name;
+        if (descInp) descInp.value = pl.description || '';
+        if (coverInp) coverInp.value = pl.coverUrl || '';
+        if (loopInp) loopInp.checked = Boolean(pl.loop);
+      }
+    } else {
+      if (titleEl) titleEl.textContent = 'Criar Nova Playlist';
+      if (idInp) idInp.value = '';
+      if (nameInp) nameInp.value = '';
+      if (descInp) descInp.value = '';
+      if (coverInp) coverInp.value = '';
+      if (loopInp) loopInp.checked = true;
+    }
+
+    modal.classList.remove('hidden');
+    nameInp?.focus();
+  },
+
+  closeCreateModal() {
+    const modal = document.getElementById('playlist-edit-modal');
+    if (modal) modal.classList.add('hidden');
+  },
+
+  openAddToPlaylistModal(item) {
+    if (!item) return;
+
+    const modal = document.getElementById('playlist-picker-modal');
+    if (!modal) return;
+
+    const previewEl = document.getElementById('picker-item-preview');
+    const listEl = document.getElementById('picker-playlists-list');
+
+    const sub = item.season && item.episode ? ('Temporada ' + item.season + ', Episódio ' + item.episode) : (item.year || 'Filme');
+
+    if (previewEl) {
+      previewEl.innerHTML = `
+        <div class="picker-preview-card">
+          <img src="${item.poster || 'assets/placeholder.jpg'}" class="picker-preview-thumb" alt="${item.title || item.name}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 150%22><rect fill=%22%23222%22 width=%22100%22 height=%22150%22/></svg>'">
+          <div class="picker-preview-info">
+            <h4 class="picker-preview-title">${item.title || item.name}</h4>
+            <span class="picker-preview-sub">${sub}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    const playlists = this.getPlaylists();
+
+    if (listEl) {
+      if (playlists.length === 0) {
+        listEl.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-secondary);"><p>Você ainda não possui nenhuma playlist criada.</p></div>';
+      } else {
+        listEl.innerHTML = playlists.map(pl => {
+          const isAlreadyIn = pl.items && pl.items.some(i => {
+            if (item.season && item.episode) {
+              return i.id === item.id && i.season === item.season && i.episode === item.episode;
+            }
+            return i.id === item.id;
+          });
+
+          return `
+            <div class="picker-playlist-row" data-id="${pl.id}">
+              <div class="picker-row-info">
+                <span class="picker-row-name">${pl.name}</span>
+                <span class="picker-row-meta">${pl.items.length} itens ${pl.loop ? '• 🔁 Loop' : ''}</span>
+              </div>
+              <button class="btn btn-sm ${isAlreadyIn ? 'btn-secondary' : 'btn-primary'} picker-add-btn" data-id="${pl.id}">
+                ${isAlreadyIn ? '✓ Já Adicionado' : '➕ Adicionar'}
+              </button>
+            </div>
+          `;
+        }).join('');
+
+        listEl.querySelectorAll('.picker-add-btn, .picker-playlist-row').forEach(el => {
+          el.addEventListener('click', (e) => {
+            const plId = el.dataset.id;
+            if (plId) {
+              const added = PlaylistEngine.addItem(plId, item);
+              if (added) {
+                const pl = PlaylistEngine.getPlaylist(plId);
+                if (typeof Toast !== 'undefined' && Toast.show) {
+                  Toast.show('✅ Adicionado à playlist "' + pl.name + '"!', 'success');
+                }
+                modal.classList.add('hidden');
+              }
+            }
+          });
+        });
+      }
+    }
+
+    modal.classList.remove('hidden');
+  },
+
+  closeAddToPlaylistModal() {
+    const modal = document.getElementById('playlist-picker-modal');
+    if (modal) modal.classList.add('hidden');
+  }
+};
+
 const AdminEngine = {
   config: {
     design: '2', // '1' = Clássico JohnFlix, '2' = Disney+ Minimalista (PADRÃO - Imagem 1), '3' = Netflix Modern/Pills (Imagem 2), '4' = Max/HBO Sidebar (Imagem 3)
-    siteName: 'JohnFlix',
+    siteName: 'John',
     siteSuffix: 'Flix',
     logoImageUrl: '',
     tagline: 'Streaming de Filmes e Séries',
@@ -1843,7 +2584,15 @@ const AdminEngine = {
     const showHeroChk = document.getElementById('adm-show-hero');
     const cardDensitySel = document.getElementById('adm-card-density');
 
-    if (siteNameInp) siteNameInp.value = this.config.siteName || 'JohnFlix';
+    if (siteNameInp) {
+      let base = (this.config.siteName || 'John').trim();
+      let sfx = (this.config.siteSuffix || 'Flix').trim();
+      const sfxRegex = new RegExp(sfx + '$', 'i');
+      if (sfxRegex.test(base)) {
+        base = base.replace(sfxRegex, '').trim() || 'John';
+      }
+      siteNameInp.value = base;
+    }
     if (siteSuffixInp) siteSuffixInp.value = this.config.siteSuffix || 'Flix';
     if (logoUrlInp) logoUrlInp.value = this.config.logoImageUrl || '';
     if (taglineInp) taglineInp.value = this.config.tagline || '';

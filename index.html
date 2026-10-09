@@ -51,6 +51,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
           <span class="hbo-btn-label">Minha Lista</span>
         </button>
+        <button class="hbo-nav-btn" data-type="playlists" title="Playlists">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+          <span class="hbo-btn-label">Playlists</span>
+        </button>
       </div>
       <div class="hbo-sidebar-bottom">
         <button class="hbo-nav-btn hbo-admin-btn" id="hbo-admin-btn" title="Painel de Administração">
@@ -90,6 +94,11 @@
             <span class="nav-link-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="15" rx="2"/><path d="m17 2-5 5-5-5"/></svg></span>
             <span class="nav-link-text">SÉRIES</span>
           </a>
+          <a href="#" class="nav-link" data-type="playlists">
+            <span class="nav-link-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg></span>
+            <span class="nav-link-text">PLAYLISTS</span>
+          </a>
+
         </nav>
         <div class="header-actions">
           <div class="search-container" id="search-container">
@@ -251,6 +260,9 @@
             <button class="btn btn-secondary modal-watchlist-btn" id="modal-watchlist-btn">
               ⭐ + Minha Lista
             </button>
+            <button class="btn btn-secondary modal-playlist-btn" id="modal-playlist-btn" title="Adicionar à Playlist">
+              📋 + Playlist
+            </button>
           </div>
           <div class="modal-streams-section">
             <h3 class="streams-title">Todas as Fontes Disponíveis (Dublado / Legendado / HD)</h3>
@@ -294,6 +306,11 @@
                   <option value="19">Episódio 19</option>
                   <option value="20">Episódio 20</option>
                 </select>
+              </div>
+              <div class="control-group control-group-btn" style="align-self: flex-end;">
+                <button type="button" class="btn btn-secondary btn-sm" id="series-add-playlist-btn" title="Adicionar este episódio a uma playlist">
+                  📋 + Add Ep à Playlist
+                </button>
               </div>
             </div>
 
@@ -422,6 +439,16 @@
 
             <!-- Top Right: Server Switcher & Direct Link -->
             <div class="hud-top-right">
+              <div class="hud-playlist-controls hidden" id="hud-playlist-controls">
+                <button class="hud-btn hud-playlist-pill-btn" id="hud-playlist-pill-btn" title="Ver fila da playlist">
+                  📋 <span id="hud-playlist-pill-name">Playlist</span> <span id="hud-playlist-pill-counter">(1/1)</span>
+                </button>
+                <button class="hud-icon-btn" id="hud-playlist-prev-btn" title="Item Anterior (Playlist)">⏮️</button>
+                <button class="hud-icon-btn" id="hud-playlist-next-btn" title="Próximo Item (Playlist)">⏭️</button>
+                <button class="hud-icon-btn" id="hud-loop-btn" title="Alternar Loop da Playlist">🔁</button>
+                <button class="hud-icon-btn" id="hud-queue-btn" title="Ver Fila de Reprodução">📜 Fila</button>
+              </div>
+              
               <div class="hud-stream-capsule">
                 <span class="hud-stream-icon">⚡</span>
                 <select id="hud-stream-select" class="hud-select hud-stream-select" title="Selecionar servidor de reprodução">
@@ -513,6 +540,91 @@
                 </button>
               </div>
             </div>
+          
+        <!-- Slide-over Playlist Queue Drawer in Player -->
+        <div id="player-playlist-drawer" class="player-playlist-drawer hidden">
+          <div class="playlist-drawer-header">
+            <div class="playlist-drawer-title-wrap">
+              <span class="playlist-drawer-icon">📋</span>
+              <div>
+                <h3 id="drawer-playlist-name" class="drawer-playlist-name">Fila da Playlist</h3>
+                <span id="drawer-playlist-meta" class="drawer-meta-sub">0 itens • Loop Ativo</span>
+              </div>
+            </div>
+            <button class="playlist-drawer-close" id="drawer-close-btn" title="Fechar Fila">✕</button>
+          </div>
+          <div class="playlist-drawer-list" id="drawer-items-list">
+            <!-- Dynamic items with active playing item indicator -->
+          </div>
+        </div>
+</div>
+        </div>
+      </div>
+    </div>
+
+    
+    <!-- PLAYLIST CREATE / EDIT MODAL -->
+    <div id="playlist-edit-modal" class="modal hidden">
+      <div class="modal-overlay" id="playlist-edit-overlay"></div>
+      <div class="modal-content" style="max-width: 540px;">
+        <button class="modal-close" id="playlist-edit-close">✕ Fechar</button>
+        <div class="playlist-modal-body">
+          <div class="playlist-modal-header">
+            <span class="playlist-modal-icon">📋</span>
+            <h2 id="playlist-modal-title">Criar Nova Playlist</h2>
+          </div>
+          <p class="playlist-modal-sub">Crie uma sequência personalizada de filmes ou episódios de séries para maratonar sem parar.</p>
+
+          <form id="playlist-edit-form" onsubmit="return false;">
+            <input type="hidden" id="pl-edit-id">
+            <div class="admin-form-group">
+              <label for="pl-name-input">Nome da Playlist *</label>
+              <input type="text" id="pl-name-input" class="admin-input" placeholder="Ex: Maratona Favoritos, Clássicos Sci-Fi..." required maxlength="60">
+            </div>
+            <div class="admin-form-group">
+              <label for="pl-desc-input">Descrição (Opcional)</label>
+              <textarea id="pl-desc-input" class="admin-input" rows="2" placeholder="Ex: Minha seleção favorita para o final de semana..." maxlength="200"></textarea>
+            </div>
+            <div class="admin-form-group">
+              <label for="pl-cover-input">URL da Imagem de Capa (Opcional)</label>
+              <input type="url" id="pl-cover-input" class="admin-input" placeholder="https://exemplo.com/capa.jpg">
+              <small class="admin-hint">Se deixar em branco, usaremos o pôster do primeiro filme adicionado.</small>
+            </div>
+            <div class="admin-checkbox-group" style="margin-top: 1rem;">
+              <label class="admin-checkbox-label">
+                <input type="checkbox" id="pl-loop-input" checked>
+                <span><strong>Reproduzir em Loop Contínuo</strong> (reinicia do início ao terminar)</span>
+              </label>
+            </div>
+
+            <div class="playlist-modal-footer">
+              <button type="button" class="btn btn-secondary" id="pl-cancel-btn">Cancelar</button>
+              <button type="submit" class="btn btn-primary" id="pl-save-btn">💾 Salvar Playlist</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- QUICK ADD TO PLAYLIST PICKER MODAL -->
+    <div id="playlist-picker-modal" class="modal hidden">
+      <div class="modal-overlay" id="playlist-picker-overlay"></div>
+      <div class="modal-content" style="max-width: 500px;">
+        <button class="modal-close" id="playlist-picker-close">✕ Fechar</button>
+        <div class="playlist-modal-body">
+          <div class="playlist-modal-header">
+            <span class="playlist-modal-icon">➕</span>
+            <h2>Adicionar à Playlist</h2>
+          </div>
+          <div class="picker-item-preview" id="picker-item-preview">
+            <!-- Thumbnail and title of what is being added -->
+          </div>
+          <p class="playlist-modal-sub">Selecione uma playlist existente ou crie uma nova:</p>
+          <div class="picker-playlists-list" id="picker-playlists-list">
+            <!-- Dynamic playlist rows with 1-click add -->
+          </div>
+          <div class="picker-modal-actions" style="margin-top: 1.2rem; text-align: right;">
+            <button class="btn btn-secondary" id="picker-create-new-btn">➕ Criar Nova Playlist</button>
           </div>
         </div>
       </div>
@@ -624,7 +736,7 @@
             <p class="admin-pane-desc">Personalize o nome da marca, sufixo e logotipo da aplicação:</p>
             <div class="admin-form-group">
               <label for="adm-site-name">Nome Principal do Site:</label>
-              <input type="text" id="adm-site-name" class="admin-input" placeholder="Ex: JohnFlix, Disney+, Max...">
+              <input type="text" id="adm-site-name" class="admin-input" placeholder="Ex: John, Disney, Max...">
             </div>
             <div class="admin-form-group">
               <label for="adm-site-suffix">Sufixo / Destaque Colorido:</label>
@@ -739,6 +851,10 @@
       <button class="mobile-nav-item" data-type="watchlist">
         <span class="mobile-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></span>
         <span class="mobile-nav-label">Minha Lista</span>
+      </button>
+      <button class="mobile-nav-item" data-type="playlists">
+        <span class="mobile-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg></span>
+        <span class="mobile-nav-label">Playlists</span>
       </button>
       <button class="mobile-nav-item" id="mobile-nav-admin-btn" data-action="admin">
         <span class="mobile-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></span>
