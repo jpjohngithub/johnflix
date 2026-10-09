@@ -4161,507 +4161,1109 @@ body {
   opacity: 0 !important;
 }
 
-/* Quick Enhancer Pill in HUD Top Right */
-.hud-quick-enhancer-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(168, 85, 247, 0.15));
-  border: 1px solid rgba(168, 85, 247, 0.45);
-  border-radius: var(--radius-full);
-  padding: 4px 10px;
-  font-size: 0.76rem;
-  font-weight: 700;
-  color: #e9d5ff;
-  cursor: pointer;
-  box-shadow: 0 0 12px rgba(168, 85, 247, 0.25);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  white-space: nowrap;
-}
-.hud-quick-enhancer-pill:hover {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.45), rgba(168, 85, 247, 0.3));
-  border-color: rgba(168, 85, 247, 0.7);
-  box-shadow: 0 0 18px rgba(168, 85, 247, 0.45);
-  transform: translateY(-1px);
-}
-.hud-quick-enhancer-pill .enhancer-icon {
-  font-size: 0.85rem;
-  animation: pulseSparkle 2s ease-in-out infinite;
-}
 
-@keyframes pulseSparkle {
-  0%, 100% { transform: scale(1); opacity: 0.9; }
-  50% { transform: scale(1.15); opacity: 1; filter: drop-shadow(0 0 4px #c084fc); }
-}
+/* ==========================================================================
+   CLEAN, PROFESSIONAL & MINIMALIST VIDEO PLAYER HUD
+   ========================================================================== */
 
-/* Bottom HUD Enhancer Group & Dropdown */
-.hud-enhancer-group {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
-
-.hud-enhancer-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(15, 16, 24, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: var(--radius-full);
-  padding: 5px 12px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: #ffffff;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-.hud-enhancer-btn:hover {
-  background: rgba(25, 26, 40, 0.95);
-  border-color: rgba(168, 85, 247, 0.5);
-  color: #e9d5ff;
-}
-.hud-enhancer-btn.active {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(79, 70, 229, 0.25));
-  border-color: rgba(168, 85, 247, 0.6);
-  color: #ffffff;
-  box-shadow: 0 0 14px rgba(139, 92, 246, 0.35);
-}
-
-.enhancer-sparkle {
-  font-size: 0.9rem;
-}
-.enhancer-label {
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: -0.1px;
-}
-
-/* Floating Enhancement Customization Panel */
-.hud-enhancer-panel {
-  position: absolute;
-  bottom: calc(100% + 14px);
-  right: 0;
-  width: 340px;
-  max-width: 90vw;
-  max-height: 80vh;
-  overflow-y: auto;
-  background: rgba(12, 13, 22, 0.96);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(168, 85, 247, 0.4);
-  border-radius: 16px;
-  padding: 16px;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.85), 0 0 24px rgba(139, 92, 246, 0.25);
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+#video-player {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000000;
   pointer-events: auto;
-  animation: slideUpFade 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.hud-enhancer-panel.hidden {
+.player-enhancement-overlay,
+.upscale-canvas {
   display: none !important;
 }
 
-@keyframes slideUpFade {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+/* Minimalist HUD Controls */
+.player-hud {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.5rem 2rem;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, transparent 22%, transparent 75%, rgba(0,0,0,0.92) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 20;
 }
 
-.hud-enhancer-header {
+.player-overlay:hover .player-hud,
+.player-overlay.user-active .player-hud {
+  opacity: 1;
+}
+
+.hud-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 10px;
+  gap: 1rem;
+  pointer-events: auto;
 }
 
-.enhancer-header-title {
+.hud-top-left {
   display: flex;
   align-items: center;
+  gap: 14px;
+}
+
+.hud-back-btn {
+  display: inline-flex;
+  align-items: center;
   gap: 8px;
-  font-size: 0.85rem;
-  font-weight: 800;
-  color: #ffffff;
-}
-
-.enhancer-badge-pro {
-  background: linear-gradient(135deg, #a855f7, #6366f1);
-  color: #ffffff;
-  font-size: 0.65rem;
-  font-weight: 900;
-  padding: 2px 6px;
-  border-radius: 6px;
-  letter-spacing: 0.5px;
-}
-
-.hud-enhancer-close {
-  background: transparent;
-  border: none;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 1.25rem;
-  line-height: 1;
-  cursor: pointer;
-  padding: 2px 6px;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-}
-.hud-enhancer-close:hover {
-  color: #ffffff;
   background: rgba(255, 255, 255, 0.1);
-}
-
-.hud-enhancer-presets {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.hud-preset-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  padding: 8px 12px;
-  cursor: pointer;
-  text-align: left;
-  transition: all 0.2s ease;
-  width: 100%;
-}
-.hud-preset-btn:hover {
-  background: rgba(168, 85, 247, 0.12);
-  border-color: rgba(168, 85, 247, 0.35);
-  transform: translateX(2px);
-}
-.hud-preset-btn.active {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(79, 70, 229, 0.2));
-  border-color: rgba(168, 85, 247, 0.7);
-  box-shadow: 0 0 14px rgba(139, 92, 246, 0.3);
-}
-
-.hud-preset-btn .preset-title {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: #ffffff;
-}
-.hud-preset-btn.active .preset-title {
-  color: #e9d5ff;
-}
-.hud-preset-btn .preset-desc {
-  font-size: 0.7rem;
-  color: #9ca3af;
-  line-height: 1.25;
-}
-
-.hud-enhancer-custom {
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  padding-top: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.hud-custom-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #d1d5db;
-  margin-bottom: 2px;
-}
-
-.hud-enhancer-reset-btn {
-  background: transparent;
+  backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  color: #9ca3af;
-  font-size: 0.68rem;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 6px;
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  font-size: 0.88rem;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
 }
-.hud-enhancer-reset-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.3);
+.hud-back-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  transform: translateX(-2px);
 }
 
-.hud-slider-row {
-  display: grid;
-  grid-template-columns: 140px 1fr 48px;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.74rem;
-  color: #e5e7eb;
-}
-.hud-slider-row label {
+.hud-title {
+  color: #ffffff;
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+  max-width: 50vw;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.hud-slider-row input[type="range"] {
-  accent-color: #a855f7;
-  cursor: pointer;
-  height: 4px;
-}
-.hud-slider-row span:last-child {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: #c084fc;
-  text-align: right;
+
+.hud-top-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: auto;
 }
 
-/* ==========================================================================
-   MASTER SETTINGS MODAL (⚙️ Painel Central: Áudio, Cor, Qualidade, Legendas)
-   ========================================================================== */
-
-.hud-settings-btn {
+.hud-stream-capsule {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(18, 19, 30, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(18, 18, 28, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 4px 10px;
   border-radius: var(--radius-full);
-  padding: 5px 12px;
-  font-size: 0.78rem;
-  font-weight: 700;
+}
+
+.hud-stream-capsule select {
+  background: transparent;
+  border: none;
   color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  max-width: 170px;
+}
+.hud-stream-capsule select option {
+  background: #14141e;
+  color: #ffffff;
+}
+
+.hud-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: auto;
+}
+
+.hud-timeline-container {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+}
+
+.hud-seekbar {
+  flex: 1;
+  -webkit-appearance: none;
+  height: 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  outline: none;
+  transition: height 0.15s ease;
+}
+.hud-seekbar:hover {
+  height: 8px;
+}
+.hud-seekbar::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--theme-accent, #0072d2);
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(0,0,0,0.6);
+  transition: transform 0.15s ease;
+}
+.hud-seekbar:hover::-webkit-slider-thumb {
+  transform: scale(1.3);
+}
+
+.hud-time-display {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hud-left-controls,
+.hud-right-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hud-play-btn-main {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
 }
-.hud-settings-btn:hover {
-  background: rgba(30, 32, 50, 0.95);
-  border-color: rgba(168, 85, 247, 0.6);
-  color: #e9d5ff;
-  transform: translateY(-1px);
-}
-.settings-btn-label {
-  font-size: 0.78rem;
-  font-weight: 700;
+.hud-play-btn-main:hover {
+  background: var(--theme-accent, #0072d2);
+  transform: scale(1.08);
 }
 
-.hud-settings-modal {
+.hud-seek-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 0.7rem;
+  padding: 4px;
+  transition: color 0.2s ease;
+}
+.hud-seek-btn:hover {
+  color: #ffffff;
+}
+
+.hud-volume-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hud-volume-slider {
+  width: 75px;
+  -webkit-appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  outline: none;
+}
+.hud-volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+/* Control Pills in HUD */
+.hud-control-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 5px 10px;
+  border-radius: 8px;
+}
+.hud-control-pill .hud-pill-icon {
+  font-size: 0.85rem;
+}
+.hud-control-pill select {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+}
+.hud-control-pill select option {
+  background: #14141e;
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   THE 4 INTERFACE DESIGNS SYSTEM
+   ========================================================================== */
+
+/* Root Dynamic Theme Accent Variables */
+:root {
+  --theme-accent: #0072d2;
+  --theme-accent-glow: rgba(0, 114, 210, 0.4);
+}
+
+/* DESIGN 2: DISNEY+ MINIMALISTA (PADRÃO - IMAGEM 1) */
+.theme-disney {
+  --bg-primary: #040714;
+  --bg-secondary: #090b13;
+  --theme-accent: #0072d2;
+  --theme-accent-glow: rgba(0, 114, 210, 0.4);
+  background-color: #040714 !important;
+  color: #f9f9f9;
+}
+
+.theme-disney #app-header {
+  background: rgba(4, 7, 20, 0.92);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.theme-disney .logo {
+  font-family: 'Outfit', -apple-system, sans-serif;
+  letter-spacing: -0.5px;
+  font-weight: 900;
+  font-size: 1.7rem;
+}
+.theme-disney .logo span {
+  color: var(--theme-accent, #0072d2);
+}
+
+.theme-disney .header-nav {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.theme-disney .nav-link {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.8);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition: all 0.2s ease;
+}
+.theme-disney .nav-link:hover,
+.theme-disney .nav-link.active {
+  color: #ffffff;
+}
+.theme-disney .nav-link.active::after {
+  background: #ffffff;
+  height: 2px;
+}
+
+/* Disney+ Hero Banner with Margins & Rounded Corners (Imagem 1) */
+.theme-disney #hero-section {
+  max-width: 1400px;
+  margin: 1.5rem auto 1rem;
+  border-radius: 16px;
+  overflow: hidden;
+  height: 60vh;
+  min-height: 380px;
+  max-height: 480px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.theme-disney .hero-gradient {
+  background: linear-gradient(to top, rgba(4,7,20,0.95) 0%, transparent 60%),
+              linear-gradient(to right, rgba(4,7,20,0.9) 25%, transparent 75%);
+}
+
+/* Disney+ Studio / Brand Hub Tiles (Imagem 1: Disney, Pixar, Marvel, Star Wars, NatGeo) */
+.brand-tiles-section {
+  max-width: 1400px;
+  margin: 1.5rem auto 2.5rem;
+  padding: 0 4%;
+}
+.brand-tiles-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+}
+
+.brand-tile {
+  position: relative;
+  height: 110px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #1e2230 0%, #111420 100%);
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1),
+              border-color 0.3s ease,
+              box-shadow 0.3s ease;
+}
+
+.brand-tile:hover {
+  transform: scale(1.06);
+  border-color: #ffffff;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.8), 0 0 24px rgba(255, 255, 255, 0.2);
+  z-index: 5;
+}
+
+.brand-tile-content {
+  z-index: 2;
+  text-align: center;
+}
+
+.brand-tile-text {
+  font-size: 1.45rem;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+}
+
+.brand-tile-text.pixar-font {
+  font-family: 'Futura', -apple-system, sans-serif;
+  letter-spacing: 4px;
+  font-weight: 900;
+}
+
+.brand-tile-text.marvel-badge {
+  background: #e50914;
+  color: #ffffff;
+  padding: 4px 10px;
+  font-family: 'Arial Black', sans-serif;
+  letter-spacing: 1px;
+  border-radius: 2px;
+  font-size: 1.15rem;
+}
+
+.brand-tile-text.starwars-font {
+  font-size: 0.95rem;
+  line-height: 1.1;
+  font-weight: 900;
+  letter-spacing: 2px;
+}
+
+.brand-tile-text.natgeo-font {
+  font-size: 0.72rem;
+  line-height: 1.15;
+  font-weight: 800;
+  letter-spacing: 1px;
+  border-left: 3px solid #ffcc00;
+  padding-left: 6px;
+  text-align: left;
+}
+
+.brand-tile-glow {
   position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(255,255,255,0.15) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.brand-tile:hover .brand-tile-glow {
+  opacity: 1;
+}
+
+/* Disney+ Category Titles and Cards */
+.theme-disney .section-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #f9f9f9;
+  letter-spacing: -0.2px;
+  margin-bottom: 0.9rem;
+}
+.theme-disney .movie-card {
+  border-radius: 10px;
+  border: 2px solid transparent;
+  transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1),
+              border-color 0.3s ease,
+              box-shadow 0.3s ease;
+}
+.theme-disney .movie-card:hover {
+  transform: scale(1.07);
+  border-color: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.75), 0 0 20px rgba(0, 114, 210, 0.4);
+}
+
+/* ==========================================================================
+   DESIGN 1: CLÁSSICO JOHNFLIX (ATUAL)
+   ========================================================================== */
+.theme-classic {
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #12121a;
+  --theme-accent: #8b5cf6;
+  --theme-accent-glow: rgba(139, 92, 246, 0.4);
+}
+.theme-classic .brand-tiles-section,
+.theme-classic .netflix-spotlight-section {
+  display: none !important;
+}
+
+/* ==========================================================================
+   DESIGN 3: NETFLIX MODERN / PILLS (IMAGEM 2)
+   ========================================================================== */
+.theme-netflix {
+  --bg-primary: #141414;
+  --bg-secondary: #181818;
+  --theme-accent: #e50914;
+  --theme-accent-glow: rgba(229, 9, 20, 0.4);
+  background-color: #141414 !important;
+}
+
+.theme-netflix .brand-tiles-section {
+  display: none !important;
+}
+
+.theme-netflix .header-nav {
+  background: rgba(0, 0, 0, 0.6);
+  padding: 4px 8px;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.theme-netflix .nav-link {
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #e5e5e5;
+}
+.theme-netflix .nav-link.active {
+  background: #ffffff;
+  color: #000000;
+}
+.theme-netflix .nav-link.active::after {
+  display: none;
+}
+
+/* Netflix Spotlight Showcase (Imagem 2) */
+.netflix-spotlight-section {
+  max-width: 1400px;
+  margin: 1.5rem auto 2.5rem;
+  padding: 0 4%;
+}
+.netflix-spotlight-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 1rem;
+}
+.netflix-spotlight-card {
+  background: #181818;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7);
+}
+.netflix-spotlight-banner {
+  height: 320px;
+  background: linear-gradient(to top, #181818 0%, transparent 60%),
+              url('https://images.metahub.space/background/medium/tt2085059/img') center/cover;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 24px;
+}
+.netflix-banner-badges {
+  display: flex;
+  gap: 8px;
+}
+.badge-new-season {
+  background: #e50914;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 4px;
+}
+.badge-emmy {
+  background: rgba(0, 0, 0, 0.75);
+  color: #f59e0b;
+  border: 1px solid #f59e0b;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 4px;
+}
+.netflix-banner-title {
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+}
+.netflix-spotlight-details {
+  padding: 16px 24px 24px;
+}
+.netflix-meta-row {
+  font-size: 0.88rem;
+  color: #a3a3a3;
+  margin-bottom: 8px;
+}
+.netflix-age-badge {
+  border: 1px solid #737373;
+  padding: 1px 6px;
+  border-radius: 3px;
+  color: #ffffff;
+  font-size: 0.75rem;
+}
+.netflix-synopsis {
+  font-size: 0.95rem;
+  color: #d4d4d4;
+  line-height: 1.5;
+  max-width: 800px;
+}
+
+/* ==========================================================================
+   DESIGN 4: MAX / HBO DARK SIDEBAR (IMAGEM 3)
+   ========================================================================== */
+.theme-hbo {
+  --bg-primary: #000000;
+  --bg-secondary: #080808;
+  --theme-accent: #5822b4;
+  --theme-accent-glow: rgba(88, 34, 180, 0.4);
+  background-color: #000000 !important;
+}
+
+.theme-hbo .hbo-sidebar {
+  display: flex !important;
+}
+.theme-hbo #app-header {
+  left: 68px;
+  width: calc(100% - 68px);
+}
+.theme-hbo #main-content {
+  margin-left: 68px;
+}
+
+.hbo-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 68px;
+  background: #000000;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 0;
+  z-index: 1050;
+}
+
+.hbo-logo-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #5822b4, #00e5ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 1.2rem;
+  text-decoration: none;
+}
+
+.hbo-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.hbo-nav-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.55);
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.hbo-nav-btn svg {
+  width: 22px;
+  height: 22px;
+}
+.hbo-nav-btn:hover,
+.hbo-nav-btn.active {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+}
+.hbo-nav-btn.active {
+  color: #00e5ff;
+}
+
+.hbo-btn-label {
+  display: none;
+}
+
+/* ==========================================================================
+   PAINEL DE ADMINISTRAÇÃO (ADMIN MODAL)
+   ========================================================================== */
+
+.btn-admin-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-admin-pill:hover {
+  background: var(--theme-accent, #0072d2);
+  border-color: var(--theme-accent, #0072d2);
+  transform: translateY(-1px);
+}
+
+.user-avatar-badge {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0072d2, #00e5ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 0.85rem;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+}
+
+.admin-modal {
+  position: fixed;
   inset: 0;
   z-index: 4000;
   display: flex;
   align-items: center;
   justify-content: center;
-  pointer-events: auto;
-  animation: fadeIn 0.2s ease;
 }
-.hud-settings-modal.hidden {
+.admin-modal.hidden {
   display: none !important;
 }
 
-.hud-settings-backdrop {
+.admin-modal-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(0, 0, 0, 0.85);
   backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
 }
 
-.hud-settings-content {
+.admin-modal-content {
   position: relative;
-  width: 520px;
-  max-width: 92vw;
-  max-height: 85vh;
+  width: 92%;
+  max-width: 860px;
+  max-height: 90vh;
   overflow-y: auto;
-  background: rgba(13, 14, 24, 0.96);
-  border: 1px solid rgba(168, 85, 247, 0.35);
+  background: #0f1019;
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 20px;
-  padding: 20px 24px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9), 0 0 30px rgba(139, 92, 246, 0.25);
-  z-index: 2;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8);
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  animation: scaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 10;
 }
 
-@keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.94); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-.hud-settings-header {
+.admin-modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 12px;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
-
-.hud-settings-title {
+.admin-modal-title {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 1.05rem;
+  gap: 10px;
+}
+.admin-modal-badge {
+  background: var(--theme-accent, #0072d2);
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 900;
+  padding: 3px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
+.admin-modal-title h2 {
+  font-size: 1.3rem;
   font-weight: 800;
   color: #ffffff;
 }
 
-.settings-gear-icon {
-  font-size: 1.15rem;
-}
-
-.settings-pro-badge {
-  background: linear-gradient(135deg, #a855f7, #6366f1);
-  color: #ffffff;
-  font-size: 0.65rem;
-  font-weight: 900;
-  padding: 2px 8px;
-  border-radius: 6px;
-  letter-spacing: 0.5px;
-}
-
-.hud-settings-close {
+.admin-modal-close {
   background: transparent;
   border: none;
   color: rgba(255, 255, 255, 0.6);
-  font-size: 1.5rem;
-  line-height: 1;
+  font-size: 1.8rem;
   cursor: pointer;
-  padding: 2px 8px;
-  border-radius: 8px;
-  transition: all 0.2s ease;
+  transition: color 0.2s ease;
 }
-.hud-settings-close:hover {
+.admin-modal-close:hover {
   color: #ffffff;
-  background: rgba(255, 255, 255, 0.1);
 }
 
-/* Tabs Bar */
-.hud-settings-tabs {
+.admin-tabs-nav {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-  background: rgba(255, 255, 255, 0.04);
-  padding: 4px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
 }
-
-.settings-tab-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 10px;
+.admin-tab-btn {
+  padding: 14px 12px;
   background: transparent;
   border: none;
-  border-radius: 8px;
-  color: #9ca3af;
-  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.88rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
-  white-space: nowrap;
+  border-bottom: 2px solid transparent;
 }
-.settings-tab-btn:hover {
+.admin-tab-btn:hover {
   color: #ffffff;
+  background: rgba(255, 255, 255, 0.04);
+}
+.admin-tab-btn.active {
+  color: #ffffff;
+  border-bottom-color: var(--theme-accent, #0072d2);
   background: rgba(255, 255, 255, 0.06);
 }
-.settings-tab-btn.active {
-  color: #ffffff;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.4), rgba(99, 102, 241, 0.35));
-  border: 1px solid rgba(168, 85, 247, 0.5);
-  box-shadow: 0 0 12px rgba(139, 92, 246, 0.3);
+
+.admin-tabs-body {
+  padding: 24px;
+  flex: 1;
 }
 
-.settings-tab-panel {
+.admin-tab-pane {
   display: none;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
-.settings-tab-panel.active {
+.admin-tab-pane.active {
   display: flex;
 }
 
-.settings-panel-desc {
-  font-size: 0.78rem;
-  color: #a0a0b8;
-  line-height: 1.4;
+.admin-pane-desc {
+  font-size: 0.9rem;
+  color: #9ca3af;
+  margin-bottom: 8px;
 }
 
-/* Presets Grids */
-.settings-preset-grid {
+/* 4 Designs Selection Cards */
+.admin-designs-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
+  gap: 16px;
 }
 
-.audio-preset-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  padding: 10px 12px;
-  cursor: pointer;
-  text-align: left;
-  transition: all 0.2s ease;
-  width: 100%;
-}
-.audio-preset-btn:hover {
-  background: rgba(168, 85, 247, 0.12);
-  border-color: rgba(168, 85, 247, 0.35);
-  transform: translateY(-1px);
-}
-.audio-preset-btn.active {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(79, 70, 229, 0.2));
-  border-color: rgba(168, 85, 247, 0.7);
-  box-shadow: 0 0 14px rgba(139, 92, 246, 0.3);
-}
-.audio-preset-btn .preset-title {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: #ffffff;
-}
-.audio-preset-btn.active .preset-title {
-  color: #e9d5ff;
-}
-.audio-preset-btn .preset-desc {
-  font-size: 0.7rem;
-  color: #9ca3af;
-  line-height: 1.25;
-}
-
-.settings-group-box {
+.admin-design-card {
+  position: relative;
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
   padding: 16px;
+  cursor: pointer;
+  transition: all 0.25s ease;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
+.admin-design-card:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.05);
+}
+.admin-design-card.active {
+  border-color: var(--theme-accent, #0072d2);
+  box-shadow: 0 0 20px var(--theme-accent-glow, rgba(0, 114, 210, 0.4));
+  background: rgba(0, 114, 210, 0.08);
+}
 
-.settings-box-row {
+.design-card-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 3px 7px;
+  border-radius: 4px;
+}
+.design-card-badge.default-badge {
+  background: #10b981;
+}
+
+.design-card-preview {
+  height: 80px;
+  border-radius: 8px;
+  background: #08090f;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.preview-mini-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.6rem;
+  color: #9ca3af;
+}
+.preview-mini-banner {
+  height: 28px;
+  background: linear-gradient(90deg, #1e293b, #0f172a);
+  border-radius: 4px;
+}
+.preview-mini-tiles {
+  display: flex;
+  gap: 4px;
+}
+.preview-mini-tiles span {
+  flex: 1;
+  height: 10px;
+  background: #334155;
+  border-radius: 2px;
+}
+
+.design-card-info h3 {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+.design-card-info p {
+  font-size: 0.78rem;
+  color: #9ca3af;
+  line-height: 1.35;
+}
+
+/* Form Styles */
+.admin-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.admin-form-group label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #e5e7eb;
+}
+.admin-input {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: #ffffff;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+.admin-input:focus {
+  border-color: var(--theme-accent, #0072d2);
+}
+.admin-hint {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* Color Presets */
+.admin-color-presets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.color-preset-pill {
+  padding: 10px;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+.color-preset-pill:hover {
+  transform: translateY(-2px);
+}
+.color-preset-pill.active {
+  border-color: #ffffff;
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.4);
+}
+
+.admin-custom-colors-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 10px;
+}
+.color-picker-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.admin-color-input {
+  -webkit-appearance: none;
+  border: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  cursor: pointer;
+  background: transparent;
+}
+.admin-color-input::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.admin-color-input::-webkit-color-swatch {
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+}
+
+.admin-checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.admin-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #e5e7eb;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.admin-checkbox-label input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--theme-accent, #0072d2);
+}
+
+.admin-modal-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 0.82rem;
-  color: #e5e7eb;
-  gap: 12px;
+  padding: 18px 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.2);
 }
-.settings-box-row select {
-  flex: 1;
-  max-width: 220px;
+.admin-footer-actions {
+  display: flex;
+  gap: 10px;
 }
 
+/* ==========================================================================
+   MOBILE RESPONSIVENESS & ADAPTATION
+   ========================================================================== */
+
+@media (max-width: 900px) {
+  .brand-tiles-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .admin-designs-grid {
+    grid-template-columns: 1fr;
+  }
+  .admin-tabs-nav {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .theme-hbo .hbo-sidebar {
+    display: none !important;
+  }
+  .theme-hbo #app-header {
+    left: 0 !important;
+    width: 100% !important;
+  }
+  .theme-hbo #main-content {
+    margin-left: 0 !important;
+  }
+
+  .brand-tiles-grid {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 10px;
+    padding-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .brand-tile {
+    min-width: 130px;
+    height: 80px;
+    scroll-snap-align: start;
+  }
+
+  .theme-disney #hero-section {
+    height: 48vh;
+    margin: 0.8rem 12px 1rem;
+    border-radius: 12px;
+  }
+
+  .hud-top {
+    padding: 0;
+  }
+  .hud-title {
+    max-width: 35vw;
+    font-size: 0.95rem;
+  }
+  .hud-stream-capsule select {
+    max-width: 110px;
+  }
+
+  .hud-controls-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .hud-volume-slider {
+    width: 50px;
+  }
+
+  .btn-admin-pill .admin-text {
+    display: none;
+  }
+  .btn-admin-pill {
+    padding: 6px 8px;
+  }
+}
