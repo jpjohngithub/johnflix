@@ -18,50 +18,8 @@
   <script src="app.js" defer></script>
 </head>
 <body>
-  <div id="app" class="theme-disney">
-    <!-- HBO Max Vertical Sidebar (Active in Design 4) -->
-    <aside id="hbo-sidebar" class="hbo-sidebar hidden">
-      <div class="hbo-sidebar-top">
-        <a href="#" class="hbo-logo-icon" title="Início">
-          <span class="hbo-logo-badge">M</span>
-        </a>
-      </div>
-      <div class="hbo-sidebar-nav">
-        <button class="hbo-nav-btn active" data-type="all" title="Início">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9.5z"/></svg>
-          <span class="hbo-btn-label">Início</span>
-        </button>
-        <button class="hbo-nav-btn" id="hbo-search-btn" data-action="search" title="Buscar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-          <span class="hbo-btn-label">Buscar</span>
-        </button>
-        <button class="hbo-nav-btn" data-type="movie" title="Filmes">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.2"/><path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 7h5M17 17h5"/></svg>
-          <span class="hbo-btn-label">Filmes</span>
-        </button>
-        <button class="hbo-nav-btn" data-type="series" title="Séries">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="15" rx="2"/><path d="m17 2-5 5-5-5"/></svg>
-          <span class="hbo-btn-label">Séries</span>
-        </button>
-        <button class="hbo-nav-btn" data-type="explore" title="Explorar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
-          <span class="hbo-btn-label">Explorar</span>
-        </button>
-        <button class="hbo-nav-btn" data-type="watchlist" title="Minha Lista">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-          <span class="hbo-btn-label">Minha Lista</span>
-        </button>
-        <button class="hbo-nav-btn" data-type="playlists" title="Playlists">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
-          <span class="hbo-btn-label">Playlists</span>
-        </button>
-      </div>
-      <div class="hbo-sidebar-bottom">
-        <button class="hbo-nav-btn hbo-admin-btn" id="hbo-admin-btn" title="Painel de Administração">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-        </button>
-      </div>
-    </aside>
+  <div id="app">
+    
 
     <header id="app-header">
       <div class="header-content">
@@ -107,11 +65,7 @@
             </button>
             <input type="text" id="search-input" placeholder="Buscar filmes e séries...">
           </div>
-          <!-- Admin Customizer Button in Header -->
-          <button class="btn-admin-pill" id="admin-panel-btn" title="Personalizar Site & Mudar Design">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-            <span class="admin-text">Painel ADM</span>
-          </button>
+          
           <div class="user-avatar-badge" id="user-avatar-btn" title="Perfil do Usuário">
             <span class="user-avatar-initial">J</span>
           </div>
@@ -155,65 +109,9 @@
         </div>
       </section>
 
-      <!-- Disney+ Brand / Studio Hub Tiles (Active in Design 2 - Imagem 1) -->
-      <section id="brand-tiles-section" class="brand-tiles-section">
-        <div class="brand-tiles-grid">
-          <div class="brand-tile" data-brand="disney" title="Disney">
-            <div class="brand-tile-content">
-              <span class="brand-tile-text">Disney</span>
-            </div>
-            <div class="brand-tile-glow"></div>
-          </div>
-          <div class="brand-tile" data-brand="pixar" title="Pixar">
-            <div class="brand-tile-content">
-              <span class="brand-tile-text pixar-font">PIXAR</span>
-            </div>
-            <div class="brand-tile-glow"></div>
-          </div>
-          <div class="brand-tile" data-brand="marvel" title="Marvel">
-            <div class="brand-tile-content">
-              <span class="brand-tile-text marvel-badge">MARVEL</span>
-            </div>
-            <div class="brand-tile-glow"></div>
-          </div>
-          <div class="brand-tile" data-brand="starwars" title="Star Wars">
-            <div class="brand-tile-content">
-              <span class="brand-tile-text starwars-font">STAR<br>WARS</span>
-            </div>
-            <div class="brand-tile-glow"></div>
-          </div>
-          <div class="brand-tile" data-brand="natgeo" title="National Geographic">
-            <div class="brand-tile-content">
-              <span class="brand-tile-text natgeo-font">NATIONAL<br>GEOGRAPHIC</span>
-            </div>
-            <div class="brand-tile-glow"></div>
-          </div>
-        </div>
-      </section>
+      
 
-      <!-- Netflix Spotlight Active Preview Section (Active in Design 3 - Imagem 2) -->
-      <section id="netflix-spotlight-section" class="netflix-spotlight-section hidden">
-        <div class="netflix-spotlight-header">
-          <h2 class="netflix-spotlight-title">Só no JohnFlix</h2>
-        </div>
-        <div class="netflix-spotlight-card" id="netflix-spotlight-card">
-          <div class="netflix-spotlight-banner" id="netflix-spotlight-banner">
-            <div class="netflix-banner-badges">
-              <span class="badge-new-season">🔴 Nova Temporada</span>
-              <span class="badge-emmy">🏆 Vencedor do Emmy</span>
-            </div>
-            <h3 class="netflix-banner-title" id="netflix-banner-title">Black Mirror</h3>
-          </div>
-          <div class="netflix-spotlight-details">
-            <div class="netflix-meta-row" id="netflix-meta-row">
-              <span>Séries Dramáticas</span> • <span>2024</span> • <span>7 Temporadas</span> • <span class="netflix-age-badge">16+</span>
-            </div>
-            <p class="netflix-synopsis" id="netflix-synopsis">
-              Histórias alucinantes exploram o lado sombrio da tecnologia, revelando os piores traços da humanidade e suas maiores inovações.
-            </p>
-          </div>
-        </div>
-      </section>
+      
 
       <div id="catalog-container">
         <!-- Carousels will be injected by JS -->
@@ -630,211 +528,7 @@
       </div>
     </div>
 
-    <!-- PAINEL DE ADMINISTRAÇÃO & PERSONALIZAÇÃO (ADMIN MODAL) -->
-    <div id="admin-modal" class="admin-modal hidden">
-      <div class="admin-modal-overlay" id="admin-modal-overlay"></div>
-      <div class="admin-modal-content">
-        <div class="admin-modal-header">
-          <div class="admin-modal-title">
-            <span class="admin-modal-badge">ADMIN</span>
-            <h2>Painel de Personalização</h2>
-          </div>
-          <button class="admin-modal-close" id="admin-modal-close" title="Fechar (Esc)">&times;</button>
-        </div>
-
-        <div class="admin-tabs-nav">
-          <button class="admin-tab-btn active" data-tab="adm-designs">🎨 Designs do Site</button>
-          <button class="admin-tab-btn" data-tab="adm-identity">🏷️ Logo & Nome</button>
-          <button class="admin-tab-btn" data-tab="adm-colors">✨ Cores & Paleta</button>
-          <button class="admin-tab-btn" data-tab="adm-modules">📱 Módulos & Exibição</button>
-        </div>
-
-        <div class="admin-tabs-body">
-          <!-- TAB 1: 4 DESIGNS SELECTOR -->
-          <div class="admin-tab-pane active" id="adm-designs">
-            <p class="admin-pane-desc">Escolha qual interface visual será exibida no site:</p>
-            <div class="admin-designs-grid">
-              <!-- Design 2: Disney+ Minimalista (PADRÃO - Imagem 1) -->
-              <div class="admin-design-card active" data-design="2">
-                <div class="design-card-badge default-badge">PADRÃO</div>
-                <div class="design-card-preview preview-disney">
-                  <div class="preview-mini-header">
-                    <span class="mini-logo">Disney+</span>
-                    <span class="mini-links">HOME • SEARCH • ORIGINALS</span>
-                  </div>
-                  <div class="preview-mini-banner"></div>
-                  <div class="preview-mini-tiles">
-                    <span></span><span></span><span></span><span></span><span></span>
-                  </div>
-                </div>
-                <div class="design-card-info">
-                  <h3>Opção 2: Disney+ Minimalista (Padrão)</h3>
-                  <p>Inspirado na Imagem 1: Banner cinematográfico com margens, Studio Hubs (Disney, Marvel, Pixar...) e design ultra limpo e direto ao ponto.</p>
-                </div>
-              </div>
-
-              <!-- Design 1: Clássico JohnFlix (Atual) -->
-              <div class="admin-design-card" data-design="1">
-                <div class="design-card-badge">CLÁSSICO</div>
-                <div class="design-card-preview preview-classic">
-                  <div class="preview-mini-header">
-                    <span class="mini-logo">JohnFlix</span>
-                    <span class="mini-links">Início • Filmes • Séries</span>
-                  </div>
-                  <div class="preview-mini-hero"></div>
-                  <div class="preview-mini-rows">
-                    <span></span><span></span><span></span>
-                  </div>
-                </div>
-                <div class="design-card-info">
-                  <h3>Opção 1: Clássico JohnFlix (Atual)</h3>
-                  <p>A interface completa original, com hero banner em tela cheia, tom roxo neon e carrosséis híbridos Netflix/Stremio.</p>
-                </div>
-              </div>
-
-              <!-- Design 3: Netflix Modern / Pills (Imagem 2) -->
-              <div class="admin-design-card" data-design="3">
-                <div class="design-card-badge">NETFLIX PILLS</div>
-                <div class="design-card-preview preview-netflix">
-                  <div class="preview-mini-header">
-                    <span class="mini-avatar">🔴</span>
-                    <span class="mini-pills">( Home ) Shows Movies</span>
-                  </div>
-                  <div class="preview-mini-spotlight">
-                    <div class="mini-spot-card"></div>
-                    <div class="mini-spot-text"></div>
-                  </div>
-                </div>
-                <div class="design-card-info">
-                  <h3>Opção 3: Netflix Modern / Pills</h3>
-                  <p>Inspirado na Imagem 2: Menu superior em pílulas flutuantes, destaque estilo "Only on Netflix" com banner, badges e sinopse abaixo.</p>
-                </div>
-              </div>
-
-              <!-- Design 4: Max / HBO Dark Sidebar (Imagem 3) -->
-              <div class="admin-design-card" data-design="4">
-                <div class="design-card-badge">HBO SIDEBAR</div>
-                <div class="design-card-preview preview-hbo">
-                  <div class="preview-mini-sidebar">
-                    <span></span><span></span><span></span><span></span>
-                  </div>
-                  <div class="preview-mini-content">
-                    <div class="mini-hbo-row"></div>
-                    <div class="mini-hbo-row"></div>
-                  </div>
-                </div>
-                <div class="design-card-info">
-                  <h3>Opção 4: Max / HBO Dark Sidebar</h3>
-                  <p>Inspirado na Imagem 3: Barra lateral vertical com ícones à esquerda, fundo preto total e vitrine direta de pôsteres em alta definição.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- TAB 2: IDENTIDADE & LOGO -->
-          <div class="admin-tab-pane" id="adm-identity">
-            <p class="admin-pane-desc">Personalize o nome da marca, sufixo e logotipo da aplicação:</p>
-            <div class="admin-form-group">
-              <label for="adm-site-name">Nome Principal do Site:</label>
-              <input type="text" id="adm-site-name" class="admin-input" placeholder="Ex: John, Disney, Max...">
-            </div>
-            <div class="admin-form-group">
-              <label for="adm-site-suffix">Sufixo / Destaque Colorido:</label>
-              <input type="text" id="adm-site-suffix" class="admin-input" placeholder="Ex: Flix, +, Play, HD...">
-            </div>
-            <div class="admin-form-group">
-              <label for="adm-logo-url">URL da Logo em Imagem (PNG/SVG transparente):</label>
-              <input type="url" id="adm-logo-url" class="admin-input" placeholder="https://exemplo.com/minha-logo.png (Opcional)">
-              <small class="admin-hint">Se preenchido, exibe a imagem no lugar do texto em todos os cabeçalhos.</small>
-            </div>
-            <div class="admin-form-group">
-              <label for="adm-tagline">Slogan / Descrição do Cabeçalho:</label>
-              <input type="text" id="adm-tagline" class="admin-input" placeholder="Ex: Streaming de Filmes e Séries">
-            </div>
-          </div>
-
-          <!-- TAB 3: CORES & PALETA -->
-          <div class="admin-tab-pane" id="adm-colors">
-            <p class="admin-pane-desc">Defina a cor de destaque (accent) e o fundo do aplicativo:</p>
-            <div class="admin-color-presets">
-              <button class="color-preset-pill active" data-accent="#0072d2" data-bg="#040714" style="background:#0072d2;">
-                🔵 Disney+ Azul
-              </button>
-              <button class="color-preset-pill" data-accent="#8b5cf6" data-bg="#0a0a0f" style="background:#8b5cf6;">
-                🟣 JohnFlix Roxo
-              </button>
-              <button class="color-preset-pill" data-accent="#e50914" data-bg="#141414" style="background:#e50914;">
-                🔴 Netflix Vermelho
-              </button>
-              <button class="color-preset-pill" data-accent="#5822b4" data-bg="#000000" style="background:#5822b4;">
-                🔮 Max HBO Roxo
-              </button>
-              <button class="color-preset-pill" data-accent="#10b981" data-bg="#06120e" style="background:#10b981;">
-                🟢 Esmeralda Cyber
-              </button>
-              <button class="color-preset-pill" data-accent="#f59e0b" data-bg="#120e06" style="background:#f59e0b; color:#000;">
-                🟡 Dourado Cinema
-              </button>
-            </div>
-
-            <div class="admin-custom-colors-row">
-              <div class="admin-form-group">
-                <label for="adm-custom-accent">Cor de Destaque (Accent):</label>
-                <div class="color-picker-wrapper">
-                  <input type="color" id="adm-custom-accent" value="#0072d2" class="admin-color-input">
-                  <span id="adm-accent-hex">#0072d2</span>
-                </div>
-              </div>
-              <div class="admin-form-group">
-                <label for="adm-custom-bg">Cor de Fundo Principal:</label>
-                <div class="color-picker-wrapper">
-                  <input type="color" id="adm-custom-bg" value="#040714" class="admin-color-input">
-                  <span id="adm-bg-hex">#040714</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- TAB 4: MÓDULOS & EXIBIÇÃO -->
-          <div class="admin-tab-pane" id="adm-modules">
-            <p class="admin-pane-desc">Ajuste os blocos visuais e a densidade dos cards:</p>
-            <div class="admin-checkbox-group">
-              <label class="admin-checkbox-label">
-                <input type="checkbox" id="adm-show-tiles" checked>
-                <span>Exibir Studio Hubs (Disney, Marvel, Pixar, Star Wars, NatGeo)</span>
-              </label>
-              <label class="admin-checkbox-label">
-                <input type="checkbox" id="adm-show-hero" checked>
-                <span>Exibir Banner Carrossel de Destaques</span>
-              </label>
-              <label class="admin-checkbox-label">
-                <input type="checkbox" id="adm-mobile-dock" checked>
-                <span>Habilitar Barra Inferior Otimizada no Celular</span>
-              </label>
-            </div>
-
-            <div class="admin-form-group" style="margin-top: 1rem;">
-              <label for="adm-card-density">Densidade / Tamanho dos Pôsteres:</label>
-              <select id="adm-card-density" class="admin-input">
-                <option value="normal" selected>Normal (Padrão 180px)</option>
-                <option value="compact">Compacto (Mais conteúdo na tela)</option>
-                <option value="spacious">Amplo / Grande (Pôsteres gigantes)</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <div class="admin-modal-footer">
-          <button class="btn btn-secondary" id="adm-reset-defaults-btn">🔄 Restaurar Padrão (Disney+)</button>
-          <div class="admin-footer-actions">
-            <button class="btn btn-secondary" id="adm-cancel-btn">Cancelar</button>
-            <button class="btn btn-primary" id="adm-save-btn">💾 Salvar Alterações</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Mobile Bottom Navigation Bar (Adaptável a todos os designs) -->
+        <!-- Mobile Bottom Navigation Bar (Adaptável a todos os designs) -->
     <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
       <button class="mobile-nav-item active" data-type="all">
         <span class="mobile-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9.5z"/></svg></span>
@@ -856,10 +550,7 @@
         <span class="mobile-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg></span>
         <span class="mobile-nav-label">Playlists</span>
       </button>
-      <button class="mobile-nav-item" id="mobile-nav-admin-btn" data-action="admin">
-        <span class="mobile-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></span>
-        <span class="mobile-nav-label">Painel ADM</span>
-      </button>
+
     </nav>
 
     <!-- Loading Screen -->
