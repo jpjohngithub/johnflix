@@ -5982,3 +5982,314 @@ body {
   border-color: rgba(255, 255, 255, 0.18) !important;
   transform: translateX(4px);
 }
+
+/* ==========================================================================
+   PIXEL-PERFECT REPLICATION OF USER DESIGN SCREENSHOT
+   ========================================================================== */
+
+/* 1. Global Dark Slate / Obsidian Atmosphere with Top Purple Glow */
+body {
+  background: 
+    radial-gradient(circle at 14% 0%, rgba(139, 92, 246, 0.22) 0%, transparent 45%),
+    radial-gradient(circle at 86% 4%, rgba(217, 70, 239, 0.12) 0%, transparent 35%),
+    #09090f !important;
+  color: #f1f5f9 !important;
+}
+
+/* 2. Hide Hero Billboard so Catalog is Direct & Minimalist */
+#hero-section {
+  display: none !important;
+}
+
+#catalog-container {
+  padding: 88px 3% 5rem !important;
+  gap: 2.5rem !important;
+}
+
+/* 3. Header Exact Design */
+#app-header {
+  background: rgba(9, 9, 15, 0.82) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  height: 70px !important;
+}
+
+.logo {
+  font-family: var(--font-display) !important;
+  font-size: 1.85rem !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.04em !important;
+  color: #a855f7 !important;
+  text-shadow: 0 0 20px rgba(168, 85, 247, 0.65), 0 0 40px rgba(139, 92, 246, 0.3) !important;
+}
+
+.logo span {
+  color: #a855f7 !important;
+  text-shadow: none !important;
+}
+
+.header-nav {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.6rem !important;
+}
+
+.nav-link {
+  font-size: 0.8rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+  color: #94a3b8 !important;
+  padding: 6px 12px !important;
+  border-radius: 9999px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  transition: all 0.2s ease !important;
+  border: 1px solid transparent !important;
+}
+
+.nav-link-icon svg {
+  width: 15px !important;
+  height: 15px !important;
+  stroke-width: 2 !important;
+}
+
+.nav-link:hover {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* INÍCIO Active Capsule Button */
+.nav-link.active {
+  background: rgba(139, 92, 246, 0.16) !important;
+  border: 1px solid rgba(139, 92, 246, 0.6) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 16px rgba(139, 92, 246, 0.4) !important;
+  padding: 6px 16px !important;
+}
+
+.nav-link.active::after {
+  display: none !important;
+}
+
+/* Search Circle Button & User Avatar */
+.search-container {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 9999px !important;
+  padding: 3px 6px !important;
+}
+
+.user-avatar-badge {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #a855f7, #6366f1) !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  font-size: 0.9rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 0 16px rgba(168, 85, 247, 0.45) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+/* 4. Section Headers (Glowing Neon Pill + Title + Explorar >) */
+.catalog-section {
+  padding: 0 3% !important;
+}
+
+.catalog-section-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  margin-bottom: 1.1rem !important;
+}
+
+.section-title-wrap {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+.section-indicator {
+  width: 4px !important;
+  height: 38px !important;
+  border-radius: 4px !important;
+  background: linear-gradient(180deg, #ec4899 0%, #8b5cf6 100%) !important;
+  box-shadow: 0 0 14px rgba(236, 72, 153, 0.75), 0 0 8px rgba(139, 92, 246, 0.8) !important;
+  flex-shrink: 0 !important;
+}
+
+.section-title {
+  font-family: var(--font-display) !important;
+  font-size: 1.25rem !important;
+  font-weight: 800 !important;
+  line-height: 1.15 !important;
+  color: #ffffff !important;
+  letter-spacing: -0.02em !important;
+}
+
+.section-see-all {
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  color: #71717a !important;
+  text-decoration: none !important;
+  transition: color 0.2s ease !important;
+}
+
+.section-see-all:hover {
+  color: #ffffff !important;
+}
+
+/* 5. Movie Cards Exact Layout */
+.movie-card {
+  width: 172px !important;
+  flex-shrink: 0 !important;
+  border-radius: 12px !important;
+  background: #111118 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease !important;
+}
+
+.movie-card:hover {
+  transform: translateY(-6px) scale(1.03) !important;
+  border-color: rgba(168, 85, 247, 0.65) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.9), 0 0 24px rgba(139, 92, 246, 0.35) !important;
+}
+
+.movie-poster-wrap {
+  aspect-ratio: 2 / 3 !important;
+  border-radius: 12px 12px 0 0 !important;
+  position: relative !important;
+  overflow: hidden !important;
+  background: #15151e !important;
+}
+
+.movie-card-overlay {
+  display: none !important;
+}
+
+/* Card Top Badges */
+.movie-card-format-pill {
+  position: absolute !important;
+  top: 8px !important;
+  left: 8px !important;
+  background: rgba(10, 10, 16, 0.85) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  font-size: 0.64rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.05em !important;
+  padding: 2px 6px !important;
+  border-radius: 5px !important;
+  z-index: 5 !important;
+}
+
+.movie-card-format-pill.pill-4k {
+  color: #fbbf24 !important;
+  border: 1px solid rgba(245, 158, 11, 0.45) !important;
+}
+
+.movie-card-format-pill.pill-serie {
+  color: #c4b5fd !important;
+  border: 1px solid rgba(139, 92, 246, 0.45) !important;
+}
+
+.card-top-right-pill {
+  position: absolute !important;
+  top: 8px !important;
+  right: 8px !important;
+  background: rgba(10, 10, 16, 0.8) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-radius: 6px !important;
+  padding: 2px 6px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  z-index: 5 !important;
+}
+
+.card-star-icon {
+  color: #fbbf24 !important;
+  font-size: 0.72rem !important;
+}
+
+.card-top-right-pill .card-bookmark-btn {
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  color: #cbd5e1 !important;
+  display: flex !important;
+  align-items: center !important;
+  cursor: pointer !important;
+  box-shadow: none !important;
+}
+
+.card-top-right-pill .card-bookmark-btn:hover {
+  transform: scale(1.15) !important;
+  color: #ffffff !important;
+}
+
+.card-top-right-pill .card-bookmark-btn.saved {
+  color: #facc15 !important;
+}
+
+/* Card Bottom Info */
+.movie-card-info-bottom {
+  padding: 9px 10px 10px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  background: #111118 !important;
+}
+
+.movie-card-info-bottom .movie-card-title {
+  font-size: 0.86rem !important;
+  font-weight: 700 !important;
+  color: #f8fafc !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  letter-spacing: -0.01em !important;
+}
+
+.movie-card-info-bottom .movie-card-meta-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 0.74rem !important;
+  color: #94a3b8 !important;
+}
+
+.movie-card-lang-badge {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  padding: 1px 5px !important;
+  border-radius: 4px !important;
+  font-size: 0.62rem !important;
+  font-weight: 800 !important;
+}
+
+.meta-dot {
+  color: #64748b !important;
+  font-size: 0.65rem !important;
+}
+
+.carousel-track {
+  gap: 16px !important;
+  padding: 6px 0 16px !important;
+}

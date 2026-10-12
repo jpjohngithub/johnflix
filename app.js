@@ -3962,11 +3962,11 @@ const UI = {
       <div class="movie-card" onclick="UI.openModal('${cleanId}', '${itemType}')">
         <div class="movie-poster-wrap">
           <img class="movie-poster" src="${posterUrl}" alt="${displayName}" onerror="this.style.background='linear-gradient(135deg, #141520, #1f2032)'; this.style.minHeight='270px';" loading="lazy">
-          <button class="card-bookmark-btn ${isSaved ? 'saved' : ''}" data-id="${cleanId}" title="${isSaved ? 'Remover da Minha Lista' : 'Salvar na Minha Lista'}" onclick="event.stopPropagation(); UI.quickToggleWatchlist(event, '${cleanId}')">
+          <div class="card-top-right-pill"><span class="card-star-icon">★</span><button class="card-bookmark-btn ${isSaved ? 'saved' : ''}" data-id="${cleanId}" title="${isSaved ? 'Remover da Minha Lista' : 'Salvar na Minha Lista'}" onclick="event.stopPropagation(); UI.quickToggleWatchlist(event, '${cleanId}')">
             ${bookmarkIcon}
-          </button>
-          <span class="movie-card-format-pill">${isSeries ? 'SÉRIE' : '4K UHD'}</span>
-          ${ratingBadge}
+          </button></div>
+          <span class="movie-card-format-pill ${isSeries ? 'pill-serie' : 'pill-4k'}">${isSeries ? 'SÉRIE' : '4K UHD'}</span>
+
           <div class="movie-card-hover-play">
             <span class="play-circle-icon">▶</span>
           </div>
@@ -4457,7 +4457,7 @@ const UI = {
     const finalRecents = recentItems.length >= 6 ? recentItems : allItems.slice(0, 18);
 
     if (finalRecents && finalRecents.length > 0) {
-      html += this.createCarousel(`🔥 Lançamentos Recentes (2025 / 2026)`, finalRecents, 'recents');
+      // Recents positioned after featured
     }
 
     if (state.catalogs.popular && state.catalogs.popular.length > 0) {
@@ -4465,6 +4465,9 @@ const UI = {
     }
     if (state.catalogs.featured && state.catalogs.featured.length > 0) {
       html += this.createCarousel(`${typeName} em Destaque`, state.catalogs.featured, 'featured');
+    }
+    if (finalRecents && finalRecents.length > 0) {
+      html += this.createCarousel(`🔥 Lançamentos Recentes (2025 / 2026)`, finalRecents, 'recents');
     }
     
     // Dedicated Explore Tab
