@@ -2462,6 +2462,75 @@ const PlaylistEngine = {
   closeAddToPlaylistModal() {
     const modal = document.getElementById('playlist-picker-modal');
     if (modal) modal.classList.add('hidden');
+  },
+
+  init() {
+    // HUD Playlist Controls
+    document.getElementById('hud-playlist-pill-btn')?.addEventListener('click', () => {
+      this.toggleQueueDrawer();
+    });
+    document.getElementById('hud-playlist-prev-btn')?.addEventListener('click', () => {
+      this.playPrev();
+    });
+    document.getElementById('hud-playlist-next-btn')?.addEventListener('click', () => {
+      this.playNext();
+    });
+    document.getElementById('hud-loop-btn')?.addEventListener('click', () => {
+      if (this.activePlaylistId) {
+        const loop = this.toggleLoop(this.activePlaylistId);
+        this.updatePlayerHud();
+        if (typeof Toast !== 'undefined' && Toast.show) {
+          Toast.show(loop ? '🔁 Loop ativado!' : '➡️ Loop desativado.', 'info');
+        }
+      }
+    });
+    document.getElementById('drawer-close-btn')?.addEventListener('click', () => {
+      this.toggleQueueDrawer(false);
+    });
+
+    // Create / Edit Modal
+    document.getElementById('playlist-edit-close')?.addEventListener('click', () => {
+      this.closeCreateModal();
+    });
+    document.getElementById('playlist-edit-overlay')?.addEventListener('click', () => {
+      this.closeCreateModal();
+    });
+    document.getElementById('pl-cancel-btn')?.addEventListener('click', () => {
+      this.closeCreateModal();
+    });
+    document.getElementById('playlist-edit-form')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const id = document.getElementById('pl-edit-id')?.value;
+      const name = document.getElementById('pl-name-input')?.value.trim();
+      const desc = document.getElementById('pl-desc-input')?.value.trim();
+      const cover = document.getElementById('pl-cover-input')?.value.trim();
+      const loop = document.getElementById('pl-loop-input')?.checked;
+      if (!name) return;
+      if (id) {
+        this.updatePlaylist(id, { name, description: desc, coverUrl: cover, loop });
+      } else {
+        this.createPlaylist({ name, description: desc, coverUrl: cover, loop });
+      }
+      this.closeCreateModal();
+      if (state.currentType === 'playlists') {
+        UI.renderCatalogs();
+      }
+      if (typeof Toast !== 'undefined' && Toast.show) {
+        Toast.show('💾 Playlist salva com sucesso!', 'success');
+      }
+    });
+
+    // Picker Modal
+    document.getElementById('playlist-picker-close')?.addEventListener('click', () => {
+      this.closeAddToPlaylistModal();
+    });
+    document.getElementById('playlist-picker-overlay')?.addEventListener('click', () => {
+      this.closeAddToPlaylistModal();
+    });
+    document.getElementById('picker-create-new-btn')?.addEventListener('click', () => {
+      this.closeAddToPlaylistModal();
+      this.openCreateModal();
+    });
   }
 };
 
@@ -3237,6 +3306,40 @@ const UI = {
       this.autoPlayBestStream();
     });
 
+    document.getElementById('modal-playlist-btn')?.addEventListener('click', () => {
+      if (state.currentMeta) {
+        const cleanId = (state.currentMeta.id || '').split(':')[0];
+        const item = {
+          id: cleanId,
+          title: PTBR_Engine.translateTitle(state.currentMeta.name || ''),
+          type: state.currentMeta.type || 'movie',
+          poster: getPosterUrl(state.currentMeta),
+          backdrop: getBackgroundUrl(state.currentMeta),
+          year: state.currentMeta.year || '2024'
+        };
+        PlaylistEngine.openAddToPlaylistModal(item);
+      }
+    });
+
+    document.getElementById('series-add-playlist-btn')?.addEventListener('click', () => {
+      if (state.currentMeta) {
+        const cleanId = (state.currentMeta.id || '').split(':')[0];
+        const s = state.currentSeason || 1;
+        const e = state.currentEpisode || 1;
+        const item = {
+          id: cleanId,
+          title: `${PTBR_Engine.translateTitle(state.currentMeta.name || '')} - T${s} E${e}`,
+          type: 'series',
+          season: s,
+          episode: e,
+          poster: getPosterUrl(state.currentMeta),
+          backdrop: getBackgroundUrl(state.currentMeta),
+          year: state.currentMeta.year || '2024'
+        };
+        PlaylistEngine.openAddToPlaylistModal(item);
+      }
+    });
+
     document.getElementById('modal-watchlist-btn')?.addEventListener('click', (e) => {
       this.toggleModalWatchlist(e);
     });
@@ -3279,6 +3382,7 @@ const UI = {
     
     // Custom Player HUD Controls
     this.setupHudControls();
+    PlaylistEngine.init();
 
     // Escape key
     document.addEventListener('keydown', (e) => {
@@ -3604,6 +3708,12 @@ const UI = {
       video.addEventListener('pause', () => {
         if (playIcon) playIcon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3" fill="currentColor"></polygon>';
       });
+
+      video.addEventListener('ended', () => {
+        if (PlaylistEngine.activePlaylistId) {
+          PlaylistEngine.onItemEnded();
+        }
+      });
     }
 
     // Play / Pause toggle
@@ -3764,7 +3874,7 @@ const UI = {
     try {
       this.hideSearchResults();
 
-      if (state.currentType === 'watchlist' || state.currentType === 'explore') {
+      if (state.currentType === 'watchlist' || state.currentType === 'explore' || state.currentType === 'playlists') {
         const heroSection = document.getElementById('hero-section');
         if (heroSection) heroSection.classList.add('hidden');
         this.renderCatalogs();
@@ -4065,45 +4175,41 @@ const UI = {
       ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="#facc15" stroke="none"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>'
       : '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>';
 
-    return `
-      <div class="movie-card" onclick="UI.openModal('${cleanId}', '${itemType}')">
-        <div class="movie-poster-wrap">
-          <img class="movie-poster" src="${posterUrl}" alt="${displayName}" onerror="this.style.background='linear-gradient(135deg, #141520, #1f2032)'; this.style.minHeight='270px';" loading="lazy">
-          <div class="card-top-right-pill"><span class="card-star-icon">★</span><button class="card-bookmark-btn ${isSaved ? 'saved' : ''}" data-id="${cleanId}" title="${isSaved ? 'Remover da Minha Lista' : 'Salvar na Minha Lista'}" onclick="event.stopPropagation(); UI.quickToggleWatchlist(event, '${cleanId}')">
-            ${bookmarkIcon}
-          </button></div>
-          <span class="movie-card-format-pill ${isSeries ? 'pill-serie' : 'pill-4k'}">${isSeries ? 'SÉRIE' : '4K UHD'}</span>
+    const ratingStr = (ratingNum && !isNaN(ratingNum)) ? ratingNum.toFixed(1) : '8.5';
+    const genreText = (item.genres && item.genres.length > 0) ? item.genres.slice(0, 2).join(' • ') : (isSeries ? 'Série' : 'Filme');
 
-          <div class="movie-card-hover-play">
-            <span class="play-circle-icon">▶</span>
+    return `
+      <article class="card movie-card" tabindex="0" onclick="UI.openModal('${cleanId}', '${itemType}')">
+        <div class="poster movie-poster-wrap">
+          <div class="poster-bg" style="background-image: url('${posterUrl}')"></div>
+          <div class="tags">
+            <span class="tag tag-hd">${isSeries ? 'SÉRIE' : '4K'}</span>
+            <span class="tag tag-rating">★ ${ratingStr}</span>
+          </div>
+          <button class="fav ${isSaved ? 'on' : ''}" aria-label="Favoritar" title="${isSaved ? 'Remover da Minha Lista' : 'Salvar na Minha Lista'}" onclick="event.stopPropagation(); UI.quickToggleWatchlist(event, '${cleanId}')">
+            <svg class="i i-sm" viewBox="0 0 24 24" fill="${isSaved ? '#fbbf24' : 'none'}" stroke="${isSaved ? '#fbbf24' : 'currentColor'}" stroke-width="2"><path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+          </button>
+          <div class="poster-title">${displayName}</div>
+        </div>
+        <div class="reveal-info movie-card-info-bottom">
+          <div class="reveal-meta">
+            <span class="genre">${genreText}</span>
+            <span>${item.year || (isSeries ? 'Série' : '2024')}</span>
+          </div>
+          <div class="reveal-actions">
+            <button class="btn-play" title="Assistir Agora" onclick="event.stopPropagation(); UI.quickPlayMovie('${cleanId}', '${itemType}')">
+              <svg class="i i-sm" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+              Assistir
+            </button>
+            <button class="btn-icon" title="Adicionar à Playlist" onclick="event.stopPropagation(); UI.openPlaylistPicker(event, '${cleanId}', '${itemType}')">
+              ➕
+            </button>
+            <button class="btn-icon" title="Detalhes" onclick="event.stopPropagation(); UI.openModal('${cleanId}', '${itemType}')">
+              ℹ
+            </button>
           </div>
         </div>
-        <div class="movie-card-overlay">
-          <div class="movie-card-details">
-            <span class="movie-card-title">${displayName}</span>
-            <div class="movie-card-meta-row">
-              <span class="movie-card-year">${item.year || (isSeries ? 'Série' : 'Filme')}</span>
-              <span>•</span>
-              <span class="movie-card-audio-label">Dublado PT-BR</span>
-            </div>
-            <div class="movie-card-actions">
-              <button class="card-action-btn play" title="Assistir Agora" onclick="event.stopPropagation(); UI.quickPlayMovie('${cleanId}', '${itemType}')">▶</button>
-              <button class="card-action-btn watchlist ${isSaved ? 'active' : ''}" data-id="${cleanId}" title="${isSaved ? 'Remover da Minha Lista' : 'Salvar na Minha Lista'}" onclick="event.stopPropagation(); UI.quickToggleWatchlist(event, '${cleanId}')">
-                ${isSaved ? '★' : '☆'}
-              </button>
-              <button class="card-action-btn" title="Mais Informações" onclick="event.stopPropagation(); UI.openModal('${cleanId}', '${itemType}')">ℹ</button>
-            </div>
-          </div>
-        </div>
-        <div class="movie-card-info-bottom">
-          <span class="movie-card-title">${displayName}</span>
-          <div class="movie-card-meta-row">
-            <span class="movie-card-year">${item.year || (isSeries ? 'Série' : 'Filme')}</span>
-            <span class="meta-dot">•</span>
-            <span class="movie-card-lang-badge">PT-BR</span>
-          </div>
-        </div>
-      </div>
+      </article>
     `;
   },
 
@@ -4115,6 +4221,24 @@ const UI = {
     } else {
       this.openModal(id, type);
     }
+  },
+
+  async openPlaylistPicker(event, id, type) {
+    if (event && event.stopPropagation) event.stopPropagation();
+    const cleanId = (id || '').split(':')[0];
+    let meta = this.metaCache[cleanId] || (state.currentMeta && state.currentMeta.id.startsWith(cleanId) ? state.currentMeta : null);
+    if (!meta) {
+      meta = await API.fetchMeta(type || 'movie', cleanId);
+    }
+    const item = {
+      id: cleanId,
+      title: (meta && meta.name) ? PTBR_Engine.translateTitle(meta.name) : 'Filme',
+      type: (meta && meta.type) || type || 'movie',
+      poster: meta ? getPosterUrl(meta) : `https://images.metahub.space/poster/medium/${cleanId}/img`,
+      backdrop: meta ? getBackgroundUrl(meta) : '',
+      year: (meta && meta.year) || '2024'
+    };
+    PlaylistEngine.openAddToPlaylistModal(item);
   },
 
   quickToggleWatchlist(e, cleanId) {
@@ -4392,6 +4516,14 @@ const UI = {
     if (!container) return;
     
     let html = '';
+
+    // Playlists Hub Mode
+    if (state.currentType === 'playlists') {
+      container.innerHTML = PlaylistEngine.renderPlaylistsHub();
+      PlaylistEngine.bindHubEvents();
+      this.afterCatalogPaint(container);
+      return;
+    }
 
     // Favorites / Watchlist Tab Mode
     if (state.currentType === 'favorites' || state.currentType === 'watchlist') {

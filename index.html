@@ -21,10 +21,11 @@
   <div id="app">
     
 
-    <header id="app-header">
+    <header class="header" id="app-header">
       <div class="header-content">
         <a href="#" class="logo" id="site-logo-link">
-          <span id="site-logo-text">John<span id="site-logo-suffix">Flix</span></span>
+          <div class="logo-mark"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="6 4 20 12 6 20 6 4" fill="currentColor"/></svg></div>
+          <div class="logo-text" id="site-logo-text">John<span id="site-logo-suffix">Flix</span></div>
           <img id="site-logo-img" class="site-logo-image hidden" alt="Logo">
         </a>
         <nav class="header-nav" id="header-nav">
@@ -51,10 +52,6 @@
           <a href="#" class="nav-link" data-type="series">
             <span class="nav-link-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="15" rx="2"/><path d="m17 2-5 5-5-5"/></svg></span>
             <span class="nav-link-text">SÉRIES</span>
-          </a>
-          <a href="#" class="nav-link" data-type="anime">
-            <span class="nav-link-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg></span>
-            <span class="nav-link-text">ANIMES</span>
           </a>
           <a href="#" class="nav-link" data-type="playlists">
             <span class="nav-link-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg></span>
@@ -112,22 +109,6 @@
           <button class="hero-nav-arrow hero-nav-next" id="hero-next-btn" aria-label="Próxima Recomendação">›</button>
         </div>
       </section>
-
-      
-
-      
-
-      <div class="chips" role="tablist" aria-label="Filtros" id="genre-chips-bar">
-        <button class="chip on" data-genre="">Tudo</button>
-        <button class="chip" data-genre="Action">Ação</button>
-        <button class="chip" data-genre="Animation">Animes</button>
-        <button class="chip" data-genre="Comedy">Comédia</button>
-        <button class="chip" data-genre="Drama">Drama</button>
-        <button class="chip" data-genre="Horror">Terror</button>
-        <button class="chip" data-genre="Sci-Fi">Ficção Científica</button>
-        <button class="chip" data-genre="Romance">Romance</button>
-        <button class="chip" data-genre="Thriller">Suspense</button>
-      </div>
 
       <div id="catalog-container">
         <!-- Carousels will be injected by JS -->
@@ -558,10 +539,6 @@
       <button class="mobile-nav-item" data-type="series">
         <span class="mobile-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="15" rx="2"/><path d="m17 2-5 5-5-5"/></svg></span>
         <span class="mobile-nav-label">Séries</span>
-      </button>
-      <button class="mobile-nav-item" data-type="anime">
-        <span class="mobile-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg></span>
-        <span class="mobile-nav-label">Animes</span>
       </button>
       <button class="mobile-nav-item" data-type="watchlist">
         <span class="mobile-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></span>
