@@ -3948,6 +3948,11 @@ const UI = {
     const isSeries = itemType === 'series';
     const displayName = PTBR_Engine.translateTitle(item.name || '');
     const isSaved = User.isInWatchlist(cleanId);
+    const ratingVal = item.imdbRating || item.rating;
+    const ratingNum = ratingVal ? parseFloat(ratingVal) : null;
+    const ratingBadge = (ratingNum && !isNaN(ratingNum))
+      ? `<span class="movie-card-rating-pill">⭐ ${ratingNum.toFixed(1)}</span>`
+      : '';
 
     const bookmarkIcon = isSaved
       ? '<svg viewBox="0 0 24 24" width="16" height="16" fill="#facc15" stroke="none"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>'
@@ -3960,7 +3965,11 @@ const UI = {
           <button class="card-bookmark-btn ${isSaved ? 'saved' : ''}" data-id="${cleanId}" title="${isSaved ? 'Remover da Minha Lista' : 'Salvar na Minha Lista'}" onclick="event.stopPropagation(); UI.quickToggleWatchlist(event, '${cleanId}')">
             ${bookmarkIcon}
           </button>
-          <span class="movie-card-audio-tag">${isSeries ? 'Série' : '4K HDR'}</span>
+          <span class="movie-card-format-pill">${isSeries ? 'SÉRIE' : '4K UHD'}</span>
+          ${ratingBadge}
+          <div class="movie-card-hover-play">
+            <span class="play-circle-icon">▶</span>
+          </div>
         </div>
         <div class="movie-card-overlay">
           <div class="movie-card-details">
@@ -3977,6 +3986,14 @@ const UI = {
               </button>
               <button class="card-action-btn" title="Mais Informações" onclick="event.stopPropagation(); UI.openModal('${cleanId}', '${itemType}')">ℹ</button>
             </div>
+          </div>
+        </div>
+        <div class="movie-card-info-bottom">
+          <span class="movie-card-title">${displayName}</span>
+          <div class="movie-card-meta-row">
+            <span class="movie-card-year">${item.year || (isSeries ? 'Série' : 'Filme')}</span>
+            <span class="meta-dot">•</span>
+            <span class="movie-card-lang-badge">PT-BR</span>
           </div>
         </div>
       </div>

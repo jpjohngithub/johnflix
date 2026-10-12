@@ -5770,3 +5770,215 @@ body {
     padding-bottom: 90px;
   }
 }
+
+/* ==========================================================================
+   FRAMEXTV & MODERN STREAMING HYBRID REDESIGN
+   ========================================================================== */
+
+/* Modern Card Badges & Info Row */
+.movie-card {
+  display: flex !important;
+  flex-direction: column !important;
+  background: #0f0f15 !important;
+  border-radius: 14px !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease !important;
+}
+
+.movie-card:hover {
+  transform: translateY(-8px) scale(1.04) !important;
+  border-color: rgba(168, 85, 247, 0.7) !important;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.85), 0 0 28px rgba(139, 92, 246, 0.35) !important;
+}
+
+.movie-poster-wrap {
+  aspect-ratio: 2 / 3 !important;
+  border-radius: 12px 12px 0 0 !important;
+  position: relative !important;
+  overflow: hidden !important;
+  background: #14141c !important;
+}
+
+.movie-card-format-pill {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(10, 10, 16, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #c4b5fd;
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 3px 7px;
+  border-radius: 6px;
+  z-index: 5;
+}
+
+.movie-card-rating-pill {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(10, 10, 16, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 3px 7px;
+  border-radius: 6px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+
+.movie-card-hover-play {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(7, 7, 10, 0.45);
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.movie-card:hover .movie-card-hover-play {
+  opacity: 1;
+}
+
+.play-circle-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #a855f7, #7c3aed);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  padding-left: 3px;
+  box-shadow: 0 0 25px rgba(168, 85, 247, 0.7);
+  transform: scale(0.85);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.movie-card:hover .play-circle-icon {
+  transform: scale(1);
+}
+
+.movie-card-info-bottom {
+  padding: 10px 10px 12px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  background: #0f0f15 !important;
+}
+
+.movie-card-info-bottom .movie-card-title {
+  font-size: 0.88rem !important;
+  font-weight: 700 !important;
+  color: #f8fafc !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  letter-spacing: -0.01em !important;
+}
+
+.movie-card-info-bottom .movie-card-meta-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 0.74rem !important;
+  color: #94a3b8 !important;
+}
+
+.movie-card-lang-badge {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+.meta-dot {
+  color: #64748b;
+  font-size: 0.7rem;
+}
+
+/* Glassmorphic Header Glow & Contrast */
+#app-header {
+  background: rgba(9, 9, 13, 0.85) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Hero Section Depth Polish */
+#hero-section {
+  background-color: #07070a !important;
+}
+
+.hero-gradient {
+  background: 
+    linear-gradient(180deg, rgba(7, 7, 10, 0.2) 0%, transparent 25%, rgba(7, 7, 10, 0.75) 70%, #07070a 100%),
+    linear-gradient(90deg, rgba(7, 7, 10, 0.95) 0%, rgba(7, 7, 10, 0.65) 40%, transparent 75%) !important;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.45) !important;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #9333ea, #6d28d9) !important;
+  box-shadow: 0 6px 28px rgba(147, 51, 234, 0.6) !important;
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  transform: translateY(-2px);
+}
+
+/* Modal Luxury Glass Elevation */
+.modal-content {
+  background: rgba(14, 14, 20, 0.97) !important;
+  backdrop-filter: blur(30px) !important;
+  -webkit-backdrop-filter: blur(30px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 40px rgba(139, 92, 246, 0.2) !important;
+}
+
+/* Stream Items Clean Precision */
+.stream-item {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.07) !important;
+  border-radius: 10px !important;
+  transition: all 0.2s ease !important;
+}
+
+.stream-item:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  transform: translateX(4px);
+}
