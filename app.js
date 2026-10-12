@@ -2956,6 +2956,113 @@ const UI = {
       });
     });
 
+    // Header scroll blur effect
+    const appHeader = document.getElementById('app-header');
+    if (appHeader) {
+      window.addEventListener('scroll', () => {
+        appHeader.classList.toggle('scrolled', window.scrollY > 30);
+      }, { passive: true });
+    }
+
+    // Genre Filter Chips
+    document.querySelectorAll('.chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+        chip.classList.add('on');
+        state.currentGenre = chip.dataset.genre || '';
+        this.loadInitialData();
+      });
+    });
+
+    // Command Palette Search (Ctrl+K and /)
+    const overlay = document.getElementById('overlay');
+    const qInput = document.getElementById('q');
+    const resultsContainer = document.getElementById('results');
+
+    const openSearchPalette = () => {
+      if (!overlay) return;
+      overlay.classList.add('open');
+      if (qInput) {
+        qInput.value = '';
+        setTimeout(() => qInput.focus(), 50);
+      }
+      renderPaletteResults('');
+    };
+
+    const closeSearchPalette = () => {
+      if (overlay) overlay.classList.remove('open');
+    };
+
+    const renderPaletteResults = async (query) => {
+      if (!resultsContainer) return;
+      const cleanQ = (query || '').trim().toLowerCase();
+      if (!cleanQ) {
+        resultsContainer.innerHTML = '<div class="empty">Digite o nome de um filme, série ou anime…</div>';
+        return;
+      }
+      resultsContainer.innerHTML = '<div class="empty">Buscando…</div>';
+      const results = await API.searchContent('all', cleanQ);
+      if (!results || results.length === 0) {
+        resultsContainer.innerHTML = '<div class="empty">Nenhum título encontrado.</div>';
+        return;
+      }
+      resultsContainer.innerHTML = results.slice(0, 10).map((item) => {
+        const cleanId = (item.id || '').split(':')[0];
+        const isSeries = item.type === 'series';
+        const poster = getPosterUrl(item);
+        const name = PTBR_Engine.translateTitle(item.name || '');
+        return `
+          <div class="result" onclick="UI.openModal('${cleanId}', '${item.type || 'movie'}'); document.getElementById('overlay')?.classList.remove('open');">
+            <span class="thumb" style="background-image: url('${poster}');"></span>
+            <div>
+              <b>${name}</b>
+              <small>${item.year || '2026'} · ${isSeries ? 'Série' : '4K UHD'} · PT-BR</small>
+            </div>
+          </div>
+        `;
+      }).join('');
+    };
+
+    if (qInput) {
+      qInput.addEventListener('input', debounce((e) => {
+        renderPaletteResults(e.target.value);
+      }, 250));
+    }
+
+    if (overlay) {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) closeSearchPalette();
+      });
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        openSearchPalette();
+      } else if (e.key === '/' && !overlay?.classList.contains('open') && document.activeElement.tagName !== 'INPUT') {
+        e.preventDefault();
+        openSearchPalette();
+      } else if (e.key === 'Escape' && overlay?.classList.contains('open')) {
+        closeSearchPalette();
+      }
+    });
+
+    const searchToggleBtn = document.getElementById('search-toggle');
+    if (searchToggleBtn) {
+      searchToggleBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        openSearchPalette();
+      });
+    }
+
+    const navSearchLink = document.getElementById('nav-search-link');
+    if (navSearchLink) {
+      navSearchLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        openSearchPalette();
+      });
+    }
+
     // Navigation (Desktop links + Mobile bottom bar)
     document.querySelectorAll('[data-type]').forEach(btn => {
       btn.addEventListener('click', (e) => {

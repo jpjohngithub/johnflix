@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/webtorrent@latest/webtorrent.min.js"></script>
@@ -116,6 +116,18 @@
       
 
       
+
+      <div class="chips" role="tablist" aria-label="Filtros" id="genre-chips-bar">
+        <button class="chip on" data-genre="">Tudo</button>
+        <button class="chip" data-genre="Action">Ação</button>
+        <button class="chip" data-genre="Animation">Animes</button>
+        <button class="chip" data-genre="Comedy">Comédia</button>
+        <button class="chip" data-genre="Drama">Drama</button>
+        <button class="chip" data-genre="Horror">Terror</button>
+        <button class="chip" data-genre="Sci-Fi">Ficção Científica</button>
+        <button class="chip" data-genre="Romance">Romance</button>
+        <button class="chip" data-genre="Thriller">Suspense</button>
+      </div>
 
       <div id="catalog-container">
         <!-- Carousels will be injected by JS -->
@@ -561,6 +573,18 @@
       </button>
 
     </nav>
+
+    <!-- Busca Command Palette (Ctrl+K) -->
+    <div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-label="Buscar">
+      <div class="palette">
+        <div class="palette-input">
+          <svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
+          <input id="q" type="text" placeholder="Buscar filmes e séries…" autocomplete="off">
+        </div>
+        <div class="results" id="results"></div>
+        <div class="hint"><span>↑↓ navegar</span><span>Enter abrir</span><span>Esc fechar</span></div>
+      </div>
+    </div>
 
     <!-- Loading Screen -->
     <div id="loading-screen" class="loading-screen">
