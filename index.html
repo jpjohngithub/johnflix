@@ -52,6 +52,10 @@
             <span class="nav-link-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="15" rx="2"/><path d="m17 2-5 5-5-5"/></svg></span>
             <span class="nav-link-text">SÉRIES</span>
           </a>
+          <a href="#" class="nav-link" data-type="anime">
+            <span class="nav-link-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg></span>
+            <span class="nav-link-text">ANIMES</span>
+          </a>
           <a href="#" class="nav-link" data-type="playlists">
             <span class="nav-link-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg></span>
             <span class="nav-link-text">PLAYLISTS</span>
@@ -215,6 +219,7 @@
             <div class="streams-filter-bar" id="streams-filter-bar">
               <button class="streams-filter-btn active" data-filter="all" onclick="UI.filterModalStreams('all')">🌟 Todas</button>
               <button class="streams-filter-btn bestcine-tab" data-filter="bestcine" onclick="UI.filterModalStreams('bestcine')">🎬 BestCine (4K/1080p)</button>
+              <button class="streams-filter-btn framex-tab" data-filter="framex" onclick="UI.filterModalStreams('framex')">⚡ FrameX / Videasy (4K)</button>
               <button class="streams-filter-btn frost-tab" data-filter="frost" onclick="UI.filterModalStreams('frost')">❄️ FrostStream</button>
               <button class="streams-filter-btn king-tab" data-filter="kingvod" onclick="UI.filterModalStreams('kingvod')">👑 King VOD</button>
               <button class="streams-filter-btn fenix-tab" data-filter="fenix" onclick="UI.filterModalStreams('fenix')">🔥 FenixFlix</button>
@@ -541,6 +546,10 @@
       <button class="mobile-nav-item" data-type="series">
         <span class="mobile-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="15" rx="2"/><path d="m17 2-5 5-5-5"/></svg></span>
         <span class="mobile-nav-label">Séries</span>
+      </button>
+      <button class="mobile-nav-item" data-type="anime">
+        <span class="mobile-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg></span>
+        <span class="mobile-nav-label">Animes</span>
       </button>
       <button class="mobile-nav-item" data-type="watchlist">
         <span class="mobile-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></span>

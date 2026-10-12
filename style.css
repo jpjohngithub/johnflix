@@ -2956,6 +2956,13 @@ body {
   color: #000000;
   box-shadow: 0 0 15px rgba(234, 179, 8, 0.4);
 }
+
+.streams-filter-btn.framex-tab.active {
+  background: #a855f7;
+  border-color: #a855f7;
+  color: #ffffff;
+  box-shadow: 0 0 16px rgba(168, 85, 247, 0.45);
+}
 .modal-back-wrap {
   margin-top: 2rem;
   display: flex;

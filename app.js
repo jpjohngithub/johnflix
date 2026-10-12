@@ -1384,6 +1384,52 @@ const API = {
 
       streamsList.push(...directVideoSources);
 
+      // 1.5 FrameX TV & Videasy 4K Ultra HD Servers (Extra servers from FrameXTV.xyz)
+      const tmdbId = (state.currentMeta && state.currentMeta.moviedb_id) ? state.currentMeta.moviedb_id : cleanId;
+      const framexMasterUrl = isMovie
+        ? `https://framextv.tech/embed/${tmdbId}`
+        : `https://framextv.tech/embed/tv/${tmdbId}/${season}/${episode}`;
+
+      const videasyMiamiUrl = isMovie
+        ? `https://player.videasy.to/movie/${cleanId}?server=miami`
+        : `https://player.videasy.to/tv/${cleanId}/${season}/${episode}?server=miami`;
+
+      const videasyBoiseUrl = isMovie
+        ? `https://player.videasy.to/movie/${cleanId}?server=boise`
+        : `https://player.videasy.to/tv/${cleanId}/${season}/${episode}?server=boise`;
+
+      const videasyAtlantaUrl = isMovie
+        ? `https://player.videasy.to/movie/${cleanId}?server=atlanta`
+        : `https://player.videasy.to/tv/${cleanId}/${season}/${episode}?server=atlanta`;
+
+      const videasyPhoenixUrl = isMovie
+        ? `https://player.videasy.to/movie/${cleanId}?server=phoenix`
+        : `https://player.videasy.to/tv/${cleanId}/${season}/${episode}?server=phoenix`;
+
+      const movyMiamiUrl = isMovie
+        ? `https://www.movy.bz/embed/movie/${tmdbId}?server=miami`
+        : `https://www.movy.bz/embed/tv/${tmdbId}/${season}/${episode}?server=miami`;
+
+      const movyAtlantaUrl = isMovie
+        ? `https://www.movy.bz/embed/movie/${tmdbId}?server=atlanta`
+        : `https://www.movy.bz/embed/tv/${tmdbId}/${season}/${episode}?server=atlanta`;
+
+      const cinejoyUrl = isMovie
+        ? `https://cinejoy.pk/embed/movie/${cleanId}`
+        : `https://cinejoy.pk/embed/tv/${cleanId}/${season}/${episode}`;
+
+      const framexServers = [
+        { provider: 'FrameX TV', name: '⚡ FrameX TV Master (4K Ultra HD)', title: 'FrameX TV Master - 4K Ultra HD Oficial', embedUrl: framexMasterUrl, category: 'framex', isDub: true, score: 2600 },
+        { provider: 'Videasy Miami', name: '⚡ Videasy Miami (4K Ultra HD)', title: 'Videasy Miami Server - 4K Ultra HD Sem Anúncios', embedUrl: videasyMiamiUrl, category: 'framex', isDub: true, score: 2500 },
+        { provider: 'Videasy Boise', name: '⚡ Videasy Boise (4K Ultra HD)', title: 'Videasy Boise Server - 4K Ultra HD Alta Velocidade', embedUrl: videasyBoiseUrl, category: 'framex', isDub: true, score: 2450 },
+        { provider: 'Miner XIX Miami', name: '⚡ Miner XIX Miami (4K / 1080p)', title: 'Movy Miner Miami Server - 4K / 1080p FHD', embedUrl: movyMiamiUrl, category: 'framex', isDub: true, score: 2400 },
+        { provider: 'Videasy Atlanta', name: 'Videasy Atlanta (1080p FHD)', title: 'Videasy Atlanta Server - 1080p Full HD', embedUrl: videasyAtlantaUrl, category: 'framex', isDub: false, score: 2350 },
+        { provider: 'Videasy Phoenix', name: 'Videasy Phoenix (1080p FHD)', title: 'Videasy Phoenix Server - 1080p Full HD', embedUrl: videasyPhoenixUrl, category: 'framex', isDub: false, score: 2300 },
+        { provider: 'Miner XIX Atlanta', name: 'Miner XIX Atlanta (1080p)', title: 'Movy Miner Atlanta Server - 1080p Full HD', embedUrl: movyAtlantaUrl, category: 'framex', isDub: false, score: 2250 },
+        { provider: 'CineJoy Barbarian', name: 'CineJoy Super Barbarian (HD)', title: 'CineJoy Barbarian Server HD', embedUrl: cinejoyUrl, category: 'framex', isDub: false, score: 2200 }
+      ];
+      streamsList.push(...framexServers);
+
       const nontonGoUrl = isMovie
         ? `https://www.nontongo.win/embed/movie/${cleanId}`
         : `https://www.nontongo.win/embed/tv/${cleanId}/${season}/${episode}`;
@@ -2929,7 +2975,7 @@ const UI = {
 
         const heroTypeName = document.getElementById('hero-type-name');
         if (heroTypeName) {
-          heroTypeName.textContent = state.currentType === 'movie' ? 'Filmes' : (state.currentType === 'series' ? 'Séries' : 'Todos');
+          heroTypeName.textContent = state.currentType === 'movie' ? 'Filmes' : (state.currentType === 'series' ? 'Séries' : state.currentType === 'anime' ? 'Animes' : 'Todos');
         }
 
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -3655,7 +3701,20 @@ const UI = {
       let popular = [];
       let featured = [];
 
-      if (state.currentType === 'all') {
+      if (state.currentType === 'anime') {
+        const [aniSer, aniMov, aniRating] = await Promise.all([
+          API.fetchCatalog('series', 'top', { genre: 'Animation', ...extra }),
+          API.fetchCatalog('movie', 'top', { genre: 'Animation', ...extra }),
+          API.fetchCatalog('series', 'imdbRating', { genre: 'Animation', ...extra })
+        ]).catch(() => [[], [], []]);
+
+        (aniSer || []).forEach(s => s.type = 'series');
+        (aniMov || []).forEach(m => m.type = 'movie');
+        (aniRating || []).forEach(s => s.type = 'series');
+
+        popular = this.interleaveArrays(aniSer || [], aniMov || []);
+        featured = aniRating || [];
+      } else if (state.currentType === 'all') {
         const [movTop, serTop, movRating, serRating] = await Promise.all([
           API.fetchCatalog('movie', 'top', extra),
           API.fetchCatalog('series', 'top', extra),
@@ -5488,14 +5547,17 @@ const UI = {
 
     const currentFilter = filterKey || state.currentStreamFilter || 'all';
 
-    const bestcine = streams.filter(s => s.category === 'bestcine' || s.provider === 'BestCine' || (s.name && s.name.includes('BestCine')));
+    const framex = streams.filter(s => s.category === 'framex' || (s.provider && (s.provider.includes('FrameX') || s.provider.includes('Videasy') || s.provider.includes('Miner') || s.provider.includes('CineJoy'))));
+    const bestcine = streams.filter(s => (s.category === 'bestcine' || s.provider === 'BestCine' || (s.name && s.name.includes('BestCine'))) && !framex.includes(s));
     const frost = streams.filter(s => (s.category === 'frost' || s.provider === 'FrostStream' || (s.name && s.name.includes('FrostStream'))) && !bestcine.includes(s));
     const kingvod = streams.filter(s => (s.category === 'kingvod' || s.provider === 'KingVOD' || (s.name && s.name.includes('King VOD'))) && !bestcine.includes(s) && !frost.includes(s));
     const fenix = streams.filter(s => (s.category === 'fenix' || s.provider === 'FenixFlix' || (s.name && s.name.includes('FenixFlix'))) && !frost.includes(s) && !bestcine.includes(s) && !kingvod.includes(s));
     const torrents = streams.filter(s => (s.category === 'torrent' || s.magnetUrl || s.infoHash) && !frost.includes(s) && !fenix.includes(s) && !bestcine.includes(s) && !kingvod.includes(s));
-    const web = streams.filter(s => !fenix.includes(s) && !frost.includes(s) && !bestcine.includes(s) && !kingvod.includes(s) && !torrents.includes(s));
+    const web = streams.filter(s => !fenix.includes(s) && !frost.includes(s) && !bestcine.includes(s) && !kingvod.includes(s) && !torrents.includes(s) && !framex.includes(s));
 
     // Update counts on filter buttons
+    const framexBtn = document.querySelector('.streams-filter-btn.framex-tab');
+    if (framexBtn) framexBtn.textContent = `⚡ FrameX (${framex.length})`;
     const bestcineBtn = document.querySelector('.streams-filter-btn.bestcine-tab');
     if (bestcineBtn) bestcineBtn.textContent = `🎬 BestCine (${bestcine.length})`;
 
@@ -5506,6 +5568,15 @@ const UI = {
     if (kingBtn) kingBtn.textContent = `👑 King VOD (${kingvod.length})`;
 
     let html = '';
+
+    if ((currentFilter === 'all' || currentFilter === 'framex') && framex.length > 0) {
+      html += '<div style="color:#a855f7; font-weight:800; font-size:1.05rem; margin:1rem 0 0.5rem; display:flex; align-items:center; justify-content:space-between; background:rgba(168,85,247,0.14); padding:10px 14px; border-radius:8px; border-left:4px solid #a855f7;">'
+        + '<span>⚡ FrameX TV & Videasy (4K Ultra HD)</span><span style="font-size:0.8rem; background:#a855f7; color:#fff; padding:2px 8px; border-radius:10px; font-weight:900;">' + framex.length + ' OPÇÕES</span></div>';
+      html += framex.map(stream => {
+        const idx = streams.indexOf(stream);
+        return this.createStreamItem(stream, idx >= 0 ? idx : 0);
+      }).join('');
+    }
 
     if ((currentFilter === 'all' || currentFilter === 'bestcine') && bestcine.length > 0) {
       html += '<div style="color:#10b981; font-weight:800; font-size:1.05rem; margin:1rem 0 0.5rem; display:flex; align-items:center; justify-content:space-between; background:rgba(16,185,129,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #10b981;">'
@@ -5574,7 +5645,8 @@ const UI = {
     const isFenix = name.includes('FenixFlix');
     const isFrost = name.includes('FrostStream') || stream.category === 'frost';
     const isTorrent = stream.category === 'torrent' || stream.magnetUrl || stream.infoHash;
-    const accentColor = isBestCine ? '#10b981' : isFenix ? '#ef4444' : isFrost ? '#06b6d4' : isTorrent ? '#f59e0b' : '#8b5cf6';
+    const isFrameX = stream.category === 'framex' || (stream.provider && (stream.provider.includes('FrameX') || stream.provider.includes('Videasy') || stream.provider.includes('Miner')));
+    const accentColor = isFrameX ? '#a855f7' : isBestCine ? '#10b981' : isFenix ? '#ef4444' : isFrost ? '#06b6d4' : isTorrent ? '#f59e0b' : '#8b5cf6';
     const btnColor = isTorrent || isBestCine ? '#000000' : '#ffffff';
 
     return `
