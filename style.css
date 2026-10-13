@@ -211,6 +211,30 @@ body {
 }
 
 /* Desktop Navigation Menu */
+.home-utility-strip {
+  position: relative; z-index: 3; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px;
+  width:min(1320px,92%); margin:-42px auto 26px;
+}
+.home-utility-card {
+  min-width:0; min-height:88px; display:flex; align-items:center; gap:14px; padding:16px 18px;
+  border:1px solid rgba(255,255,255,.11); border-radius:15px;
+  background:linear-gradient(135deg,rgba(35,29,53,.90),rgba(18,18,27,.90)); color:#fff; text-decoration:none;
+  box-shadow:0 10px 34px rgba(0,0,0,.22); backdrop-filter:blur(16px);
+  transition:transform .2s ease,border-color .2s ease,background .2s ease;
+  text-align:left; font:inherit; cursor:pointer; appearance:none; -webkit-appearance:none;
+}
+.home-utility-card:focus-visible { outline:2px solid #c4b5fd; outline-offset:3px; }
+.home-utility-card:hover { transform:translateY(-3px); border-color:rgba(167,139,250,.55); background:linear-gradient(135deg,rgba(52,40,80,.96),rgba(24,22,35,.96)); }
+.home-utility-card > span:nth-child(2) { display:grid; gap:4px; min-width:0; }
+.home-utility-card strong { font-size:.92rem; letter-spacing:-.01em; }
+.home-utility-card small { color:#aaa6b8; font-size:.76rem; }
+.home-utility-icon { flex:0 0 40px; width:40px; height:40px; display:grid; place-items:center; border-radius:12px; background:rgba(139,92,246,.2); color:#c4b5fd; font-size:1.25rem; }
+.home-utility-icon.live { color:#fd8a9a; background:rgba(239,68,68,.15); }
+.home-utility-icon.list { color:#9edbc6; background:rgba(16,185,129,.13); }
+.home-utility-arrow { margin-left:auto; color:#8f899f; font-size:1.5rem; }
+.explore-load-more { display:flex; align-items:center; justify-content:center; gap:12px; min-height:72px; width:100%; color:var(--text-muted); font-size:.9rem; }
+.explore-load-more .spinner { width:22px; height:22px; }
+
 .header-nav {
   display: flex;
   align-items: center;
@@ -8294,6 +8318,11 @@ body {
    MOBILE RESPONSIVENESS & PERFORMANCE (LEVE E FÁCIL DE MEXER)
    ========================================================================== */
 @media (max-width: 860px) {
+  .home-utility-strip { grid-template-columns:1fr; width:calc(100% - 32px); gap:9px; margin:-19px auto 21px; }
+  .home-utility-card { min-height:70px; padding:12px 14px; border-radius:13px; }
+  .home-utility-icon { width:36px; height:36px; flex-basis:36px; }
+  .home-utility-card strong { font-size:.85rem; }
+  .home-utility-card small { font-size:.72rem; }
   .livetv-split-container {
     display: flex !important;
     flex-direction: column !important;
@@ -8377,6 +8406,17 @@ body {
     gap: 10px !important;
     padding: 10px 4% !important;
   }
+  .livetv-split-container { padding-bottom:calc(92px + env(safe-area-inset-bottom)) !important; }
+  .livetv-left-col { height:48vh !important; min-height:300px !important; }
+  .livetv-channel-item { min-height:62px !important; padding:10px 12px !important; }
+  .livetv-channel-item-info { min-width:0; }
+  .livetv-channel-item-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .livetv-item-badge { font-size:.58rem !important; }
+  .explore-chips-container { flex-wrap:nowrap !important; overflow-x:auto !important; padding-bottom:8px; -webkit-overflow-scrolling:touch; }
+  .explore-chip { flex:0 0 auto; }
+  .mobile-bottom-nav { justify-content:space-between !important; padding-left:4px !important; padding-right:4px !important; }
+  .mobile-nav-item { min-width:0 !important; padding-left:2px !important; padding-right:2px !important; }
+  .mobile-nav-label { font-size:.6rem !important; white-space:nowrap; }
 }
 
 /* Movie / Series Distinct Badges */

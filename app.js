@@ -614,6 +614,7 @@ const User = {
 
 const state = {
   currentType: 'all', // 'all', 'cinema', 'movie', 'series', 'explore', or 'watchlist'
+  lastValidLiveChannelId: null,
   currentGenre: '',
   exploreGenre: 'Action',
   exploreSaga: null,
@@ -1009,6 +1010,10 @@ const CINEMA_SAGAS = [
 // --- API Module ---
 
 const API = {
+  normalizeSearchTitle(value) {
+    return (value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().replace(/^(the|a|an|o|os|as|um|uma)\s+/i, '');
+  },
+
   async fetchCatalog(type, catalogId, extra = {}) {
     try {
       let url = '';
@@ -1601,6 +1606,18 @@ const API = {
     };
 
     const searchQueries = [rawQuery];
+
+    // Search all localized spellings available in the bundled bilingual catalog,
+    // even when the query starts with a partial title.
+    if (typeof PTBR_Engine !== 'undefined' && PTBR_Engine.titlesMap) {
+      const titleKeys = Object.keys(PTBR_Engine.titlesMap).sort((a, b) => b.length - a.length);
+      const matchedTitle = titleKeys.find(title => {
+        const en = title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+        const pt = (PTBR_Engine.titlesMap[title] || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+        return norm === en || norm === pt || (norm.length >= 4 && (en.startsWith(norm) || pt.startsWith(norm)));
+      });
+      if (matchedTitle) searchQueries.push(matchedTitle, PTBR_Engine.titlesMap[matchedTitle]);
+    }
     
     // 1. Check ALIAS_MAP: exact or clear prefix
     for (const [pt, en] of Object.entries(ALIAS_MAP)) {
@@ -3077,6 +3094,7 @@ const UI = {
           const input = document.getElementById('tab-search-input');
           const q = input ? input.value.trim() : '';
           if (!q) {
+        if (state.tabSearchResultsObserver) state.tabSearchResultsObserver.disconnect();
             UI.loadMoreTabExplore();
           } else {
             UI.loadMoreTabSearchResults();
@@ -3099,6 +3117,7 @@ const UI = {
     const overlay = document.getElementById('overlay');
     const qInput = document.getElementById('q');
     const resultsContainer = document.getElementById('results');
+    if (qInput) qInput.setAttribute('enterkeyhint', 'search');
 
     const openSearchPalette = () => {
       if (!overlay) return;
@@ -3122,7 +3141,9 @@ const UI = {
         return;
       }
       resultsContainer.innerHTML = '<div class="empty">Buscando…</div>';
+      const paletteSeq = resultsContainer._searchSeq = (resultsContainer._searchSeq || 0) + 1;
       const results = await API.searchContent('all', cleanQ);
+      if (paletteSeq !== resultsContainer._searchSeq) return;
       if (!results || results.length === 0) {
         resultsContainer.innerHTML = '<div class="empty">Nenhum título encontrado.</div>';
         return;
@@ -3205,6 +3226,16 @@ const UI = {
           state.currentGenre = '';
           window.scrollTo({ top: 0, behavior: 'smooth' });
           UI.renderSearchTab();
+          return;
+        }
+
+        if (type === 'explore') {
+          state.currentType = 'explore';
+          state.exploreGenre = 'Action';
+          state.exploreSaga = null;
+          state.exploreQuery = '';
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          UI.renderExploreHub();
           return;
         }
 
@@ -3563,13 +3594,21 @@ const UI = {
         this.onUserPlayerInteraction();
       }, { passive: true });
 
-      // Screen Click -> Toggle Play / Pause
-      playerOverlay.addEventListener('click', (e) => {
-        if (e.target.closest('.hud-top, .hud-bottom, .hud-source-feedback, .hud-controls-row, .hud-progress-container, button, select, a, input, label, option, .modal')) return;
+      // Screen Click -> Toggle Play / Pause (Works even with HUD / player in front)
+      const handleScreenPlayPause = (e) => {
+        if (e.target.closest('button, input, select, a, label, option, .modal, .hud-btn, .hud-icon-btn, .hud-volume-slider, .hud-seekbar, .hud-source-feedback, #player-playlist-drawer:not(.hidden)')) {
+          return;
+        }
         togglePlayPause();
         resetHudTimer();
         this.onUserPlayerInteraction();
-      });
+      };
+
+      playerOverlay.addEventListener('click', handleScreenPlayPause);
+
+      if (playerHud) {
+        playerHud.addEventListener('click', handleScreenPlayPause);
+      }
 
       if (video) {
         video.addEventListener('click', (e) => {
@@ -3582,7 +3621,7 @@ const UI = {
 
       // Desktop Double-Click on Screen -> Toggle Fullscreen / Skip 10s
       playerOverlay.addEventListener('dblclick', (e) => {
-        if (e.target.closest('.hud-top, .hud-bottom, .hud-source-feedback, .hud-controls-row, .hud-progress-container, button, select, input, a')) return;
+        if (e.target.closest('button, input, select, a, .hud-btn, .hud-icon-btn, .hud-volume-slider, .hud-seekbar, .hud-source-feedback')) return;
         const rect = playerOverlay.getBoundingClientRect();
         const clickX = e.clientX - rect.left;
         const width = rect.width;
@@ -3609,7 +3648,7 @@ const UI = {
 
       playerOverlay.addEventListener('touchend', (e) => {
         // Ignore taps on interactive controls
-        if (e.target.closest('.hud-top, .hud-bottom, .hud-source-feedback, .hud-controls-row, .hud-progress-container, button, select, input, a')) return;
+        if (e.target.closest('button, input, select, a, label, option, .modal, .hud-btn, .hud-icon-btn, .hud-volume-slider, .hud-seekbar, .hud-source-feedback, #player-playlist-drawer:not(.hidden)')) return;
         
         const now = Date.now();
         const diff = now - lastTapTime;
@@ -4239,12 +4278,15 @@ const UI = {
         heroMeta.innerHTML = [formatBadge, quality, audio, yearBadge, runtime].filter(Boolean).join(' &nbsp; ');
       }
       if (heroDescription) {
-        heroDescription.innerHTML = `<span class="kinetic-desc">${meta.description || 'Sem descrição disponível.'}</span>`;
+        const plainDescription = document.createElement('span');
+        plainDescription.className = 'kinetic-desc';
+        plainDescription.textContent = meta.description || 'Sem descrição disponível.';
+        heroDescription.replaceChildren(plainDescription);
         if (meta.description && !/[áàâãéêíóôõúçÁÀÂÃÉÊÍÓÔÕÚÇ]/.test(meta.description)) {
           PTBR_Engine.translateText(meta.description).then(ptDesc => {
             if (ptDesc && state.heroMeta && state.heroMeta.id === meta.id) {
               state.heroMeta.description = ptDesc;
-              heroDescription.innerHTML = `<span class="kinetic-desc">${ptDesc}</span>`;
+              plainDescription.textContent = ptDesc;
             }
           });
         }
@@ -5054,7 +5096,7 @@ const UI = {
     // 2. Fetch and parse 390+ verified Brazilian TV channels from live open repositories
     const fetchChannelsPromise = (async () => {
       try {
-        const res = await fetchWithTimeout('https://iptv-org.github.io/iptv/countries/br.m3u', 5000);
+        const res = await fetchWithTimeout('https://iptv-org.github.io/iptv/countries/br.m3u', {}, 18000);
         if (res.ok) {
           const text = await res.text();
           const lines = text.split('\n');
@@ -5068,15 +5110,16 @@ const UI = {
               curLogo = logoMatch ? logoMatch[1] : '';
               const parts = line.split(',');
               curName = parts[parts.length - 1].trim();
-            } else if (line.startsWith('http')) {
-              if (curName && !curName.includes('Not 24/7') && !curName.includes('Offline')) {
+            } else if (/^(https?:\/\/|\/\/)/i.test(line)) {
+              if (curName && !curName.includes('Not 24/7') && !curName.includes('Offline') && !curName.includes('blocked')) {
+                const channelUrl = line.startsWith('//') ? `https:${line}` : line;
                 parsed.push({
-                  id: 'tv_' + Math.random().toString(36).substr(2, 7),
+                  id: `tv_${encodeURIComponent(channelUrl).replace(/%/g, '_').slice(0, 110)}`,
                   name: curName.replace(/\s*\([0-9]+p\)/i, '').trim(),
                   category: 'br',
                   type: 'tv',
                   logo: curLogo,
-                  streamUrl: line
+                  streamUrl: channelUrl
                 });
               }
               curName = '';
@@ -5094,7 +5137,7 @@ const UI = {
     // 3. Fetch 250 top-voted Brazilian live Radios dynamically
     const fetchRadiosPromise = (async () => {
       try {
-        const res = await fetchWithTimeout('https://de1.api.radio-browser.info/json/stations/bycountry/brazil?limit=250&order=votes&reverse=true', 5000);
+        const res = await fetchWithTimeout('https://all.api.radio-browser.info/json/stations/bycountrycodeexact/BR?limit=250&order=votes&reverse=true', {}, 12000);
         if (res.ok) {
           const arr = await res.json();
           return (arr || []).map(r => ({
@@ -5103,7 +5146,8 @@ const UI = {
             category: 'radio',
             type: 'radio',
             logo: r.favicon || '',
-            streamUrl: r.url_resolved || r.url
+            streamUrl: r.url_resolved || r.url,
+            codec: r.codec || ''
           })).filter(r => r.streamUrl && r.streamUrl.startsWith('http'));
         }
       } catch (e) {
@@ -5132,7 +5176,7 @@ const UI = {
     });
 
     state.liveChannels = combinedAll;
-    this.renderLiveTvGrid(combinedAll);
+    this.applyLiveChannelFilters();
 
     // Update count in subtitle
     const subTitle = document.querySelector('.livetv-subtitle');
@@ -5154,23 +5198,22 @@ const UI = {
     });
 
     const searchInput = document.getElementById('livetv-filter-input');
-    if (searchInput) {
-      searchInput.addEventListener('input', (e) => {
-        const q = e.target.value.toLowerCase().trim();
-        const filtered = (state.liveChannels || []).filter(c => c.name.toLowerCase().includes(q));
-        this.renderLiveTvGrid(filtered);
-      });
-    }
+    if (searchInput) searchInput.addEventListener('input', () => this.applyLiveChannelFilters());
   },
 
   filterLiveChannels(filter) {
-    const all = state.liveChannels || [];
-    if (filter === 'all') {
-      this.renderLiveTvGrid(all);
-    } else {
-      const filtered = all.filter(c => c.category === filter || (filter === 'radio' && c.type === 'radio'));
-      this.renderLiveTvGrid(filtered);
-    }
+    state.liveChannelFilter = filter;
+    this.applyLiveChannelFilters();
+  },
+
+  applyLiveChannelFilters() {
+    const q = (document.getElementById('livetv-filter-input')?.value || '').toLocaleLowerCase().trim();
+    const filter = state.liveChannelFilter || 'all';
+    const filtered = (state.liveChannels || []).filter(channel => {
+      const matchesFilter = filter === 'all' || (filter === 'tv' ? channel.type === 'tv' : filter === 'radio' ? channel.type === 'radio' : channel.category === filter || (filter === 'br' && channel.type === 'radio'));
+      return matchesFilter && (!q || `${channel.name} ${channel.category || ''}`.toLocaleLowerCase().includes(q));
+    });
+    this.renderLiveTvGrid(filtered);
   },
 
   renderLiveTvGrid(channels) {
@@ -5178,12 +5221,19 @@ const UI = {
     if (!list) return;
 
     if (!channels || channels.length === 0) {
+      const current = state.currentLiveChannel;
+      const matchesFilter = current && ((state.liveChannelFilter || 'all') === 'all' || (state.liveChannelFilter === 'tv' ? current.type === 'tv' : state.liveChannelFilter === 'radio' ? current.type === 'radio' : current.category === state.liveChannelFilter || (state.liveChannelFilter === 'br' && current.type === 'radio')));
+      const query = (document.getElementById('livetv-filter-input')?.value || '').toLocaleLowerCase().trim();
+      if (matchesFilter && (!query || `${current.name} ${current.category || ''}`.toLocaleLowerCase().includes(query))) this.stopLivePreview();
       list.innerHTML = '<div style="text-align:center; padding:3rem; color:var(--text-muted);">Nenhum canal encontrado.</div>';
       return;
     }
 
-    list.innerHTML = channels.map((c, i) => `
-      <div class="livetv-channel-item ${state.currentLiveChannel && state.currentLiveChannel.id === c.id ? 'active' : (i === 0 && !state.currentLiveChannel ? 'active' : '')}" 
+    const currentPreview = state.currentLiveChannel;
+    if (currentPreview && !channels.some(channel => channel.id === currentPreview.id)) this.stopLivePreview();
+
+    list.innerHTML = channels.map((c) => `
+      <div class="livetv-channel-item ${state.currentLiveChannel && state.currentLiveChannel.id === c.id ? 'active' : ''}"
            id="item-${c.id}"
            onclick="UI.selectLiveChannel('${c.id}')">
         <div class="livetv-channel-item-icon">${c.type === 'radio' ? '📻' : '📺'}</div>
@@ -5195,10 +5245,21 @@ const UI = {
       </div>
     `).join('');
 
-    // Auto-preview first channel if none playing
-    if (!state.currentLiveChannel && channels.length > 0) {
-      this.selectLiveChannel(channels[0].id);
+    if (!state.currentLiveChannel) {
+      const selected = channels.find(channel => channel.id === state.lastValidLiveChannelId) || channels.find(channel => channel.type === 'tv') || channels[0];
+      if (selected) this.selectLiveChannel(selected.id);
     }
+  },
+
+  stopLivePreview() {
+    if (window.livePreviewHls) { window.livePreviewHls.destroy(); window.livePreviewHls = null; }
+    const video = document.getElementById('livetv-preview-video');
+    if (video) { video.pause(); video.removeAttribute('src'); video.load(); }
+    state.currentLiveChannel = null;
+    const title = document.getElementById('livetv-preview-title');
+    const subtitle = document.getElementById('livetv-preview-sub');
+    if (title) title.textContent = 'Selecione um canal';
+    if (subtitle) subtitle.textContent = 'Nenhum canal corresponde ao filtro atual.';
   },
 
   selectLiveChannel(channelId) {
@@ -5206,6 +5267,7 @@ const UI = {
     if (!channel) return;
 
     state.currentLiveChannel = channel;
+    state.lastValidLiveChannelId = channel.id;
 
     // Highlight in list
     document.querySelectorAll('.livetv-channel-item').forEach(el => el.classList.remove('active'));
@@ -5216,7 +5278,7 @@ const UI = {
     const titleEl = document.getElementById('livetv-preview-title');
     const subEl = document.getElementById('livetv-preview-sub');
     if (titleEl) titleEl.textContent = channel.name;
-    if (subEl) subEl.textContent = channel.type === 'radio' ? 'Rádio Online • Transmissão ao Vivo' : 'Sinal Digital HD • Ao Vivo';
+    if (subEl) subEl.textContent = channel.type === 'radio' ? 'Rádio Online • Transmissão ao Vivo' : 'Conectando à transmissão ao vivo…';
 
     this.playPreviewStream(channel);
   },
@@ -5238,8 +5300,35 @@ const UI = {
 
     video.autoplay = true;
     video.muted = false;
+    const previewChannelId = channel.id;
+    const updateChannelError = () => {
+      if (state.currentLiveChannel?.id === previewChannelId) {
+        const subEl = document.getElementById('livetv-preview-sub');
+        if (subEl) subEl.textContent = 'Esta transmissão falhou. Escolha outro canal para continuar.';
+      }
+    };
+    video.onerror = () => {
+      const mediaError = video.error;
+      if (state.currentLiveChannel?.id !== previewChannelId) return;
+      if (mediaError && mediaError.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED && url === channel.streamUrl && channel.streamUrl.startsWith('http://') && location.protocol === 'https:') {
+        video.src = `https://corsproxy.io/?url=${encodeURIComponent(channel.streamUrl)}`;
+        video.play().catch(() => {});
+      } else {
+        updateChannelError();
+      }
+    };
+    video.onplaying = () => {
+      if (state.currentLiveChannel?.id === previewChannelId) {
+        const subEl = document.getElementById('livetv-preview-sub');
+        if (subEl) subEl.textContent = channel.type === 'radio' ? 'Rádio Online • Transmissão ao Vivo' : 'Sinal Digital HD • Ao Vivo';
+      }
+    };
 
-    if (url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
+    const nativeHls = video.canPlayType('application/vnd.apple.mpegurl');
+    if (url.includes('.m3u8') && nativeHls) {
+      video.src = url;
+      video.play().catch(() => {});
+    } else if (url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
       const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: true,
@@ -5259,20 +5348,21 @@ const UI = {
       });
       hls.on(Hls.Events.ERROR, (event, data) => {
         if (data.fatal) {
-          if (!url.includes('corsproxy.io')) {
+          if (data.type === Hls.ErrorTypes.NETWORK_ERROR && !url.includes('corsproxy.io')) {
             hls.loadSource(`https://corsproxy.io/?url=${encodeURIComponent(channel.streamUrl)}`);
+          } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+            hls.recoverMediaError();
           } else {
-            hls.startLoad();
+            updateChannelError();
+            hls.destroy();
+            window.livePreviewHls = null;
           }
         }
       });
       window.livePreviewHls = hls;
     } else {
       video.src = url;
-      video.play().catch(() => {
-        video.muted = true;
-        video.play().catch(() => {});
-      });
+      video.play().catch(() => {});
     }
   },
 
@@ -5325,7 +5415,7 @@ const UI = {
           <div class="search-tab-box">
             <div class="search-tab-input-wrap">
               <svg class="search-tab-input-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input type="text" id="tab-search-input" class="search-tab-input" placeholder="Digite o nome de um filme, série ou anime..." autofocus>
+              <input type="search" id="tab-search-input" class="search-tab-input" enterkeyhint="search" placeholder="Digite o nome de um filme, série ou anime..." autofocus>
               <button id="tab-search-clear" class="search-tab-clear hidden" title="Limpar pesquisa">✕</button>
             </div>
             <div class="search-category-tabs" id="search-category-tabs">
@@ -5367,6 +5457,7 @@ const UI = {
       setTimeout(() => input.focus(), 80);
       const debouncedSearch = debounce((q) => {
         const query = (q || '').trim();
+        if (!query && state.tabSearchResultsObserver) state.tabSearchResultsObserver.disconnect();
         if (clearBtn) clearBtn.classList.toggle('hidden', query.length === 0);
         this.runSearchTabQuery(query);
       }, 150);
@@ -5414,6 +5505,9 @@ const UI = {
   },
 
   initTabExplore() {
+    state.tabSearchGeneration = (state.tabSearchGeneration || 0) + 1;
+    state.tabSearchResultsLoading = false;
+    state.tabSearchResultHasMore = false;
     state.tabExploreSkip = 0;
     state.tabExploreLoading = false;
     state.tabExploreHasMore = true;
@@ -5421,6 +5515,14 @@ const UI = {
     const grid = document.getElementById('tab-search-initial-grid');
     if (grid) grid.innerHTML = '';
     this.loadMoreTabExplore();
+    const sentinel = document.getElementById('tab-search-loader');
+    if (sentinel && 'IntersectionObserver' in window) {
+      if (state.tabExploreObserver) state.tabExploreObserver.disconnect();
+      state.tabExploreObserver = new IntersectionObserver(entries => {
+        if (entries.some(entry => entry.isIntersecting)) this.loadMoreTabExplore();
+      }, { rootMargin: '900px 0px' });
+      state.tabExploreObserver.observe(sentinel);
+    }
   },
 
   async loadMoreTabExplore() {
@@ -5434,30 +5536,17 @@ const UI = {
 
     const filter = state.tabSearchFilter || 'all';
     const skip = state.tabExploreSkip || 0;
+    const pageSize = 20;
 
     try {
-      const fetchPromises = [];
+    const fetchPromises = [];
       if (filter === 'all' || filter === 'movie') {
-        const urlMovie = skip === 0
-          ? 'https://v3-cinemeta.strem.io/catalog/movie/top.json'
-          : `https://v3-cinemeta.strem.io/catalog/movie/top/skip=${skip}.json`;
-        fetchPromises.push(
-          fetchWithTimeout(urlMovie, {}, 7000)
-            .then(r => r.json())
-            .then(d => (d.metas || []).map(m => ({ ...m, type: 'movie' })))
-            .catch(() => [])
-        );
+        const urlMovie = `https://v3-cinemeta.strem.io/catalog/movie/top${skip > 0 ? `/skip=${skip}` : ''}.json`;
+        fetchPromises.push(fetchWithTimeout(urlMovie, {}, 12000).then(r => r.json()).then(d => (d.metas || []).map(m => ({ ...m, type: 'movie' }))).catch(() => []));
       }
       if (filter === 'all' || filter === 'series') {
-        const urlSeries = skip === 0
-          ? 'https://v3-cinemeta.strem.io/catalog/series/top.json'
-          : `https://v3-cinemeta.strem.io/catalog/series/top/skip=${skip}.json`;
-        fetchPromises.push(
-          fetchWithTimeout(urlSeries, {}, 7000)
-            .then(r => r.json())
-            .then(d => (d.metas || []).map(m => ({ ...m, type: 'series' })))
-            .catch(() => [])
-        );
+        const urlSeries = `https://v3-cinemeta.strem.io/catalog/series/top${skip > 0 ? `/skip=${skip}` : ''}.json`;
+        fetchPromises.push(fetchWithTimeout(urlSeries, {}, 12000).then(r => r.json()).then(d => (d.metas || []).map(m => ({ ...m, type: 'series' }))).catch(() => []));
       }
 
       const results = await Promise.all(fetchPromises);
@@ -5475,6 +5564,12 @@ const UI = {
         items = fallback;
       }
 
+      if (state.currentType === 'search' && skip === 0 && filter === 'all') {
+        const saved = [ ...(state.catalogs.popular || []), ...(state.catalogs.featured || []), ...(state.catalogs.series || []), ...(state.catalogs.action || []), ...(state.catalogs.scifi || []), ...(state.catalogs.comedy || []), ...(state.catalogs.thriller || []), ...(state.catalogs.horror || []), ...(state.catalogs.anime || []) ];
+        const included = new Set(items.map(item => item.id));
+        items.push(...saved.filter(item => item && item.id && !included.has(item.id)));
+      }
+
       const newItems = [];
       items.forEach(item => {
         if (item && item.id && !state.tabExploreSeenIds.has(item.id)) {
@@ -5489,7 +5584,7 @@ const UI = {
           loader.innerHTML = `<span style="font-size:0.85rem; color:var(--text-muted);">Você explorou todo o catálogo disponível.</span>`;
         }
       } else {
-        state.tabExploreSkip = skip + 20;
+        state.tabExploreSkip = skip + pageSize;
         const html = newItems.map(item => this.createMovieCard(item)).join('');
         grid.insertAdjacentHTML('beforeend', html);
         this.afterCatalogPaint(grid);
@@ -5500,6 +5595,10 @@ const UI = {
       if (loader) loader.style.display = 'none';
     } finally {
       state.tabExploreLoading = false;
+      if (loader && state.tabExploreHasMore && state.currentType === 'search') {
+        const bounds = loader.getBoundingClientRect();
+        if (bounds.top < window.innerHeight + 900) requestAnimationFrame(() => this.loadMoreTabExplore());
+      }
     }
   },
 
@@ -5507,8 +5606,14 @@ const UI = {
     const resultsArea = document.getElementById('tab-search-results-area');
     if (!resultsArea) return;
     const filterType = state.tabSearchFilter || 'all';
+    state.tabSearchGeneration = (state.tabSearchGeneration || 0) + 1;
+    const searchGeneration = state.tabSearchGeneration;
+    state.tabSearchResultsLoading = false;
+    state.tabSearchResultHasMore = false;
+    state.tabSearchResultOffset = 0;
 
     if (!query) {
+      if (state.tabSearchResultsObserver) state.tabSearchResultsObserver.disconnect();
       resultsArea.innerHTML = `
         <div class="search-tab-initial-state">
           <div class="initial-grid-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:8px;">
@@ -5537,6 +5642,7 @@ const UI = {
 
     try {
       const results = await API.searchContent(filterType, query);
+      if (searchGeneration !== (state.tabSearchGeneration || 0) || state.currentType !== 'search' || (document.getElementById('tab-search-input')?.value || '').trim() !== query) return;
       if (!results || results.length === 0) {
         resultsArea.innerHTML = `
           <div class="search-empty-state" style="text-align:center; padding: 4rem 1rem; color: var(--text-secondary);">
@@ -5550,6 +5656,10 @@ const UI = {
 
       state.tabQueryAllResults = results;
       state.tabQueryRenderIndex = 0;
+      state.tabSearchResultsLoading = false;
+      state.tabSearchResultOffset = 0;
+      state.tabSearchResultHasMore = results.length >= 20;
+      state.tabSearchResultTotal = results.length;
       const labelType = filterType === 'movie' ? 'Filmes' : filterType === 'series' ? 'Séries' : 'Títulos';
 
       resultsArea.innerHTML = `
@@ -5565,6 +5675,14 @@ const UI = {
       `;
 
       this.loadMoreTabSearchResults();
+      const queryLoader = document.getElementById('tab-search-query-loader');
+      if (queryLoader) {
+        if (state.tabSearchResultsObserver) state.tabSearchResultsObserver.disconnect();
+        state.tabSearchResultsObserver = new IntersectionObserver(entries => {
+          if (entries.some(entry => entry.isIntersecting)) this.loadMoreTabSearchResults();
+        }, { rootMargin: '700px 0px' });
+        state.tabSearchResultsObserver.observe(queryLoader);
+      }
     } catch (err) {
       console.error('Erro na busca da aba:', err);
       resultsArea.innerHTML = `<p style="text-align:center; padding: 3rem; color: var(--text-muted);">Erro ao pesquisar. Tente novamente.</p>`;
@@ -5579,11 +5697,14 @@ const UI = {
 
     const start = state.tabQueryRenderIndex || 0;
     if (start >= state.tabQueryAllResults.length) {
-      if (loader) loader.style.display = 'none';
+      if (state.tabSearchResultHasMore && !state.tabSearchResultsLoading) {
+        this.loadMoreTabSearchCatalogResults();
+        if (loader) loader.style.display = 'block';
+      } else if (loader) loader.style.display = 'none';
       return;
     }
 
-    const CHUNK_SIZE = 24;
+    const CHUNK_SIZE = 20;
     const nextChunk = state.tabQueryAllResults.slice(start, start + CHUNK_SIZE);
     state.tabQueryRenderIndex = start + nextChunk.length;
 
@@ -5592,7 +5713,50 @@ const UI = {
     this.afterCatalogPaint(grid);
 
     if (loader) {
-      loader.style.display = (state.tabQueryRenderIndex < state.tabQueryAllResults.length) ? 'block' : 'none';
+      loader.style.display = (state.tabQueryRenderIndex < state.tabQueryAllResults.length || state.tabSearchResultHasMore) ? 'block' : 'none';
+    }
+    if (state.tabQueryRenderIndex >= state.tabQueryAllResults.length && state.tabSearchResultHasMore && !state.tabSearchResultsLoading) this.loadMoreTabSearchCatalogResults();
+  },
+
+  async loadMoreTabSearchCatalogResults() {
+    if (state.tabSearchResultsLoading || !state.tabSearchResultHasMore) return;
+    const searchGeneration = state.tabSearchGeneration;
+    const query = (document.getElementById('tab-search-input')?.value || '').trim();
+    const filterType = state.tabSearchFilter || 'all';
+    const offset = state.tabSearchResultOffset || 0;
+    if (!query || state.currentType !== 'search' || searchGeneration !== state.tabSearchGeneration) return;
+    state.tabSearchResultsLoading = true;
+    const loader = document.getElementById('tab-search-query-loader');
+    if (loader) loader.style.display = 'block';
+    try {
+      const types = filterType === 'all' ? ['movie', 'series'] : [filterType];
+      const pages = await Promise.all(types.map(type => fetchWithTimeout(`https://v3-cinemeta.strem.io/catalog/${type}/top/search=${encodeURIComponent(query)}${offset ? `/skip=${offset}` : ''}.json`, {}, 12000).then(response => response.json()).then(data => (data.metas || []).map(meta => ({ ...meta, type: type }))).catch(() => [])));
+      if (searchGeneration !== state.tabSearchGeneration || query !== (document.getElementById('tab-search-input')?.value || '').trim() || state.currentType !== 'search') return;
+      const known = new Set(state.tabQueryAllResults.map(item => item.id));
+      const combined = types.length === 2 ? this.interleaveArrays(pages[0], pages[1]) : pages[0];
+      const additions = combined.filter(item => item.id && !known.has(item.id));
+      state.tabSearchResultOffset = offset + 20;
+      state.tabSearchResultHasMore = pages.some(page => page.length >= 20) && offset < 120;
+      if (additions.length) {
+        additions.forEach(item => known.add(item.id));
+        state.tabQueryAllResults.push(...additions);
+        state.tabSearchResultTotal += additions.length;
+        const title = document.querySelector('#tab-search-results-area .results-header-bar .section-title');
+        if (title) title.innerHTML = `Resultados para "${query}" <span style="font-size:.9rem;color:var(--text-muted);font-weight:500">(${state.tabSearchResultTotal} ${filterType === 'all' ? 'Títulos' : filterType === 'movie' ? 'Filmes' : 'Séries'})</span>`;
+        this.loadMoreTabSearchResults();
+      } else if (pages.every(page => page.length === 0)) {
+        state.tabSearchResultHasMore = false;
+      } else if (offset >= 120) {
+        state.tabSearchResultHasMore = false;
+      } else {
+        this.loadMoreTabSearchCatalogResults();
+      }
+    } finally {
+      state.tabSearchResultsLoading = false;
+      if (loader && !state.tabSearchResultHasMore && state.tabQueryRenderIndex >= state.tabQueryAllResults.length) loader.style.display = 'none';
+      if (searchGeneration === state.tabSearchGeneration && state.tabSearchResultHasMore && state.tabQueryRenderIndex >= state.tabQueryAllResults.length && state.currentType === 'search') {
+        requestAnimationFrame(() => this.loadMoreTabSearchResults());
+      }
     }
   },
 
@@ -5627,7 +5791,7 @@ const UI = {
         <div class="explore-search-wrap">
           <div class="explore-search-bar">
             <span class="explore-search-icon">🔍</span>
-            <input type="text" id="explore-search-input" class="explore-search-input" placeholder="Buscar filmes, séries, sagas e animes..." value="${state.exploreQuery || ''}">
+            <input type="search" id="explore-search-input" class="explore-search-input" enterkeyhint="search" placeholder="Buscar filmes, séries, sagas e animes..." value="${state.exploreQuery || ''}">
             <button id="explore-search-clear" class="explore-search-clear ${state.exploreQuery ? '' : 'hidden'}" title="Limpar busca">✕</button>
           </div>
         </div>
@@ -5674,12 +5838,17 @@ const UI = {
 
     if (searchInput) {
       const debouncedSearch = debounce((q) => {
+        if (state.exploreLoadObserver) state.exploreLoadObserver.disconnect();
+        document.getElementById('explore-load-more')?.remove();
         state.exploreQuery = q.trim();
+        state.exploreSearchSeq = (state.exploreSearchSeq || 0) + 1;
         if (state.exploreQuery) {
           if (clearBtn) clearBtn.classList.remove('hidden');
           this.searchExploreContent(state.exploreQuery);
         } else {
           if (clearBtn) clearBtn.classList.add('hidden');
+          if (state.exploreLoadObserver) state.exploreLoadObserver.disconnect();
+          document.getElementById('explore-load-more')?.remove();
           this.loadExploreContent();
         }
       }, 150);
@@ -5691,7 +5860,10 @@ const UI = {
       clearBtn.addEventListener('click', () => {
         searchInput.value = '';
         state.exploreQuery = '';
+        state.exploreSearchSeq = (state.exploreSearchSeq || 0) + 1;
         clearBtn.classList.add('hidden');
+        if (state.exploreLoadObserver) state.exploreLoadObserver.disconnect();
+        document.getElementById('explore-load-more')?.remove();
         this.loadExploreContent();
       });
     }
@@ -5703,8 +5875,15 @@ const UI = {
         btn.classList.add('active');
         state.exploreType = btn.dataset.exploreType;
         if (state.exploreQuery) {
+          state.exploreSearchSeq = (state.exploreSearchSeq || 0) + 1;
           this.searchExploreContent(state.exploreQuery);
         } else {
+          if (state.exploreLoadObserver) state.exploreLoadObserver.disconnect();
+          document.getElementById('explore-load-more')?.remove();
+          if (!state.exploreSaga) {
+            state.exploreContentCache = state.exploreContentCache || {};
+            delete state.exploreContentCache[`${state.exploreType}:${state.exploreGenre || 'Action'}`];
+          }
           this.loadExploreContent();
         }
       });
@@ -5718,6 +5897,11 @@ const UI = {
         state.exploreGenre = chip.dataset.genre;
         state.exploreSaga = null;
         state.exploreQuery = '';
+        state.exploreSearchSeq = (state.exploreSearchSeq || 0) + 1;
+        if (state.exploreLoadObserver) state.exploreLoadObserver.disconnect();
+        document.getElementById('explore-load-more')?.remove();
+        state.exploreContentCache = state.exploreContentCache || {};
+        delete state.exploreContentCache[`${state.exploreType || 'all'}:${state.exploreGenre}`];
         if (searchInput) searchInput.value = '';
         if (clearBtn) clearBtn.classList.add('hidden');
         this.loadExploreContent();
@@ -5732,6 +5916,9 @@ const UI = {
         state.exploreSaga = chip.dataset.saga;
         state.exploreGenre = null;
         state.exploreQuery = '';
+        state.exploreSearchSeq = (state.exploreSearchSeq || 0) + 1;
+        if (state.exploreLoadObserver) state.exploreLoadObserver.disconnect();
+        document.getElementById('explore-load-more')?.remove();
         if (searchInput) searchInput.value = '';
         if (clearBtn) clearBtn.classList.add('hidden');
         this.loadExploreContent();
@@ -5740,8 +5927,13 @@ const UI = {
 
     // Load initial content for explore tab
     if (state.exploreQuery) {
+      state.exploreSearchOffset = 0;
+      state.exploreSearchHasMore = true;
+      state.exploreSearchResults = [];
+      state.exploreSearchSeq = (state.exploreSearchSeq || 0) + 1;
       this.searchExploreContent(state.exploreQuery);
     } else {
+      state.exploreSearchSeq = (state.exploreSearchSeq || 0) + 1;
       this.loadExploreContent();
     }
   },
@@ -5751,6 +5943,8 @@ const UI = {
     const titleEl = document.getElementById('explore-results-title');
     const countEl = document.getElementById('explore-results-count');
     if (!grid) return;
+    state.exploreLoadGeneration = (state.exploreLoadGeneration || 0) + 1;
+    const loadGeneration = state.exploreLoadGeneration;
 
     grid.innerHTML = `
       <div class="streams-loading" style="grid-column: 1 / -1; padding: 4rem 0;">
@@ -5761,6 +5955,7 @@ const UI = {
 
     // 1. If Saga is active
     if (state.exploreSaga) {
+      state.exploreSearchSeq = (state.exploreSearchSeq || 0) + 1;
       const saga = CINEMA_SAGAS.find(s => s.id === state.exploreSaga);
       if (saga) {
         if (titleEl) titleEl.textContent = saga.title;
@@ -5778,25 +5973,32 @@ const UI = {
 
     try {
       const type = state.exploreType || 'all';
-      let items = [];
-
-      if (type === 'all') {
-        const [movTop, serTop] = await Promise.all([
-          API.fetchCatalog('movie', 'top', { genre: currentGenre }).catch(() => []),
-          API.fetchCatalog('series', 'top', { genre: currentGenre }).catch(() => [])
-        ]);
-        (movTop || []).forEach(m => m.type = 'movie');
-        (serTop || []).forEach(s => s.type = 'series');
-        items = this.interleaveArrays(movTop || [], serTop || []);
-      } else {
-        items = await API.fetchCatalog(type, 'top', { genre: currentGenre }).catch(() => []);
-        (items || []).forEach(item => item.type = type);
+      const cacheKey = `${type}:${currentGenre}`;
+      state.exploreContentCache = state.exploreContentCache || {};
+      if (!state.exploreContentCache[cacheKey]) {
+        let firstPage;
+        if (type === 'all') {
+          const [movies, series] = await Promise.all([
+            API.fetchCatalog('movie', 'top', { genre: currentGenre }).catch(() => []),
+            API.fetchCatalog('series', 'top', { genre: currentGenre }).catch(() => [])
+          ]);
+          (movies || []).forEach(item => item.type = 'movie');
+          (series || []).forEach(item => item.type = 'series');
+          firstPage = this.interleaveArrays(movies || [], series || []);
+        } else {
+          firstPage = await API.fetchCatalog(type, 'top', { genre: currentGenre }).catch(() => []);
+          (firstPage || []).forEach(item => item.type = type);
+        }
+        state.exploreContentCache[cacheKey] = firstPage || [];
       }
+      if (loadGeneration !== state.exploreLoadGeneration || state.currentType !== 'explore') return;
+      const items = state.exploreContentCache[cacheKey];
 
       if (countEl) countEl.textContent = `${items.length} títulos encontrados`;
 
       if (items.length > 0) {
-        grid.innerHTML = items.map(item => this.createMovieCard(item)).join('');
+        grid.innerHTML = items.slice(0, 24).map(item => this.createMovieCard(item)).join('');
+        this.mountExplorePagination({ cacheKey, next: Math.min(24, items.length) });
       } else {
         grid.innerHTML = `
           <div style="grid-column: 1 / -1; text-align: center; padding: 4rem 1rem; color: var(--text-secondary);">
@@ -5816,6 +6018,7 @@ const UI = {
     const titleEl = document.getElementById('explore-results-title');
     const countEl = document.getElementById('explore-results-count');
     if (!grid) return;
+    const searchSeq = state.exploreSearchSeq;
 
     if (titleEl) titleEl.textContent = `Resultados para "${query}"`;
 
@@ -5842,11 +6045,20 @@ const UI = {
         results = await API.searchContent(type, query).catch(() => []);
         (results || []).forEach(r => r.type = type);
       }
+      if (searchSeq !== state.exploreSearchSeq || state.currentType !== 'explore' || state.exploreQuery !== query) return;
 
       if (countEl) countEl.textContent = `${results.length} resultados`;
 
       if (results.length > 0) {
-        grid.innerHTML = results.map(item => this.createMovieCard(item)).join('');
+        if (state.exploreLoadObserver) state.exploreLoadObserver.disconnect();
+        document.getElementById('explore-load-more')?.remove();
+        state.exploreQueryResults = results;
+        state.exploreQueryIndex = 0;
+        state.exploreSearchOffset = 0;
+        state.exploreSearchHasMore = results.length >= 20;
+        state.exploreSearchLoading = false;
+        grid.innerHTML = '';
+        this.loadMoreExploreSearchResults();
       } else {
         grid.innerHTML = `
           <div style="grid-column: 1 / -1; text-align: center; padding: 4rem 1rem; color: var(--text-secondary);">
@@ -5859,6 +6071,83 @@ const UI = {
     } catch (err) {
       console.error('Error in searchExploreContent:', err);
       grid.innerHTML = `<p style="grid-column:1/-1; text-align:center; padding:3rem; color:var(--text-muted);">Erro ao realizar busca. Tente novamente.</p>`;
+    }
+  },
+
+  mountExplorePagination({ cacheKey, next }) {
+    const grid = document.getElementById('explore-grid');
+    if (!grid) return;
+    let loader = document.getElementById('explore-load-more');
+    if (!loader) {
+      loader = document.createElement('div');
+      loader.id = 'explore-load-more';
+      loader.className = 'explore-load-more';
+      loader.innerHTML = '<span class="spinner" aria-hidden="true"></span><span>Carregando mais títulos...</span>';
+      grid.after(loader);
+    }
+    if (state.exploreLoadObserver) state.exploreLoadObserver.disconnect();
+    state.exploreLoadObserver = new IntersectionObserver(() => {
+      if (state.currentType !== 'explore' || state.explorePageLoading) return;
+      const allItems = state.exploreContentCache[cacheKey] || [];
+      if (next >= allItems.length) { loader.textContent = 'Você chegou ao fim deste catálogo.'; state.exploreLoadObserver.disconnect(); return; }
+      state.explorePageLoading = true;
+      const slice = allItems.slice(next, next + 24);
+      grid.insertAdjacentHTML('beforeend', slice.map(item => this.createMovieCard(item)).join(''));
+      next += slice.length;
+      state.explorePageLoading = false;
+    }, { rootMargin: '650px 0px' });
+    state.exploreLoadObserver.observe(loader);
+  },
+
+  loadMoreExploreSearchResults() {
+    const grid = document.getElementById('explore-grid');
+    if (!grid) return;
+    const results = state.exploreQueryResults || [];
+    const next = state.exploreQueryIndex || 0;
+    if (next >= results.length) {
+      if (state.exploreSearchHasMore && !state.exploreSearchLoading) this.loadMoreExploreSearchResultsPage();
+      return;
+    }
+    const slice = results.slice(next, next + 24);
+    grid.insertAdjacentHTML('beforeend', slice.map(item => this.createMovieCard(item)).join(''));
+    state.exploreQueryIndex = next + slice.length;
+    let loader = document.getElementById('explore-load-more');
+    if (state.exploreQueryIndex < results.length) {
+      if (!loader) { loader = document.createElement('div'); loader.id = 'explore-load-more'; loader.className = 'explore-load-more'; grid.after(loader); }
+      if (state.exploreLoadObserver) state.exploreLoadObserver.disconnect();
+      state.exploreLoadObserver = new IntersectionObserver(entries => { if (entries.some(entry => entry.isIntersecting)) this.loadMoreExploreSearchResults(); }, { rootMargin: '650px 0px' });
+      state.exploreLoadObserver.observe(loader);
+    } else if (loader) loader.remove();
+  },
+
+  async loadMoreExploreSearchResultsPage() {
+    if (state.exploreSearchLoading || !state.exploreSearchHasMore || state.currentType !== 'explore' || !state.exploreQuery || !state.exploreQueryResults) return;
+    const query = state.exploreQuery;
+    const type = state.exploreType || 'all';
+    const offset = state.exploreSearchOffset || 0;
+    const searchSeq = state.exploreSearchSeq;
+    state.exploreSearchLoading = true;
+    try {
+      const types = type === 'all' ? ['movie', 'series'] : [type];
+      const pages = await Promise.all(types.map(contentType => fetchWithTimeout(`https://v3-cinemeta.strem.io/catalog/${contentType}/top/search=${encodeURIComponent(query)}${offset ? `/skip=${offset}` : ''}.json`, {}, 12000).then(response => response.json()).then(data => (data.metas || []).map(meta => ({ ...meta, type: contentType }))).catch(() => [])));
+      if (searchSeq !== state.exploreSearchSeq || query !== state.exploreQuery || state.currentType !== 'explore') return;
+      const currentIds = new Set(state.exploreQueryResults.map(item => item.id));
+      const result = types.length === 2 ? this.interleaveArrays(pages[0], pages[1]) : pages[0];
+      const additions = result.filter(item => item.id && !currentIds.has(item.id));
+      state.exploreSearchOffset = offset + 20;
+      state.exploreSearchHasMore = pages.some(page => page.length >= 20) && offset < 120;
+      if (additions.length) {
+        additions.forEach(item => currentIds.add(item.id));
+        state.exploreQueryResults.push(...additions);
+        this.loadMoreExploreSearchResults();
+      } else if (pages.every(page => page.length === 0) || offset >= 120) {
+        state.exploreSearchHasMore = false;
+        document.getElementById('explore-load-more')?.remove();
+      } else {
+        this.loadMoreExploreSearchResultsPage();
+      }
+    } finally {
+      state.exploreSearchLoading = false;
     }
   },
   
@@ -5893,7 +6182,13 @@ const UI = {
     const addIfMatch = (item) => {
       if (!item || !item.id || seenIds.has(item.id)) return;
       const n = (item.name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-      if (n.includes(normQ)) {
+      const translatedName = PTBR_Engine.translateTitle(item.name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+      if (n.includes(normQ) || translatedName.includes(normQ)) {
+        const searchType = state.headerSearchFilter || 'all';
+        const normalizedQuery = this.normalizeSearchTitle(normQ);
+        const normalizedName = this.normalizeSearchTitle(item.name || '');
+        if (searchType === 'all' && normalizedQuery.length >= 4 && !normalizedName.includes(normalizedQuery) && !translatedName.includes(normQ)) return;
+        if (searchType !== 'all' && item.type && item.type !== searchType) return;
         seenIds.add(item.id);
         localMatches.push(item);
       }
@@ -7040,7 +7335,9 @@ const UI = {
       this.streamWatchdogTimer = null;
     }
 
-    if (url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
+    if (url.includes('.m3u8') && video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = url;
+    } else if (url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
       const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: true,

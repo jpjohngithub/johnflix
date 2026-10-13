@@ -30,6 +30,9 @@
           <a href="#" class="nav-link active" data-type="all" title="Início">
             <span class="nav-link-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9.5z"/></svg></span>
           </a>
+          <a href="#" class="nav-link" data-type="explore" title="Explorar" aria-label="Explorar catálogo">
+            <span class="nav-link-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m16 16 4 4M11 7v8M7 11h8"/></svg></span>
+          </a>
           <a href="#" class="nav-link" data-type="search-action" id="nav-search-link" title="Pesquisar">
             <span class="nav-link-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></span>
           </a>
@@ -86,6 +89,24 @@
           </div>
           <button class="hero-nav-arrow hero-nav-next" id="hero-next-btn" aria-label="Próxima Recomendação">›</button>
         </div>
+      </section>
+
+      <section class="home-utility-strip" aria-label="Atalhos do JohnFlix">
+        <button type="button" class="home-utility-card" data-type="explore">
+          <span class="home-utility-icon">✦</span>
+          <span><strong>Descubra algo novo</strong><small>Explore centenas de filmes e séries</small></span>
+          <span class="home-utility-arrow" aria-hidden="true">›</span>
+        </button>
+        <button type="button" class="home-utility-card" data-type="livetv">
+          <span class="home-utility-icon live">◉</span>
+          <span><strong>Ao vivo agora</strong><small>Entre na programação da TV</small></span>
+          <span class="home-utility-arrow" aria-hidden="true">›</span>
+        </button>
+        <button type="button" class="home-utility-card" data-type="watchlist">
+          <span class="home-utility-icon list">＋</span>
+          <span><strong>Sua próxima sessão</strong><small>Continue ou veja sua lista</small></span>
+          <span class="home-utility-arrow" aria-hidden="true">›</span>
+        </button>
       </section>
 
       <div id="catalog-container">
@@ -497,10 +518,14 @@
     </div>
 
         <!-- Mobile Bottom Navigation Bar -->
-    <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+    <nav class="mobile-bottom-nav" id="mobile-bottom-nav" aria-label="Navegação principal">
       <button class="mobile-nav-item active" data-type="all">
         <span class="mobile-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9.5z"/></svg></span>
         <span class="mobile-nav-label">Início</span>
+      </button>
+      <button class="mobile-nav-item" data-type="explore">
+        <span class="mobile-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m16 16 4 4M11 7v8M7 11h8"/></svg></span>
+        <span class="mobile-nav-label">Explorar</span>
       </button>
       <button class="mobile-nav-item" data-type="movie">
         <span class="mobile-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.2"/><path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 7h5M17 17h5"/></svg></span>
