@@ -4265,9 +4265,19 @@ body {
   z-index: 20;
 }
 
-.player-overlay:hover .player-hud,
 .player-overlay.user-active .player-hud {
   opacity: 1;
+  pointer-events: auto;
+}
+
+.player-overlay.user-idle {
+  cursor: none !important;
+}
+
+.player-overlay.user-idle .player-hud,
+.player-hud.hud-hidden {
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 .hud-top {

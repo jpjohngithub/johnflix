@@ -3512,13 +3512,20 @@ const UI = {
     const resetHudTimer = () => {
       if (!playerHud) return;
       playerHud.classList.remove('hud-hidden');
+      if (playerOverlay) {
+        playerOverlay.classList.remove('user-idle');
+        playerOverlay.classList.add('user-active');
+      }
       clearTimeout(hudTimeout);
       hudTimeout = setTimeout(() => {
         if (playerOverlay && !playerOverlay.classList.contains('hidden')) {
           playerHud.classList.add('hud-hidden');
+          playerOverlay.classList.remove('user-active');
+          playerOverlay.classList.add('user-idle');
         }
-      }, 3500);
+      }, 2500);
     };
+    this.resetHudTimer = resetHudTimer;
 
     const togglePlayPause = () => {
       if (!video || video.classList.contains('hidden')) return;
@@ -3543,7 +3550,15 @@ const UI = {
         resetHudTimer();
         this.onUserPlayerInteraction();
       });
+      playerOverlay.addEventListener('pointermove', () => {
+        resetHudTimer();
+        this.onUserPlayerInteraction();
+      });
       playerOverlay.addEventListener('touchstart', () => {
+        resetHudTimer();
+        this.onUserPlayerInteraction();
+      }, { passive: true });
+      playerOverlay.addEventListener('touchmove', () => {
         resetHudTimer();
         this.onUserPlayerInteraction();
       }, { passive: true });
