@@ -3128,7 +3128,11 @@ const UI = {
     if (navSearchLink) {
       navSearchLink.addEventListener('click', (e) => {
         e.preventDefault();
-        openSearchPalette();
+        document.querySelectorAll('[data-type]').forEach(b => b.classList.remove('active'));
+        navSearchLink.classList.add('active');
+        state.currentType = 'search';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        UI.renderSearchTab();
       });
     }
 
@@ -3143,6 +3147,14 @@ const UI = {
           if (b.dataset.type === type) b.classList.add('active');
           else b.classList.remove('active');
         });
+
+        if (type === 'search-action' || type === 'search') {
+          state.currentType = 'search';
+          state.currentGenre = '';
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          UI.renderSearchTab();
+          return;
+        }
 
         state.currentType = type;
         state.currentGenre = '';
@@ -3874,7 +3886,7 @@ const UI = {
     try {
       this.hideSearchResults();
 
-      if (state.currentType === 'watchlist' || state.currentType === 'explore' || state.currentType === 'playlists') {
+      if (state.currentType === 'search' || state.currentType === 'watchlist' || state.currentType === 'explore' || state.currentType === 'playlists') {
         const heroSection = document.getElementById('hero-section');
         if (heroSection) heroSection.classList.add('hidden');
         this.renderCatalogs();
@@ -4222,14 +4234,14 @@ const UI = {
           </div>
           <div class="reveal-actions">
             <button class="btn-play" title="Assistir Agora" onclick="event.stopPropagation(); UI.quickPlayMovie('${cleanId}', '${itemType}')">
-              <svg class="i i-sm" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
-              Assistir
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+              <span>Assistir</span>
             </button>
             <button class="btn-icon" title="Adicionar à Playlist" onclick="event.stopPropagation(); UI.openPlaylistPicker(event, '${cleanId}', '${itemType}')">
-              ➕
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             </button>
-            <button class="btn-icon" title="Detalhes" onclick="event.stopPropagation(); UI.openModal('${cleanId}', '${itemType}')">
-              ℹ
+            <button class="btn-icon" title="Mais Informações" onclick="event.stopPropagation(); UI.openModal('${cleanId}', '${itemType}')">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
             </button>
           </div>
         </div>
@@ -4759,11 +4771,15 @@ const UI = {
               </div>
               <div class="reveal-actions">
                 <button class="btn-play" title="Assistir Agora" onclick="event.stopPropagation(); UI.quickPlayMovie('${cleanId}', '${itemType}')">
-                  <svg class="i i-sm" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
-                  Assistir
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+                  <span>Assistir</span>
                 </button>
-                <button class="btn-icon" title="Adicionar à Playlist" onclick="event.stopPropagation(); UI.openPlaylistPicker(event, '${cleanId}', '${itemType}')">➕</button>
-                <button class="btn-icon" title="Detalhes" onclick="event.stopPropagation(); UI.openModal('${cleanId}', '${itemType}')">ℹ</button>
+                <button class="btn-icon" title="Adicionar à Playlist" onclick="event.stopPropagation(); UI.openPlaylistPicker(event, '${cleanId}', '${itemType}')">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </button>
+                <button class="btn-icon" title="Mais Informações" onclick="event.stopPropagation(); UI.openModal('${cleanId}', '${itemType}')">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                </button>
               </div>
             </div>
           </article>
@@ -4872,6 +4888,12 @@ const UI = {
       }
     }
     
+    // Dedicated Search Tab
+    if (state.currentType === 'search') {
+      this.renderSearchTab();
+      return;
+    }
+
     // Dedicated Explore Tab
     if (state.currentType === 'explore') {
       this.renderExploreHub();
@@ -4884,6 +4906,159 @@ const UI = {
     
     container.innerHTML = html;
     this.afterCatalogPaint(container);
+  },
+
+  renderSearchTab() {
+    const container = document.getElementById('catalog-container');
+    const heroSection = document.getElementById('hero-section');
+    const searchResults = document.getElementById('search-results');
+    if (heroSection) heroSection.classList.add('hidden');
+    if (searchResults) searchResults.classList.add('hidden');
+    if (!container) return;
+    container.classList.remove('hidden');
+
+    const popularQueries = [
+      'Vingadores', 'Homem-Aranha', 'Deadpool', 'Interestelar',
+      'The Last of Us', 'Stranger Things', 'Breaking Bad', 'Batman',
+      'Harry Potter', 'Game of Thrones', 'Duna', 'Oppenheimer'
+    ];
+
+    container.innerHTML = `
+      <div class="search-tab-page">
+        <div class="search-tab-hero">
+          <div class="search-tab-badge">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            CENTRAL DE PESQUISA
+          </div>
+          <h1 class="search-tab-title">O que você quer assistir hoje?</h1>
+          <p class="search-tab-subtitle">Pesquise filmes, séries e lançamentos com fontes diretas e dublagem PT-BR.</p>
+
+          <div class="search-tab-box">
+            <div class="search-tab-input-wrap">
+              <svg class="search-tab-input-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="tab-search-input" class="search-tab-input" placeholder="Digite o nome de um filme, série ou anime..." autofocus>
+              <button id="tab-search-clear" class="search-tab-clear hidden" title="Limpar pesquisa">✕</button>
+            </div>
+            <div class="search-tab-quick-tags">
+              <span class="quick-label">🔥 Populares:</span>
+              ${popularQueries.map(q => `<button class="quick-tag" onclick="UI.applySearchTabQuery('${q}')">${q}</button>`).join('')}
+            </div>
+          </div>
+        </div>
+
+        <div id="tab-search-results-area" class="search-tab-results-area">
+          <div class="search-tab-initial-state">
+            <div class="initial-grid-header">
+              <h2 class="section-title" style="padding-left:0; margin-bottom:1rem; display:flex; align-items:center; gap:8px;">
+                <span>⚡</span> Títulos em Alta para Você
+              </h2>
+            </div>
+            <div class="search-grid" id="tab-search-initial-grid">
+              ${(state.catalogs.popular || []).slice(0, 14).map(item => this.createMovieCard(item)).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    this.afterCatalogPaint(container);
+
+    const input = document.getElementById('tab-search-input');
+    const clearBtn = document.getElementById('tab-search-clear');
+    if (input) {
+      setTimeout(() => input.focus(), 80);
+      const debouncedSearch = debounce((q) => {
+        const query = (q || '').trim();
+        if (clearBtn) clearBtn.classList.toggle('hidden', query.length === 0);
+        this.runSearchTabQuery(query);
+      }, 180);
+
+      input.addEventListener('input', (e) => debouncedSearch(e.target.value));
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          this.runSearchTabQuery(input.value.trim());
+        }
+      });
+    }
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        if (input) {
+          input.value = '';
+          input.focus();
+        }
+        clearBtn.classList.add('hidden');
+        this.runSearchTabQuery('');
+      });
+    }
+  },
+
+  applySearchTabQuery(query) {
+    const input = document.getElementById('tab-search-input');
+    if (input) {
+      input.value = query;
+      input.focus();
+    }
+    const clearBtn = document.getElementById('tab-search-clear');
+    if (clearBtn) clearBtn.classList.remove('hidden');
+    this.runSearchTabQuery(query);
+  },
+
+  async runSearchTabQuery(query) {
+    const resultsArea = document.getElementById('tab-search-results-area');
+    if (!resultsArea) return;
+
+    if (!query) {
+      resultsArea.innerHTML = `
+        <div class="search-tab-initial-state">
+          <div class="initial-grid-header">
+            <h2 class="section-title" style="padding-left:0; margin-bottom:1rem; display:flex; align-items:center; gap:8px;">
+              <span>⚡</span> Títulos em Alta para Você
+            </h2>
+          </div>
+          <div class="search-grid" id="tab-search-initial-grid">
+            ${(state.catalogs.popular || []).slice(0, 14).map(item => this.createMovieCard(item)).join('')}
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    resultsArea.innerHTML = `
+      <div class="search-loading-state" style="text-align:center; padding: 4rem 1rem; color: var(--text-secondary);">
+        <div class="spinner large" style="margin: 0 auto 1rem;"></div>
+        <p style="font-size: 1.1rem; font-weight: 600; color: #ffffff;">Buscando "${query}"...</p>
+      </div>
+    `;
+
+    try {
+      const results = await API.searchContent('all', query);
+      if (!results || results.length === 0) {
+        resultsArea.innerHTML = `
+          <div class="search-empty-state" style="text-align:center; padding: 4rem 1rem; color: var(--text-secondary);">
+            <div style="font-size: 3rem; margin-bottom: 0.8rem;">🔍</div>
+            <h3 style="font-size: 1.3rem; font-weight: 800; color: #ffffff; margin-bottom: 0.5rem;">Nenhum resultado encontrado para "${query}"</h3>
+            <p style="font-size: 0.9rem; color: var(--text-muted);">Verifique a ortografia ou experimente digitar o nome original em inglês.</p>
+          </div>
+        `;
+        return;
+      }
+
+      resultsArea.innerHTML = `
+        <div class="results-header-bar" style="margin-bottom: 1.2rem;">
+          <h2 class="section-title" style="padding-left:0; margin-bottom:0; font-size: 1.6rem; color: #ffffff;">
+            Resultados para "${query}" <span style="font-size: 1rem; color: var(--text-muted); font-weight: 500;">(${results.length} encontrados)</span>
+          </h2>
+        </div>
+        <div class="search-grid">
+          ${results.map(item => this.createMovieCard(item)).join('')}
+        </div>
+      `;
+    } catch (err) {
+      console.error('Erro na busca da aba:', err);
+      resultsArea.innerHTML = `<p style="text-align:center; padding: 3rem; color: var(--text-muted);">Erro ao pesquisar. Tente novamente.</p>`;
+    }
   },
 
   renderExploreHub() {
