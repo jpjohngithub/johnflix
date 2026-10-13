@@ -21,7 +21,11 @@ function debounce(fn, delay) {
   };
 }
 
-function fetchWithTimeout(url, options = {}, timeoutMs = 3500) {
+function fetchWithTimeout(url, options = {}, timeoutMs = 5000) {
+  if (typeof options === 'number') {
+    timeoutMs = options;
+    options = {};
+  }
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeoutMs);
   
@@ -3064,6 +3068,23 @@ const UI = {
       }, { passive: true });
     }
 
+    // High-performance Infinite Scroll for Search Tab
+    window.addEventListener('scroll', () => {
+      if (state.currentType === 'search') {
+        const scrollBottom = window.innerHeight + window.scrollY;
+        const totalHeight = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+        if (scrollBottom >= totalHeight - 900) {
+          const input = document.getElementById('tab-search-input');
+          const q = input ? input.value.trim() : '';
+          if (!q) {
+            UI.loadMoreTabExplore();
+          } else {
+            UI.loadMoreTabSearchResults();
+          }
+        }
+      }
+    }, { passive: true });
+
     // Genre Filter Chips
     document.querySelectorAll('.chip').forEach(chip => {
       chip.addEventListener('click', () => {
@@ -5299,13 +5320,16 @@ const UI = {
 
         <div id="tab-search-results-area" class="search-tab-results-area">
           <div class="search-tab-initial-state">
-            <div class="initial-grid-header">
-              <h2 class="section-title" style="padding-left:0; margin-bottom:1rem; display:flex; align-items:center; gap:8px;">
-                <span>⚡</span> Títulos em Alta para Você
+            <div class="initial-grid-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:8px;">
+              <h2 class="section-title" style="padding-left:0; margin-bottom:0; display:flex; align-items:center; gap:8px;">
+                <span>⚡</span> Explorar Catálogo Completo
               </h2>
+              <span id="tab-search-badge" style="font-size:0.8rem; color:var(--text-muted); background:var(--bg-glass); border:1px solid var(--border); padding:3px 10px; border-radius:20px;">Carregamento contínuo</span>
             </div>
-            <div class="search-grid" id="tab-search-initial-grid">
-              ${(state.catalogs.popular || []).slice(0, 14).map(item => this.createMovieCard(item)).join('')}
+            <div class="search-grid" id="tab-search-initial-grid"></div>
+            <div id="tab-search-loader" class="tab-search-loader" style="text-align:center; padding: 2.5rem 0; color:var(--text-secondary); width:100%; grid-column:1/-1;">
+              <div class="spinner" style="margin: 0 auto 0.6rem; width:28px; height:28px; border-width:3px;"></div>
+              <span style="font-size:0.88rem;">Carregando mais títulos...</span>
             </div>
           </div>
         </div>
@@ -5313,6 +5337,7 @@ const UI = {
     `;
 
     this.afterCatalogPaint(container);
+    this.initTabExplore();
 
     const input = document.getElementById('tab-search-input');
     const clearBtn = document.getElementById('tab-search-clear');
@@ -5366,28 +5391,118 @@ const UI = {
     this.runSearchTabQuery(query);
   },
 
+  initTabExplore() {
+    state.tabExploreSkip = 0;
+    state.tabExploreLoading = false;
+    state.tabExploreHasMore = true;
+    state.tabExploreSeenIds = new Set();
+    const grid = document.getElementById('tab-search-initial-grid');
+    if (grid) grid.innerHTML = '';
+    this.loadMoreTabExplore();
+  },
+
+  async loadMoreTabExplore() {
+    if (state.tabExploreLoading || !state.tabExploreHasMore) return;
+    const grid = document.getElementById('tab-search-initial-grid');
+    const loader = document.getElementById('tab-search-loader');
+    if (!grid) return;
+
+    state.tabExploreLoading = true;
+    if (loader) loader.style.display = 'block';
+
+    const filter = state.tabSearchFilter || 'all';
+    const skip = state.tabExploreSkip || 0;
+
+    try {
+      const fetchPromises = [];
+      if (filter === 'all' || filter === 'movie') {
+        const urlMovie = skip === 0
+          ? 'https://v3-cinemeta.strem.io/catalog/movie/top.json'
+          : `https://v3-cinemeta.strem.io/catalog/movie/top/skip=${skip}.json`;
+        fetchPromises.push(
+          fetchWithTimeout(urlMovie, {}, 7000)
+            .then(r => r.json())
+            .then(d => (d.metas || []).map(m => ({ ...m, type: 'movie' })))
+            .catch(() => [])
+        );
+      }
+      if (filter === 'all' || filter === 'series') {
+        const urlSeries = skip === 0
+          ? 'https://v3-cinemeta.strem.io/catalog/series/top.json'
+          : `https://v3-cinemeta.strem.io/catalog/series/top/skip=${skip}.json`;
+        fetchPromises.push(
+          fetchWithTimeout(urlSeries, {}, 7000)
+            .then(r => r.json())
+            .then(d => (d.metas || []).map(m => ({ ...m, type: 'series' })))
+            .catch(() => [])
+        );
+      }
+
+      const results = await Promise.all(fetchPromises);
+      let items = [];
+      if (results.length === 2) {
+        items = this.interleaveArrays(results[0], results[1]);
+      } else if (results.length === 1) {
+        items = results[0];
+      }
+
+      if (items.length === 0 && skip === 0) {
+        let fallback = [...(state.catalogs.popular || []), ...(state.catalogs.featured || []), ...(state.catalogs.series || [])];
+        if (filter === 'movie') fallback = fallback.filter(i => i.type === 'movie');
+        if (filter === 'series') fallback = fallback.filter(i => i.type === 'series');
+        items = fallback;
+      }
+
+      const newItems = [];
+      items.forEach(item => {
+        if (item && item.id && !state.tabExploreSeenIds.has(item.id)) {
+          state.tabExploreSeenIds.add(item.id);
+          newItems.push(item);
+        }
+      });
+
+      if (newItems.length === 0) {
+        state.tabExploreHasMore = false;
+        if (loader) {
+          loader.innerHTML = `<span style="font-size:0.85rem; color:var(--text-muted);">Você explorou todo o catálogo disponível.</span>`;
+        }
+      } else {
+        state.tabExploreSkip = skip + 20;
+        const html = newItems.map(item => this.createMovieCard(item)).join('');
+        grid.insertAdjacentHTML('beforeend', html);
+        this.afterCatalogPaint(grid);
+        if (loader) loader.style.display = 'none';
+      }
+    } catch (err) {
+      console.error('Error in loadMoreTabExplore:', err);
+      if (loader) loader.style.display = 'none';
+    } finally {
+      state.tabExploreLoading = false;
+    }
+  },
+
   async runSearchTabQuery(query) {
     const resultsArea = document.getElementById('tab-search-results-area');
     if (!resultsArea) return;
     const filterType = state.tabSearchFilter || 'all';
 
     if (!query) {
-      let initialItems = state.catalogs.popular || [];
-      if (filterType === 'movie') initialItems = initialItems.filter(i => i.type === 'movie');
-      else if (filterType === 'series') initialItems = initialItems.filter(i => i.type === 'series');
-
       resultsArea.innerHTML = `
         <div class="search-tab-initial-state">
-          <div class="initial-grid-header">
-            <h2 class="section-title" style="padding-left:0; margin-bottom:1rem; display:flex; align-items:center; gap:8px;">
-              <span>⚡</span> Títulos em Alta para Você
+          <div class="initial-grid-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:8px;">
+            <h2 class="section-title" style="padding-left:0; margin-bottom:0; display:flex; align-items:center; gap:8px;">
+              <span>⚡</span> Explorar Catálogo Completo
             </h2>
+            <span id="tab-search-badge" style="font-size:0.8rem; color:var(--text-muted); background:var(--bg-glass); border:1px solid var(--border); padding:3px 10px; border-radius:20px;">Carregamento contínuo</span>
           </div>
-          <div class="search-grid" id="tab-search-initial-grid">
-            ${initialItems.slice(0, 14).map(item => this.createMovieCard(item)).join('')}
+          <div class="search-grid" id="tab-search-initial-grid"></div>
+          <div id="tab-search-loader" class="tab-search-loader" style="text-align:center; padding: 2.5rem 0; color:var(--text-secondary); width:100%; grid-column:1/-1;">
+            <div class="spinner" style="margin: 0 auto 0.6rem; width:28px; height:28px; border-width:3px;"></div>
+            <span style="font-size:0.88rem;">Carregando mais títulos...</span>
           </div>
         </div>
       `;
+      this.initTabExplore();
       return;
     }
 
@@ -5411,22 +5526,54 @@ const UI = {
         return;
       }
 
+      state.tabQueryAllResults = results;
+      state.tabQueryRenderIndex = 0;
       const labelType = filterType === 'movie' ? 'Filmes' : filterType === 'series' ? 'Séries' : 'Títulos';
+
       resultsArea.innerHTML = `
         <div class="results-header-bar" style="margin-bottom: 1.2rem; display:flex; align-items:center; justify-content:space-between;">
           <h2 class="section-title" style="padding-left:0; margin-bottom:0; font-size: 1.4rem; color: #ffffff;">
             Resultados para "${query}" <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 500;">(${results.length} ${labelType})</span>
           </h2>
         </div>
-        <div class="search-grid">
-          ${results.map(item => this.createMovieCard(item)).join('')}
+        <div class="search-grid" id="tab-search-query-grid"></div>
+        <div id="tab-search-query-loader" style="display:none; text-align:center; padding: 1.5rem 0; color:var(--text-secondary); width:100%; grid-column:1/-1;">
+          <div class="spinner" style="margin: 0 auto; width:24px; height:24px; border-width:2px;"></div>
         </div>
       `;
+
+      this.loadMoreTabSearchResults();
     } catch (err) {
       console.error('Erro na busca da aba:', err);
       resultsArea.innerHTML = `<p style="text-align:center; padding: 3rem; color: var(--text-muted);">Erro ao pesquisar. Tente novamente.</p>`;
     }
   },
+
+  loadMoreTabSearchResults() {
+    if (!state.tabQueryAllResults || state.tabQueryAllResults.length === 0) return;
+    const grid = document.getElementById('tab-search-query-grid');
+    const loader = document.getElementById('tab-search-query-loader');
+    if (!grid) return;
+
+    const start = state.tabQueryRenderIndex || 0;
+    if (start >= state.tabQueryAllResults.length) {
+      if (loader) loader.style.display = 'none';
+      return;
+    }
+
+    const CHUNK_SIZE = 24;
+    const nextChunk = state.tabQueryAllResults.slice(start, start + CHUNK_SIZE);
+    state.tabQueryRenderIndex = start + nextChunk.length;
+
+    const html = nextChunk.map(item => this.createMovieCard(item)).join('');
+    grid.insertAdjacentHTML('beforeend', html);
+    this.afterCatalogPaint(grid);
+
+    if (loader) {
+      loader.style.display = (state.tabQueryRenderIndex < state.tabQueryAllResults.length) ? 'block' : 'none';
+    }
+  },
+
 
   renderExploreHub() {
     const container = document.getElementById('catalog-container');
