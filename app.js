@@ -1619,7 +1619,7 @@ const API = {
       }
     }
 
-    const uniqueQueries = [...new Set(searchQueries)].slice(0, 2);
+    const uniqueQueries = [...new Set(searchQueries)];
     const targetTypes = (type === 'movie' || type === 'series') ? [type] : ['movie', 'series'];
 
     const fetchPromises = [];
@@ -1627,7 +1627,15 @@ const API = {
       targetTypes.forEach(t => {
         const urlTop = `https://v3-cinemeta.strem.io/catalog/${t}/top/search=${encodeURIComponent(q)}.json`;
         fetchPromises.push(
-          fetchWithTimeout(urlTop, 2500)
+          fetchWithTimeout(urlTop, 5000)
+            .then(res => res.json())
+            .then(d => (d.metas || []).map(m => ({ ...m, type: m.type || t })))
+            .catch(() => [])
+        );
+
+        const urlRating = `https://v3-cinemeta.strem.io/catalog/${t}/imdbRating/search=${encodeURIComponent(q)}.json`;
+        fetchPromises.push(
+          fetchWithTimeout(urlRating, 5000)
             .then(res => res.json())
             .then(d => (d.metas || []).map(m => ({ ...m, type: m.type || t })))
             .catch(() => [])
@@ -1674,25 +1682,25 @@ const API = {
     const normVariants = uniqueQueries.map(q => q.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim());
 
     const scoreTitle = (name) => {
-      if (!name) return 0;
+      if (!name) return 10;
       const n = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
       const nClean = n.replace(/^(the|a|an|o|os|as|um|uma)\s+/i, '');
 
       const ptName = typeof PTBR_Engine !== 'undefined' ? PTBR_Engine.translateTitle(name).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim() : n;
       const ptClean = ptName.replace(/^(the|a|an|o|os|as|um|uma)\s+/i, '');
 
-      let bestScore = 0;
+      let bestScore = 50; // Base score for any server-returned item
       for (const v of normVariants) {
         const vClean = v.replace(/^(the|a|an|o|os|as|um|uma)\s+/i, '');
         if (n === v || nClean === vClean || ptName === v || ptClean === vClean) {
-          return 5000;
+          return 10000;
         }
         if (n.startsWith(v) || nClean.startsWith(vClean) || ptName.startsWith(v) || ptClean.startsWith(vClean)) {
-          bestScore = Math.max(bestScore, 2000);
+          bestScore = Math.max(bestScore, 5000);
           continue;
         }
         if (n.includes(v) || nClean.includes(vClean) || ptName.includes(v) || ptClean.includes(vClean)) {
-          bestScore = Math.max(bestScore, 1000);
+          bestScore = Math.max(bestScore, 2000);
           continue;
         }
 
@@ -1700,7 +1708,7 @@ const API = {
         if (vWords.length > 0) {
           let matchCount = 0;
           vWords.forEach(w => {
-            if (nClean.includes(w) || ptClean.includes(w)) matchCount += 250;
+            if (nClean.includes(w) || ptClean.includes(w)) matchCount += 400;
           });
           if (matchCount > 0) bestScore = Math.max(bestScore, matchCount);
         }
@@ -1708,10 +1716,10 @@ const API = {
       return bestScore;
     };
 
-    // Filter strictly: ONLY items that actually match the search term
-    let finalResults = Array.from(combinedMap.values()).filter(item => scoreTitle(item.name) > 0);
+    // Keep all server items
+    let finalResults = Array.from(combinedMap.values());
 
-    // Apply strict type filter
+    // Apply strict category filter
     if (type === 'movie' || type === 'series') {
       finalResults = finalResults.filter(item => item.type === type);
     }
@@ -3264,6 +3272,19 @@ const UI = {
         }
       });
     }
+
+    // Header search category buttons (Todos, Filmes, Séries)
+    document.querySelectorAll('#header-search-type-filters button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#header-search-type-filters button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.headerSearchFilter = btn.dataset.searchFilter || 'all';
+        const searchInput = document.getElementById('search-input');
+        if (searchInput && searchInput.value.trim().length > 0) {
+          this.performSearch(searchInput.value.trim());
+        }
+      });
+    });
     
     // Genre select
     const genreSelect = document.getElementById('genre-select');
@@ -5727,13 +5748,14 @@ const UI = {
 
     // 2. Multi-threaded Remote Search (Movie + Series across Cinemeta)
     try {
-      const searchType = (state.currentType === 'explore') ? (state.exploreType || 'all') : (state.currentType || 'all');
+      const searchType = state.headerSearchFilter || 'all';
       const remoteResults = await API.searchContent(searchType, rawQuery);
 
       if (currentSeq !== state.searchSeq) return; // Stale query, discard!
 
       if (remoteResults && remoteResults.length > 0) {
-        if (titleEl) titleEl.textContent = `Resultados para "${rawQuery}" (${remoteResults.length})`;
+        const countLabel = searchType === 'movie' ? 'filmes' : searchType === 'series' ? 'séries' : 'títulos';
+        if (titleEl) titleEl.textContent = `Resultados para "${rawQuery}" (${remoteResults.length} ${countLabel})`;
         if (grid) grid.innerHTML = remoteResults.map(item => this.createMovieCard(item)).join('');
       } else if (localMatches.length === 0) {
         if (titleEl) titleEl.textContent = `Resultados da Busca`;

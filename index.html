@@ -93,7 +93,14 @@
       </div>
 
       <div id="search-results" class="search-results hidden">
-        <h2 class="section-title">Resultados da Busca</h2>
+        <div class="search-results-header-wrap" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:1.5rem; padding: 0 4%;">
+          <h2 class="section-title" id="header-search-results-title" style="padding-left:0; margin-bottom:0;">Resultados da Busca</h2>
+          <div class="search-category-tabs" id="header-search-type-filters">
+            <button class="search-cat-btn active" data-search-filter="all">Todos</button>
+            <button class="search-cat-btn" data-search-filter="movie">Filmes</button>
+            <button class="search-cat-btn" data-search-filter="series">Séries</button>
+          </div>
+        </div>
         <div class="search-grid" id="search-grid"></div>
       </div>
     </main>
