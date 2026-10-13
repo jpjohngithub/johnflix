@@ -2261,15 +2261,15 @@ body {
 
 @media (max-width: 768px) {
   :root {
-    --header-height: 58px;
+    --header-height: 0px;
   }
 
-  .header-nav {
+  #app-header {
     display: none !important;
   }
 
-  .logo {
-    font-size: 1.4rem;
+  #main-content {
+    padding-top: 0 !important;
   }
 
   #genre-select {
@@ -2645,16 +2645,17 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 60px;
-    background: rgba(8, 8, 12, 0.96);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    height: 64px;
+    background: rgba(10, 10, 16, 0.92);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    border-top: 1px solid rgba(255, 255, 255, 0.09);
     z-index: 1500;
     align-items: center;
     justify-content: space-around;
     padding: 0 0.5rem;
-    box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.8);
+    padding-bottom: max(6px, env(safe-area-inset-bottom));
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.7);
   }
 
   .mobile-nav-item {
@@ -2662,15 +2663,22 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 3px;
+    gap: 4px;
     background: none;
     border: none;
-    color: var(--text-muted);
+    color: #94a3b8;
     font-family: var(--font-body);
     cursor: pointer;
-    padding: 6px 12px;
-    border-radius: var(--radius-sm);
-    transition: var(--transition-fast);
+    flex: 1;
+    min-height: 48px;
+    padding: 4px 6px;
+    border-radius: 12px;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobile-nav-item:active {
+    transform: scale(0.94);
   }
 
   .mobile-nav-item.active {
@@ -2678,26 +2686,40 @@ body {
   }
 
   .mobile-nav-item.active .mobile-nav-icon {
-    transform: scale(1.2);
+    color: #c4b5fd;
+    background: rgba(139, 92, 246, 0.22);
+    border-radius: 20px;
+    padding: 3px 16px;
+    transform: scale(1.06);
+    box-shadow: 0 0 16px rgba(139, 92, 246, 0.35);
   }
 
   .mobile-nav-item.active .mobile-nav-label {
-    color: var(--accent);
+    color: #ffffff;
     font-weight: 700;
+    letter-spacing: -0.01em;
   }
 
   .mobile-nav-icon {
-    font-size: 1.2rem;
-    transition: transform 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .mobile-nav-icon svg {
+    width: 22px;
+    height: 22px;
   }
 
   .mobile-nav-label {
-    font-size: 0.7rem;
+    font-size: 0.72rem;
     font-weight: 600;
+    transition: color 0.2s ease;
   }
 
   #main-content {
-    padding-bottom: 75px;
+    padding-bottom: 80px;
   }
 }
 
