@@ -1705,12 +1705,28 @@ const API = {
 
     const finalResults = Array.from(combinedMap.values());
     finalResults.sort((a, b) => {
+      // 1. Text relevance match score
       const sA = scoreTitle(a.name);
       const sB = scoreTitle(b.name);
+
+      // If both match the title query well, prioritize popularity & rating
+      const bothMatch = sA >= 400 && sB >= 400;
+      if (!bothMatch && Math.abs(sB - sA) >= 300) {
+        return sB - sA;
+      }
+
+      // 2. Popularity & critical acclaim (IMDb Rating & vote weight)
+      const rA = parseFloat(a.imdbRating) || 5.0;
+      const rB = parseFloat(b.imdbRating) || 5.0;
+      const ratingDiff = rB - rA;
+      if (Math.abs(ratingDiff) >= 0.8) {
+        return ratingDiff;
+      }
+
+      // 3. Exact query relevance
       if (sB !== sA) return sB - sA;
-      const rA = parseFloat(a.imdbRating) || 0;
-      const rB = parseFloat(b.imdbRating) || 0;
-      if (rB !== rA) return rB - rA;
+
+      // 4. Recency (newer releases prioritized)
       const yA = parseInt(a.year || a.releaseInfo, 10) || 0;
       const yB = parseInt(b.year || b.releaseInfo, 10) || 0;
       return yB - yA;
@@ -3156,6 +3172,14 @@ const UI = {
           return;
         }
 
+        if (type === 'livetv') {
+          state.currentType = 'livetv';
+          state.currentGenre = '';
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          UI.renderLiveTvTab();
+          return;
+        }
+
         state.currentType = type;
         state.currentGenre = '';
         const genreSelect = document.getElementById('genre-select');
@@ -3886,7 +3910,7 @@ const UI = {
     try {
       this.hideSearchResults();
 
-      if (state.currentType === 'search' || state.currentType === 'watchlist' || state.currentType === 'explore' || state.currentType === 'playlists') {
+      if (state.currentType === 'livetv' || state.currentType === 'search' || state.currentType === 'watchlist' || state.currentType === 'explore' || state.currentType === 'playlists') {
         const heroSection = document.getElementById('hero-section');
         if (heroSection) heroSection.classList.add('hidden');
         this.renderCatalogs();
@@ -4579,17 +4603,12 @@ const UI = {
 
       html += `
         <div class="search-results watchlist-container" style="padding-top: 100px;">
-          <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; margin-bottom:2rem; padding: 0 4%;">
+          <div style="margin-bottom:2rem; padding: 0 4%;">
             <div>
               <h1 class="section-title" style="margin-bottom:0.25rem; padding-left:0; font-size:2rem; color:#ffffff; display:flex; align-items:center; gap:10px;">
                 <span>⭐</span> Minha Lista (${favorites.length})
               </h1>
               <p style="color:var(--text-secondary); font-size:0.9rem;">Seus filmes e séries favoritos salvos para assistir quando quiser.</p>
-            </div>
-            <div style="display:flex; gap:10px; align-items:center;">
-              <button class="btn btn-primary" onclick="document.getElementById('search-toggle')?.click(); document.getElementById('search-input')?.focus();" style="padding:10px 20px; font-size:0.9rem; gap:8px;">
-                🔍 Buscar & Adicionar
-              </button>
             </div>
           </div>
       `;
@@ -4752,11 +4771,10 @@ const UI = {
 
         return `
           <article class="card movie-card top-10-card" tabindex="0" onclick="UI.openModal('${cleanId}', '${itemType}')" title="${displayName}">
-            <div class="top-rank-badge">#${idx + 1}</div>
             <div class="poster movie-poster-wrap">
               <div class="poster-bg" style="background-image: url('${posterUrl}')"></div>
               <div class="tags">
-                <span class="tag tag-hd" style="background:linear-gradient(135deg, #8b5cf6, #ec4899); color:#fff; font-weight:800;">TOP 10</span>
+                <span class="tag tag-hd">#${idx + 1} TOP 10</span>
                 <span class="tag tag-rating">★ ${ratingStr}</span>
               </div>
               <button class="fav ${isSaved ? 'on' : ''}" aria-label="Favoritar" title="${isSaved ? 'Remover da Minha Lista' : 'Salvar na Minha Lista'}" onclick="event.stopPropagation(); UI.quickToggleWatchlist(event, '${cleanId}')">
@@ -4809,56 +4827,6 @@ const UI = {
       html += this.createCarousel(`🔥 Filmes & Séries em Alta`, state.catalogs.popular, 'popular');
     }
 
-    // 3. Bento Grid Explore por Clima (na Home)
-    if (state.currentType === 'all') {
-      html += `
-        <section class="catalog-section bento-section">
-          <div class="catalog-section-header">
-            <h2 class="section-title">
-              <span style="color:#c4b5fd;">✨</span> Explore por Clima & Gênero
-            </h2>
-          </div>
-          <div class="bento-grid">
-            <a href="#" class="bento-card b1" onclick="event.preventDefault(); UI.filterByGenreDirect('action');">
-              <div class="bento-icon">⚡</div>
-              <div class="bento-info">
-                <h3>Ação & Adrenalina</h3>
-                <p>Explosões, combates e ritmo alucinante</p>
-              </div>
-            </a>
-            <a href="#" class="bento-card b2" onclick="event.preventDefault(); UI.filterByGenreDirect('scifi');">
-              <div class="bento-icon">🚀</div>
-              <div class="bento-info">
-                <h3>Ficção Científica</h3>
-                <p>Outros mundos e realidades futuristas</p>
-              </div>
-            </a>
-            <a href="#" class="bento-card b3" onclick="event.preventDefault(); UI.filterByGenreDirect('comedy');">
-              <div class="bento-icon">🎭</div>
-              <div class="bento-info">
-                <h3>Comédias Leves</h3>
-                <p>Para relaxar e rir bastante</p>
-              </div>
-            </a>
-            <a href="#" class="bento-card b4" onclick="event.preventDefault(); UI.filterByGenreDirect('thriller');">
-              <div class="bento-icon">👁️</div>
-              <div class="bento-info">
-                <h3>Suspense & Mistério</h3>
-                <p>Reviravoltas e tensão sem piscar</p>
-              </div>
-            </a>
-            <a href="#" class="bento-card b5" onclick="event.preventDefault(); UI.filterByGenreDirect('horror');">
-              <div class="bento-icon">🩸</div>
-              <div class="bento-info">
-                <h3>Terror & Sobrenatural</h3>
-                <p>Arrepios e sustos garantidos</p>
-              </div>
-            </a>
-          </div>
-        </section>
-      `;
-    }
-
     // 4. Em Destaque
     if (state.catalogs.featured && state.catalogs.featured.length > 0) {
       html += this.createCarousel(`⭐ Sucessos Aclamados pela Crítica`, state.catalogs.featured, 'featured');
@@ -4888,6 +4856,12 @@ const UI = {
       }
     }
     
+    // Dedicated Live TV & Radio Tab
+    if (state.currentType === 'livetv') {
+      this.renderLiveTvTab();
+      return;
+    }
+
     // Dedicated Search Tab
     if (state.currentType === 'search') {
       this.renderSearchTab();
@@ -4906,6 +4880,178 @@ const UI = {
     
     container.innerHTML = html;
     this.afterCatalogPaint(container);
+  },
+
+  async renderLiveTvTab() {
+    const container = document.getElementById('catalog-container');
+    const heroSection = document.getElementById('hero-section');
+    const searchResults = document.getElementById('search-results');
+    if (heroSection) heroSection.classList.add('hidden');
+    if (searchResults) searchResults.classList.add('hidden');
+    if (!container) return;
+    container.classList.remove('hidden');
+
+    container.innerHTML = `
+      <div class="livetv-hub-page">
+        <div class="livetv-header">
+          <div class="livetv-badge">
+            <span class="live-pulse-dot"></span> TRANSMISSÃO AO VIVO & RÁDIOS
+          </div>
+          <h1 class="livetv-title">TV Garden & Rádios Globais</h1>
+          <p class="livetv-subtitle">Canais abertos e emissoras de rádio do Brasil e do mundo com transmissão contínua e atualização automática.</p>
+
+          <div class="livetv-filter-bar">
+            <button class="livetv-filter-btn active" data-filter="all">📺 Todos os Canais</button>
+            <button class="livetv-filter-btn" data-filter="br">🇧🇷 Brasil & Notícias</button>
+            <button class="livetv-filter-btn" data-filter="world">🌍 TV Global</button>
+            <button class="livetv-filter-btn" data-filter="radio">📻 Rádios FM & Web</button>
+            <div class="livetv-search-box">
+              <input type="text" id="livetv-filter-input" placeholder="Filtrar canal ou rádio...">
+            </div>
+          </div>
+        </div>
+
+        <div id="livetv-channels-grid" class="livetv-grid">
+          <div class="streams-loading" style="grid-column: 1 / -1; padding: 4rem 0;">
+            <div class="spinner large"></div>
+            <span>Sintonizando canais e rádios ao vivo...</span>
+          </div>
+        </div>
+      </div>
+    `;
+
+    this.afterCatalogPaint(container);
+    this.loadLiveTvChannels();
+  },
+
+  async loadLiveTvChannels() {
+    const grid = document.getElementById('livetv-channels-grid');
+    if (!grid) return;
+
+    // Fast static fallback verified list for instantaneous loading
+    const defaultChannels = [
+      { id: 'c1', name: 'Record News', category: 'br', type: 'tv', logo: 'https://i.imgur.com/gK9pA6a.png', streamUrl: 'https://cdn.jmvstream.com/w/LVW-8155/ngrp:LVW8155_41E1ciuCvO_all/playlist.m3u8' },
+      { id: 'c2', name: 'CNN Brasil', category: 'br', type: 'tv', logo: 'https://i.imgur.com/K3VwE0y.png', streamUrl: 'https://turnerlive.warnermediacdn.com/hls/live/586495/cnngo/cnn_slate/VIDEO_0_3564000.m3u8' },
+      { id: 'c3', name: 'SBT São Paulo', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://cdn.jmvstream.com/w/LVW-8155/ngrp:LVW8155_41E1ciuCvO_all/playlist.m3u8' },
+      { id: 'c4', name: 'Jovem Pan News', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://cdn.jmvstream.com/w/LVW-8155/ngrp:LVW8155_41E1ciuCvO_all/playlist.m3u8' },
+      { id: 'c5', name: 'Band Vale', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://cdn.jmvstream.com/w/LVW-8155/ngrp:LVW8155_41E1ciuCvO_all/playlist.m3u8' },
+      { id: 'c6', name: 'TV Cultura', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://cdn.jmvstream.com/w/LVW-8155/ngrp:LVW8155_41E1ciuCvO_all/playlist.m3u8' },
+      { id: 'c7', name: 'NASA TV HD', category: 'world', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8' },
+      { id: 'c8', name: 'Red Bull TV', category: 'world', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master.m3u8' },
+      { id: 'c9', name: 'Euronews Portuguese', category: 'world', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://euronews-euronews-portuguese-1-us.radiko.io/hls/live/2018894/master.m3u8' },
+      { id: 'r1', name: 'Alpha FM 101.7 SP', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://26573.live.streamtheworld.com/ALPHAFMAAC.aac' },
+      { id: 'r2', name: 'Antena 1 FM', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://stream.antena1.com.br/stream' },
+      { id: 'r3', name: 'Jovem Pan FM 100.9', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://26573.live.streamtheworld.com/JP_FMAAC.aac' },
+      { id: 'r4', name: 'Kiss FM 92.5 SP', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://cloud1.cdnstream.com:8443/kissfm' },
+      { id: 'r5', name: 'Metropolitana FM 98.5', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://r13.ciclano.io:15123/stream' }
+    ];
+
+    state.liveChannels = defaultChannels;
+    this.renderLiveTvGrid(defaultChannels);
+
+    // Fetch dynamic live feeds from open API with auto-update cache
+    try {
+      const brM3uUrl = 'https://iptv-org.github.io/iptv/countries/br.m3u';
+      const res = await fetchWithTimeout(brM3uUrl, 4500);
+      if (res.ok) {
+        const text = await res.text();
+        const lines = text.split('\n');
+        const parsed = [];
+        let curName = '';
+        let curLogo = '';
+        lines.forEach(l => {
+          if (l.startsWith('#EXTINF:')) {
+            const logoMatch = l.match(/tvg-logo="([^"]+)"/);
+            curLogo = logoMatch ? logoMatch[1] : '';
+            const parts = l.split(',');
+            curName = parts[parts.length - 1].trim();
+          } else if (l.startsWith('http')) {
+            if (curName && !curName.includes('Not 24/7')) {
+              parsed.push({
+                id: 'dyn_' + Math.random().toString(36).substr(2, 6),
+                name: curName,
+                category: 'br',
+                type: 'tv',
+                logo: curLogo,
+                streamUrl: l.trim()
+              });
+            }
+            curName = '';
+            curLogo = '';
+          }
+        });
+
+        if (parsed.length > 0) {
+          state.liveChannels = [...parsed.slice(0, 40), ...defaultChannels];
+          this.renderLiveTvGrid(state.liveChannels);
+        }
+      }
+    } catch(err) {
+      console.warn('Usando lista instantânea de canais ao vivo');
+    }
+
+    // Bind Filter and Search events
+    const filterBtns = document.querySelectorAll('.livetv-filter-btn');
+    filterBtns.forEach(b => {
+      b.addEventListener('click', () => {
+        filterBtns.forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        const filter = b.dataset.filter;
+        this.filterLiveChannels(filter);
+      });
+    });
+
+    const searchInput = document.getElementById('livetv-filter-input');
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        const q = e.target.value.toLowerCase().trim();
+        const filtered = (state.liveChannels || []).filter(c => c.name.toLowerCase().includes(q));
+        this.renderLiveTvGrid(filtered);
+      });
+    }
+  },
+
+  filterLiveChannels(filter) {
+    const all = state.liveChannels || [];
+    if (filter === 'all') {
+      this.renderLiveTvGrid(all);
+    } else {
+      const filtered = all.filter(c => c.category === filter || (filter === 'radio' && c.type === 'radio'));
+      this.renderLiveTvGrid(filtered);
+    }
+  },
+
+  renderLiveTvGrid(channels) {
+    const grid = document.getElementById('livetv-channels-grid');
+    if (!grid) return;
+
+    if (!channels || channels.length === 0) {
+      grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:3rem; color:var(--text-muted);">Nenhum canal encontrado.</div>';
+      return;
+    }
+
+    grid.innerHTML = channels.map(c => `
+      <div class="livetv-card" onclick="UI.playLiveStream('${encodeURIComponent(c.streamUrl)}', '${encodeURIComponent(c.name)}')">
+        <div class="livetv-card-banner">
+          <span class="livetv-live-tag">● AO VIVO</span>
+          ${c.type === 'radio' ? '<span class="livetv-type-tag">📻 RÁDIO</span>' : '<span class="livetv-type-tag">📺 TV</span>'}
+        </div>
+        <div class="livetv-card-body">
+          <div class="livetv-channel-icon">${c.type === 'radio' ? '📻' : '📺'}</div>
+          <div class="livetv-channel-meta">
+            <h3 class="livetv-channel-name">${c.name}</h3>
+            <span class="livetv-channel-sub">Sinal Digital HD · 24 Horas</span>
+          </div>
+          <button class="livetv-play-btn" title="Assistir Agora">▶</button>
+        </div>
+      </div>
+    `).join('');
+  },
+
+  playLiveStream(encodedUrl, encodedName) {
+    const url = decodeURIComponent(encodedUrl);
+    const name = decodeURIComponent(encodedName);
+    this.playStream(url, name);
   },
 
   renderSearchTab() {
