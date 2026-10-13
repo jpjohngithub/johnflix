@@ -1597,9 +1597,23 @@ const API = {
     };
 
     const searchQueries = [rawQuery];
+    
+    // 1. Check ALIAS_MAP
     for (const [pt, en] of Object.entries(ALIAS_MAP)) {
       if (norm.includes(pt) || pt.includes(norm)) {
         searchQueries.push(en);
+      }
+    }
+
+    // 2. Check bilingual PTBR_Engine.titlesMap in both directions (PT <-> EN/USA)
+    if (typeof PTBR_Engine !== 'undefined' && PTBR_Engine.titlesMap) {
+      for (const [enTitle, ptTitle] of Object.entries(PTBR_Engine.titlesMap)) {
+        const enNorm = enTitle.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+        const ptNorm = ptTitle.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+        if (norm === enNorm || norm === ptNorm || norm.includes(enNorm) || norm.includes(ptNorm) || enNorm.includes(norm) || ptNorm.includes(norm)) {
+          searchQueries.push(enTitle);
+          searchQueries.push(ptTitle);
+        }
       }
     }
 
@@ -1667,7 +1681,7 @@ const API = {
       }
     });
 
-    // Score against all query variants
+    // Score against all query variants with high-priority exact title matching
     const normVariants = uniqueQueries.map(q => q.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim());
 
     const scoreTitle = (name) => {
@@ -1675,19 +1689,24 @@ const API = {
       const n = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
       const nClean = n.replace(/^(the|a|an|o|os|as|um|uma)\s+/i, '');
 
+      // Check translated Portuguese title
+      const ptName = typeof PTBR_Engine !== 'undefined' ? PTBR_Engine.translateTitle(name).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim() : n;
+      const ptClean = ptName.replace(/^(the|a|an|o|os|as|um|uma)\s+/i, '');
+
       let bestScore = 0;
       for (const v of normVariants) {
         const vClean = v.replace(/^(the|a|an|o|os|as|um|uma)\s+/i, '');
-        if (n === v || nClean === vClean) {
+        // Exact match in English or Portuguese
+        if (n === v || nClean === vClean || ptName === v || ptClean === vClean) {
+          bestScore = Math.max(bestScore, 5000);
+          continue;
+        }
+        if (n.startsWith(v) || nClean.startsWith(vClean) || ptName.startsWith(v) || ptClean.startsWith(vClean)) {
           bestScore = Math.max(bestScore, 1000);
           continue;
         }
-        if (n.startsWith(v) || nClean.startsWith(vClean)) {
+        if (n.includes(v) || nClean.includes(vClean) || ptName.includes(v) || ptClean.includes(vClean)) {
           bestScore = Math.max(bestScore, 600);
-          continue;
-        }
-        if (n.includes(v) || nClean.includes(vClean)) {
-          bestScore = Math.max(bestScore, 400);
           continue;
         }
 
@@ -1695,7 +1714,7 @@ const API = {
         if (vWords.length > 0) {
           let matchCount = 0;
           vWords.forEach(w => {
-            if (nClean.includes(w)) matchCount += 100;
+            if (nClean.includes(w) || ptClean.includes(w)) matchCount += 150;
           });
           bestScore = Math.max(bestScore, matchCount);
         }
@@ -4243,7 +4262,7 @@ const UI = {
         <div class="poster movie-poster-wrap">
           <div class="poster-bg" style="background-image: url('${posterUrl}')"></div>
           <div class="tags">
-            <span class="tag tag-hd">${isSeries ? 'SÉRIE' : '4K'}</span>
+            <span class="tag tag-hd">${isSeries ? 'SÉRIE' : 'FILME'}</span>
             <span class="tag tag-rating">★ ${ratingStr}</span>
           </div>
           <button class="fav ${isSaved ? 'on' : ''}" aria-label="Favoritar" title="${isSaved ? 'Remover da Minha Lista' : 'Salvar na Minha Lista'}" onclick="event.stopPropagation(); UI.quickToggleWatchlist(event, '${cleanId}')">
@@ -4945,19 +4964,20 @@ const UI = {
 
     // 1. Curated High-Speed Brazilian TV and Radio Base
     const baseChannels = [
-      { id: 'c_rec', name: 'Record News HD', category: 'br', type: 'tv', logo: 'https://i.imgur.com/gK9pA6a.png', streamUrl: 'https://cdn.jmvstream.com/w/LVW-8155/ngrp:LVW8155_41E1ciuCvO_all/playlist.m3u8' },
-      { id: 'c_cnn', name: 'CNN Brasil HD', category: 'br', type: 'tv', logo: 'https://i.imgur.com/K3VwE0y.png', streamUrl: 'https://turnerlive.warnermediacdn.com/hls/live/586495/cnngo/cnn_slate/VIDEO_0_3564000.m3u8' },
-      { id: 'c_sbt', name: 'SBT Oficial HD', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://cdn.jmvstream.com/w/LVW-8155/ngrp:LVW8155_41E1ciuCvO_all/playlist.m3u8' },
-      { id: 'c_jpn', name: 'Jovem Pan News HD', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://cdn.jmvstream.com/w/LVW-8155/ngrp:LVW8155_41E1ciuCvO_all/playlist.m3u8' },
-      { id: 'c_cul', name: 'TV Cultura Digital', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://cdn.jmvstream.com/w/LVW-8155/ngrp:LVW8155_41E1ciuCvO_all/playlist.m3u8' },
-      { id: 'c_band', name: 'Band Notícias HD', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://cdn.jmvstream.com/w/LVW-8155/ngrp:LVW8155_41E1ciuCvO_all/playlist.m3u8' },
-      { id: 'c_gaz', name: 'TV Gazeta HD', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://cdn.jmvstream.com/w/LVW-8155/ngrp:LVW8155_41E1ciuCvO_all/playlist.m3u8' },
-      { id: 'c_red', name: 'RedeTV! HD', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://cdn.jmvstream.com/w/LVW-8155/ngrp:LVW8155_41E1ciuCvO_all/playlist.m3u8' },
-      { id: 'c_gov', name: 'Canal Gov / Brasil', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://cdn.jmvstream.com/w/LVW-8155/ngrp:LVW8155_41E1ciuCvO_all/playlist.m3u8' },
+      { id: 'c_amz', name: 'Amazon Sat HD', category: 'br', type: 'tv', logo: 'https://i.imgur.com/gK9pA6a.png', streamUrl: 'https://amazonsat.brasilstream.com.br/hls/amazonsat/index.m3u8' },
+      { id: 'c_ara', name: 'Aratu On Notícias HD', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://cdn.live.br1.jmvstream.com/w/LVW-9359/LVW9359_XSyReL0QVf/playlist.m3u8' },
+      { id: 'c_adren', name: 'Adrenalina Pura TV Brasil', category: 'br', type: 'tv', logo: 'https://i.imgur.com/gK9pA6a.png', streamUrl: 'https://jmp2.uk/plu-61b790b985706b00072cb797.m3u8' },
+      { id: 'c_bmc', name: 'BM&C News Brasil', category: 'br', type: 'tv', logo: 'https://i.imgur.com/K3VwE0y.png', streamUrl: 'https://jmp2.uk/plu-666c9c60a7efd40008f552f0.m3u8' },
+      { id: 'c_avatar', name: 'Avatar: A Lenda de Aang (24h)', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://jmp2.uk/plu-6759eeb1bd523200083b4f29.m3u8' },
+      { id: 'c_bob', name: 'Bob Esponja Calça Quadrada (24h)', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://jmp2.uk/plu-62545c0b002f4b0007688b61.m3u8' },
+      { id: 'c_terror', name: 'Cine Terror Brasil', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://jmp2.uk/plu-5f12111c9e6c2c00078ef3bb.m3u8' },
+      { id: 'c_fdr', name: 'Canal FDR Brasil HD', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://v-us-01.wisestream.io/memfs/e4ade538-7924-4359-81ef-b9d4dd229e91.m3u8' },
+      { id: 'c_verde', name: 'Cinturão Verde TV Digital', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://play.redecinturaoverde.com.br/playlist.m3u8' },
+      { id: 'c_blits', name: 'Blits TV Brasil HD', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://stmv1.transmissaodigital.com/blitstv/blitstv/playlist.m3u8' },
+      { id: 'c_bmais', name: 'Bem Mais TV Digital', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://video09.logicahost.com.br/bemmaistv01/bemmaistv01/playlist.m3u8' },
       { id: 'c_nasa', name: 'NASA TV HD (Global)', category: 'world', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8' },
       { id: 'c_rb', name: 'Red Bull TV HD', category: 'world', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master.m3u8' },
       { id: 'c_euro', name: 'Euronews Português', category: 'world', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://euronews-euronews-portuguese-1-us.radiko.io/hls/live/2018894/master.m3u8' },
-      { id: 'c_dw', name: 'DW News Global HD', category: 'world', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8' },
       { id: 'r_alpha', name: 'Alpha FM 101.7 São Paulo', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://26573.live.streamtheworld.com/ALPHAFMAAC.aac' },
       { id: 'r_antena1', name: 'Antena 1 FM 94.7 SP', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://stream.antena1.com.br/stream' },
       { id: 'r_jp', name: 'Jovem Pan FM 100.9 SP', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://26573.live.streamtheworld.com/JP_FMAAC.aac' },
@@ -4965,8 +4985,6 @@ const UI = {
       { id: 'r_met', name: 'Metropolitana FM 98.5', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://r13.ciclano.io:15123/stream' },
       { id: 'r_nat', name: 'Nativa FM 95.3 Sertanejo', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://playerservices.streamtheworld.com/api/livestream-redirect/NATIVAFMAAC.aac' },
       { id: 'r_mix', name: 'Mix FM 106.3 São Paulo', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://playerservices.streamtheworld.com/api/livestream-redirect/MIXFMAAC.aac' },
-      { id: 'r_bossa', name: 'Rádio Bossa Nova Brasil', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://ssl.srvstm.com:7142/' },
-      { id: 'r_flash', name: 'Rádio Flashback Hits FM', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://ssl.srvstm.com:7080/' },
       { id: 'r_cbn', name: 'CBN São Paulo 90.5 FM', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://24403.live.streamtheworld.com/CBN_SPAAC.aac' },
       { id: 'r_bandn', name: 'BandNews FM 96.9 SP', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://playerservices.streamtheworld.com/api/livestream-redirect/BANDNEWSFMAAC.aac' }
     ];

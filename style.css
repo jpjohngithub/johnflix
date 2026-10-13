@@ -8309,7 +8309,29 @@ body {
   .modal-actions button {
     width: 100% !important;
   }
+
+  .search-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+    padding: 10px 4% !important;
+  }
 }
+
+/* Movie / Series Distinct Badges */
+.tag.tag-movie {
+  background: rgba(16, 185, 129, 0.25) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(52, 211, 153, 0.4) !important;
+  font-weight: 800 !important;
+}
+
+.tag.tag-series {
+  background: rgba(168, 85, 247, 0.25) !important;
+  color: #c084fc !important;
+  border: 1px solid rgba(192, 132, 252, 0.4) !important;
+  font-weight: 800 !important;
+}
+
 
 
 
