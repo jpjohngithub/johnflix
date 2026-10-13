@@ -1598,10 +1598,11 @@ const API = {
 
     const searchQueries = [rawQuery];
     
-    // 1. Check ALIAS_MAP
+    // 1. Check ALIAS_MAP: exact or clear prefix
     for (const [pt, en] of Object.entries(ALIAS_MAP)) {
-      if (norm.includes(pt) || pt.includes(norm)) {
+      if (norm === pt || norm.startsWith(pt + ' ') || norm.endsWith(' ' + pt)) {
         searchQueries.push(en);
+        break;
       }
     }
 
@@ -1610,34 +1611,23 @@ const API = {
       for (const [enTitle, ptTitle] of Object.entries(PTBR_Engine.titlesMap)) {
         const enNorm = enTitle.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
         const ptNorm = ptTitle.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-        if (norm === enNorm || norm === ptNorm || norm.includes(enNorm) || norm.includes(ptNorm) || enNorm.includes(norm) || ptNorm.includes(norm)) {
+        if (norm === ptNorm || (norm.length >= 4 && norm === enNorm)) {
           searchQueries.push(enTitle);
           searchQueries.push(ptTitle);
+          break;
         }
       }
     }
 
-    const uniqueQueries = [...new Set(searchQueries)];
-    const targetTypes = (type === 'all' || !type || type === 'cinema' || type === 'watchlist' || type === 'favorites') 
-      ? ['movie', 'series'] 
-      : [type];
+    const uniqueQueries = [...new Set(searchQueries)].slice(0, 2);
+    const targetTypes = (type === 'movie' || type === 'series') ? [type] : ['movie', 'series'];
 
     const fetchPromises = [];
     uniqueQueries.forEach(q => {
       targetTypes.forEach(t => {
-        // Query both top catalog AND imdbRating catalog for 100% comprehensive coverage!
         const urlTop = `https://v3-cinemeta.strem.io/catalog/${t}/top/search=${encodeURIComponent(q)}.json`;
-        const urlImdb = `https://v3-cinemeta.strem.io/catalog/${t}/imdbRating/search=${encodeURIComponent(q)}.json`;
-
         fetchPromises.push(
-          fetchWithTimeout(urlTop, 4000)
-            .then(res => res.json())
-            .then(d => (d.metas || []).map(m => ({ ...m, type: m.type || t })))
-            .catch(() => [])
-        );
-
-        fetchPromises.push(
-          fetchWithTimeout(urlImdb, 4000)
+          fetchWithTimeout(urlTop, 2500)
             .then(res => res.json())
             .then(d => (d.metas || []).map(m => ({ ...m, type: m.type || t })))
             .catch(() => [])
@@ -1645,7 +1635,9 @@ const API = {
       });
     });
 
-    // Also include instant local catalog items match
+    const combinedMap = new Map();
+
+    // Instant local database match with strict keyword check
     const localDatabase = [
       ...(state.catalogs.popular || []),
       ...(state.catalogs.featured || []),
@@ -1653,22 +1645,17 @@ const API = {
       ...(state.catalogs.anime || []),
       ...(state.watchlist || [])
     ];
-    if (typeof CINEMA_SAGAS !== 'undefined') {
-      CINEMA_SAGAS.forEach(saga => {
-        if (saga.items) localDatabase.push(...saga.items);
-      });
-    }
 
-    const combinedMap = new Map();
-
-    // Check local database
     localDatabase.forEach(item => {
       if (!item || !item.id) return;
       const n = (item.name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+      const ptN = typeof PTBR_Engine !== 'undefined' ? PTBR_Engine.translateTitle(item.name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim() : n;
       for (const q of uniqueQueries) {
         const nq = q.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-        if (n.includes(nq) || nq.includes(n)) {
-          combinedMap.set(item.id, { ...item, type: item.type || 'movie' });
+        if (n.includes(nq) || ptN.includes(nq)) {
+          if (targetTypes.includes(item.type || 'movie')) {
+            combinedMap.set(item.id, { ...item, type: item.type || 'movie' });
+          }
           break;
         }
       }
@@ -1677,11 +1664,13 @@ const API = {
     const resultsArray = await Promise.all(fetchPromises);
     resultsArray.flat().forEach(item => {
       if (item && item.id && !combinedMap.has(item.id)) {
-        combinedMap.set(item.id, item);
+        if (targetTypes.includes(item.type || 'movie')) {
+          combinedMap.set(item.id, item);
+        }
       }
     });
 
-    // Score against all query variants with high-priority exact title matching
+    // Score against query variants with strict relevance
     const normVariants = uniqueQueries.map(q => q.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim());
 
     const scoreTitle = (name) => {
@@ -1689,24 +1678,21 @@ const API = {
       const n = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
       const nClean = n.replace(/^(the|a|an|o|os|as|um|uma)\s+/i, '');
 
-      // Check translated Portuguese title
       const ptName = typeof PTBR_Engine !== 'undefined' ? PTBR_Engine.translateTitle(name).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim() : n;
       const ptClean = ptName.replace(/^(the|a|an|o|os|as|um|uma)\s+/i, '');
 
       let bestScore = 0;
       for (const v of normVariants) {
         const vClean = v.replace(/^(the|a|an|o|os|as|um|uma)\s+/i, '');
-        // Exact match in English or Portuguese
         if (n === v || nClean === vClean || ptName === v || ptClean === vClean) {
-          bestScore = Math.max(bestScore, 5000);
-          continue;
+          return 5000;
         }
         if (n.startsWith(v) || nClean.startsWith(vClean) || ptName.startsWith(v) || ptClean.startsWith(vClean)) {
-          bestScore = Math.max(bestScore, 1000);
+          bestScore = Math.max(bestScore, 2000);
           continue;
         }
         if (n.includes(v) || nClean.includes(vClean) || ptName.includes(v) || ptClean.includes(vClean)) {
-          bestScore = Math.max(bestScore, 600);
+          bestScore = Math.max(bestScore, 1000);
           continue;
         }
 
@@ -1714,41 +1700,30 @@ const API = {
         if (vWords.length > 0) {
           let matchCount = 0;
           vWords.forEach(w => {
-            if (nClean.includes(w) || ptClean.includes(w)) matchCount += 150;
+            if (nClean.includes(w) || ptClean.includes(w)) matchCount += 250;
           });
-          bestScore = Math.max(bestScore, matchCount);
+          if (matchCount > 0) bestScore = Math.max(bestScore, matchCount);
         }
       }
       return bestScore;
     };
 
-    const finalResults = Array.from(combinedMap.values());
+    // Filter strictly: ONLY items that actually match the search term
+    let finalResults = Array.from(combinedMap.values()).filter(item => scoreTitle(item.name) > 0);
+
+    // Apply strict type filter
+    if (type === 'movie' || type === 'series') {
+      finalResults = finalResults.filter(item => item.type === type);
+    }
+
     finalResults.sort((a, b) => {
-      // 1. Text relevance match score
       const sA = scoreTitle(a.name);
       const sB = scoreTitle(b.name);
+      if (sA !== sB) return sB - sA;
 
-      // If both match the title query well, prioritize popularity & rating
-      const bothMatch = sA >= 400 && sB >= 400;
-      if (!bothMatch && Math.abs(sB - sA) >= 300) {
-        return sB - sA;
-      }
-
-      // 2. Popularity & critical acclaim (IMDb Rating & vote weight)
       const rA = parseFloat(a.imdbRating) || 5.0;
       const rB = parseFloat(b.imdbRating) || 5.0;
-      const ratingDiff = rB - rA;
-      if (Math.abs(ratingDiff) >= 0.8) {
-        return ratingDiff;
-      }
-
-      // 3. Exact query relevance
-      if (sB !== sA) return sB - sA;
-
-      // 4. Recency (newer releases prioritized)
-      const yA = parseInt(a.year || a.releaseInfo, 10) || 0;
-      const yB = parseInt(b.year || b.releaseInfo, 10) || 0;
-      return yB - yA;
+      return rB - rA;
     });
 
     return finalResults;
@@ -5289,6 +5264,11 @@ const UI = {
               <input type="text" id="tab-search-input" class="search-tab-input" placeholder="Digite o nome de um filme, série ou anime..." autofocus>
               <button id="tab-search-clear" class="search-tab-clear hidden" title="Limpar pesquisa">✕</button>
             </div>
+            <div class="search-category-tabs" id="search-category-tabs">
+              <button class="search-cat-btn ${(!state.tabSearchFilter || state.tabSearchFilter === 'all') ? 'active' : ''}" data-cat="all">Todos</button>
+              <button class="search-cat-btn ${state.tabSearchFilter === 'movie' ? 'active' : ''}" data-cat="movie">Filmes</button>
+              <button class="search-cat-btn ${state.tabSearchFilter === 'series' ? 'active' : ''}" data-cat="series">Séries</button>
+            </div>
             <div class="search-tab-quick-tags">
               <span class="quick-label">🔥 Populares:</span>
               ${popularQueries.map(q => `<button class="quick-tag" onclick="UI.applySearchTabQuery('${q}')">${q}</button>`).join('')}
@@ -5321,7 +5301,7 @@ const UI = {
         const query = (q || '').trim();
         if (clearBtn) clearBtn.classList.toggle('hidden', query.length === 0);
         this.runSearchTabQuery(query);
-      }, 180);
+      }, 150);
 
       input.addEventListener('input', (e) => debouncedSearch(e.target.value));
       input.addEventListener('keydown', (e) => {
@@ -5342,6 +5322,16 @@ const UI = {
         this.runSearchTabQuery('');
       });
     }
+
+    document.querySelectorAll('.search-cat-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.search-cat-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.tabSearchFilter = btn.dataset.cat || 'all';
+        const q = input ? input.value.trim() : '';
+        this.runSearchTabQuery(q);
+      });
+    });
   },
 
   applySearchTabQuery(query) {
@@ -5358,8 +5348,13 @@ const UI = {
   async runSearchTabQuery(query) {
     const resultsArea = document.getElementById('tab-search-results-area');
     if (!resultsArea) return;
+    const filterType = state.tabSearchFilter || 'all';
 
     if (!query) {
+      let initialItems = state.catalogs.popular || [];
+      if (filterType === 'movie') initialItems = initialItems.filter(i => i.type === 'movie');
+      else if (filterType === 'series') initialItems = initialItems.filter(i => i.type === 'series');
+
       resultsArea.innerHTML = `
         <div class="search-tab-initial-state">
           <div class="initial-grid-header">
@@ -5368,7 +5363,7 @@ const UI = {
             </h2>
           </div>
           <div class="search-grid" id="tab-search-initial-grid">
-            ${(state.catalogs.popular || []).slice(0, 14).map(item => this.createMovieCard(item)).join('')}
+            ${initialItems.slice(0, 14).map(item => this.createMovieCard(item)).join('')}
           </div>
         </div>
       `;
@@ -5376,29 +5371,30 @@ const UI = {
     }
 
     resultsArea.innerHTML = `
-      <div class="search-loading-state" style="text-align:center; padding: 4rem 1rem; color: var(--text-secondary);">
+      <div class="search-loading-state" style="text-align:center; padding: 3rem 1rem; color: var(--text-secondary);">
         <div class="spinner large" style="margin: 0 auto 1rem;"></div>
-        <p style="font-size: 1.1rem; font-weight: 600; color: #ffffff;">Buscando "${query}"...</p>
+        <p style="font-size: 1.05rem; font-weight: 600; color: #ffffff;">Buscando "${query}"...</p>
       </div>
     `;
 
     try {
-      const results = await API.searchContent('all', query);
+      const results = await API.searchContent(filterType, query);
       if (!results || results.length === 0) {
         resultsArea.innerHTML = `
           <div class="search-empty-state" style="text-align:center; padding: 4rem 1rem; color: var(--text-secondary);">
             <div style="font-size: 3rem; margin-bottom: 0.8rem;">🔍</div>
             <h3 style="font-size: 1.3rem; font-weight: 800; color: #ffffff; margin-bottom: 0.5rem;">Nenhum resultado encontrado para "${query}"</h3>
-            <p style="font-size: 0.9rem; color: var(--text-muted);">Verifique a ortografia ou experimente digitar o nome original em inglês.</p>
+            <p style="font-size: 0.9rem; color: var(--text-muted);">Tente buscar pelo título original em inglês ou alternar entre Filmes e Séries.</p>
           </div>
         `;
         return;
       }
 
+      const labelType = filterType === 'movie' ? 'Filmes' : filterType === 'series' ? 'Séries' : 'Títulos';
       resultsArea.innerHTML = `
-        <div class="results-header-bar" style="margin-bottom: 1.2rem;">
-          <h2 class="section-title" style="padding-left:0; margin-bottom:0; font-size: 1.6rem; color: #ffffff;">
-            Resultados para "${query}" <span style="font-size: 1rem; color: var(--text-muted); font-weight: 500;">(${results.length} encontrados)</span>
+        <div class="results-header-bar" style="margin-bottom: 1.2rem; display:flex; align-items:center; justify-content:space-between;">
+          <h2 class="section-title" style="padding-left:0; margin-bottom:0; font-size: 1.4rem; color: #ffffff;">
+            Resultados para "${query}" <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 500;">(${results.length} ${labelType})</span>
           </h2>
         </div>
         <div class="search-grid">
@@ -6253,13 +6249,13 @@ const UI = {
     this.updateHudStreamSelector(state.activeStreams, index);
 
     const stream = state.activeStreams[index];
+    const streamName = stream ? stream.name.replace(/⚡|🎬|❄️|👑|🔥/g, '').trim() : 'Servidor';
     const playerLoading = document.getElementById('player-loading');
     if (playerLoading) {
       playerLoading.classList.remove('hidden');
       playerLoading.innerHTML = `
-        <div class="spinner large" style="margin-bottom:12px;"></div>
-        <div style="font-size:1.15rem; font-weight:800; color:#ffffff; margin-bottom:6px;">⚡ Conectando</div>
-        <div style="font-size:0.85rem; color:#9ca3af;">${stream.name}</div>
+        <div class="spinner"></div>
+        <span>Conectando ${streamName}...</span>
       `;
     }
 
@@ -6288,27 +6284,28 @@ const UI = {
       this.feedbackAutoHideTimer = null;
     }
 
-    const playable = (state.activeStreams || [])
-      .map((s, idx) => ({ index: idx, stream: s }))
-      .filter(c => c.stream && (c.stream.url || c.stream.embedUrl));
-    playable.sort((a, b) => (b.stream.score || 0) - (a.stream.score || 0));
+    // Delay prompt by 5s so it never collides with initial loading pill
+    this.feedbackAutoHideTimer = setTimeout(() => {
+      if (!state.isPlayerActive) return;
 
-    const totalPlayable = Math.min(10, playable.length);
-    const rankIndex = playable.findIndex(p => p.index === index);
-    const currentRank = rankIndex >= 0 ? rankIndex + 1 : (index + 1);
-    const streamName = stream ? stream.name.replace(/⚡|🎬|❄️|👑|🔥/g, '').trim() : 'Servidor';
+      const streamName = stream ? stream.name.replace(/⚡|🎬|❄️|👑|🔥/g, '').trim() : 'Servidor';
+      if (serverBadge) {
+        serverBadge.textContent = streamName;
+      }
+      if (questionEl) {
+        questionEl.textContent = 'Rodando bem?';
+      }
 
-    if (serverBadge) {
-      serverBadge.textContent = `⚡ Top ${currentRank}/${totalPlayable}: ${streamName}`;
-    }
-    if (questionEl) {
-      questionEl.textContent = 'O vídeo está rodando bem?';
-    }
+      feedbackPrompt.classList.remove('hidden');
+      requestAnimationFrame(() => {
+        feedbackPrompt.classList.add('show');
+      });
 
-    feedbackPrompt.classList.remove('hidden');
-    requestAnimationFrame(() => {
-      feedbackPrompt.classList.add('show');
-    });
+      // Auto dismiss after 7 seconds
+      setTimeout(() => {
+        this.dismissFeedbackPrompt();
+      }, 7000);
+    }, 5000);
 
     if (yesBtn) {
       yesBtn.onclick = (e) => {
@@ -6636,12 +6633,10 @@ const UI = {
 
     if (playerLoading) {
       playerLoading.classList.remove('hidden');
+      const cleanTitle = (title || '').replace(/⚡|🎬|❄️|👑|🔥/g, '').trim();
       playerLoading.innerHTML = `
-        <div style="text-align:center; max-width:380px; padding:24px 28px; background:rgba(18,18,30,0.92); backdrop-filter:blur(20px); border-radius:18px; border:1px solid rgba(255,255,255,0.12); box-shadow:0 16px 48px rgba(0,0,0,0.7);">
-          <div class="spinner large" style="margin:0 auto 16px; border-top-color:#8b5cf6;"></div>
-          <div style="font-size:1.2rem; font-weight:800; color:#ffffff; margin-bottom:6px;">⚡ Conectando Player Web HD</div>
-          <div style="font-size:0.85rem; color:#a78bfa;">${title}</div>
-        </div>
+        <div class="spinner"></div>
+        <span>Carregando ${cleanTitle}...</span>
       `;
     }
     if (playerError) playerError.classList.add('hidden');
@@ -6714,12 +6709,10 @@ const UI = {
 
     if (playerLoading) {
       playerLoading.classList.remove('hidden');
+      const cleanTitle = (title || '').replace(/⚡|🎬|❄️|👑|🔥/g, '').trim();
       playerLoading.innerHTML = `
-        <div style="text-align:center; max-width:380px; padding:24px 28px; background:rgba(18,18,30,0.92); backdrop-filter:blur(20px); border-radius:18px; border:1px solid rgba(255,255,255,0.12); box-shadow:0 16px 48px rgba(0,0,0,0.7);">
-          <div class="spinner large" style="margin:0 auto 16px; border-top-color:#8b5cf6;"></div>
-          <div style="font-size:1.2rem; font-weight:800; color:#ffffff; margin-bottom:6px;">⚡ Iniciando Transmissão</div>
-          <div style="font-size:0.85rem; color:#a78bfa;">${title}</div>
-        </div>
+        <div class="spinner"></div>
+        <span>Iniciando ${cleanTitle}...</span>
       `;
     }
     if (playerError) playerError.classList.add('hidden');
