@@ -7100,3 +7100,112 @@ body {
   display: flex !important;
   gap: 8px !important;
 }
+
+
+/* ==========================================================================
+   BENTO GRID & TOP 10 RANK ENHANCEMENTS
+   ========================================================================== */
+
+.bento-section {
+  padding: 0 4% !important;
+  margin: 3.5rem 0 2rem !important;
+}
+
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  margin-top: 1rem;
+}
+
+.bento-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 22px 20px;
+  border-radius: 18px;
+  text-decoration: none;
+  overflow: hidden;
+  min-height: 140px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.35s, border-color 0.35s;
+}
+
+.bento-card:hover {
+  transform: translateY(-6px) scale(1.02);
+  border-color: rgba(196, 181, 253, 0.4);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.6), 0 0 30px rgba(139, 92, 246, 0.3);
+}
+
+.bento-card.b1 { background: linear-gradient(135deg, rgba(220, 38, 38, 0.45) 0%, rgba(30, 58, 138, 0.45) 60%, rgba(11, 16, 32, 0.8) 100%); }
+.bento-card.b2 { background: linear-gradient(135deg, rgba(14, 165, 233, 0.45) 0%, rgba(88, 28, 135, 0.45) 60%, rgba(15, 23, 42, 0.8) 100%); }
+.bento-card.b3 { background: linear-gradient(135deg, rgba(234, 179, 8, 0.45) 0%, rgba(124, 45, 18, 0.45) 60%, rgba(28, 25, 23, 0.8) 100%); }
+.bento-card.b4 { background: linear-gradient(135deg, rgba(168, 85, 247, 0.45) 0%, rgba(219, 39, 119, 0.45) 60%, rgba(15, 23, 42, 0.8) 100%); }
+.bento-card.b5 { background: linear-gradient(135deg, rgba(239, 68, 68, 0.5) 0%, rgba(88, 28, 135, 0.5) 60%, rgba(10, 10, 10, 0.85) 100%); }
+
+.bento-card .bento-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  transition: transform 0.4s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.bento-card:hover .bento-icon {
+  transform: scale(1.2) rotate(6deg);
+}
+
+.bento-card .bento-info h3 {
+  font-family: var(--display, 'Bricolage Grotesque', sans-serif);
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+
+.bento-card .bento-info p {
+  font-size: 0.78rem;
+  color: rgba(245, 245, 251, 0.7);
+  line-height: 1.35;
+}
+
+@media (max-width: 1024px) {
+  .bento-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .bento-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.top-10-card {
+  position: relative !important;
+}
+
+.top-rank-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 10;
+  background: linear-gradient(135deg, #8b5cf6, #ec4899);
+  color: #ffffff;
+  font-family: var(--display, 'Bricolage Grotesque', sans-serif);
+  font-weight: 900;
+  font-size: 0.95rem;
+  padding: 4px 10px;
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.6);
+  letter-spacing: -0.5px;
+}
+
+.highlight-pulse {
+  animation: catalogPulse 1.5s ease-out;
+}
+@keyframes catalogPulse {
+  0% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.8); }
+  50% { box-shadow: 0 0 35px 8px rgba(139, 92, 246, 0.6); }
+  100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
+}

@@ -3932,20 +3932,35 @@ const UI = {
         popular = this.interleaveArrays(aniSer || [], aniMov || []);
         featured = aniRating || [];
       } else if (state.currentType === 'all') {
-        const [movTop, serTop, movRating, serRating] = await Promise.all([
+        const [movTop, serTop, movRating, serRating, actionMov, scifiMov, comedyMov, thrillerMov, horrorMov] = await Promise.all([
           API.fetchCatalog('movie', 'top', extra),
           API.fetchCatalog('series', 'top', extra),
           API.fetchCatalog('movie', 'imdbRating', extra),
-          API.fetchCatalog('series', 'imdbRating', extra)
-        ]).catch(() => [[], [], [], []]);
+          API.fetchCatalog('series', 'imdbRating', extra),
+          API.fetchCatalog('movie', 'top', { genre: 'Action' }),
+          API.fetchCatalog('movie', 'top', { genre: 'Sci-Fi' }),
+          API.fetchCatalog('movie', 'top', { genre: 'Comedy' }),
+          API.fetchCatalog('movie', 'top', { genre: 'Thriller' }),
+          API.fetchCatalog('movie', 'top', { genre: 'Horror' })
+        ]).catch(() => [[], [], [], [], [], [], [], [], []]);
 
         (movTop || []).forEach(m => m.type = 'movie');
         (serTop || []).forEach(s => s.type = 'series');
         (movRating || []).forEach(m => m.type = 'movie');
         (serRating || []).forEach(s => s.type = 'series');
+        (actionMov || []).forEach(m => m.type = 'movie');
+        (scifiMov || []).forEach(m => m.type = 'movie');
+        (comedyMov || []).forEach(m => m.type = 'movie');
+        (thrillerMov || []).forEach(m => m.type = 'movie');
+        (horrorMov || []).forEach(m => m.type = 'movie');
 
         popular = this.interleaveArrays(movTop || [], serTop || []);
         featured = this.interleaveArrays(movRating || [], serRating || []);
+        state.catalogs.action = actionMov || [];
+        state.catalogs.scifi = scifiMov || [];
+        state.catalogs.comedy = comedyMov || [];
+        state.catalogs.thriller = thrillerMov || [];
+        state.catalogs.horror = horrorMov || [];
       } else {
         const [pop, feat] = await Promise.all([
           API.fetchCatalog(state.currentType, 'top', extra),
@@ -4142,6 +4157,15 @@ const UI = {
     playHeroIn();
   },
   
+
+  filterByGenreDirect(genreKey) {
+    const el = document.getElementById(`catalog-${genreKey}`) || document.getElementById(`carousel-${genreKey}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('highlight-pulse');
+      setTimeout(() => el.classList.remove('highlight-pulse'), 1500);
+    }
+  },
 
   afterCatalogPaint(container) {
     const root = container || document.getElementById('catalog-container');
@@ -4699,14 +4723,153 @@ const UI = {
       // Recents positioned after featured
     }
 
+    // 1. Top 10 Mais Assistidos Hoje (com badges de rank)
+    if (state.currentType === 'all' && state.catalogs.popular && state.catalogs.popular.length > 0) {
+      const top10 = state.catalogs.popular.slice(0, 10);
+      const top10Html = top10.map((item, idx) => {
+        const cleanId = (item.id || '').split(':')[0];
+        const posterUrl = getPosterUrl(item);
+        const itemType = item.type || 'movie';
+        const isSeries = itemType === 'series';
+        const displayName = PTBR_Engine.translateTitle(item.name || '');
+        const isSaved = User.isInWatchlist(cleanId);
+        const ratingVal = item.imdbRating || item.rating;
+        const ratingNum = ratingVal ? parseFloat(ratingVal) : null;
+        const ratingStr = (ratingNum && !isNaN(ratingNum)) ? ratingNum.toFixed(1) : '8.8';
+        const genreText = (item.genres && item.genres.length > 0) ? item.genres.slice(0, 2).join(' • ') : (isSeries ? 'Série' : 'Filme');
+
+        return `
+          <article class="card movie-card top-10-card" tabindex="0" onclick="UI.openModal('${cleanId}', '${itemType}')" title="${displayName}">
+            <div class="top-rank-badge">#${idx + 1}</div>
+            <div class="poster movie-poster-wrap">
+              <div class="poster-bg" style="background-image: url('${posterUrl}')"></div>
+              <div class="tags">
+                <span class="tag tag-hd" style="background:linear-gradient(135deg, #8b5cf6, #ec4899); color:#fff; font-weight:800;">TOP 10</span>
+                <span class="tag tag-rating">★ ${ratingStr}</span>
+              </div>
+              <button class="fav ${isSaved ? 'on' : ''}" aria-label="Favoritar" title="${isSaved ? 'Remover da Minha Lista' : 'Salvar na Minha Lista'}" onclick="event.stopPropagation(); UI.quickToggleWatchlist(event, '${cleanId}')">
+                <svg class="i i-sm" viewBox="0 0 24 24" fill="${isSaved ? '#fbbf24' : 'none'}" stroke="${isSaved ? '#fbbf24' : 'currentColor'}" stroke-width="2"><path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+              </button>
+              <div class="poster-title">${displayName}</div>
+            </div>
+            <div class="reveal-info movie-card-info-bottom">
+              <div class="reveal-meta">
+                <span class="genre">${genreText}</span>
+                <span style="color:#34d399; font-weight:700;">🔥 Em alta</span>
+              </div>
+              <div class="reveal-actions">
+                <button class="btn-play" title="Assistir Agora" onclick="event.stopPropagation(); UI.quickPlayMovie('${cleanId}', '${itemType}')">
+                  <svg class="i i-sm" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+                  Assistir
+                </button>
+                <button class="btn-icon" title="Adicionar à Playlist" onclick="event.stopPropagation(); UI.openPlaylistPicker(event, '${cleanId}', '${itemType}')">➕</button>
+                <button class="btn-icon" title="Detalhes" onclick="event.stopPropagation(); UI.openModal('${cleanId}', '${itemType}')">ℹ</button>
+              </div>
+            </div>
+          </article>
+        `;
+      }).join('');
+
+      html += `
+        <section class="catalog-section" id="catalog-top10">
+          <div class="catalog-section-header">
+            <h2 class="section-title">
+              <span style="color:#fbbf24;">🏆</span> Top 10 Mais Assistidos Hoje
+            </h2>
+          </div>
+          <div class="carousel-wrapper">
+            <button class="carousel-btn carousel-prev" onclick="window.scrollCarousel('top10', -1)">‹</button>
+            <div class="carousel-track" id="carousel-top10">
+              ${top10Html}
+            </div>
+            <button class="carousel-btn carousel-next" onclick="window.scrollCarousel('top10', 1)">›</button>
+          </div>
+        </section>
+      `;
+    }
+
+    // 2. Populares
     if (state.catalogs.popular && state.catalogs.popular.length > 0) {
-      html += this.createCarousel(`${typeName} Populares`, state.catalogs.popular, 'popular');
+      html += this.createCarousel(`🔥 Filmes & Séries em Alta`, state.catalogs.popular, 'popular');
     }
+
+    // 3. Bento Grid Explore por Clima (na Home)
+    if (state.currentType === 'all') {
+      html += `
+        <section class="catalog-section bento-section">
+          <div class="catalog-section-header">
+            <h2 class="section-title">
+              <span style="color:#c4b5fd;">✨</span> Explore por Clima & Gênero
+            </h2>
+          </div>
+          <div class="bento-grid">
+            <a href="#" class="bento-card b1" onclick="event.preventDefault(); UI.filterByGenreDirect('action');">
+              <div class="bento-icon">⚡</div>
+              <div class="bento-info">
+                <h3>Ação & Adrenalina</h3>
+                <p>Explosões, combates e ritmo alucinante</p>
+              </div>
+            </a>
+            <a href="#" class="bento-card b2" onclick="event.preventDefault(); UI.filterByGenreDirect('scifi');">
+              <div class="bento-icon">🚀</div>
+              <div class="bento-info">
+                <h3>Ficção Científica</h3>
+                <p>Outros mundos e realidades futuristas</p>
+              </div>
+            </a>
+            <a href="#" class="bento-card b3" onclick="event.preventDefault(); UI.filterByGenreDirect('comedy');">
+              <div class="bento-icon">🎭</div>
+              <div class="bento-info">
+                <h3>Comédias Leves</h3>
+                <p>Para relaxar e rir bastante</p>
+              </div>
+            </a>
+            <a href="#" class="bento-card b4" onclick="event.preventDefault(); UI.filterByGenreDirect('thriller');">
+              <div class="bento-icon">👁️</div>
+              <div class="bento-info">
+                <h3>Suspense & Mistério</h3>
+                <p>Reviravoltas e tensão sem piscar</p>
+              </div>
+            </a>
+            <a href="#" class="bento-card b5" onclick="event.preventDefault(); UI.filterByGenreDirect('horror');">
+              <div class="bento-icon">🩸</div>
+              <div class="bento-info">
+                <h3>Terror & Sobrenatural</h3>
+                <p>Arrepios e sustos garantidos</p>
+              </div>
+            </a>
+          </div>
+        </section>
+      `;
+    }
+
+    // 4. Em Destaque
     if (state.catalogs.featured && state.catalogs.featured.length > 0) {
-      html += this.createCarousel(`${typeName} em Destaque`, state.catalogs.featured, 'featured');
+      html += this.createCarousel(`⭐ Sucessos Aclamados pela Crítica`, state.catalogs.featured, 'featured');
     }
+
+    // 5. Lançamentos Recentes
     if (finalRecents && finalRecents.length > 0) {
-      html += this.createCarousel(`🔥 Lançamentos Recentes (2025 / 2026)`, finalRecents, 'recents');
+      html += this.createCarousel(`🆕 Lançamentos Recentes (2025 / 2026)`, finalRecents, 'recents');
+    }
+
+    // 6. Trilhos extras de gêneros na Home
+    if (state.currentType === 'all') {
+      if (state.catalogs.action && state.catalogs.action.length > 0) {
+        html += this.createCarousel(`⚡ Adrenalina Pura: Filmes de Ação`, state.catalogs.action, 'action');
+      }
+      if (state.catalogs.scifi && state.catalogs.scifi.length > 0) {
+        html += this.createCarousel(`🚀 Universos Paralelos: Ficção Científica`, state.catalogs.scifi, 'scifi');
+      }
+      if (state.catalogs.comedy && state.catalogs.comedy.length > 0) {
+        html += this.createCarousel(`🎭 Para Rir: Melhores Comédias`, state.catalogs.comedy, 'comedy');
+      }
+      if (state.catalogs.thriller && state.catalogs.thriller.length > 0) {
+        html += this.createCarousel(`👁️ Tensão Máxima: Suspense & Mistério`, state.catalogs.thriller, 'thriller');
+      }
+      if (state.catalogs.horror && state.catalogs.horror.length > 0) {
+        html += this.createCarousel(`🩸 Noite de Terror & Sobrenatural`, state.catalogs.horror, 'horror');
+      }
     }
     
     // Dedicated Explore Tab
