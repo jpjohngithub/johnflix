@@ -6323,41 +6323,45 @@ body {
 }
 
 /* Floating Pill Header */
-/* Minimalist Floating Capsule Header */
-#app-header {
+/* Minimalist Floating Capsule Header - Exact Fit */
+#app-header,
+.header {
   position: fixed !important;
   top: 18px !important;
   left: 50% !important;
   transform: translateX(-50%) !important;
-  z-index: 100 !important;
-  width: auto !important;
-  max-width: calc(100% - 32px) !important;
+  z-index: 1000 !important;
+  width: max-content !important;
+  max-width: calc(100vw - 32px) !important;
   display: inline-flex !important;
   align-items: center !important;
-  gap: 16px !important;
-  padding: 8px 10px 8px 22px !important;
-  background: rgba(18, 16, 26, 0.72) !important;
+  justify-content: center !important;
+  gap: 14px !important;
+  padding: 6px 8px 6px 20px !important;
+  background: rgba(18, 16, 26, 0.78) !important;
   backdrop-filter: blur(28px) saturate(180%) !important;
   -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 9999px !important;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
   height: auto !important;
-  transition: all 0.3s ease !important;
+  margin: 0 !important;
 }
 
-#app-header.scrolled {
-  background: rgba(12, 10, 18, 0.92) !important;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7) !important;
+#app-header.scrolled,
+.header.scrolled {
+  background: rgba(12, 10, 18, 0.94) !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8) !important;
 }
 
 .header-content {
   display: inline-flex !important;
   align-items: center !important;
-  gap: 16px !important;
+  gap: 14px !important;
   padding: 0 !important;
   width: auto !important;
   max-width: none !important;
+  margin: 0 !important;
 }
 
 .logo {
@@ -6365,36 +6369,30 @@ body {
   align-items: center !important;
   font-family: var(--display, 'Bricolage Grotesque', sans-serif) !important;
   font-weight: 800 !important;
-  font-size: 21px !important;
+  font-size: 20px !important;
   letter-spacing: -0.04em !important;
   white-space: nowrap !important;
   color: #c084fc !important;
-  margin-right: 4px !important;
+  margin-right: 2px !important;
+  padding: 0 !important;
 }
 
-.logo-text {
+.logo-text,
+#site-logo-text {
   background: linear-gradient(135deg, #c084fc, #a855f7) !important;
   -webkit-background-clip: text !important;
   background-clip: text !important;
   color: transparent !important;
-}
-
-.logo-text span,
-#site-logo-suffix {
-  background: linear-gradient(135deg, #c084fc, #a855f7) !important;
-  -webkit-background-clip: text !important;
-  background-clip: text !important;
-  color: transparent !important;
+  display: inline-block !important;
 }
 
 .header-nav {
-  display: flex !important;
+  display: inline-flex !important;
   align-items: center !important;
-  gap: 6px !important;
-  overflow-x: auto !important;
-  scrollbar-width: none !important;
+  gap: 4px !important;
+  padding: 0 !important;
+  margin: 0 !important;
 }
-.header-nav::-webkit-scrollbar { display: none !important; }
 
 .nav-link {
   display: inline-flex !important;
@@ -6404,20 +6402,15 @@ body {
   height: 38px !important;
   padding: 0 !important;
   border-radius: 50% !important;
-  color: rgba(245, 245, 251, 0.6) !important;
+  color: rgba(245, 245, 251, 0.55) !important;
   transition: all 0.2s ease !important;
   border: none !important;
-}
-
-.nav-link .nav-link-icon {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
+  background: none !important;
 }
 
 .nav-link .nav-link-icon svg {
-  width: 20px !important;
-  height: 20px !important;
+  width: 19px !important;
+  height: 19px !important;
   stroke: currentColor !important;
   stroke-width: 1.8 !important;
 }
@@ -6425,56 +6418,41 @@ body {
 .nav-link:hover {
   color: #ffffff !important;
   background: rgba(255, 255, 255, 0.08) !important;
-  transform: translateY(-1px) !important;
 }
 
 .nav-link.active {
   color: #ffffff !important;
-  background: rgba(139, 92, 246, 0.22) !important;
-  box-shadow: 0 0 12px rgba(139, 92, 246, 0.3) !important;
+  background: rgba(139, 92, 246, 0.25) !important;
+  box-shadow: 0 0 14px rgba(139, 92, 246, 0.35) !important;
 }
 
 .header-actions {
   display: inline-flex !important;
   align-items: center !important;
-  gap: 0 !important;
+  gap: 4px !important;
   background: rgba(255, 255, 255, 0.05) !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   border-radius: 9999px !important;
   padding: 3px 4px 3px 6px !important;
+  margin-left: 4px !important;
 }
 
-.search-container {
-  background: none !important;
-  border: none !important;
-  padding: 0 !important;
-  box-shadow: none !important;
-}
-
-.search-container #search-input {
-  width: 0 !important;
-  padding: 0 !important;
-  opacity: 0 !important;
-  transition: all 0.3s ease !important;
-}
-
-.search-container.active #search-input {
-  width: 140px !important;
-  padding: 4px 8px !important;
-  opacity: 1 !important;
-}
-
-.search-toggle {
+.search-nav-btn {
   width: 32px !important;
   height: 32px !important;
   border-radius: 50% !important;
-  color: rgba(245, 245, 251, 0.7) !important;
+  color: rgba(245, 245, 251, 0.75) !important;
+  background: none !important;
+  border: none !important;
   display: grid !important;
   place-items: center !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
 }
 
-.search-toggle:hover {
+.search-nav-btn:hover {
   color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.1) !important;
 }
 
 .user-avatar-badge {
@@ -6492,7 +6470,7 @@ body {
 }
 
 .user-avatar-badge:hover {
-  transform: scale(1.08) !important;
+  transform: scale(1.06) !important;
 }
 
 /* Filter Chips Bar */
