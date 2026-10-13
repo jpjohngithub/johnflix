@@ -689,6 +689,8 @@ body {
 .catalog-section {
   position: relative;
   padding: 0 4%;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 320px;
 }
 
 .catalog-section-header {
@@ -2270,6 +2272,33 @@ body {
 
   #main-content {
     padding-top: 0 !important;
+  }
+
+  /* Extreme Mobile Performance Boost */
+  .hero-video,
+  .hero-side-controls {
+    display: none !important;
+  }
+
+  .hero-backdrop {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .catalog-section {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 280px;
+  }
+
+  .carousel-track {
+    -webkit-overflow-scrolling: touch;
+    contain: layout style paint;
+    scroll-behavior: smooth;
+  }
+
+  .card, .movie-card, .wide-card {
+    contain: layout style paint;
+    transform: translateZ(0);
   }
 
   #genre-select {

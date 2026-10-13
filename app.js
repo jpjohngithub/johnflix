@@ -4298,23 +4298,29 @@ const UI = {
 
       const heroVideo = document.getElementById('hero-video');
       if (heroVideo) {
-        const HERO_CLIPS = [
-          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
-          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
-          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4'
-        ];
-        const clipIdx = Math.abs((meta.name || meta.id || '').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)) % HERO_CLIPS.length;
-        const targetSrc = HERO_CLIPS[clipIdx];
-        if (heroVideo.dataset.src !== targetSrc) {
-          heroVideo.dataset.src = targetSrc;
-          heroVideo.src = targetSrc;
-          heroVideo.muted = true;
-          heroVideo.currentTime = 6;
-          heroVideo.play().then(() => {
-            heroVideo.classList.add('playing');
-          }).catch(() => {});
+        if (window.innerWidth <= 768) {
+          heroVideo.pause();
+          heroVideo.src = '';
+          heroVideo.classList.remove('playing');
+        } else {
+          const HERO_CLIPS = [
+            'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+            'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+            'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+            'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+            'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4'
+          ];
+          const clipIdx = Math.abs((meta.name || meta.id || '').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)) % HERO_CLIPS.length;
+          const targetSrc = HERO_CLIPS[clipIdx];
+          if (heroVideo.dataset.src !== targetSrc) {
+            heroVideo.dataset.src = targetSrc;
+            heroVideo.src = targetSrc;
+            heroVideo.muted = true;
+            heroVideo.currentTime = 6;
+            heroVideo.play().then(() => {
+              heroVideo.classList.add('playing');
+            }).catch(() => {});
+          }
         }
       }
     };
