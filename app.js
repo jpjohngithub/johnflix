@@ -3231,12 +3231,7 @@ const UI = {
         }
 
         if (type === 'explore') {
-          state.currentType = 'explore';
-          state.exploreGenre = 'Action';
-          state.exploreSaga = null;
-          state.exploreQuery = '';
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-          UI.renderExploreHub();
+          UI.openExploreTab();
           return;
         }
 
@@ -3246,6 +3241,11 @@ const UI = {
           window.scrollTo({ top: 0, behavior: 'smooth' });
           UI.renderLiveTvTab();
           return;
+        }
+
+        if (type === 'all' || type === 'movie' || type === 'series') {
+          const hero = document.getElementById('hero-section');
+          if (hero) hero.classList.remove('hidden');
         }
 
         state.currentType = type;
@@ -4295,6 +4295,28 @@ const UI = {
 
       this.updateHeroWatchlistBtn();
       this.updateHeroDots();
+
+      const heroVideo = document.getElementById('hero-video');
+      if (heroVideo) {
+        const HERO_CLIPS = [
+          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+          'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WeAreGoingOnBullrun.mp4'
+        ];
+        const clipIdx = Math.abs((meta.name || meta.id || '').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)) % HERO_CLIPS.length;
+        const targetSrc = HERO_CLIPS[clipIdx];
+        if (heroVideo.dataset.src !== targetSrc) {
+          heroVideo.dataset.src = targetSrc;
+          heroVideo.src = targetSrc;
+          heroVideo.muted = true;
+          heroVideo.currentTime = 6;
+          heroVideo.play().then(() => {
+            heroVideo.classList.add('playing');
+          }).catch(() => {});
+        }
+      }
     };
 
     const playHeroIn = () => {
@@ -4311,6 +4333,38 @@ const UI = {
       }
     };
     playHeroIn();
+  },
+
+  toggleHeroVolume() {
+    const video = document.getElementById('hero-video');
+    if (!video) return;
+    video.muted = !video.muted;
+    const mutedIcon = document.getElementById('hero-vol-icon-muted');
+    const unmutedIcon = document.getElementById('hero-vol-icon-unmuted');
+    if (mutedIcon && unmutedIcon) {
+      if (video.muted) {
+        mutedIcon.classList.remove('hidden');
+        unmutedIcon.classList.add('hidden');
+      } else {
+        mutedIcon.classList.add('hidden');
+        unmutedIcon.classList.remove('hidden');
+      }
+    }
+  },
+
+  openExploreTab(genre = 'all') {
+    state.currentType = 'explore';
+    state.exploreGenre = genre;
+    state.exploreSaga = null;
+    state.exploreQuery = '';
+    const hero = document.getElementById('hero-section');
+    if (hero) hero.classList.add('hidden');
+    const searchRes = document.getElementById('search-results');
+    if (searchRes) searchRes.classList.add('hidden');
+    document.querySelectorAll('.nav-link, .mobile-nav-item').forEach(l => l.classList.remove('active'));
+    document.querySelector('.nav-link[data-type="explore"], .mobile-nav-item[data-type="explore"]')?.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    this.renderExploreHub();
   },
   
 
@@ -4553,7 +4607,7 @@ const UI = {
           <div class="section-title-wrap">
             <h2 class="section-title">${title}</h2>
           </div>
-          <a href="#" class="section-see-all" onclick="event.preventDefault();">Explorar ›</a>
+          <a href="#" class="section-see-all" onclick="event.preventDefault(); UI.openExploreTab();">Explorar ›</a>
         </div>
         <div class="carousel-wrapper">
           <button class="carousel-btn carousel-prev" onclick="window.scrollCarousel('${id}', -1)">‹</button>
@@ -4890,6 +4944,7 @@ const UI = {
 
         return `
           <article class="card movie-card top-10-card" tabindex="0" onclick="UI.openModal('${cleanId}', '${itemType}')" title="${displayName}">
+            <span class="top10-giant-rank">${idx + 1}</span>
             <div class="poster movie-poster-wrap">
               <div class="poster-bg" style="background-image: url('${posterUrl}')"></div>
               <div class="tags">
@@ -4923,7 +4978,47 @@ const UI = {
         `;
       }).join('');
 
+      const trendingWideItems = (state.catalogs.featured && state.catalogs.featured.length > 0) ? state.catalogs.featured.slice(0, 8) : allItems.slice(0, 8);
+      const wideCardsHtml = trendingWideItems.map(item => {
+        const cleanId = (item.id || '').split(':')[0];
+        const bgUrl = getBackgroundUrl(item) || getPosterUrl(item);
+        const itemType = item.type || 'movie';
+        const displayName = PTBR_Engine.translateTitle(item.name || '');
+        const year = item.year || item.releaseInfo || '2024';
+        const rating = item.imdbRating || '8.5';
+        return `
+          <div class="wide-card" onclick="UI.openModal('${cleanId}', '${itemType}')" title="${displayName}">
+            <div class="wide-card-thumb" style="background-image: url('${bgUrl}')">
+              <div class="wide-card-gradient"></div>
+              <span class="wide-card-badge">★ ${rating} • EM ALTA</span>
+            </div>
+            <div class="wide-card-info">
+              <div class="wide-card-title">${displayName}</div>
+              <div class="wide-card-meta">
+                <span>${year}</span> • <span>${itemType === 'series' ? 'Série' : 'Filme'}</span> • <span style="color:#22c55e; font-weight:700;">4K HDR</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
       html += `
+        <section class="catalog-section" id="catalog-trending-wide">
+          <div class="catalog-section-header">
+            <div class="section-title-wrap">
+              <h2 class="section-title">Em Alta no JohnFlix</h2>
+            </div>
+            <a href="#" class="section-see-all" onclick="event.preventDefault(); UI.openExploreTab();">Explorar ›</a>
+          </div>
+          <div class="carousel-wrapper">
+            <button class="carousel-btn carousel-prev" onclick="window.scrollCarousel('trending-wide', -1)">‹</button>
+            <div class="carousel-track" id="carousel-trending-wide">
+              ${wideCardsHtml}
+            </div>
+            <button class="carousel-btn carousel-next" onclick="window.scrollCarousel('trending-wide', 1)">›</button>
+          </div>
+        </section>
+
         <section class="catalog-section" id="catalog-top10">
           <div class="catalog-section-header">
             <h2 class="section-title">Top 10 no Brasil hoje</h2>
@@ -4935,23 +5030,6 @@ const UI = {
             </div>
             <button class="carousel-btn carousel-next" onclick="window.scrollCarousel('top10', 1)">›</button>
           </div>
-        </section>
-        <section class="home-utility-strip" aria-label="Atalhos do JohnFlix">
-          <button type="button" class="home-utility-card" onclick="document.querySelector('.nav-link[data-type=\\'explore\\'], .mobile-nav-item[data-type=\\'explore\\']')?.click()">
-            <span class="home-utility-icon">✦</span>
-            <span><strong>Descubra algo novo</strong><small>Explore centenas de filmes e séries</small></span>
-            <span class="home-utility-arrow" aria-hidden="true">›</span>
-          </button>
-          <button type="button" class="home-utility-card" onclick="document.querySelector('.nav-link[data-type=\\'livetv\\'], .mobile-nav-item[data-type=\\'livetv\\']')?.click()">
-            <span class="home-utility-icon live">◉</span>
-            <span><strong>Ao vivo agora</strong><small>Entre na programação da TV</small></span>
-            <span class="home-utility-arrow" aria-hidden="true">›</span>
-          </button>
-          <button type="button" class="home-utility-card" onclick="document.querySelector('.nav-link[data-type=\\'watchlist\\'], .mobile-nav-item[data-type=\\'watchlist\\']')?.click()">
-            <span class="home-utility-icon list">＋</span>
-            <span><strong>Sua próxima sessão</strong><small>Continue ou veja sua lista</small></span>
-            <span class="home-utility-arrow" aria-hidden="true">›</span>
-          </button>
         </section>
       `;
     }

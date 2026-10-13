@@ -434,6 +434,64 @@ body {
   to { transform: scale(1.06); }
 }
 
+.hero-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1.2s ease-in-out;
+}
+
+.hero-video.playing {
+  opacity: 1;
+}
+
+.hero-side-controls {
+  position: absolute;
+  right: 4%;
+  bottom: 22%;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hero-volume-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(18, 18, 28, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.hero-volume-btn:hover {
+  background: rgba(139, 92, 246, 0.4);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: scale(1.08);
+}
+
+.hero-maturity-badge {
+  background: rgba(20, 20, 30, 0.75);
+  border-left: 3.5px solid #8b5cf6;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 4px 10px;
+  border-radius: 0 4px 4px 0;
+  backdrop-filter: blur(8px);
+}
+
 .hero-gradient {
   position: absolute;
   inset: 0;
@@ -7344,6 +7402,95 @@ body {
 
 .top-10-card {
   position: relative !important;
+  display: flex !important;
+  align-items: flex-end !important;
+  overflow: visible !important;
+  padding-left: 55px !important;
+}
+
+.top10-giant-rank {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  font-family: 'Impact', 'Bricolage Grotesque', sans-serif;
+  font-size: 6.8rem;
+  font-weight: 900;
+  line-height: 0.85;
+  color: #0b0c14;
+  -webkit-text-stroke: 3.5px #6366f1;
+  text-shadow: 0 4px 18px rgba(0, 0, 0, 0.9);
+  z-index: 2;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Widescreen Landscape Cards (Netflix Originals & Trending style) */
+.wide-card {
+  flex: 0 0 320px !important;
+  width: 320px !important;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #141420;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s ease, border-color 0.28s ease;
+  position: relative;
+}
+
+.wide-card:hover {
+  transform: translateY(-6px) scale(1.02);
+  border-color: rgba(139, 92, 246, 0.6);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.55);
+}
+
+.wide-card-thumb {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+
+.wide-card-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 50%, rgba(10, 10, 16, 0.95) 100%);
+}
+
+.wide-card-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(139, 92, 246, 0.85);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.72rem;
+  padding: 3px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+  backdrop-filter: blur(6px);
+}
+
+.wide-card-info {
+  padding: 12px 14px 14px;
+}
+
+.wide-card-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+
+.wide-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: #94a3b8;
 }
 
 .top-rank-badge {
