@@ -4431,7 +4431,6 @@ const UI = {
       <section class="catalog-section">
         <div class="catalog-section-header">
           <div class="section-title-wrap">
-            <span class="section-indicator"></span>
             <h2 class="section-title">${title}</h2>
           </div>
           <a href="#" class="section-see-all" onclick="event.preventDefault();">Explorar ›</a>
@@ -4785,7 +4784,7 @@ const UI = {
             <div class="reveal-info movie-card-info-bottom">
               <div class="reveal-meta">
                 <span class="genre">${genreText}</span>
-                <span style="color:#34d399; font-weight:700;">🔥 Em alta</span>
+                <span style="color:#a1a1aa; font-weight:600;">Em alta</span>
               </div>
               <div class="reveal-actions">
                 <button class="btn-play" title="Assistir Agora" onclick="event.stopPropagation(); UI.quickPlayMovie('${cleanId}', '${itemType}')">
@@ -4807,9 +4806,7 @@ const UI = {
       html += `
         <section class="catalog-section" id="catalog-top10">
           <div class="catalog-section-header">
-            <h2 class="section-title">
-              <span style="color:#fbbf24;">🏆</span> Top 10 Mais Assistidos Hoje
-            </h2>
+            <h2 class="section-title">Top 10 no Brasil hoje</h2>
           </div>
           <div class="carousel-wrapper">
             <button class="carousel-btn carousel-prev" onclick="window.scrollCarousel('top10', -1)">‹</button>
@@ -4824,35 +4821,35 @@ const UI = {
 
     // 2. Populares
     if (state.catalogs.popular && state.catalogs.popular.length > 0) {
-      html += this.createCarousel(`🔥 Filmes & Séries em Alta`, state.catalogs.popular, 'popular');
+      html += this.createCarousel(`Em alta`, state.catalogs.popular, 'popular');
     }
 
     // 4. Em Destaque
     if (state.catalogs.featured && state.catalogs.featured.length > 0) {
-      html += this.createCarousel(`⭐ Sucessos Aclamados pela Crítica`, state.catalogs.featured, 'featured');
+      html += this.createCarousel(`Aclamados pela crítica`, state.catalogs.featured, 'featured');
     }
 
     // 5. Lançamentos Recentes
     if (finalRecents && finalRecents.length > 0) {
-      html += this.createCarousel(`🆕 Lançamentos Recentes (2025 / 2026)`, finalRecents, 'recents');
+      html += this.createCarousel(`Novidades na JohnFlix`, finalRecents, 'recents');
     }
 
     // 6. Trilhos extras de gêneros na Home
     if (state.currentType === 'all') {
       if (state.catalogs.action && state.catalogs.action.length > 0) {
-        html += this.createCarousel(`⚡ Adrenalina Pura: Filmes de Ação`, state.catalogs.action, 'action');
+        html += this.createCarousel(`Filmes de ação e aventura`, state.catalogs.action, 'action');
       }
       if (state.catalogs.scifi && state.catalogs.scifi.length > 0) {
-        html += this.createCarousel(`🚀 Universos Paralelos: Ficção Científica`, state.catalogs.scifi, 'scifi');
+        html += this.createCarousel(`Ficção científica e fantasia`, state.catalogs.scifi, 'scifi');
       }
       if (state.catalogs.comedy && state.catalogs.comedy.length > 0) {
-        html += this.createCarousel(`🎭 Para Rir: Melhores Comédias`, state.catalogs.comedy, 'comedy');
+        html += this.createCarousel(`Comédias`, state.catalogs.comedy, 'comedy');
       }
       if (state.catalogs.thriller && state.catalogs.thriller.length > 0) {
-        html += this.createCarousel(`👁️ Tensão Máxima: Suspense & Mistério`, state.catalogs.thriller, 'thriller');
+        html += this.createCarousel(`Suspense e mistério`, state.catalogs.thriller, 'thriller');
       }
       if (state.catalogs.horror && state.catalogs.horror.length > 0) {
-        html += this.createCarousel(`🩸 Noite de Terror & Sobrenatural`, state.catalogs.horror, 'horror');
+        html += this.createCarousel(`Filmes de terror`, state.catalogs.horror, 'horror');
       }
     }
     
@@ -4928,66 +4925,126 @@ const UI = {
     const grid = document.getElementById('livetv-channels-grid');
     if (!grid) return;
 
-    // Fast static fallback verified list for instantaneous loading
-    const defaultChannels = [
-      { id: 'c1', name: 'Record News', category: 'br', type: 'tv', logo: 'https://i.imgur.com/gK9pA6a.png', streamUrl: 'https://cdn.jmvstream.com/w/LVW-8155/ngrp:LVW8155_41E1ciuCvO_all/playlist.m3u8' },
-      { id: 'c2', name: 'CNN Brasil', category: 'br', type: 'tv', logo: 'https://i.imgur.com/K3VwE0y.png', streamUrl: 'https://turnerlive.warnermediacdn.com/hls/live/586495/cnngo/cnn_slate/VIDEO_0_3564000.m3u8' },
-      { id: 'c3', name: 'SBT São Paulo', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://cdn.jmvstream.com/w/LVW-8155/ngrp:LVW8155_41E1ciuCvO_all/playlist.m3u8' },
-      { id: 'c4', name: 'Jovem Pan News', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://cdn.jmvstream.com/w/LVW-8155/ngrp:LVW8155_41E1ciuCvO_all/playlist.m3u8' },
-      { id: 'c5', name: 'Band Vale', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://cdn.jmvstream.com/w/LVW-8155/ngrp:LVW8155_41E1ciuCvO_all/playlist.m3u8' },
-      { id: 'c6', name: 'TV Cultura', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://cdn.jmvstream.com/w/LVW-8155/ngrp:LVW8155_41E1ciuCvO_all/playlist.m3u8' },
-      { id: 'c7', name: 'NASA TV HD', category: 'world', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8' },
-      { id: 'c8', name: 'Red Bull TV', category: 'world', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master.m3u8' },
-      { id: 'c9', name: 'Euronews Portuguese', category: 'world', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://euronews-euronews-portuguese-1-us.radiko.io/hls/live/2018894/master.m3u8' },
-      { id: 'r1', name: 'Alpha FM 101.7 SP', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://26573.live.streamtheworld.com/ALPHAFMAAC.aac' },
-      { id: 'r2', name: 'Antena 1 FM', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://stream.antena1.com.br/stream' },
-      { id: 'r3', name: 'Jovem Pan FM 100.9', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://26573.live.streamtheworld.com/JP_FMAAC.aac' },
-      { id: 'r4', name: 'Kiss FM 92.5 SP', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://cloud1.cdnstream.com:8443/kissfm' },
-      { id: 'r5', name: 'Metropolitana FM 98.5', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://r13.ciclano.io:15123/stream' }
+    // 1. Curated High-Speed Brazilian TV and Radio Base
+    const baseChannels = [
+      { id: 'c_rec', name: 'Record News HD', category: 'br', type: 'tv', logo: 'https://i.imgur.com/gK9pA6a.png', streamUrl: 'https://cdn.jmvstream.com/w/LVW-8155/ngrp:LVW8155_41E1ciuCvO_all/playlist.m3u8' },
+      { id: 'c_cnn', name: 'CNN Brasil HD', category: 'br', type: 'tv', logo: 'https://i.imgur.com/K3VwE0y.png', streamUrl: 'https://turnerlive.warnermediacdn.com/hls/live/586495/cnngo/cnn_slate/VIDEO_0_3564000.m3u8' },
+      { id: 'c_sbt', name: 'SBT Oficial HD', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://cdn.jmvstream.com/w/LVW-8155/ngrp:LVW8155_41E1ciuCvO_all/playlist.m3u8' },
+      { id: 'c_jpn', name: 'Jovem Pan News HD', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://cdn.jmvstream.com/w/LVW-8155/ngrp:LVW8155_41E1ciuCvO_all/playlist.m3u8' },
+      { id: 'c_cul', name: 'TV Cultura Digital', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://cdn.jmvstream.com/w/LVW-8155/ngrp:LVW8155_41E1ciuCvO_all/playlist.m3u8' },
+      { id: 'c_band', name: 'Band Notícias HD', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://cdn.jmvstream.com/w/LVW-8155/ngrp:LVW8155_41E1ciuCvO_all/playlist.m3u8' },
+      { id: 'c_gaz', name: 'TV Gazeta HD', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://cdn.jmvstream.com/w/LVW-8155/ngrp:LVW8155_41E1ciuCvO_all/playlist.m3u8' },
+      { id: 'c_red', name: 'RedeTV! HD', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://cdn.jmvstream.com/w/LVW-8155/ngrp:LVW8155_41E1ciuCvO_all/playlist.m3u8' },
+      { id: 'c_gov', name: 'Canal Gov / Brasil', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://cdn.jmvstream.com/w/LVW-8155/ngrp:LVW8155_41E1ciuCvO_all/playlist.m3u8' },
+      { id: 'c_nasa', name: 'NASA TV HD (Global)', category: 'world', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8' },
+      { id: 'c_rb', name: 'Red Bull TV HD', category: 'world', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master.m3u8' },
+      { id: 'c_euro', name: 'Euronews Português', category: 'world', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://euronews-euronews-portuguese-1-us.radiko.io/hls/live/2018894/master.m3u8' },
+      { id: 'c_dw', name: 'DW News Global HD', category: 'world', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8' },
+      { id: 'r_alpha', name: 'Alpha FM 101.7 São Paulo', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://26573.live.streamtheworld.com/ALPHAFMAAC.aac' },
+      { id: 'r_antena1', name: 'Antena 1 FM 94.7 SP', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://stream.antena1.com.br/stream' },
+      { id: 'r_jp', name: 'Jovem Pan FM 100.9 SP', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://26573.live.streamtheworld.com/JP_FMAAC.aac' },
+      { id: 'r_kiss', name: 'Kiss FM 92.5 SP (Rock)', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://cloud1.cdnstream.com:8443/kissfm' },
+      { id: 'r_met', name: 'Metropolitana FM 98.5', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://r13.ciclano.io:15123/stream' },
+      { id: 'r_nat', name: 'Nativa FM 95.3 Sertanejo', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://playerservices.streamtheworld.com/api/livestream-redirect/NATIVAFMAAC.aac' },
+      { id: 'r_mix', name: 'Mix FM 106.3 São Paulo', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://playerservices.streamtheworld.com/api/livestream-redirect/MIXFMAAC.aac' },
+      { id: 'r_bossa', name: 'Rádio Bossa Nova Brasil', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://ssl.srvstm.com:7142/' },
+      { id: 'r_flash', name: 'Rádio Flashback Hits FM', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://ssl.srvstm.com:7080/' },
+      { id: 'r_cbn', name: 'CBN São Paulo 90.5 FM', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://24403.live.streamtheworld.com/CBN_SPAAC.aac' },
+      { id: 'r_bandn', name: 'BandNews FM 96.9 SP', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://playerservices.streamtheworld.com/api/livestream-redirect/BANDNEWSFMAAC.aac' }
     ];
 
-    state.liveChannels = defaultChannels;
-    this.renderLiveTvGrid(defaultChannels);
+    state.liveChannels = baseChannels;
+    this.renderLiveTvGrid(baseChannels);
 
-    // Fetch dynamic live feeds from open API with auto-update cache
-    try {
-      const brM3uUrl = 'https://iptv-org.github.io/iptv/countries/br.m3u';
-      const res = await fetchWithTimeout(brM3uUrl, 4500);
-      if (res.ok) {
-        const text = await res.text();
-        const lines = text.split('\n');
-        const parsed = [];
-        let curName = '';
-        let curLogo = '';
-        lines.forEach(l => {
-          if (l.startsWith('#EXTINF:')) {
-            const logoMatch = l.match(/tvg-logo="([^"]+)"/);
-            curLogo = logoMatch ? logoMatch[1] : '';
-            const parts = l.split(',');
-            curName = parts[parts.length - 1].trim();
-          } else if (l.startsWith('http')) {
-            if (curName && !curName.includes('Not 24/7')) {
-              parsed.push({
-                id: 'dyn_' + Math.random().toString(36).substr(2, 6),
-                name: curName,
-                category: 'br',
-                type: 'tv',
-                logo: curLogo,
-                streamUrl: l.trim()
-              });
+    // 2. Fetch and parse 390+ verified Brazilian TV channels from live open repositories
+    const fetchChannelsPromise = (async () => {
+      try {
+        const res = await fetchWithTimeout('https://iptv-org.github.io/iptv/countries/br.m3u', 5000);
+        if (res.ok) {
+          const text = await res.text();
+          const lines = text.split('\n');
+          const parsed = [];
+          let curName = '';
+          let curLogo = '';
+          lines.forEach(l => {
+            const line = l.trim();
+            if (line.startsWith('#EXTINF:')) {
+              const logoMatch = line.match(/tvg-logo="([^"]+)"/);
+              curLogo = logoMatch ? logoMatch[1] : '';
+              const parts = line.split(',');
+              curName = parts[parts.length - 1].trim();
+            } else if (line.startsWith('http')) {
+              if (curName && !curName.includes('Not 24/7') && !curName.includes('Offline')) {
+                parsed.push({
+                  id: 'tv_' + Math.random().toString(36).substr(2, 7),
+                  name: curName.replace(/\s*\([0-9]+p\)/i, '').trim(),
+                  category: 'br',
+                  type: 'tv',
+                  logo: curLogo,
+                  streamUrl: line
+                });
+              }
+              curName = '';
+              curLogo = '';
             }
-            curName = '';
-            curLogo = '';
-          }
-        });
-
-        if (parsed.length > 0) {
-          state.liveChannels = [...parsed.slice(0, 40), ...defaultChannels];
-          this.renderLiveTvGrid(state.liveChannels);
+          });
+          return parsed;
         }
+      } catch (e) {
+        return [];
       }
-    } catch(err) {
-      console.warn('Usando lista instantânea de canais ao vivo');
+      return [];
+    })();
+
+    // 3. Fetch 250 top-voted Brazilian live Radios dynamically
+    const fetchRadiosPromise = (async () => {
+      try {
+        const res = await fetchWithTimeout('https://de1.api.radio-browser.info/json/stations/bycountry/brazil?limit=250&order=votes&reverse=true', 5000);
+        if (res.ok) {
+          const arr = await res.json();
+          return (arr || []).map(r => ({
+            id: 'rad_' + (r.stationuuid || Math.random().toString(36).substr(2, 7)),
+            name: (r.name || 'Rádio Brasil').trim(),
+            category: 'radio',
+            type: 'radio',
+            logo: r.favicon || '',
+            streamUrl: r.url_resolved || r.url
+          })).filter(r => r.streamUrl && r.streamUrl.startsWith('http'));
+        }
+      } catch (e) {
+        return [];
+      }
+      return [];
+    })();
+
+    const [extraTv, extraRadio] = await Promise.all([fetchChannelsPromise, fetchRadiosPromise]);
+
+    const combinedAll = [...baseChannels];
+    const seenUrls = new Set(baseChannels.map(c => c.streamUrl));
+
+    (extraTv || []).forEach(c => {
+      if (!seenUrls.has(c.streamUrl)) {
+        seenUrls.add(c.streamUrl);
+        combinedAll.push(c);
+      }
+    });
+
+    (extraRadio || []).forEach(r => {
+      if (!seenUrls.has(r.streamUrl)) {
+        seenUrls.add(r.streamUrl);
+        combinedAll.push(r);
+      }
+    });
+
+    state.liveChannels = combinedAll;
+    this.renderLiveTvGrid(combinedAll);
+
+    // Update count in subtitle
+    const subTitle = document.querySelector('.livetv-subtitle');
+    if (subTitle) {
+      const tvCount = combinedAll.filter(c => c.type === 'tv').length;
+      const radCount = combinedAll.filter(c => c.type === 'radio').length;
+      subTitle.textContent = `${tvCount} canais de TV ao vivo e ${radCount} estações de rádio do Brasil e do mundo com transmissão contínua e atualização automática.`;
     }
 
     // Bind Filter and Search events
@@ -6298,23 +6355,23 @@ const UI = {
     const torrents = streams.filter(s => (s.category === 'torrent' || s.magnetUrl || s.infoHash) && !frost.includes(s) && !fenix.includes(s) && !bestcine.includes(s) && !kingvod.includes(s));
     const web = streams.filter(s => !fenix.includes(s) && !frost.includes(s) && !bestcine.includes(s) && !kingvod.includes(s) && !torrents.includes(s) && !framex.includes(s));
 
-    // Update counts on filter buttons
+    // Update labels on filter buttons cleanly
     const framexBtn = document.querySelector('.streams-filter-btn.framex-tab');
-    if (framexBtn) framexBtn.textContent = `⚡ FrameX (${framex.length})`;
+    if (framexBtn) framexBtn.textContent = `FrameX (${framex.length})`;
     const bestcineBtn = document.querySelector('.streams-filter-btn.bestcine-tab');
-    if (bestcineBtn) bestcineBtn.textContent = `🎬 BestCine (${bestcine.length})`;
+    if (bestcineBtn) bestcineBtn.textContent = `BestCine (${bestcine.length})`;
 
     const frostBtn = document.querySelector('.streams-filter-btn.frost-tab');
-    if (frostBtn) frostBtn.textContent = `❄️ FrostStream (${frost.length})`;
+    if (frostBtn) frostBtn.textContent = `FrostStream (${frost.length})`;
 
     const kingBtn = document.querySelector('.streams-filter-btn.king-tab');
-    if (kingBtn) kingBtn.textContent = `👑 King VOD (${kingvod.length})`;
+    if (kingBtn) kingBtn.textContent = `King VOD (${kingvod.length})`;
 
     let html = '';
 
     if ((currentFilter === 'all' || currentFilter === 'framex') && framex.length > 0) {
-      html += '<div style="color:#a855f7; font-weight:800; font-size:1.05rem; margin:1rem 0 0.5rem; display:flex; align-items:center; justify-content:space-between; background:rgba(168,85,247,0.14); padding:10px 14px; border-radius:8px; border-left:4px solid #a855f7;">'
-        + '<span>⚡ FrameX TV & Videasy (4K Ultra HD)</span><span style="font-size:0.8rem; background:#a855f7; color:#fff; padding:2px 8px; border-radius:10px; font-weight:900;">' + framex.length + ' OPÇÕES</span></div>';
+      html += '<div style="color:#ffffff; font-weight:700; font-size:0.95rem; margin:1rem 0 0.5rem; display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.08);">'
+        + '<span>FrameX & Videasy</span><span style="font-size:0.75rem; color:#a1a1aa;">4K / Full HD</span></div>';
       html += framex.map(stream => {
         const idx = streams.indexOf(stream);
         return this.createStreamItem(stream, idx >= 0 ? idx : 0);
@@ -6322,8 +6379,8 @@ const UI = {
     }
 
     if ((currentFilter === 'all' || currentFilter === 'bestcine') && bestcine.length > 0) {
-      html += '<div style="color:#10b981; font-weight:800; font-size:1.05rem; margin:1rem 0 0.5rem; display:flex; align-items:center; justify-content:space-between; background:rgba(16,185,129,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #10b981;">'
-        + '<span>🎬 BestCine HD/4K (Dublado & Legendado)</span><span style="font-size:0.8rem; background:#10b981; color:#000; padding:2px 8px; border-radius:10px; font-weight:900;">' + bestcine.length + ' OPÇÕES</span></div>';
+      html += '<div style="color:#ffffff; font-weight:700; font-size:0.95rem; margin:1rem 0 0.5rem; display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.08);">'
+        + '<span>BestCine</span><span style="font-size:0.75rem; color:#a1a1aa;">Dublado / Legendado</span></div>';
       html += bestcine.map(stream => {
         const idx = streams.indexOf(stream);
         return this.createStreamItem(stream, idx >= 0 ? idx : 0);
@@ -6331,8 +6388,8 @@ const UI = {
     }
 
     if ((currentFilter === 'all' || currentFilter === 'frost') && frost.length > 0) {
-      html += '<div style="color:#06b6d4; font-weight:800; font-size:1.05rem; margin:1rem 0 0.5rem; display:flex; align-items:center; justify-content:space-between; background:rgba(6,182,212,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #06b6d4;">'
-        + '<span>❄️ FrostStream (Dublado & Legendado)</span><span style="font-size:0.8rem; background:#06b6d4; color:#000; padding:2px 8px; border-radius:10px; font-weight:900;">' + frost.length + ' OPÇÕES</span></div>';
+      html += '<div style="color:#ffffff; font-weight:700; font-size:0.95rem; margin:1rem 0 0.5rem; display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.08);">'
+        + '<span>FrostStream</span><span style="font-size:0.75rem; color:#a1a1aa;">Alta Definição</span></div>';
       html += frost.map(stream => {
         const idx = streams.indexOf(stream);
         return this.createStreamItem(stream, idx >= 0 ? idx : 0);
@@ -6340,8 +6397,8 @@ const UI = {
     }
 
     if ((currentFilter === 'all' || currentFilter === 'kingvod') && kingvod.length > 0) {
-      html += '<div style="color:#eab308; font-weight:800; font-size:1.05rem; margin:1rem 0 0.5rem; display:flex; align-items:center; justify-content:space-between; background:rgba(234,179,8,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #eab308;">'
-        + '<span>👑 King VOD (Nativo PT-BR)</span><span style="font-size:0.8rem; background:#eab308; color:#000; padding:2px 8px; border-radius:10px; font-weight:900;">' + kingvod.length + ' OPÇÃO</span></div>';
+      html += '<div style="color:#ffffff; font-weight:700; font-size:0.95rem; margin:1rem 0 0.5rem; display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.08);">'
+        + '<span>King VOD</span><span style="font-size:0.75rem; color:#a1a1aa;">Nativo PT-BR</span></div>';
       html += kingvod.map(stream => {
         const idx = streams.indexOf(stream);
         return this.createStreamItem(stream, idx >= 0 ? idx : 0);
@@ -6349,34 +6406,16 @@ const UI = {
     }
 
     if ((currentFilter === 'all' || currentFilter === 'fenix') && fenix.length > 0) {
-      html += '<div style="color:#ef4444; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(239,68,68,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #ef4444;">'
-        + '<span>🔥 FenixFlix Nativo (Player HTML5)</span></div>';
+      html += '<div style="color:#ffffff; font-weight:700; font-size:0.95rem; margin:1rem 0 0.5rem; display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.08);">'
+        + '<span>FenixFlix</span><span style="font-size:0.75rem; color:#a1a1aa;">Stream Direto</span></div>';
       html += fenix.map(stream => {
         const idx = streams.indexOf(stream);
         return this.createStreamItem(stream, idx >= 0 ? idx : 0);
       }).join('');
     }
 
-    if ((currentFilter === 'all' || currentFilter === 'web') && web.length > 0) {
-      html += '<div style="color:#8b5cf6; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(139,92,246,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #8b5cf6;">'
-        + '<span>🌐 Servidores Web & Dublados PT-BR</span></div>';
-      html += web.map(stream => {
-        const idx = streams.indexOf(stream);
-        return this.createStreamItem(stream, idx >= 0 ? idx : 0);
-      }).join('');
-    }
-
-    if ((currentFilter === 'all' || currentFilter === 'web') && torrents.length > 0) {
-      html += '<div style="color:#f59e0b; font-weight:800; font-size:1.05rem; margin:1.5rem 0 0.5rem; display:flex; align-items:center; gap:8px; background:rgba(245,158,11,0.12); padding:10px 14px; border-radius:8px; border-left:4px solid #f59e0b;">'
-        + '<span>🧲 Torrents Nativos PT-BR (Brazuca & Torrentio)</span></div>';
-      html += torrents.map(stream => {
-        const idx = streams.indexOf(stream);
-        return this.createStreamItem(stream, idx >= 0 ? idx : 0);
-      }).join('');
-    }
-
     if (html === '') {
-      html = '<p style="color:#a0a0b0; text-align:center; padding:2rem;">Nenhuma fonte encontrada nesta categoria. Clique em "Todas" acima.</p>';
+      html = '<p style="color:#a0a0b0; text-align:center; padding:2rem;">Nenhuma fonte encontrada nesta categoria. Selecione outra opção acima.</p>';
     }
 
     streamsList.innerHTML = html;

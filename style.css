@@ -7800,3 +7800,143 @@ body {
   background: #ddd6fe;
 }
 
+/* ==========================================================================
+   NETFLIX COMPOSITION & REFINEMENT
+   ========================================================================== */
+
+/* 1. Logo: John is White, Flix is Purple */
+.logo-text,
+#site-logo-text {
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  color: #ffffff !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+.logo-john,
+#site-logo-text .logo-john,
+.loading-logo .logo-john {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  font-weight: 800 !important;
+}
+
+.logo-flix,
+#site-logo-suffix,
+.logo .logo-flix,
+.loading-logo .logo-flix {
+  background: linear-gradient(135deg, #c084fc 0%, #a855f7 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: #a855f7 !important;
+  font-weight: 800 !important;
+}
+
+/* 2. Remove all decorative lines / riscos */
+.section-indicator,
+.catalog-section-header::before,
+.catalog-section-header::after,
+.section-title::before,
+.section-title::after {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  content: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* 3. Professional Netflix Category Typography */
+.section-title,
+.items-section-title,
+.streams-title {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  font-size: 1.25rem !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  color: #ffffff !important;
+  letter-spacing: -0.015em !important;
+  display: inline-block !important;
+  margin-bottom: 0.6rem !important;
+}
+
+/* 4. Top Clearance: Titles never collide with floating capsule header */
+#catalog-container {
+  padding-top: 100px !important;
+  margin-top: 0 !important;
+}
+
+#hero-section:not(.hidden) ~ #catalog-container {
+  margin-top: 1.5rem !important;
+  padding-top: 0.5rem !important;
+}
+
+#catalog-top10,
+.catalog-section:first-child {
+  margin-top: 1.2rem !important;
+}
+
+/* 5. Clean Modal Actions & Player Selection */
+.modal-actions #modal-auto-play-btn,
+.btn-autoplay {
+  background: #ffffff !important;
+  color: #000000 !important;
+  font-weight: 700 !important;
+  font-size: 0.98rem !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4) !important;
+  border: none !important;
+  padding: 12px 28px !important;
+  min-height: 48px !important;
+  justify-content: center !important;
+}
+
+.modal-actions #modal-auto-play-btn:hover,
+.btn-autoplay:hover {
+  background: #e6e6e6 !important;
+  transform: scale(1.02) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6) !important;
+}
+
+.modal-watchlist-btn,
+.modal-playlist-btn {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  padding: 12px 20px !important;
+  min-height: 48px !important;
+}
+
+.modal-watchlist-btn:hover,
+.modal-playlist-btn:hover {
+  background: rgba(255, 255, 255, 0.22) !important;
+}
+
+.streams-filter-btn {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #d1d5db !important;
+  border-radius: 20px !important;
+  font-size: 0.85rem !important;
+  font-weight: 500 !important;
+  padding: 7px 16px !important;
+  box-shadow: none !important;
+}
+
+.streams-filter-btn.active {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border-color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+
