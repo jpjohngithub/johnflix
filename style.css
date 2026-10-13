@@ -212,8 +212,8 @@ body {
 
 /* Desktop Navigation Menu */
 .home-utility-strip {
-  position: relative; z-index: 3; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px;
-  width:min(1320px,92%); margin:-42px auto 26px;
+  position: relative; z-index: 2; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px;
+  width:min(1320px,92%); margin:42px auto 26px;
 }
 .home-utility-card {
   min-width:0; min-height:88px; display:flex; align-items:center; gap:14px; padding:16px 18px;
@@ -4285,13 +4285,25 @@ body {
   background: linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, transparent 22%, transparent 75%, rgba(0,0,0,0.92) 100%);
   opacity: 0;
   transition: opacity 0.3s ease;
-  pointer-events: none;
+  pointer-events: none !important;
   z-index: 20;
 }
 
 .player-overlay.user-active .player-hud {
   opacity: 1;
-  pointer-events: auto;
+  pointer-events: none !important;
+}
+
+.player-hud .hud-top,
+.player-hud .hud-bottom,
+.player-hud button,
+.player-hud select,
+.player-hud input,
+.player-hud a,
+.player-hud .hud-btn,
+.player-hud .hud-icon-btn,
+.player-hud .hud-feedback-content {
+  pointer-events: auto !important;
 }
 
 .player-overlay.user-idle {
@@ -8318,7 +8330,7 @@ body {
    MOBILE RESPONSIVENESS & PERFORMANCE (LEVE E FÁCIL DE MEXER)
    ========================================================================== */
 @media (max-width: 860px) {
-  .home-utility-strip { grid-template-columns:1fr; width:calc(100% - 32px); gap:9px; margin:-19px auto 21px; }
+  .home-utility-strip { grid-template-columns:1fr; width:calc(100% - 32px); gap:9px; margin:28px auto 20px; }
   .home-utility-card { min-height:70px; padding:12px 14px; border-radius:13px; }
   .home-utility-icon { width:36px; height:36px; flex-basis:36px; }
   .home-utility-card strong { font-size:.85rem; }
