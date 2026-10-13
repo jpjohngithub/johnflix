@@ -637,26 +637,27 @@ const state = {
 };
 
 const GENRES_LIST = [
-  { id: 'Action', label: '💥 Ação' },
-  { id: 'Adventure', label: '🗺️ Aventura' },
-  { id: 'Animation', label: '🎨 Animação' },
-  { id: 'Anime', label: '⛩️ Anime' },
-  { id: 'Comedy', label: '😂 Comédia' },
-  { id: 'Crime', label: '🕵️ Crime' },
-  { id: 'Documentary', label: '📽️ Documentário' },
-  { id: 'Drama', label: '🎭 Drama' },
-  { id: 'Dorama', label: '🌸 Dorama / K-Drama' },
-  { id: 'Family', label: '👨‍👩‍👧 Família' },
-  { id: 'Fantasy', label: '🧙 Fantasia' },
-  { id: 'History', label: '📜 História' },
-  { id: 'Horror', label: '👻 Terror' },
-  { id: 'Mystery', label: '🔍 Mistério' },
-  { id: 'Romance', label: '❤️ Romance' },
-  { id: 'Sci-Fi', label: '🚀 Ficção Científica' },
-  { id: 'Sport', label: '⚽ Esporte' },
-  { id: 'Thriller', label: '⚡ Suspense' },
-  { id: 'War', label: '⚔️ Guerra' },
-  { id: 'Western', label: '🤠 Faroeste' }
+  { id: 'all', label: 'Todos' },
+  { id: 'Action', label: 'Ação' },
+  { id: 'Adventure', label: 'Aventura' },
+  { id: 'Animation', label: 'Animação' },
+  { id: 'Anime', label: 'Anime' },
+  { id: 'Comedy', label: 'Comédia' },
+  { id: 'Crime', label: 'Crime' },
+  { id: 'Documentary', label: 'Documentário' },
+  { id: 'Drama', label: 'Drama' },
+  { id: 'Dorama', label: 'Dorama / K-Drama' },
+  { id: 'Family', label: 'Família' },
+  { id: 'Fantasy', label: 'Fantasia' },
+  { id: 'History', label: 'História' },
+  { id: 'Horror', label: 'Terror' },
+  { id: 'Mystery', label: 'Mistério' },
+  { id: 'Romance', label: 'Romance' },
+  { id: 'Sci-Fi', label: 'Ficção Científica' },
+  { id: 'Sport', label: 'Esporte' },
+  { id: 'Thriller', label: 'Suspense' },
+  { id: 'War', label: 'Guerra' },
+  { id: 'Western', label: 'Faroeste' }
 ];
 
 // --- Seção Cinema: Grandes Sagas e Trilogias em Ordem Cronológica ---
@@ -4935,6 +4936,23 @@ const UI = {
             <button class="carousel-btn carousel-next" onclick="window.scrollCarousel('top10', 1)">›</button>
           </div>
         </section>
+        <section class="home-utility-strip" aria-label="Atalhos do JohnFlix">
+          <button type="button" class="home-utility-card" onclick="document.querySelector('.nav-link[data-type=\\'explore\\'], .mobile-nav-item[data-type=\\'explore\\']')?.click()">
+            <span class="home-utility-icon">✦</span>
+            <span><strong>Descubra algo novo</strong><small>Explore centenas de filmes e séries</small></span>
+            <span class="home-utility-arrow" aria-hidden="true">›</span>
+          </button>
+          <button type="button" class="home-utility-card" onclick="document.querySelector('.nav-link[data-type=\\'livetv\\'], .mobile-nav-item[data-type=\\'livetv\\']')?.click()">
+            <span class="home-utility-icon live">◉</span>
+            <span><strong>Ao vivo agora</strong><small>Entre na programação da TV</small></span>
+            <span class="home-utility-arrow" aria-hidden="true">›</span>
+          </button>
+          <button type="button" class="home-utility-card" onclick="document.querySelector('.nav-link[data-type=\\'watchlist\\'], .mobile-nav-item[data-type=\\'watchlist\\']')?.click()">
+            <span class="home-utility-icon list">＋</span>
+            <span><strong>Sua próxima sessão</strong><small>Continue ou veja sua lista</small></span>
+            <span class="home-utility-arrow" aria-hidden="true">›</span>
+          </button>
+        </section>
       `;
     }
 
@@ -5064,28 +5082,24 @@ const UI = {
 
     // 1. Curated High-Speed Brazilian TV and Radio Base
     const baseChannels = [
-      { id: 'c_sbt', name: 'SBT Interior HD', category: 'br', type: 'tv', logo: 'https://i.imgur.com/gK9pA6a.png', streamUrl: 'https://cdn.jmvstream.com/w/LVW-10801/LVW10801_WqW27G8zF5/playlist.m3u8' },
-      { id: 'c_cultura', name: 'TV Cultura HD', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://fpa-gateway.tvcultura.com.br:8181/memfs/606caef0-a290-413d-9f1f-8fcdb3a73831.m3u8' },
       { id: 'c_cnn', name: 'CNN Brasil HD', category: 'br', type: 'tv', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/CNN_Brasil.svg/960px-CNN_Brasil.svg.png', streamUrl: 'https://d25usgadhphvwi.cloudfront.net/hls/main.m3u8' },
-      { id: 'c_record', name: 'Record Paulista HD', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://cdn.jmvstream.com/w/LVW-8155/LVW8155_YkG2j8bB1H/playlist.m3u8' },
-      { id: 'c_adren', name: 'Pluto TV Filmes Ação', category: 'br', type: 'tv', logo: 'https://i.imgur.com/gK9pA6a.png', streamUrl: 'https://jmp2.uk/plu-61b790b985706b00072cb797.m3u8' },
-      { id: 'c_sucessos', name: 'Pluto TV Cine Sucessos', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://jmp2.uk/plu-5f12111c9e6c2c00078ef3bb.m3u8' },
-      { id: 'c_comedia', name: 'Pluto TV Cine Comédia', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://jmp2.uk/plu-5f12101f0b12f00007844c7c.m3u8' },
-      { id: 'c_crime', name: 'Pluto TV Cine Crime', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://jmp2.uk/plu-6479ff764f5ba5000878dfe2.m3u8' },
-      { id: 'c_familia', name: 'Pluto TV Cine Família', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://jmp2.uk/plu-5f171f032cd22e0007f17f3d.m3u8' },
+      { id: 'c_aratu', name: 'Aratu On HD (SBT)', category: 'br', type: 'tv', logo: 'https://i.imgur.com/gK9pA6a.png', streamUrl: 'https://cdn.live.br1.jmvstream.com/w/LVW-9359/LVW9359_XSyReL0QVf/playlist.m3u8' },
+      { id: 'c_cultura', name: 'TV Cultura HD', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://fpa-gateway.tvcultura.com.br:8181/memfs/606caef0-a290-413d-9f1f-8fcdb3a73831.m3u8' },
+      { id: 'c_amz', name: 'Amazon Sat HD', category: 'br', type: 'tv', logo: 'https://i.imgur.com/gK9pA6a.png', streamUrl: 'https://amazonsat.brasilstream.com.br/hls/amazonsat/index.m3u8' },
+      { id: 'c_c38', name: 'Canal 38 HD', category: 'br', type: 'tv', logo: 'https://i.imgur.com/gK9pA6a.png', streamUrl: 'https://cdn.jmvstream.com/w/LVW-8503/LVW8503_d0V5oduFlK/playlist.m3u8' },
+      { id: 'c_boasnovas', name: 'Boas Novas 1080p', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://cdn.jmvstream.com/w/LVW-9375/LVW9375_6i0wPBCHYc/playlist.m3u8' },
+      { id: 'c_adren', name: 'Adrenalina Pura TV', category: 'br', type: 'tv', logo: 'https://i.imgur.com/gK9pA6a.png', streamUrl: 'https://jmp2.uk/plu-61b790b985706b00072cb797.m3u8' },
       { id: 'c_avatar', name: 'Avatar: A Lenda de Aang (24h)', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://jmp2.uk/plu-6759eeb1bd523200083b4f29.m3u8' },
       { id: 'c_bob', name: 'Bob Esponja Calça Quadrada (24h)', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://jmp2.uk/plu-62545c0b002f4b0007688b61.m3u8' },
       { id: 'c_bmc', name: 'BM&C News Brasil', category: 'br', type: 'tv', logo: 'https://i.imgur.com/K3VwE0y.png', streamUrl: 'https://jmp2.uk/plu-666c9c60a7efd40008f552f0.m3u8' },
-      { id: 'c_amz', name: 'Amazon Sat HD', category: 'br', type: 'tv', logo: 'https://i.imgur.com/gK9pA6a.png', streamUrl: 'https://amazonsat.brasilstream.com.br/hls/amazonsat/index.m3u8' },
       { id: 'c_rb', name: 'Red Bull TV HD', category: 'world', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master.m3u8' },
       { id: 'c_nasa', name: 'NASA TV HD (Global)', category: 'world', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8' },
+      { id: 'r_cidade', name: 'Rádio Cidade 102.9 RJ (Rock)', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://playerservices.streamtheworld.com/api/livestream-redirect/RADIOCIDADEAAC.aac' },
+      { id: 'r_saudade', name: 'Rádio Saudade FM 99.7', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://playerservices.streamtheworld.com/api/livestream-redirect/SAUDADE_FMAAC.aac' },
       { id: 'r_alpha', name: 'Alpha FM 101.7 São Paulo', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://26573.live.streamtheworld.com/ALPHAFMAAC.aac' },
-      { id: 'r_antena1', name: 'Antena 1 FM 94.7 SP', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://stream.antena1.com.br/stream' },
       { id: 'r_jp', name: 'Jovem Pan FM 100.9 SP', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://26573.live.streamtheworld.com/JP_FMAAC.aac' },
-      { id: 'r_kiss', name: 'Kiss FM 92.5 SP (Rock)', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://cloud1.cdnstream.com:8443/kissfm' },
-      { id: 'r_met', name: 'Metropolitana FM 98.5', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://r13.ciclano.io:15123/stream' },
+      { id: 'r_antena1', name: 'Antena 1 FM 94.7 SP', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://stream.antena1.com.br/stream' },
       { id: 'r_nat', name: 'Nativa FM 95.3 Sertanejo', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://playerservices.streamtheworld.com/api/livestream-redirect/NATIVAFMAAC.aac' },
-      { id: 'r_mix', name: 'Mix FM 106.3 São Paulo', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://playerservices.streamtheworld.com/api/livestream-redirect/MIXFMAAC.aac' },
       { id: 'r_cbn', name: 'CBN São Paulo 90.5 FM', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://24403.live.streamtheworld.com/CBN_SPAAC.aac' },
       { id: 'r_bandn', name: 'BandNews FM 96.9 SP', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://playerservices.streamtheworld.com/api/livestream-redirect/BANDNEWSFMAAC.aac' }
     ];
@@ -5333,9 +5347,9 @@ const UI = {
         enableWorker: true,
         lowLatencyMode: true,
         backBufferLength: 15,
-        manifestLoadingTimeOut: 3000,
-        levelLoadingTimeOut: 3000,
-        fragLoadingTimeOut: 4500,
+        manifestLoadingTimeOut: 15000,
+        levelLoadingTimeOut: 15000,
+        fragLoadingTimeOut: 20000,
         startLevel: 0
       });
       hls.loadSource(url);
@@ -5765,7 +5779,7 @@ const UI = {
     const container = document.getElementById('catalog-container');
     if (!container) return;
 
-    const currentGenre = state.exploreGenre || 'Action';
+    const currentGenre = state.exploreGenre || 'all';
     const currentSaga = state.exploreSaga || null;
     const currentExploreType = state.exploreType || 'all';
 
@@ -5775,42 +5789,47 @@ const UI = {
       </button>
     `).join('');
 
-    const sagasHtml = CINEMA_SAGAS.map(s => `
-      <button class="explore-chip ${(currentSaga === s.id) ? 'active' : ''}" data-saga="${s.id}">
-        ${s.title.split('(')[0].trim()}
-      </button>
-    `).join('');
+    const sagasHtml = CINEMA_SAGAS.map(s => {
+      const cleanTitle = s.title.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '').split('(')[0].trim();
+      return `
+        <button class="explore-chip ${(currentSaga === s.id) ? 'active' : ''}" data-saga="${s.id}">
+          ${cleanTitle}
+        </button>
+      `;
+    }).join('');
 
     container.innerHTML = `
       <div class="explore-hub">
         <div class="explore-header">
-          <h1 class="explore-title">🧭 Explorar & Descobrir</h1>
+          <h1 class="explore-title">Explorar & Descobrir</h1>
           <p class="explore-subtitle">Pesquise títulos ou selecione gêneros e universos do cinema para navegar</p>
         </div>
 
         <div class="explore-search-wrap">
           <div class="explore-search-bar">
-            <span class="explore-search-icon">🔍</span>
+            <span class="explore-search-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </span>
             <input type="search" id="explore-search-input" class="explore-search-input" enterkeyhint="search" placeholder="Buscar filmes, séries, sagas e animes..." value="${state.exploreQuery || ''}">
             <button id="explore-search-clear" class="explore-search-clear ${state.exploreQuery ? '' : 'hidden'}" title="Limpar busca">✕</button>
           </div>
         </div>
 
         <div class="explore-type-filters">
-          <button class="explore-type-btn ${currentExploreType === 'all' ? 'active' : ''}" data-explore-type="all">🍿 Todos</button>
-          <button class="explore-type-btn ${currentExploreType === 'movie' ? 'active' : ''}" data-explore-type="movie">🎬 Filmes</button>
-          <button class="explore-type-btn ${currentExploreType === 'series' ? 'active' : ''}" data-explore-type="series">📺 Séries</button>
+          <button class="explore-type-btn ${currentExploreType === 'all' ? 'active' : ''}" data-explore-type="all">Todos</button>
+          <button class="explore-type-btn ${currentExploreType === 'movie' ? 'active' : ''}" data-explore-type="movie">Filmes</button>
+          <button class="explore-type-btn ${currentExploreType === 'series' ? 'active' : ''}" data-explore-type="series">Séries</button>
         </div>
 
         <div class="explore-section-label">
-          <span>🎬</span> Gêneros Populares
+          Gêneros Populares
         </div>
         <div class="explore-chips-container" id="explore-genres-list">
           ${genresHtml}
         </div>
 
         <div class="explore-section-label">
-          <span>⚡</span> Sagas & Universos do Cinema
+          Sagas & Universos do Cinema
         </div>
         <div class="explore-chips-container" id="explore-sagas-list">
           ${sagasHtml}
@@ -5967,26 +5986,28 @@ const UI = {
     }
 
     // 2. If Genre is active
-    const currentGenre = state.exploreGenre || 'Action';
-    const genreObj = GENRES_LIST.find(g => g.id === currentGenre) || { label: currentGenre };
-    if (titleEl) titleEl.textContent = `Em Destaque: ${genreObj.label}`;
+    const currentGenre = state.exploreGenre || 'all';
+    const genreObj = GENRES_LIST.find(g => g.id === currentGenre);
+    const genreLabel = (currentGenre === 'all' || !currentGenre) ? 'Todos os Títulos' : (genreObj ? genreObj.label : currentGenre);
+    if (titleEl) titleEl.textContent = `Em Destaque: ${genreLabel}`;
 
     try {
       const type = state.exploreType || 'all';
       const cacheKey = `${type}:${currentGenre}`;
+      const genreParam = (currentGenre === 'all' || !currentGenre) ? undefined : currentGenre;
       state.exploreContentCache = state.exploreContentCache || {};
       if (!state.exploreContentCache[cacheKey]) {
         let firstPage;
         if (type === 'all') {
           const [movies, series] = await Promise.all([
-            API.fetchCatalog('movie', 'top', { genre: currentGenre }).catch(() => []),
-            API.fetchCatalog('series', 'top', { genre: currentGenre }).catch(() => [])
+            API.fetchCatalog('movie', 'top', genreParam ? { genre: genreParam } : {}).catch(() => []),
+            API.fetchCatalog('series', 'top', genreParam ? { genre: genreParam } : {})
           ]);
           (movies || []).forEach(item => item.type = 'movie');
           (series || []).forEach(item => item.type = 'series');
           firstPage = this.interleaveArrays(movies || [], series || []);
         } else {
-          firstPage = await API.fetchCatalog(type, 'top', { genre: currentGenre }).catch(() => []);
+          firstPage = await API.fetchCatalog(type, 'top', genreParam ? { genre: genreParam } : {}).catch(() => []);
           (firstPage || []).forEach(item => item.type = type);
         }
         state.exploreContentCache[cacheKey] = firstPage || [];
