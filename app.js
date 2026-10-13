@@ -3563,18 +3563,26 @@ const UI = {
         this.onUserPlayerInteraction();
       }, { passive: true });
 
-      // Desktop Click on Screen -> Seamless Play / Pause (No intrusive on-screen badges or blocking overlays)
+      // Screen Click -> Toggle Play / Pause
       playerOverlay.addEventListener('click', (e) => {
-        // Strict guard: Do not toggle pause when clicking controls, buttons, selects, links, or HUD bars
-        if (e.target.closest('#player-hud, .hud-source-feedback, .hud-top, .hud-bottom, button, select, a, input, label, option, .modal')) return;
+        if (e.target.closest('.hud-top, .hud-bottom, .hud-source-feedback, .hud-controls-row, .hud-progress-container, button, select, a, input, label, option, .modal')) return;
         togglePlayPause();
         resetHudTimer();
         this.onUserPlayerInteraction();
       });
 
+      if (video) {
+        video.addEventListener('click', (e) => {
+          e.stopPropagation();
+          togglePlayPause();
+          resetHudTimer();
+          this.onUserPlayerInteraction();
+        });
+      }
+
       // Desktop Double-Click on Screen -> Toggle Fullscreen / Skip 10s
       playerOverlay.addEventListener('dblclick', (e) => {
-        if (e.target.closest('#player-hud, .hud-source-feedback, button, select, input, a, .hud-top, .hud-bottom')) return;
+        if (e.target.closest('.hud-top, .hud-bottom, .hud-source-feedback, .hud-controls-row, .hud-progress-container, button, select, input, a')) return;
         const rect = playerOverlay.getBoundingClientRect();
         const clickX = e.clientX - rect.left;
         const width = rect.width;
@@ -3601,7 +3609,7 @@ const UI = {
 
       playerOverlay.addEventListener('touchend', (e) => {
         // Ignore taps on interactive controls
-        if (e.target.closest('#player-hud, .hud-source-feedback, button, select, input, a, .hud-top, .hud-bottom')) return;
+        if (e.target.closest('.hud-top, .hud-bottom, .hud-source-feedback, .hud-controls-row, .hud-progress-container, button, select, input, a')) return;
         
         const now = Date.now();
         const diff = now - lastTapTime;
@@ -3624,10 +3632,9 @@ const UI = {
         } else {
           lastTapTime = now;
           singleTapTimeout = setTimeout(() => {
-            if (playerHud) {
-              playerHud.classList.toggle('hud-hidden');
-            }
-          }, 300);
+            togglePlayPause();
+            resetHudTimer();
+          }, 250);
         }
       });
     }
