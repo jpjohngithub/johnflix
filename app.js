@@ -4940,8 +4940,8 @@ const UI = {
   },
 
   async loadLiveTvChannels() {
-    const grid = document.getElementById('livetv-channels-grid');
-    if (!grid) return;
+    const list = document.getElementById('livetv-channels-list') || document.getElementById('livetv-channels-grid');
+    if (!list) return;
 
     // 1. Curated High-Speed Brazilian TV and Radio Base
     const baseChannels = [
@@ -5159,27 +5159,43 @@ const UI = {
       url = `https://corsproxy.io/?url=${encodeURIComponent(url)}`;
     }
 
+    video.autoplay = true;
+    video.muted = false;
+
     if (url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
       const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: true,
-        backBufferLength: 30
+        backBufferLength: 15,
+        manifestLoadingTimeOut: 3000,
+        levelLoadingTimeOut: 3000,
+        fragLoadingTimeOut: 4500,
+        startLevel: 0
       });
       hls.loadSource(url);
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        video.play().catch(() => {});
+        video.play().catch(() => {
+          video.muted = true;
+          video.play().catch(() => {});
+        });
       });
       hls.on(Hls.Events.ERROR, (event, data) => {
-        if (data.fatal && data.type === Hls.ErrorTypes.NETWORK_ERROR && !url.includes('corsproxy.io')) {
-          console.warn('Live preview retry via corsproxy...');
-          hls.loadSource(`https://corsproxy.io/?url=${encodeURIComponent(channel.streamUrl)}`);
+        if (data.fatal) {
+          if (!url.includes('corsproxy.io')) {
+            hls.loadSource(`https://corsproxy.io/?url=${encodeURIComponent(channel.streamUrl)}`);
+          } else {
+            hls.startLoad();
+          }
         }
       });
       window.livePreviewHls = hls;
     } else {
       video.src = url;
-      video.play().catch(() => {});
+      video.play().catch(() => {
+        video.muted = true;
+        video.play().catch(() => {});
+      });
     }
   },
 
