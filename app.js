@@ -4889,29 +4889,47 @@ const UI = {
     container.classList.remove('hidden');
 
     container.innerHTML = `
-      <div class="livetv-hub-page">
-        <div class="livetv-header">
-          <div class="livetv-badge">
-            <span class="live-pulse-dot"></span> TRANSMISSÃO AO VIVO & RÁDIOS
-          </div>
-          <h1 class="livetv-title">TV Garden & Rádios Globais</h1>
-          <p class="livetv-subtitle">Canais abertos e emissoras de rádio do Brasil e do mundo com transmissão contínua e atualização automática.</p>
-
-          <div class="livetv-filter-bar">
-            <button class="livetv-filter-btn active" data-filter="all">📺 Todos os Canais</button>
-            <button class="livetv-filter-btn" data-filter="br">🇧🇷 Brasil & Notícias</button>
-            <button class="livetv-filter-btn" data-filter="world">🌍 TV Global</button>
-            <button class="livetv-filter-btn" data-filter="radio">📻 Rádios FM & Web</button>
+      <div class="livetv-split-container">
+        <!-- Coluna Esquerda: Pesquisa, Filtros e Lista de Canais -->
+        <div class="livetv-left-col">
+          <div class="livetv-left-header">
             <div class="livetv-search-box">
-              <input type="text" id="livetv-filter-input" placeholder="Filtrar canal ou rádio...">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="livetv-filter-input" placeholder="Buscar canal ou rádio...">
+            </div>
+            <div class="livetv-filter-bar">
+              <button class="livetv-filter-btn active" data-filter="all">Todos</button>
+              <button class="livetv-filter-btn" data-filter="br">Brasil</button>
+              <button class="livetv-filter-btn" data-filter="tv">TV</button>
+              <button class="livetv-filter-btn" data-filter="radio">Rádios</button>
+            </div>
+          </div>
+
+          <div id="livetv-channels-list" class="livetv-channels-list">
+            <div class="streams-loading" style="padding: 3rem 0; text-align:center;">
+              <div class="spinner"></div>
+              <span style="display:block; margin-top:10px; font-size:0.9rem; color:#a1a1aa;">Sintonizando canais...</span>
             </div>
           </div>
         </div>
 
-        <div id="livetv-channels-grid" class="livetv-grid">
-          <div class="streams-loading" style="grid-column: 1 / -1; padding: 4rem 0;">
-            <div class="spinner large"></div>
-            <span>Sintonizando canais e rádios ao vivo...</span>
+        <!-- Coluna Direita: Preview Instantâneo ao Vivo (Clique para Tela Cheia) -->
+        <div class="livetv-right-col">
+          <div class="livetv-preview-wrapper" id="livetv-preview-wrapper" onclick="UI.toggleLiveFullscreen()">
+            <video id="livetv-preview-video" playsinline autoplay></video>
+            <div class="livetv-preview-overlay" id="livetv-preview-overlay">
+              <div class="livetv-preview-top-bar">
+                <span class="livetv-live-tag">● AO VIVO</span>
+                <button class="livetv-fs-btn" title="Tela Cheia" onclick="event.stopPropagation(); UI.toggleLiveFullscreen();">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+                  <span>Tela Cheia</span>
+                </button>
+              </div>
+              <div class="livetv-preview-info">
+                <h2 id="livetv-preview-title">Selecione um canal</h2>
+                <p id="livetv-preview-sub">Clique no player para expandir em tela cheia</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -5079,30 +5097,105 @@ const UI = {
   },
 
   renderLiveTvGrid(channels) {
-    const grid = document.getElementById('livetv-channels-grid');
-    if (!grid) return;
+    const list = document.getElementById('livetv-channels-list');
+    if (!list) return;
 
     if (!channels || channels.length === 0) {
-      grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:3rem; color:var(--text-muted);">Nenhum canal encontrado.</div>';
+      list.innerHTML = '<div style="text-align:center; padding:3rem; color:var(--text-muted);">Nenhum canal encontrado.</div>';
       return;
     }
 
-    grid.innerHTML = channels.map(c => `
-      <div class="livetv-card" onclick="UI.playLiveStream('${encodeURIComponent(c.streamUrl)}', '${encodeURIComponent(c.name)}')">
-        <div class="livetv-card-banner">
-          <span class="livetv-live-tag">● AO VIVO</span>
-          ${c.type === 'radio' ? '<span class="livetv-type-tag">📻 RÁDIO</span>' : '<span class="livetv-type-tag">📺 TV</span>'}
+    list.innerHTML = channels.map((c, i) => `
+      <div class="livetv-channel-item ${state.currentLiveChannel && state.currentLiveChannel.id === c.id ? 'active' : (i === 0 && !state.currentLiveChannel ? 'active' : '')}" 
+           id="item-${c.id}"
+           onclick="UI.selectLiveChannel('${c.id}')">
+        <div class="livetv-channel-item-icon">${c.type === 'radio' ? '📻' : '📺'}</div>
+        <div class="livetv-channel-item-info">
+          <div class="livetv-channel-item-name">${c.name}</div>
+          <div class="livetv-channel-item-sub">${c.type === 'radio' ? 'Rádio FM / Web' : 'Sinal Digital HD'}</div>
         </div>
-        <div class="livetv-card-body">
-          <div class="livetv-channel-icon">${c.type === 'radio' ? '📻' : '📺'}</div>
-          <div class="livetv-channel-meta">
-            <h3 class="livetv-channel-name">${c.name}</h3>
-            <span class="livetv-channel-sub">Sinal Digital HD · 24 Horas</span>
-          </div>
-          <button class="livetv-play-btn" title="Assistir Agora">▶</button>
-        </div>
+        <span class="livetv-item-badge">● AO VIVO</span>
       </div>
     `).join('');
+
+    // Auto-preview first channel if none playing
+    if (!state.currentLiveChannel && channels.length > 0) {
+      this.selectLiveChannel(channels[0].id);
+    }
+  },
+
+  selectLiveChannel(channelId) {
+    const channel = (state.liveChannels || []).find(c => c.id === channelId);
+    if (!channel) return;
+
+    state.currentLiveChannel = channel;
+
+    // Highlight in list
+    document.querySelectorAll('.livetv-channel-item').forEach(el => el.classList.remove('active'));
+    const itemEl = document.getElementById(`item-${channelId}`);
+    if (itemEl) itemEl.classList.add('active');
+
+    // Update preview details
+    const titleEl = document.getElementById('livetv-preview-title');
+    const subEl = document.getElementById('livetv-preview-sub');
+    if (titleEl) titleEl.textContent = channel.name;
+    if (subEl) subEl.textContent = channel.type === 'radio' ? 'Rádio Online • Transmissão ao Vivo' : 'Sinal Digital HD • Ao Vivo';
+
+    this.playPreviewStream(channel);
+  },
+
+  playPreviewStream(channel) {
+    const video = document.getElementById('livetv-preview-video');
+    if (!video) return;
+
+    if (window.livePreviewHls) {
+      window.livePreviewHls.destroy();
+      window.livePreviewHls = null;
+    }
+    video.src = '';
+
+    let url = channel.streamUrl;
+    if (location.protocol === 'https:' && url.startsWith('http://')) {
+      url = `https://corsproxy.io/?url=${encodeURIComponent(url)}`;
+    }
+
+    if (url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+        backBufferLength: 30
+      });
+      hls.loadSource(url);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        video.play().catch(() => {});
+      });
+      hls.on(Hls.Events.ERROR, (event, data) => {
+        if (data.fatal && data.type === Hls.ErrorTypes.NETWORK_ERROR && !url.includes('corsproxy.io')) {
+          console.warn('Live preview retry via corsproxy...');
+          hls.loadSource(`https://corsproxy.io/?url=${encodeURIComponent(channel.streamUrl)}`);
+        }
+      });
+      window.livePreviewHls = hls;
+    } else {
+      video.src = url;
+      video.play().catch(() => {});
+    }
+  },
+
+  toggleLiveFullscreen() {
+    const video = document.getElementById('livetv-preview-video');
+    if (!video) return;
+
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    } else if (video.requestFullscreen) {
+      video.requestFullscreen().catch(() => {});
+    } else if (video.webkitRequestFullscreen) {
+      video.webkitRequestFullscreen();
+    } else if (state.currentLiveChannel) {
+      this.playStream(state.currentLiveChannel.streamUrl, state.currentLiveChannel.name);
+    }
   },
 
   playLiveStream(encodedUrl, encodedName) {
@@ -5730,23 +5823,13 @@ const UI = {
       if (progress && progress.currentTime > 10) {
         const epInfo = (activeMeta.type === 'series' || state.currentType === 'series') ? ` [T${state.currentSeason}:E${state.currentEpisode}]` : '';
         autoPlayBtn.innerHTML = `
-          <span class="btn-autoplay-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-          </span>
-          <div class="btn-autoplay-text">
-            <span class="btn-autoplay-main">Continuar Assistindo${epInfo}</span>
-            <span class="btn-autoplay-sub">A partir de ${formatTime(progress.currentTime)}</span>
-          </div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="#000000"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          <span style="color:#000000 !important; font-weight:800; font-size:1rem;">Continuar Assistindo${epInfo}</span>
         `;
       } else {
         autoPlayBtn.innerHTML = `
-          <span class="btn-autoplay-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-          </span>
-          <div class="btn-autoplay-text">
-            <span class="btn-autoplay-main">Reproduzir Agora</span>
-            <span class="btn-autoplay-sub">⚡ Melhor Fonte Dublada PT-BR</span>
-          </div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="#000000"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          <span style="color:#000000 !important; font-weight:800; font-size:1rem;">Assistir</span>
         `;
       }
     }
