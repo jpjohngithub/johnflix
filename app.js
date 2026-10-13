@@ -2990,6 +2990,19 @@ const Motion = {
   }
 };
 
+const INSTANT_CATALOG = [
+  { id: 'tt6263850', name: 'Deadpool & Wolverine', type: 'movie', year: '2024', imdbRating: '7.8', poster: 'https://images.metahub.space/poster/medium/tt6263850/img', background: 'https://images.metahub.space/background/medium/tt6263850/img', description: 'Wade Wilson se junta a Wolverine em uma missão pelo multiverso.' },
+  { id: 'tt22022452', name: 'Divertida Mente 2', type: 'movie', year: '2024', imdbRating: '7.6', poster: 'https://images.metahub.space/poster/medium/tt22022452/img', background: 'https://images.metahub.space/background/medium/tt22022452/img', description: 'Riley entra na adolescência e novas emoções assumem o controle.' },
+  { id: 'tt15239678', name: 'Duna: Parte 2', type: 'movie', year: '2024', imdbRating: '8.5', poster: 'https://images.metahub.space/poster/medium/tt15239678/img', background: 'https://images.metahub.space/background/medium/tt15239678/img', description: 'Paul Atreides se une a Chani e aos Fremen em busca de vingança.' },
+  { id: 'tt11198330', name: 'Arcane', type: 'series', year: '2024', imdbRating: '9.0', poster: 'https://images.metahub.space/poster/medium/tt11198330/img', background: 'https://images.metahub.space/background/medium/tt11198330/img', description: 'Em meio ao conflito entre Piltover e Zaun, duas irmãs lutam em lados opostos.' },
+  { id: 'tt4574334', name: 'Stranger Things', type: 'series', year: '2022', imdbRating: '8.7', poster: 'https://images.metahub.space/poster/medium/tt4574334/img', background: 'https://images.metahub.space/background/medium/tt4574334/img', description: 'Um grupo de amigos descobre mistérios sobrenaturais e experimentos secretos.' },
+  { id: 'tt1190634', name: 'The Boys', type: 'series', year: '2024', imdbRating: '8.7', poster: 'https://images.metahub.space/poster/medium/tt1190634/img', background: 'https://images.metahub.space/background/medium/tt1190634/img', description: 'Um grupo de vigilantes se propõe a derrubar super-heróis corruptos.' },
+  { id: 'tt21064766', name: 'Gladiador II', type: 'movie', year: '2024', imdbRating: '7.2', poster: 'https://images.metahub.space/poster/medium/tt21064766/img', background: 'https://images.metahub.space/background/medium/tt21064766/img', description: 'Anos após testemunhar a morte de Maximus, Lucius deve entrar no Coliseu.' },
+  { id: 'tt0903747', name: 'Breaking Bad', type: 'series', year: '2013', imdbRating: '9.5', poster: 'https://images.metahub.space/poster/medium/tt0903747/img', background: 'https://images.metahub.space/background/medium/tt0903747/img', description: 'Um professor de química diagnosticado com câncer terminal constrói um império.' },
+  { id: 'tt1877830', name: 'Batman (The Batman)', type: 'movie', year: '2022', imdbRating: '7.8', poster: 'https://images.metahub.space/poster/medium/tt1877830/img', background: 'https://images.metahub.space/background/medium/tt1877830/img', description: 'Batman investiga as profundezas da corrupção em Gotham City.' },
+  { id: 'tt1136617', name: 'Coringa: Delírio a Dois', type: 'movie', year: '2024', imdbRating: '5.3', poster: 'https://images.metahub.space/poster/medium/tt1136617/img', background: 'https://images.metahub.space/background/medium/tt1136617/img', description: 'Arthur Fleck conhece o amor de sua vida enquanto aguarda julgamento no Asilo Arkham.' }
+];
+
 const UI = {
   metaCache: {},
   init() {
@@ -3967,6 +3980,12 @@ const UI = {
         this.renderCatalogs();
         this.hideLoadingScreen();
         this.startHeroAutoRotation();
+      } else if (!state.currentGenre && typeof INSTANT_CATALOG !== 'undefined') {
+        state.catalogs.popular = [...INSTANT_CATALOG];
+        state.catalogs.featured = [...INSTANT_CATALOG].reverse();
+        this.setRandomHero(state.catalogs.popular);
+        this.renderCatalogs();
+        this.hideLoadingScreen();
       }
 
       const extra = state.currentGenre ? { genre: state.currentGenre } : {};
@@ -4262,7 +4281,7 @@ const UI = {
         <div class="poster movie-poster-wrap">
           <div class="poster-bg" style="background-image: url('${posterUrl}')"></div>
           <div class="tags">
-            <span class="tag tag-hd">${isSeries ? 'SÉRIE' : 'FILME'}</span>
+            <span class="tag tag-hd ${isSeries ? 'tag-series' : 'tag-movie'}">${isSeries ? 'SÉRIE' : 'FILME'}</span>
             <span class="tag tag-rating">★ ${ratingStr}</span>
           </div>
           <button class="fav ${isSaved ? 'on' : ''}" aria-label="Favoritar" title="${isSaved ? 'Remover da Minha Lista' : 'Salvar na Minha Lista'}" onclick="event.stopPropagation(); UI.quickToggleWatchlist(event, '${cleanId}')">
@@ -4964,20 +4983,21 @@ const UI = {
 
     // 1. Curated High-Speed Brazilian TV and Radio Base
     const baseChannels = [
-      { id: 'c_amz', name: 'Amazon Sat HD', category: 'br', type: 'tv', logo: 'https://i.imgur.com/gK9pA6a.png', streamUrl: 'https://amazonsat.brasilstream.com.br/hls/amazonsat/index.m3u8' },
-      { id: 'c_ara', name: 'Aratu On Notícias HD', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://cdn.live.br1.jmvstream.com/w/LVW-9359/LVW9359_XSyReL0QVf/playlist.m3u8' },
-      { id: 'c_adren', name: 'Adrenalina Pura TV Brasil', category: 'br', type: 'tv', logo: 'https://i.imgur.com/gK9pA6a.png', streamUrl: 'https://jmp2.uk/plu-61b790b985706b00072cb797.m3u8' },
-      { id: 'c_bmc', name: 'BM&C News Brasil', category: 'br', type: 'tv', logo: 'https://i.imgur.com/K3VwE0y.png', streamUrl: 'https://jmp2.uk/plu-666c9c60a7efd40008f552f0.m3u8' },
+      { id: 'c_sbt', name: 'SBT Interior HD', category: 'br', type: 'tv', logo: 'https://i.imgur.com/gK9pA6a.png', streamUrl: 'https://cdn.jmvstream.com/w/LVW-10801/LVW10801_WqW27G8zF5/playlist.m3u8' },
+      { id: 'c_cultura', name: 'TV Cultura HD', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://fpa-gateway.tvcultura.com.br:8181/memfs/606caef0-a290-413d-9f1f-8fcdb3a73831.m3u8' },
+      { id: 'c_cnn', name: 'CNN Brasil HD', category: 'br', type: 'tv', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/CNN_Brasil.svg/960px-CNN_Brasil.svg.png', streamUrl: 'https://d25usgadhphvwi.cloudfront.net/hls/main.m3u8' },
+      { id: 'c_record', name: 'Record Paulista HD', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://cdn.jmvstream.com/w/LVW-8155/LVW8155_YkG2j8bB1H/playlist.m3u8' },
+      { id: 'c_adren', name: 'Pluto TV Filmes Ação', category: 'br', type: 'tv', logo: 'https://i.imgur.com/gK9pA6a.png', streamUrl: 'https://jmp2.uk/plu-61b790b985706b00072cb797.m3u8' },
+      { id: 'c_sucessos', name: 'Pluto TV Cine Sucessos', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://jmp2.uk/plu-5f12111c9e6c2c00078ef3bb.m3u8' },
+      { id: 'c_comedia', name: 'Pluto TV Cine Comédia', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://jmp2.uk/plu-5f12101f0b12f00007844c7c.m3u8' },
+      { id: 'c_crime', name: 'Pluto TV Cine Crime', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://jmp2.uk/plu-6479ff764f5ba5000878dfe2.m3u8' },
+      { id: 'c_familia', name: 'Pluto TV Cine Família', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://jmp2.uk/plu-5f171f032cd22e0007f17f3d.m3u8' },
       { id: 'c_avatar', name: 'Avatar: A Lenda de Aang (24h)', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://jmp2.uk/plu-6759eeb1bd523200083b4f29.m3u8' },
       { id: 'c_bob', name: 'Bob Esponja Calça Quadrada (24h)', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://jmp2.uk/plu-62545c0b002f4b0007688b61.m3u8' },
-      { id: 'c_terror', name: 'Cine Terror Brasil', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://jmp2.uk/plu-5f12111c9e6c2c00078ef3bb.m3u8' },
-      { id: 'c_fdr', name: 'Canal FDR Brasil HD', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://v-us-01.wisestream.io/memfs/e4ade538-7924-4359-81ef-b9d4dd229e91.m3u8' },
-      { id: 'c_verde', name: 'Cinturão Verde TV Digital', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://play.redecinturaoverde.com.br/playlist.m3u8' },
-      { id: 'c_blits', name: 'Blits TV Brasil HD', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://stmv1.transmissaodigital.com/blitstv/blitstv/playlist.m3u8' },
-      { id: 'c_bmais', name: 'Bem Mais TV Digital', category: 'br', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://video09.logicahost.com.br/bemmaistv01/bemmaistv01/playlist.m3u8' },
-      { id: 'c_nasa', name: 'NASA TV HD (Global)', category: 'world', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8' },
+      { id: 'c_bmc', name: 'BM&C News Brasil', category: 'br', type: 'tv', logo: 'https://i.imgur.com/K3VwE0y.png', streamUrl: 'https://jmp2.uk/plu-666c9c60a7efd40008f552f0.m3u8' },
+      { id: 'c_amz', name: 'Amazon Sat HD', category: 'br', type: 'tv', logo: 'https://i.imgur.com/gK9pA6a.png', streamUrl: 'https://amazonsat.brasilstream.com.br/hls/amazonsat/index.m3u8' },
       { id: 'c_rb', name: 'Red Bull TV HD', category: 'world', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master.m3u8' },
-      { id: 'c_euro', name: 'Euronews Português', category: 'world', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://euronews-euronews-portuguese-1-us.radiko.io/hls/live/2018894/master.m3u8' },
+      { id: 'c_nasa', name: 'NASA TV HD (Global)', category: 'world', type: 'tv', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8' },
       { id: 'r_alpha', name: 'Alpha FM 101.7 São Paulo', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://26573.live.streamtheworld.com/ALPHAFMAAC.aac' },
       { id: 'r_antena1', name: 'Antena 1 FM 94.7 SP', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://stream.antena1.com.br/stream' },
       { id: 'r_jp', name: 'Jovem Pan FM 100.9 SP', category: 'radio', type: 'radio', logo: 'https://i.imgur.com/dWA9y2J.png', streamUrl: 'https://26573.live.streamtheworld.com/JP_FMAAC.aac' },
@@ -6706,10 +6726,10 @@ const UI = {
     if (playerTitle) playerTitle.textContent = title;
     if (hudTitle) hudTitle.textContent = title;
     
-    // Always hide spinner after 1.2 seconds so it never blocks the video
+    // Hide spinner immediately (350ms max) so it never blocks video
     setTimeout(() => {
       if (playerLoading) playerLoading.classList.add('hidden');
-    }, 1200);
+    }, 350);
 
     // Subtitles (disabled by default on video start)
     if (state.currentMeta) {
@@ -6839,21 +6859,17 @@ const UI = {
     if (url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
       const hls = new Hls({
         enableWorker: true,
-        lowLatencyMode: false,
-        abrEwmaDefaultEstimate: 80000000, // 80 Mbps estimate to immediately lock 1080p/4K
-        abrBandWidthFactor: 0.95,
-        abrBandWidthUpFactor: 0.9,
-        abrMaxWithRealBitrate: true,
-        capLevelToPlayerSize: false, // Never downsample based on player window size!
-        maxBufferLength: 60,
-        maxMaxBufferLength: 120,
-        maxBufferSize: 100 * 1000 * 1000,
+        lowLatencyMode: true,
+        backBufferLength: 10,
+        maxBufferLength: 10,
+        maxMaxBufferLength: 20,
         startLevel: -1
       });
       hls.loadSource(url);
       hls.attachMedia(video);
 
       hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
+        if (playerLoading) playerLoading.classList.add('hidden');
         // Auto lock to the highest available resolution level (1080p / 4K)
         if (hls.levels && hls.levels.length > 0) {
           const highestLevelIdx = hls.levels.length - 1;
