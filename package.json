@@ -1,0 +1,15 @@
+{
+  "name": "johnflix",
+  "version": "3.0.0",
+  "description": "JohnFlix - Plataforma de Streaming Premium com Cloud Addons e Engine P2P",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "torrent-stream": "^1.2.0",
+    "mime": "^3.0.0",
+    "range-parser": "^1.2.1"
+  }
+}

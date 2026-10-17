@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JOHNFLIX — Streaming Cloud Ultra HD</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <!-- Ambient Background Glows -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+
+  <!-- Top Navigation Header -->
+  <header class="navbar" id="navbar">
+    <div class="nav-left">
+      <a href="#" class="brand" id="brandLogo">
+        <span class="brand-word">John<span class="brand-flix">Flix</span></span>
+      </a>
+
+      <nav class="nav-links">
+        <button class="nav-link active" data-filter="all">Início</button>
+        <button class="nav-link" data-filter="movie">Filmes</button>
+        <button class="nav-link" data-filter="series">Séries</button>
+        <button class="nav-link" data-filter="mylist">Minha Lista <span class="badge-count hidden" id="myListCount">0</span></button>
+        <button class="nav-link" data-filter="playlists">Playlists <span class="badge-count hidden" id="playlistsCount">0</span></button>
+      </nav>
+    </div>
+
+    <div class="nav-right">
+      <div class="search-box" id="searchBox">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+        </svg>
+        <input type="text" id="searchInput" placeholder="Títulos, gêneros..." autocomplete="off" />
+        <button class="search-clear hidden" id="searchClear" title="Limpar">&times;</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main id="mainContent">
+    <!-- Hero Billboard Banner -->
+    <section class="hero" id="heroBanner">
+      <div class="hero-backdrop" id="heroBackdrop"></div>
+      <div class="hero-vignette"></div>
+
+      <div class="hero-content">
+        <h1 class="hero-title" id="heroTitle">Carregando...</h1>
+        <div class="hero-meta" id="heroMeta"></div>
+        <p class="hero-desc" id="heroDesc"></p>
+
+        <div class="hero-actions">
+          <button class="btn btn-primary" id="heroPlayBtn">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 9-14 9V3z"/></svg>
+            <span>Assistir</span>
+          </button>
+          <button class="btn btn-glass" id="heroInfoBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+            </svg>
+            <span>Detalhes</span>
+          </button>
+          <button class="btn btn-icon-only" id="heroBookmarkBtn" title="Minha Lista">
+            <svg id="heroBookmarkIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+          <button class="btn btn-icon-only" id="heroPlaylistBtn" title="Salvar em Playlist">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Hero Carousel Indicators -->
+      <div class="hero-indicators" id="heroIndicators"></div>
+    </section>
+
+    <!-- Search Results Grid (Hidden by default) -->
+    <section class="search-section hidden" id="searchSection">
+      <div class="section-header">
+        <h2 id="searchTitle">Resultados</h2>
+        <button class="btn btn-sm btn-glass" id="closeSearchBtn">Voltar</button>
+      </div>
+      <div class="media-grid" id="searchGrid"></div>
+    </section>
+
+    <!-- Continue Watching Row (Dynamic) -->
+    <section class="catalog-row hidden" id="continueWatchingRow">
+      <div class="row-header">
+        <h2 class="row-title">Continuar Assistindo</h2>
+      </div>
+      <div class="row-slider-wrap">
+        <div class="row-slider" id="continueWatchingSlider"></div>
+      </div>
+    </section>
+
+    <!-- Dynamic Catalog Rows -->
+    <div id="catalogContainer" class="catalog-container"></div>
+  </main>
+
+  <!-- Details & Server Selector Modal -->
+  <div class="modal-backdrop hidden" id="detailsModal">
+    <div class="modal-card">
+      <button class="modal-close" id="closeDetailsBtn" aria-label="Fechar">&times;</button>
+
+      <div class="modal-hero" id="modalHero">
+        <div class="modal-hero-Vignette"></div>
+        <div class="modal-hero-content">
+          <h2 class="modal-title" id="modalTitle">Título</h2>
+          <div class="modal-meta" id="modalMeta"></div>
+          <p class="modal-desc" id="modalDesc"></p>
+          <div class="modal-actions-bar">
+            <button class="btn btn-sm btn-glass" id="modalMyListBtn">+ Minha Lista</button>
+            <button class="btn btn-sm btn-glass" id="modalPlaylistBtn">+ Adicionar à Playlist</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-body">
+        <!-- Series Season & Episode Picker (Only for Series) -->
+        <div class="series-selector hidden" id="seriesSelector">
+          <div class="series-header">
+            <h3>Episódios</h3>
+            <select id="seasonSelect" class="season-select"></select>
+          </div>
+          <div class="episodes-grid" id="episodesGrid"></div>
+        </div>
+
+        <!-- Streams Panel -->
+        <div class="streams-section">
+          <div class="streams-header">
+            <h3>Opções de Áudio &amp; Qualidade <span class="stream-counter" id="streamCounter">0</span></h3>
+            <div class="stream-filters" id="streamAddonTabs"></div>
+          </div>
+
+          <div class="streams-loading hidden" id="streamsLoading">
+            <div class="spinner-purple"></div>
+            <span>Buscando fontes em alta definição...</span>
+          </div>
+
+          <div class="streams-list" id="streamsList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Playlist Picker / Creator Modal -->
+  <div class="modal-backdrop hidden" id="playlistModal">
+    <div class="modal-card modal-sm">
+      <button class="modal-close" id="closePlaylistModalBtn">&times;</button>
+      <div class="modal-body">
+        <h2 class="status-modal-title">Salvar em Playlist</h2>
+        <p class="status-modal-sub" id="playlistTargetLabel">Escolha uma playlist ou crie uma nova</p>
+
+        <div class="playlist-create-row">
+          <input type="text" id="newPlaylistNameInput" placeholder="Nome da nova playlist..." maxlength="40" />
+          <button class="btn btn-sm btn-primary" id="createPlaylistBtn">Criar</button>
+        </div>
+
+        <div class="playlist-picker-list" id="playlistPickerList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fullscreen Cloud Video Player Overlay -->
+  <div class="player-overlay hidden" id="playerOverlay">
+    <div class="player-topbar" id="playerTopbar">
+      <button class="btn btn-glass btn-sm" id="closePlayerBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        <span>Voltar</span>
+      </button>
+
+      <div class="player-title-info">
+        <h4 id="playerTitle">Reproduzindo</h4>
+        <span class="player-server-badge" id="playerServerBadge"></span>
+      </div>
+
+      <div class="player-right-controls">
+        <div class="torrent-telemetry hidden" id="torrentTelemetry">
+          <span id="telemetryPeers">0 peers</span> • <span id="telemetrySpeed">0 KB/s</span>
+        </div>
+        <button class="btn btn-glass btn-sm" id="switchServerBtn">Opções de Player</button>
+      </div>
+    </div>
+
+    <div class="player-stage">
+      <video id="cloudVideo" controls playsinline preload="auto" crossorigin="anonymous"></video>
+
+      <div class="player-loader hidden" id="playerLoader">
+        <div class="loader-ring"></div>
+        <h3 id="playerLoaderTitle">Carregando...</h3>
+        <p id="playerLoaderSub"></p>
+      </div>
+
+      <div class="player-drawer hidden" id="playerServerDrawer">
+        <div class="drawer-header">
+          <h4>Fontes Disponíveis</h4>
+          <button id="closeDrawerBtn">&times;</button>
+        </div>
+        <div class="drawer-list" id="playerDrawerList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast hidden" id="toastNotification"></div>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <span class="brand-word">John<span class="brand-flix">Flix</span></span>
+      <span>© 2026 JohnFlix</span>
+    </div>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>
