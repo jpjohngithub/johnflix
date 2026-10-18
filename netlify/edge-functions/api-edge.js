@@ -410,11 +410,10 @@ export default async (request) => {
         { id: 'fenix_movies_rec', title: 'Adicionados Recentemente', type: 'movie', url: 'https://fenixflix.fenixhub.online/catalog/movie/recentes_servidor.json', limit: 24 },
         { id: 'bestcine_trending', title: 'Top Brasil', type: 'movie', url: 'https://bestcine.dpdns.org/catalog/movie/bestcine_trending.json', limit: 24 },
         // Live TV Channels Catalogs (Fenix TV / NexoTV / Eh! IPTV)
-        { id: 'tv_eventos', title: '⚽ Eventos & Jogos Ao Vivo', type: 'tv', tvCategory: 'Eventos', url: 'https://fenixtv.fenixhub.online/catalog/tv/tv_eventos.json', limit: 40 },
-        { id: 'tv_exploud', title: '📺 Canais Abertos & Principais (Cinegardem)', type: 'tv', tvCategory: 'Principais', url: 'https://fenixtv.fenixhub.online/catalog/tv/tv_exploud.json', limit: 60 },
-        { id: 'tv_reidoscanais', title: '🏆 Esportes, Filmes & Variedades (Rabicho)', type: 'tv', tvCategory: 'Esportes & Filmes', url: 'https://fenixtv.fenixhub.online/catalog/tv/tv_reidoscanais.json', limit: 60 },
-        { id: 'tv_nettv', title: '📡 Grade Completa HD/FHD (Uptv)', type: 'tv', tvCategory: 'Grade HD', url: 'https://fenixtv.fenixhub.online/catalog/tv/tv_nettv.json', limit: 80 },
-        { id: 'tv_embedtv', title: '🎬 Reality Shows & Canais 24h (Almofadinhas)', type: 'tv', tvCategory: '24 Horas', url: 'https://fenixtv.fenixhub.online/catalog/tv/tv_embedtv.json', limit: 50 }
+        { id: 'tv_reidoscanais', title: '🏆 Esportes, Filmes & Variedades Ao Vivo', type: 'tv', tvCategory: 'Esportes & Filmes', url: 'https://fenixtv.fenixhub.online/catalog/tv/tv_reidoscanais.json', limit: 60 },
+        { id: 'tv_exploud', title: '📺 Canais Principais & Abertos', type: 'tv', tvCategory: 'Principais', url: 'https://fenixtv.fenixhub.online/catalog/tv/tv_exploud.json', limit: 60 },
+        { id: 'tv_eventos', title: '⚽ Jogos & Eventos de Hoje', type: 'tv', tvCategory: 'Eventos', url: 'https://fenixtv.fenixhub.online/catalog/tv/tv_eventos.json', limit: 40 },
+        { id: 'tv_nettv', title: '📡 Grade Completa (Uptv)', type: 'tv', tvCategory: 'Grade HD', url: 'https://fenixtv.fenixhub.online/catalog/tv/tv_nettv.json', limit: 80 }
       ];
 
       const rows = await Promise.all(
@@ -643,10 +642,10 @@ export default async (request) => {
           if (Array.isArray(d?.streams)) rawTvStreams = d.streams;
         } catch (e) {}
 
-        // If this specific channel ID (e.g. tv_embedtv) returned 0 streams, search sister FenixTV catalogs by channel slug/name
+        // If this specific channel ID returned 0 streams, search sister FenixTV catalogs by channel slug/name
         if (rawTvStreams.length === 0) {
-          const slug = decodedId.split(':').pop().replace(/[^a-z0-9]/gi, '').toLowerCase();
-          if (slug) {
+          const rawSlug = decodedId.split(':').pop().replace(/[^a-z0-9]/gi, '').toLowerCase();
+          if (rawSlug && rawSlug.length >= 3) {
             const backupCatalogs = [
               'https://fenixtv.fenixhub.online/catalog/tv/tv_reidoscanais.json',
               'https://fenixtv.fenixhub.online/catalog/tv/tv_exploud.json',
@@ -657,7 +656,7 @@ export default async (request) => {
                 const catData = await fetchJson(catUrl, 2500);
                 const matchMeta = (catData?.metas || []).find((m) => {
                   const mSlug = String(m.name || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
-                  return mSlug.includes(slug) || slug.includes(mSlug);
+                  return mSlug === rawSlug || (mSlug.length >= 4 && rawSlug.includes(mSlug));
                 });
                 if (matchMeta) {
                   const stData = await fetchJson(`https://fenixtv.fenixhub.online/stream/tv/${encodeURIComponent(matchMeta.id)}.json`, 2800);
@@ -675,19 +674,23 @@ export default async (request) => {
         const onlineOnly = rawTvStreams.filter((s) => !/\[OFFLINE\]/i.test(`${s.name || ''} ${s.title || ''}`));
         const activeTvRaw = onlineOnly.length > 0 ? onlineOnly : rawTvStreams;
 
-        // Upgrade raw http:// live streams to FenixTV's HTTPS CORS HLS proxy
-        const cleanTvRaw = activeTvRaw.map((s) => {
-          let u = s.url || '';
-          if (u.startsWith('http://')) {
-            u = `https://fenixtv.fenixhub.online/proxy?url=${encodeURIComponent(u)}`;
-          }
-          const isProxy = u.includes('fenixtv.fenixhub.online/proxy') || u.includes('fenixtv.fenixhub.online/direct.m3u8');
-          return {
-            ...s,
-            url: u,
-            isProxyPreferred: isProxy
-          };
-        });
+        // Upgrade and sanitize live streams:
+        // Exclude broken direct.m3u8 (which point to non-proxied relative /hls/*.ts segments returning 404)
+        const cleanTvRaw = activeTvRaw
+          .filter((s) => s.url && !s.url.includes('fenixtv.fenixhub.online/direct.m3u8'))
+          .map((s) => {
+            let u = s.url || '';
+            if (u.startsWith('http://')) {
+              u = `https://fenixtv.fenixhub.online/proxy?url=${encodeURIComponent(u)}`;
+            }
+            // Prefer FenixTV proxy streams which include Dadinho / Exploud CORS headers
+            const isProxy = u.includes('fenixtv.fenixhub.online/proxy');
+            return {
+              ...s,
+              url: u,
+              isProxyPreferred: isProxy
+            };
+          });
 
         cleanTvRaw.sort((a, b) => (a.isProxyPreferred === b.isProxyPreferred ? 0 : a.isProxyPreferred ? -1 : 1));
 

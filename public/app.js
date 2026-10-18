@@ -1135,7 +1135,35 @@
     if (isHls) {
       const hlsUrl = stream.directUrl || stream.proxyUrl;
       if (window.Hls && window.Hls.isSupported()) {
-        hlsInstance = new window.Hls({ enableWorker: true, lowLatencyMode: false });
+        class CustomTvLoader extends window.Hls.DefaultConfig.loader {
+          load(context, config, callbacks) {
+            const originalOnSuccess = callbacks.onSuccess;
+            callbacks.onSuccess = (response, stats, ctx, networkDetails) => {
+              if (response && response.data instanceof ArrayBuffer) {
+                const u8 = new Uint8Array(response.data);
+                // Detect PNG header (89 50 4E 47) and unmask MPEG-TS payload after IEND chunk
+                if (u8.length > 68 && u8[0] === 0x89 && u8[1] === 0x50 && u8[2] === 0x4e && u8[3] === 0x47) {
+                  const iend = [0x49, 0x45, 0x4e, 0x44];
+                  for (let i = 0; i < Math.min(u8.length - 8, 200); i++) {
+                    if (u8[i] === iend[0] && u8[i + 1] === iend[1] && u8[i + 2] === iend[2] && u8[i + 3] === iend[3]) {
+                      const tsOffset = i + 8; // Skip IEND (4 bytes) + CRC (4 bytes)
+                      response.data = response.data.slice(tsOffset);
+                      break;
+                    }
+                  }
+                }
+              }
+              originalOnSuccess(response, stats, ctx, networkDetails);
+            };
+            super.load(context, config, callbacks);
+          }
+        }
+
+        hlsInstance = new window.Hls({
+          enableWorker: true,
+          lowLatencyMode: false,
+          loader: CustomTvLoader
+        });
         hlsInstance.loadSource(hlsUrl);
         hlsInstance.attachMedia(el.cloudVideo);
         hlsInstance.on(window.Hls.Events.MANIFEST_PARSED, () => {
