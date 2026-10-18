@@ -233,7 +233,8 @@ export default async (request) => {
         })
       );
 
-      return new Response(JSON.stringify({ catalogs: rows.filter((r) => r.items.length > 0) }), { status: 200, headers });
+      const validRows = rows.filter((r) => r.items.length > 0);
+      return new Response(JSON.stringify({ rows: validRows, catalogs: validRows, addons: ADDONS }), { status: 200, headers });
     }
 
     if (rawPath === '/api/search') {

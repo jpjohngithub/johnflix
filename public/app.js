@@ -248,7 +248,7 @@
     try {
       const res = await fetch('/api/catalogs');
       const data = await res.json();
-      state.catalogRows = data.rows || [];
+      state.catalogRows = data.rows || data.catalogs || [];
       state.addons = data.addons || [];
 
       const pool = [];
