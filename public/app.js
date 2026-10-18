@@ -836,11 +836,14 @@
     }
   }
 
-  // Cloud Video Player
-  function launchCloudPlayer(stream) {
+  // Cloud Video Player with Auto-Failover
+  let failoverWatchdog = null;
+  function launchCloudPlayer(stream, triedUrls = new Set()) {
     el.playerOverlay.classList.remove('hidden');
     el.playerServerDrawer.classList.add('hidden');
     document.body.style.overflow = 'hidden';
+
+    triedUrls.add(stream.proxyUrl);
 
     const epSuffix = state.currentItem?.type === 'series'
       ? ` — T${state.currentSeason}:E${state.currentEpisode}`
@@ -849,7 +852,7 @@
     el.playerServerBadge.textContent = `${stream.serverLabel} • ${stream.quality} • ${stream.audio}`;
 
     el.playerLoader.classList.remove('hidden');
-    el.playerLoaderTitle.textContent = 'Iniciando reprodução...';
+    el.playerLoaderTitle.textContent = 'Conectando ao servidor na nuvem...';
     el.playerLoaderSub.textContent = `${stream.serverLabel} (${stream.quality})`;
 
     if (stream.playType === 'torrent') {
@@ -860,15 +863,41 @@
 
     renderPlayerDrawer(stream);
 
+    const tryNextWorkingStream = () => {
+      clearTimeout(failoverWatchdog);
+      const nextStream = state.currentStreams.find(
+        (s) => s.proxyUrl && !triedUrls.has(s.proxyUrl) && s.playType === 'direct'
+      ) || state.currentStreams.find((s) => s.proxyUrl && !triedUrls.has(s.proxyUrl));
+
+      if (nextStream && triedUrls.size < 6) {
+        el.playerLoaderTitle.textContent = `Otimizando rota (${nextStream.serverLabel})...`;
+        launchCloudPlayer(nextStream, triedUrls);
+      } else {
+        el.playerLoaderTitle.textContent = 'Fonte indisponível no momento';
+        el.playerLoaderSub.textContent = 'Clique em "Opções de Player" no canto superior direito para escolher outra opção.';
+      }
+    };
+
+    clearTimeout(failoverWatchdog);
+    failoverWatchdog = setTimeout(() => {
+      if (el.cloudVideo.readyState < 2 && !el.playerOverlay.classList.contains('hidden')) {
+        tryNextWorkingStream();
+      }
+    }, 9000);
+
+    el.cloudVideo.oncanplay = () => {
+      clearTimeout(failoverWatchdog);
+      el.playerLoader.classList.add('hidden');
+    };
+
+    el.cloudVideo.onerror = () => {
+      tryNextWorkingStream();
+    };
+
     el.cloudVideo.pause();
     el.cloudVideo.src = stream.proxyUrl;
     el.cloudVideo.load();
     el.cloudVideo.play().catch(() => {});
-
-    el.cloudVideo.onerror = () => {
-      el.playerLoaderTitle.textContent = 'Fonte indisponível no momento';
-      el.playerLoaderSub.textContent = 'Clique em "Opções de Player" no canto superior direito para escolher outra opção.';
-    };
   }
 
   function renderPlayerDrawer(activeStream) {
