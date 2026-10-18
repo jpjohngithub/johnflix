@@ -903,7 +903,6 @@
       ? ` — T${state.currentSeason}:E${state.currentEpisode}`
       : '';
     el.playerTitle.textContent = `${state.currentItem ? state.currentItem.name : 'Reproduzindo'}${epSuffix}`;
-    el.playerServerBadge.textContent = `${stream.serverLabel} • ${stream.quality} • ${stream.audio}`;
 
     el.playerLoader.classList.remove('hidden');
     el.playerLoaderTitle.textContent = 'Conectando ao servidor na nuvem...';
