@@ -27,6 +27,7 @@
         <button class="nav-link active" data-filter="all">Início</button>
         <button class="nav-link" data-filter="movie">Filmes</button>
         <button class="nav-link" data-filter="series">Séries</button>
+        <button class="nav-link" data-filter="tv">Canais de TV</button>
         <button class="nav-link" data-filter="mylist">Minha Lista <span class="badge-count hidden" id="myListCount">0</span></button>
         <button class="nav-link" data-filter="playlists">Playlists <span class="badge-count hidden" id="playlistsCount">0</span></button>
       </nav>
@@ -148,7 +149,7 @@
 
           <div class="streams-loading hidden" id="streamsLoading">
             <div class="spinner-purple"></div>
-            <span>Consultando os 6 servidores conectados...</span>
+            <span>Consultando os servidores conectados...</span>
           </div>
 
           <div class="streams-list" id="streamsList"></div>
@@ -180,8 +181,8 @@
     <div class="modal-card modal-sm">
       <button class="modal-close" id="closeServersModalBtn">&times;</button>
       <div class="modal-body">
-        <h2 class="status-modal-title">Servidores Adicionados (6)</h2>
-        <p class="status-modal-sub" style="color:var(--text-muted);font-size:0.84rem;margin-bottom:16px;">Todos os 6 addons estão integrados e são consultados automaticamente em cada filme ou episódio.</p>
+        <h2 class="status-modal-title">Servidores Adicionados (13)</h2>
+        <p class="status-modal-sub" style="color:var(--text-muted);font-size:0.84rem;margin-bottom:16px;">Servidores de Filmes, Séries (BR e 🇺🇸 Inglês) e Canais de TV ao Vivo integrados.</p>
         <div class="servers-modal-list" id="serversModalList"></div>
       </div>
     </div>
@@ -241,6 +242,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg>
       <span>Séries</span>
     </button>
+    <button class="nav-link mobile-nav-item" data-filter="tv">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      <span>TV</span>
+    </button>
     <button class="nav-link mobile-nav-item" data-filter="mylist">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
       <span>Lista</span>
@@ -258,7 +263,7 @@
     <div class="footer-inner">
       <span class="brand-word">John<span class="brand-flix">Flix</span></span>
       <div class="footer-links">
-        <button class="footer-subtle-btn" id="footerServersBtn">Servidores (6)</button>
+        <button class="footer-subtle-btn" id="footerServersBtn">Servidores (13)</button>
         <span>© 2026 JohnFlix</span>
       </div>
     </div>

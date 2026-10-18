@@ -118,8 +118,15 @@
           b.classList.toggle('active', b.dataset.filter === targetFilter);
         });
         state.activeFilter = targetFilter;
-        closeSearch();
-        renderCatalogRows();
+        const activeQuery = el.searchInput ? el.searchInput.value.trim() : '';
+        if (activeQuery && !el.searchSection.classList.contains('hidden') && targetFilter !== 'playlists') {
+          renderFilteredSearchResults(activeQuery);
+        } else if (activeQuery && targetFilter !== 'playlists') {
+          performSearch(activeQuery);
+        } else {
+          closeSearch();
+          renderCatalogRows();
+        }
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
     });
@@ -130,19 +137,32 @@
       el.searchClear.classList.toggle('hidden', !val);
       clearTimeout(searchTimer);
       if (!val.trim()) {
+        state.lastSearchQuery = '';
+        state.lastSearchResults = [];
         closeSearch();
+        renderCatalogRows();
         return;
       }
-      searchTimer = setTimeout(() => performSearch(val.trim()), 380);
+      searchTimer = setTimeout(() => performSearch(val.trim()), 320);
     });
 
     el.searchClear.addEventListener('click', () => {
       el.searchInput.value = '';
       el.searchClear.classList.add('hidden');
+      state.lastSearchQuery = '';
+      state.lastSearchResults = [];
       closeSearch();
+      renderCatalogRows();
     });
 
-    el.closeSearchBtn.addEventListener('click', closeSearch);
+    el.closeSearchBtn.addEventListener('click', () => {
+      el.searchInput.value = '';
+      el.searchClear.classList.add('hidden');
+      state.lastSearchQuery = '';
+      state.lastSearchResults = [];
+      closeSearch();
+      renderCatalogRows();
+    });
 
     // Hero buttons
     el.heroPlayBtn.addEventListener('click', () => {
@@ -257,6 +277,7 @@
 
       const pool = [];
       state.catalogRows.forEach((r) => {
+        if (r.type === 'tv') return;
         r.items.slice(0, 4).forEach((item) => {
           if (pool.length < 6 && !pool.some((p) => p.id === item.id)) {
             pool.push(item);
@@ -364,10 +385,30 @@
     }
 
     let rows = state.catalogRows;
-    if (state.activeFilter === 'movie') {
+    if (state.activeFilter === 'all') {
+      rows = rows.filter((r) => r.type !== 'tv');
+    } else if (state.activeFilter === 'movie') {
       rows = rows.filter((r) => r.type === 'movie');
     } else if (state.activeFilter === 'series') {
       rows = rows.filter((r) => r.type === 'series');
+    } else if (state.activeFilter === 'tv') {
+      rows = rows.filter((r) => r.type === 'tv');
+      const tvHeader = document.createElement('section');
+      tvHeader.style.padding = '96px 4% 8px';
+      tvHeader.innerHTML = `
+        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.22);border-radius:14px;padding:16px 20px;">
+          <div>
+            <h2 style="font-size:1.35rem;font-weight:800;margin:0 0 4px;">📺 Canais de TV ao Vivo</h2>
+            <p style="color:var(--text-muted);font-size:0.86rem;margin:0;">Esportes, Filmes, Séries, Abertos e Eventos transmitidos pelos addons dedicados de TV.</p>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <span class="meta-pill" style="background:rgba(249,115,22,0.2);color:#fdba74;border:1px solid rgba(249,115,22,0.35);">● Fenix TV</span>
+            <span class="meta-pill" style="background:rgba(6,182,212,0.2);color:#67e8f9;border:1px solid rgba(6,182,212,0.35);">● NexoTV</span>
+            <span class="meta-pill" style="background:rgba(234,179,8,0.2);color:#fde047;border:1px solid rgba(234,179,8,0.35);">● Eh! Tudo TV</span>
+          </div>
+        </div>
+      `;
+      el.catalogContainer.appendChild(tvHeader);
     }
 
     rows.forEach((row) => {
@@ -562,8 +603,87 @@
     return promise;
   }
 
+  function normalizeSearchStr(str) {
+    return String(str || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function computeSearchSimilarity(item, rawQuery) {
+    const q = normalizeSearchStr(rawQuery);
+    if (!q) return 0;
+    const qTokens = q.split(' ').filter(Boolean);
+    const candidates = [item.name, item.originalName, ...(item.altNames || [])]
+      .filter(Boolean)
+      .map(normalizeSearchStr);
+    let best = 0;
+    for (const title of candidates) {
+      if (!title) continue;
+      let s = 0;
+      if (title === q) s = 1000;
+      else if (title.startsWith(q + ' ') || title.startsWith(q)) s = 820 - Math.min(100, (title.length - q.length) * 2);
+      else if ((' ' + title + ' ').includes(' ' + q + ' ')) s = 700 - Math.min(100, (title.length - q.length) * 2);
+      else if (title.includes(q)) s = 550 - Math.min(100, (title.length - q.length) * 2);
+      const tTokens = title.split(' ').filter(Boolean);
+      let matched = 0;
+      for (const qt of qTokens) {
+        if (tTokens.some((tt) => tt === qt)) matched += 1;
+        else if (tTokens.some((tt) => tt.startsWith(qt))) matched += 0.75;
+        else if (title.includes(qt)) matched += 0.4;
+      }
+      if (qTokens.length > 0) {
+        const ratio = matched / qTokens.length;
+        if (ratio >= 1) s = Math.max(s, 650 - Math.abs(tTokens.length - qTokens.length) * 15);
+        else if (ratio >= 0.5) s = Math.max(s, Math.round(ratio * 420));
+      }
+      if (s > best) best = s;
+    }
+    return best;
+  }
+
+  function renderFilteredSearchResults(query) {
+    el.searchSection.classList.remove('hidden');
+    el.heroBanner.classList.add('hidden');
+    el.continueWatchingRow.classList.add('hidden');
+    el.catalogContainer.classList.add('hidden');
+
+    const allResults = state.lastSearchResults || [];
+    let filtered = allResults;
+    let tabLabel = 'Resultados';
+
+    if (state.activeFilter === 'movie') {
+      filtered = allResults.filter((i) => i.type === 'movie');
+      tabLabel = 'Filmes';
+    } else if (state.activeFilter === 'series') {
+      filtered = allResults.filter((i) => i.type === 'series');
+      tabLabel = 'Séries';
+    } else if (state.activeFilter === 'tv') {
+      filtered = allResults.filter((i) => i.type === 'tv');
+      tabLabel = 'Canais de TV';
+    } else if (state.activeFilter === 'mylist') {
+      filtered = allResults.filter((i) => isInMyList(i.id));
+      tabLabel = 'Na Minha Lista';
+    }
+
+    el.searchTitle.textContent = `${tabLabel} para "${query}" (${filtered.length})`;
+    el.searchGrid.innerHTML = '';
+
+    if (!filtered.length) {
+      el.searchGrid.innerHTML = `<p style="color:var(--text-muted);grid-column:1/-1;">Nenhum resultado em <strong>${tabLabel}</strong> para "${escapeHtml(query)}".</p>`;
+      return;
+    }
+    filtered.forEach((item) => {
+      el.searchGrid.appendChild(createMediaCard(item));
+    });
+  }
+
   // Search handler
   async function performSearch(query) {
+    state.lastSearchQuery = query;
     el.searchSection.classList.remove('hidden');
     el.heroBanner.classList.add('hidden');
     el.continueWatchingRow.classList.add('hidden');
@@ -571,21 +691,51 @@
     el.searchTitle.textContent = `Buscando "${query}"...`;
     el.searchGrid.innerHTML = '';
 
+    // Instant local match from loaded catalogs & My List while API resolves
+    const localMap = new Map();
+    state.catalogRows.forEach((r) => {
+      (r.items || []).forEach((item) => {
+        const sc = computeSearchSimilarity(item, query);
+        if (sc >= 180 && !localMap.has(`${item.type}:${item.id}`)) {
+          localMap.set(`${item.type}:${item.id}`, { ...item, _score: sc });
+        }
+      });
+    });
+    state.myList.forEach((item) => {
+      const sc = computeSearchSimilarity(item, query);
+      if (sc >= 180 && !localMap.has(`${item.type}:${item.id}`)) {
+        localMap.set(`${item.type}:${item.id}`, { ...item, _score: sc });
+      }
+    });
+
+    if (localMap.size > 0) {
+      state.lastSearchResults = Array.from(localMap.values()).sort((a, b) => b._score - a._score);
+      renderFilteredSearchResults(query);
+    }
+
     try {
       const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
       const data = await res.json();
-      const results = data.results || [];
-      el.searchTitle.textContent = `Resultados para "${query}"`;
+      if (state.lastSearchQuery !== query) return;
 
-      if (!results.length) {
-        el.searchGrid.innerHTML = `<p style="color:var(--text-muted);grid-column:1/-1;">Nenhum título encontrado.</p>`;
-        return;
-      }
-      results.forEach((item) => {
-        el.searchGrid.appendChild(createMediaCard(item));
+      const merged = new Map(localMap);
+      (data.results || []).forEach((item, idx) => {
+        const key = `${item.type}:${item.id}`;
+        const sc = Math.max(computeSearchSimilarity(item, query), 500 - idx * 8);
+        if (!merged.has(key)) {
+          merged.set(key, { ...item, _score: sc });
+        } else {
+          const prev = merged.get(key);
+          merged.set(key, { ...prev, ...item, _score: Math.max(prev._score || 0, sc) });
+        }
       });
+
+      state.lastSearchResults = Array.from(merged.values()).sort((a, b) => (b._score || 0) - (a._score || 0));
+      renderFilteredSearchResults(query);
     } catch (err) {
-      el.searchTitle.textContent = 'Erro na busca';
+      if (!localMap.size) {
+        el.searchTitle.textContent = 'Erro na busca';
+      }
     }
   }
 
@@ -610,12 +760,17 @@
     el.detailsModal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 
-    const bg = item.background || `https://images.metahub.space/background/large/${item.id}/img`;
-    el.modalHero.style.backgroundImage = `url('${bg}'), url('${item.poster || ''}')`;
+    const bg = item.background || (item.type === 'tv' ? item.poster : `https://images.metahub.space/background/large/${item.id}/img`);
+    el.modalHero.style.backgroundImage = `url('${bg || ''}'), url('${item.poster || ''}')`;
     el.modalTitle.textContent = item.name;
-    el.modalDesc.textContent = item.description || '';
+    el.modalDesc.textContent = item.description || (item.type === 'tv' ? 'Transmissão de canal de TV ao vivo pelos addons de TV conectados.' : '');
+    const typePill = item.type === 'tv'
+      ? '<span class="meta-pill" style="background:rgba(239,68,68,0.22);color:#fca5a5;border:1px solid rgba(239,68,68,0.4);">🔴 TV AO VIVO</span>'
+      : item.type === 'series'
+        ? '<span class="meta-pill">Série</span>'
+        : '<span class="meta-pill">Filme</span>';
     el.modalMeta.innerHTML = [
-      item.type === 'series' ? '<span class="meta-pill">Série</span>' : '<span class="meta-pill">Filme</span>',
+      typePill,
       item.imdbRating ? `<span class="meta-rating">★ ${item.imdbRating}</span>` : '',
       item.year ? `<span>${item.year}</span>` : ''
     ].filter(Boolean).join('');
@@ -633,9 +788,11 @@
     prefetchStreams(item.type, initialTargetId);
 
     if (item.type !== 'series') {
-      // For movies, load streams immediately without waiting for metadata
+      // For movies and live TV channels, load streams immediately without waiting for metadata
       loadStreamsForTarget(item.type, initialTargetId, autoPlayFirst);
     }
+
+    if (item.type === 'tv') return;
 
     try {
       const metaRes = await fetch(`/api/meta/${item.type}/${encodeURIComponent(item.id)}`);
@@ -784,7 +941,8 @@
     servers.forEach((srv) => {
       const btn = document.createElement('button');
       btn.className = `addon-tab ${state.activeAddonFilter === srv.addonId ? 'active' : ''} ${srv.count === 0 ? 'empty' : ''}`;
-      btn.textContent = `${srv.addonName} (${srv.count})`;
+      const engTag = srv.isEnglishOnly && !srv.addonName.includes('🇺🇸') ? '🇺🇸 ' : '';
+      btn.textContent = `${engTag}${srv.addonName} (${srv.count})`;
       btn.onclick = () => {
         state.activeAddonFilter = srv.addonId;
         renderAddonFilterTabs(servers);
@@ -813,6 +971,9 @@
       const card = document.createElement('div');
       card.className = 'stream-item';
       const seedsTag = stream.seeds ? ` • 👤 ${stream.seeds}` : '';
+      const audioHtml = stream.isEnglishOnly
+        ? `<span style="color:#fcd34d;font-weight:600;">${escapeHtml(stream.audio || '🇺🇸 Inglês (Sem Áudio BR)')}</span>`
+        : `<span>${escapeHtml(stream.audio)}${seedsTag}</span>`;
 
       card.innerHTML = `
         <div class="stream-top">
@@ -823,7 +984,7 @@
           <span class="stream-quality">${escapeHtml(stream.quality)}</span>
         </div>
         <div class="stream-bottom">
-          <span>${escapeHtml(stream.audio)}${seedsTag}</span>
+          ${audioHtml}
           <span class="stream-play-tag">▶ Assistir</span>
         </div>
       `;
@@ -839,7 +1000,7 @@
     el.serversModalList.innerHTML = `
       <div class="streams-loading">
         <div class="spinner-purple"></div>
-        <span>Verificando os 6 servidores...</span>
+        <span>Verificando os 13 servidores...</span>
       </div>
     `;
 
