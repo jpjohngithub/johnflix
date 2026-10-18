@@ -75,6 +75,7 @@
     telemetrySpeed: document.getElementById('telemetrySpeed'),
     switchServerBtn: document.getElementById('switchServerBtn'),
     cloudVideo: document.getElementById('cloudVideo'),
+    cloudEmbed: document.getElementById('cloudEmbed'),
     playerLoader: document.getElementById('playerLoader'),
     playerLoaderTitle: document.getElementById('playerLoaderTitle'),
     playerLoaderSub: document.getElementById('playerLoaderSub'),
@@ -112,11 +113,14 @@
 
     document.querySelectorAll('.nav-link').forEach((btn) => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.nav-link').forEach((b) => b.classList.remove('active'));
-        btn.classList.add('active');
-        state.activeFilter = btn.dataset.filter;
+        const targetFilter = btn.dataset.filter;
+        document.querySelectorAll('.nav-link').forEach((b) => {
+          b.classList.toggle('active', b.dataset.filter === targetFilter);
+        });
+        state.activeFilter = targetFilter;
         closeSearch();
         renderCatalogRows();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       });
     });
 
@@ -314,6 +318,7 @@
     updateHeroBookmarkIcon();
     const dots = el.heroIndicators.querySelectorAll('.hero-dot');
     dots.forEach((d, i) => d.classList.toggle('active', i === state.heroIndex));
+    prefetchStreams(item.type, item.type === 'series' ? `${item.id}:1:1` : item.id);
   }
 
   function updateHeroBookmarkIcon() {
@@ -520,6 +525,13 @@
       });
     }
 
+    const triggerPrefetch = () => {
+      const targetId = item.targetStreamId || (item.type === 'series' ? `${item.id}:1:1` : item.id);
+      prefetchStreams(item.type, targetId);
+    };
+    card.addEventListener('mouseenter', triggerPrefetch, { once: true, passive: true });
+    card.addEventListener('touchstart', triggerPrefetch, { once: true, passive: true });
+
     card.addEventListener('click', () => {
       if (item.targetStreamId && item.type === 'series') {
         openItemDetails(item, true, item.targetStreamId, item.season, item.episode);
@@ -529,6 +541,25 @@
     });
 
     return card;
+  }
+
+  // Client-side Stream Cache & Prefetcher for Instant Opening
+  const clientStreamsCache = new Map();
+  function prefetchStreams(type, targetId) {
+    if (!type || !targetId) return null;
+    const key = `${type}:${targetId}`;
+    const existing = clientStreamsCache.get(key);
+    if (existing && existing.exp > Date.now()) return existing.promise;
+
+    const promise = fetch(`/api/streams/${type}/${encodeURIComponent(targetId)}`)
+      .then((r) => r.json())
+      .catch((err) => {
+        clientStreamsCache.delete(key);
+        throw err;
+      });
+
+    clientStreamsCache.set(key, { promise, exp: Date.now() + 5 * 60 * 1000 });
+    return promise;
   }
 
   // Search handler
@@ -566,8 +597,11 @@
     renderContinueWatching();
   }
 
-  // Details Modal & Stream Aggregation
+  // Details Modal & Stream Aggregation (Parallel Meta + Stream Loading)
   async function openItemDetails(item, autoPlayFirst = false, customStreamId = null, customSeason = null, customEp = null) {
+    if (autoPlayFirst && el.cloudVideo) {
+      try { el.cloudVideo.load(); } catch (e) {}
+    }
     state.currentItem = item;
     state.currentMeta = null;
     state.currentStreams = [];
@@ -594,6 +628,15 @@
     el.streamCounter.textContent = '...';
     el.streamsLoading.classList.remove('hidden');
 
+    // Start prefetching streams immediately in parallel with metadata!
+    const initialTargetId = customStreamId || (item.type === 'series' ? `${item.id}:${customSeason || 1}:${customEp || 1}` : item.id);
+    prefetchStreams(item.type, initialTargetId);
+
+    if (item.type !== 'series') {
+      // For movies, load streams immediately without waiting for metadata
+      loadStreamsForTarget(item.type, initialTargetId, autoPlayFirst);
+    }
+
     try {
       const metaRes = await fetch(`/api/meta/${item.type}/${encodeURIComponent(item.id)}`);
       const metaData = await metaRes.json();
@@ -608,10 +651,12 @@
       }
     } catch (e) {}
 
-    if (item.type === 'series' && state.currentMeta && Array.isArray(state.currentMeta.videos) && state.currentMeta.videos.length > 0) {
-      setupSeriesEpisodes(state.currentMeta.videos, autoPlayFirst, customStreamId, customSeason, customEp);
-    } else {
-      await loadStreamsForTarget(item.type, customStreamId || item.id, autoPlayFirst);
+    if (item.type === 'series') {
+      if (state.currentMeta && Array.isArray(state.currentMeta.videos) && state.currentMeta.videos.length > 0) {
+        setupSeriesEpisodes(state.currentMeta.videos, autoPlayFirst, customStreamId, customSeason, customEp);
+      } else {
+        await loadStreamsForTarget(item.type, initialTargetId, autoPlayFirst);
+      }
     }
   }
 
@@ -706,8 +751,7 @@
     el.streamCounter.textContent = '...';
 
     try {
-      const res = await fetch(`/api/streams/${type}/${encodeURIComponent(targetId)}`);
-      const data = await res.json();
+      const data = await prefetchStreams(type, targetId);
       el.streamsLoading.classList.add('hidden');
 
       state.currentStreams = data.streams || [];
@@ -836,14 +880,24 @@
     }
   }
 
-  // Cloud Video Player with Auto-Failover
+  // Universal Cloud Video Player (HTML5 H.264 MP4 + HLS.js + Safari Native HLS + Cloud Embed + Auto-Failover)
   let failoverWatchdog = null;
+  let hlsInstance = null;
+
+  function destroyHls() {
+    if (hlsInstance) {
+      try { hlsInstance.destroy(); } catch (e) {}
+      hlsInstance = null;
+    }
+  }
+
   function launchCloudPlayer(stream, triedUrls = new Set()) {
     el.playerOverlay.classList.remove('hidden');
     el.playerServerDrawer.classList.add('hidden');
     document.body.style.overflow = 'hidden';
 
     triedUrls.add(stream.proxyUrl);
+    destroyHls();
 
     const epSuffix = state.currentItem?.type === 'series'
       ? ` — T${state.currentSeason}:E${state.currentEpisode}`
@@ -865,27 +919,85 @@
 
     const tryNextWorkingStream = () => {
       clearTimeout(failoverWatchdog);
+      destroyHls();
+      // Prefer 1080p H.264 (!is4k) direct streams first for universal browser decoding
       const nextStream = state.currentStreams.find(
+        (s) => s.proxyUrl && !triedUrls.has(s.proxyUrl) && s.playType === 'direct' && !s.is4k
+      ) || state.currentStreams.find(
         (s) => s.proxyUrl && !triedUrls.has(s.proxyUrl) && s.playType === 'direct'
-      ) || state.currentStreams.find((s) => s.proxyUrl && !triedUrls.has(s.proxyUrl));
+      ) || state.currentStreams.find(
+        (s) => s.proxyUrl && !triedUrls.has(s.proxyUrl)
+      );
 
-      if (nextStream && triedUrls.size < 6) {
-        el.playerLoaderTitle.textContent = `Otimizando rota (${nextStream.serverLabel})...`;
+      if (nextStream && triedUrls.size < 8) {
+        el.playerLoaderTitle.textContent = `Alternando para rota compatível (${nextStream.serverLabel})...`;
         launchCloudPlayer(nextStream, triedUrls);
       } else {
-        el.playerLoaderTitle.textContent = 'Fonte indisponível no momento';
-        el.playerLoaderSub.textContent = 'Clique em "Opções de Player" no canto superior direito para escolher outra opção.';
+        // Universal fallback to Multi-Browser Embed if all direct routes failed
+        const baseImdb = (state.currentItem?.id || '').split(':')[0];
+        if (baseImdb.startsWith('tt') && el.cloudEmbed && !triedUrls.has('embed_fallback')) {
+          triedUrls.add('embed_fallback');
+          const fallbackEmbed = state.currentItem?.type === 'series'
+            ? `https://vidsrc.cc/v2/embed/tv/${baseImdb}/${state.currentSeason || 1}/${state.currentEpisode || 1}`
+            : `https://vidsrc.cc/v2/embed/movie/${baseImdb}`;
+          launchCloudPlayer({
+            addonId: 'universal',
+            serverLabel: 'Player Universal Multi-Browser',
+            quality: '1080p Full HD',
+            audio: 'Multi-Áudio / Legendas',
+            playType: 'embed',
+            proxyUrl: fallbackEmbed
+          }, triedUrls);
+          return;
+        }
+        el.playerLoaderTitle.textContent = 'Fonte indisponível neste navegador';
+        el.playerLoaderSub.textContent = 'Toque em "Opções de Player" acima para selecionar outro servidor.';
       }
     };
+
+    // Engine 3: Universal Cloud Embed Iframe
+    if (stream.playType === 'embed' && el.cloudEmbed) {
+      clearTimeout(failoverWatchdog);
+      el.cloudVideo.pause();
+      el.cloudVideo.removeAttribute('src');
+      el.cloudVideo.classList.add('hidden');
+      el.cloudEmbed.classList.remove('hidden');
+      el.cloudEmbed.src = stream.proxyUrl;
+      el.cloudEmbed.onload = () => {
+        el.playerLoader.classList.add('hidden');
+      };
+      setTimeout(() => el.playerLoader.classList.add('hidden'), 2500);
+      return;
+    }
+
+    if (el.cloudEmbed) {
+      el.cloudEmbed.src = 'about:blank';
+      el.cloudEmbed.classList.add('hidden');
+    }
+    el.cloudVideo.classList.remove('hidden');
 
     clearTimeout(failoverWatchdog);
     failoverWatchdog = setTimeout(() => {
       if (el.cloudVideo.readyState < 2 && !el.playerOverlay.classList.contains('hidden')) {
         tryNextWorkingStream();
       }
-    }, 9000);
+    }, 8500);
+
+    el.cloudVideo.onloadeddata = () => {
+      // Detect unsupported video codec (e.g. 4K HEVC/H.265 playing audio-only with black screen)
+      if (el.cloudVideo.videoWidth === 0 && el.cloudVideo.readyState >= 2) {
+        tryNextWorkingStream();
+        return;
+      }
+      clearTimeout(failoverWatchdog);
+      el.playerLoader.classList.add('hidden');
+    };
 
     el.cloudVideo.oncanplay = () => {
+      if (el.cloudVideo.videoWidth === 0 && el.cloudVideo.readyState >= 2) {
+        tryNextWorkingStream();
+        return;
+      }
       clearTimeout(failoverWatchdog);
       el.playerLoader.classList.add('hidden');
     };
@@ -894,10 +1006,51 @@
       tryNextWorkingStream();
     };
 
+    const startVideoPlayback = () => {
+      const playPromise = el.cloudVideo.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          // On iOS/Android mobile browsers, if unmuted autoplay is blocked by gesture expiry, hide loader so user can tap video play button
+          if (err && err.name === 'NotAllowedError') {
+            clearTimeout(failoverWatchdog);
+            el.playerLoader.classList.add('hidden');
+          }
+        });
+      }
+    };
+
+    // Engine 2: Universal HLS (.m3u8) via hls.js or Safari Native HLS
+    const isHls = stream.playType === 'hls' || (stream.proxyUrl && stream.proxyUrl.includes('.m3u8'));
+    if (isHls) {
+      const hlsUrl = stream.directUrl || stream.proxyUrl;
+      if (window.Hls && window.Hls.isSupported()) {
+        hlsInstance = new window.Hls({ enableWorker: true, lowLatencyMode: false });
+        hlsInstance.loadSource(hlsUrl);
+        hlsInstance.attachMedia(el.cloudVideo);
+        hlsInstance.on(window.Hls.Events.MANIFEST_PARSED, () => {
+          clearTimeout(failoverWatchdog);
+          el.playerLoader.classList.add('hidden');
+          startVideoPlayback();
+        });
+        hlsInstance.on(window.Hls.Events.ERROR, (_, data) => {
+          if (data && data.fatal) {
+            tryNextWorkingStream();
+          }
+        });
+        return;
+      } else if (el.cloudVideo.canPlayType('application/vnd.apple.mpegurl')) {
+        el.cloudVideo.src = hlsUrl;
+        el.cloudVideo.load();
+        startVideoPlayback();
+        return;
+      }
+    }
+
+    // Engine 1: Direct Cloud MP4 Stream (Universal H.264 / MP4)
     el.cloudVideo.pause();
     el.cloudVideo.src = stream.proxyUrl;
     el.cloudVideo.load();
-    el.cloudVideo.play().catch(() => {});
+    startVideoPlayback();
   }
 
   function renderPlayerDrawer(activeStream) {
@@ -946,10 +1099,16 @@
   }
 
   function stopAndClosePlayer() {
+    clearTimeout(failoverWatchdog);
+    destroyHls();
     stopTorrentTelemetry();
     el.cloudVideo.pause();
     el.cloudVideo.removeAttribute('src');
     el.cloudVideo.load();
+    if (el.cloudEmbed) {
+      el.cloudEmbed.src = 'about:blank';
+      el.cloudEmbed.classList.add('hidden');
+    }
     el.playerOverlay.classList.add('hidden');
     if (el.detailsModal.classList.contains('hidden')) {
       document.body.style.overflow = '';

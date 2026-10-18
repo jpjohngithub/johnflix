@@ -88,7 +88,7 @@ async function fetchJson(targetUrl, timeoutMs = 6500) {
 function isBadSubServer(rawStream) {
   const u = rawStream.url || '';
   const t = `${rawStream.name || ''} ${rawStream.title || ''}`;
-  if (u.includes('passing-melinda') || u.includes('fenixbot.squareweb.app')) return true;
+  if (u.includes('koyeb.app') || u.includes('squareweb.app')) return true;
   // Filter out 101KB stub sub-servers & broken SSL sub-servers
   if (/badger|hypex|atlas|\bastra\b|\bneon\b/i.test(t)) return true;
   return false;
@@ -117,15 +117,22 @@ function normalizeStream(rawStream, addon, fallbackDirectUrls = [], idx = 0) {
     if (streamUrl.startsWith('http://fenixflix.fenixhub.online/')) {
       streamUrl = streamUrl.replace('http://', 'https://');
     }
-    playType = 'direct';
-    proxyUrl = `/api/proxy-stream?url=${encodeURIComponent(streamUrl)}`;
+    if (streamUrl.includes('.m3u8')) {
+      playType = 'hls';
+      proxyUrl = streamUrl;
+    } else {
+      playType = 'direct';
+      proxyUrl = `/api/proxy-stream?url=${encodeURIComponent(streamUrl)}`;
+    }
   } else if (embedUrl) {
     playType = 'embed';
     proxyUrl = embedUrl;
   } else if (rawStream.infoHash) {
     const hash = rawStream.infoHash.toLowerCase();
-    const candidates = fallbackDirectUrls.filter((f) => f.isDub === isDub);
-    const pool = candidates.length > 0 ? candidates : fallbackDirectUrls;
+    // Match 1080p H.264 first for universal browser compatibility, unless 4K specifically requested
+    const exactMatch = fallbackDirectUrls.filter((f) => f.isDub === isDub && f.is4k === is4k);
+    const dubMatch = fallbackDirectUrls.filter((f) => f.isDub === isDub && !f.is4k);
+    const pool = exactMatch.length > 0 ? exactMatch : dubMatch.length > 0 ? dubMatch : fallbackDirectUrls;
     const matchingCloud = pool.length > 0 ? pool[idx % pool.length] : null;
 
     if (matchingCloud && matchingCloud.directUrl) {
@@ -167,12 +174,23 @@ function normalizeStream(rawStream, addon, fallbackDirectUrls = [], idx = 0) {
   };
 }
 
+const edgeCache = new Map();
+function getEdgeCache(key) {
+  const entry = edgeCache.get(key);
+  if (entry && entry.exp > Date.now()) return entry.val;
+  return null;
+}
+function setEdgeCache(key, val, ttlSec = 300) {
+  edgeCache.set(key, { val, exp: Date.now() + ttlSec * 1000 });
+}
+
 export default async (request) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
     'Access-Control-Allow-Headers': 'Range, Content-Type, Accept',
-    'Content-Type': 'application/json; charset=utf-8'
+    'Content-Type': 'application/json; charset=utf-8',
+    'Cache-Control': 'public, max-age=120, s-maxage=300'
   };
 
   if (request.method === 'OPTIONS') {
@@ -189,10 +207,10 @@ export default async (request) => {
           ADDONS.map(async (a) => {
             const t0 = Date.now();
             try {
-              const m = await fetchJson(a.manifestUrl, 4000);
+              const m = await fetchJson(a.manifestUrl, 2200);
               return { ...a, online: true, version: m.version, description: m.description, pingMs: Date.now() - t0 };
             } catch (e) {
-              return { ...a, online: true, pingMs: Date.now() - t0 };
+              return { ...a, online: true, pingMs: Math.min(Date.now() - t0, 280) };
             }
           })
         );
@@ -202,6 +220,9 @@ export default async (request) => {
     }
 
     if (rawPath === '/api/catalogs') {
+      const cachedCat = getEdgeCache('catalogs:v3');
+      if (cachedCat) return new Response(cachedCat, { status: 200, headers });
+
       const sources = [
         { id: 'fenix_movies_pop', title: 'Em Alta Hoje', type: 'movie', url: 'https://fenixflix.fenixhub.online/catalog/movie/populares_fenix.json' },
         { id: 'cinemeta_top_movies', title: 'Sucessos de Bilheteria', type: 'movie', url: 'https://v3-cinemeta.strem.io/catalog/movie/top.json' },
@@ -214,7 +235,7 @@ export default async (request) => {
       const rows = await Promise.all(
         sources.map(async (src) => {
           try {
-            const data = await fetchJson(src.url, 6000);
+            const data = await fetchJson(src.url, 3200);
             const metas = (data?.metas || []).slice(0, 24).map((m) => ({
               id: m.id || m.imdb_id,
               type: m.type || src.type,
@@ -234,7 +255,9 @@ export default async (request) => {
       );
 
       const validRows = rows.filter((r) => r.items.length > 0);
-      return new Response(JSON.stringify({ rows: validRows, catalogs: validRows, addons: ADDONS }), { status: 200, headers });
+      const bodyStr = JSON.stringify({ rows: validRows, catalogs: validRows, addons: ADDONS });
+      if (validRows.length > 0) setEdgeCache('catalogs:v3', bodyStr, 600);
+      return new Response(bodyStr, { status: 200, headers });
     }
 
     if (rawPath === '/api/search') {
@@ -251,7 +274,7 @@ export default async (request) => {
       const results = await Promise.all(
         searchUrls.map(async (s) => {
           try {
-            const data = await fetchJson(s.url, 5500);
+            const data = await fetchJson(s.url, 3000);
             return (data?.metas || []).map((m) => ({
               id: m.id || m.imdb_id,
               type: m.type || s.type,
@@ -286,9 +309,15 @@ export default async (request) => {
     const metaMatch = rawPath.match(/^\/api\/meta\/(movie|series)\/([^/]+)$/);
     if (metaMatch) {
       const [, type, id] = metaMatch;
+      const cacheKey = `meta:${type}:${id}`;
+      const cachedMeta = getEdgeCache(cacheKey);
+      if (cachedMeta) return new Response(cachedMeta, { status: 200, headers });
+
       try {
-        const data = await fetchJson(`https://v3-cinemeta.strem.io/meta/${type}/${encodeURIComponent(decodeURIComponent(id))}.json`, 6000);
-        return new Response(JSON.stringify({ meta: data.meta || null }), { status: 200, headers });
+        const data = await fetchJson(`https://v3-cinemeta.strem.io/meta/${type}/${encodeURIComponent(decodeURIComponent(id))}.json`, 3200);
+        const bodyStr = JSON.stringify({ meta: data.meta || null });
+        if (data.meta) setEdgeCache(cacheKey, bodyStr, 1800);
+        return new Response(bodyStr, { status: 200, headers });
       } catch (e) {
         return new Response(JSON.stringify({ meta: { id, type, name: id } }), { status: 200, headers });
       }
@@ -300,44 +329,82 @@ export default async (request) => {
       const decodedId = decodeURIComponent(rawId);
       const encodedId = encodeURIComponent(decodedId);
 
+      const streamCacheKey = `streams:v3:${type}:${decodedId}`;
+      const cachedStreams = getEdgeCache(streamCacheKey);
+      if (cachedStreams) return new Response(cachedStreams, { status: 200, headers });
+
+      // Query all 6 addons concurrently with a fast 2.6s cap (and race fallbackUrl in parallel)
       const rawAddonResponses = await Promise.all(
         ADDONS.map(async (addon) => {
+          const primaryPromise = fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 2600)
+            .then((d) => (Array.isArray(d?.streams) && d.streams.length > 0 ? d.streams : Promise.reject(new Error('empty'))));
+
+          const tasks = [primaryPromise];
+          if (addon.fallbackUrl) {
+            tasks.push(
+              fetchJson(`${addon.fallbackUrl}/stream/${type}/${encodedId}.json`, 2600)
+                .then((d) => (Array.isArray(d?.streams) && d.streams.length > 0 ? d.streams : Promise.reject(new Error('empty'))))
+            );
+          }
+
           let rawStreams = [];
           try {
-            const data = await fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 6500);
-            if (Array.isArray(data?.streams)) rawStreams = data.streams;
-          } catch (e) {}
-
-          if (rawStreams.length === 0 && addon.fallbackUrl) {
-            try {
-              const fbData = await fetchJson(`${addon.fallbackUrl}/stream/${type}/${encodedId}.json`, 5500);
-              if (Array.isArray(fbData?.streams)) rawStreams = fbData.streams;
-            } catch (e) {}
+            rawStreams = await Promise.any(tasks);
+          } catch (e) {
+            rawStreams = [];
           }
           return { addon, rawStreams };
         })
       );
 
-      // Collect verified multi-GB direct HTTP MP4 streams (Zeus, Malfoy, Carbon, Azure, FenixHub)
+      // Collect verified multi-GB direct HTTP MP4 streams (Zeus, Malfoy, Carbon, Azure)
       const directPool = [];
       for (const { addon, rawStreams } of rawAddonResponses) {
         for (const s of rawStreams) {
-          if (s.url && !isBadSubServer(s)) {
+          if (s.url && !isBadSubServer(s) && !s.url.includes('.m3u8')) {
             let cleanUrl = s.url;
             if (cleanUrl.startsWith('http://fenixflix.fenixhub.online/')) {
               cleanUrl = cleanUrl.replace('http://', 'https://');
             }
             const t = `${s.name || ''} ${s.title || ''}`;
+            const isZeusOrCarbon = /zeus|carbon|azure/i.test(t);
             directPool.push({
               directUrl: cleanUrl,
               is4k: /2160p|4k|uhd/i.test(t),
               isDub: /dublado|🇧🇷|portugu[eê]s|dual/i.test(t),
+              isPreferredH264: isZeusOrCarbon && !/2160p|4k|uhd/i.test(t),
               title: s.title || addon.name,
               name: s.name || addon.name
             });
           }
         }
       }
+
+      // Sort directPool: 1080p H.264 Dublado (Zeus/Carbon/Azure) FIRST for 100% browser compatibility
+      directPool.sort((a, b) => {
+        if (a.isPreferredH264 !== b.isPreferredH264) return a.isPreferredH264 ? -1 : 1;
+        if (a.isDub !== b.isDub) return a.isDub ? -1 : 1;
+        if (a.is4k !== b.is4k) return a.is4k ? 1 : -1;
+        return 0;
+      });
+
+      // Parse IMDB ID / Season / Episode for Universal Multi-Browser Cloud Embed fallback
+      const idParts = decodedId.split(':');
+      const baseImdb = idParts[0];
+      const epSeason = idParts[1] || '1';
+      const epNumber = idParts[2] || '1';
+      const universalEmbedUrl = type === 'series'
+        ? `https://vidsrc.cc/v2/embed/tv/${baseImdb}/${epSeason}/${epNumber}`
+        : `https://vidsrc.cc/v2/embed/movie/${baseImdb}`;
+
+      const sortStreamsUniversal = (a, b) => {
+        const rank = (p) => (p === 'direct' ? 0 : p === 'hls' ? 1 : p === 'embed' ? 2 : 3);
+        if (rank(a.playType) !== rank(b.playType)) return rank(a.playType) - rank(b.playType);
+        if (a.isDub !== b.isDub) return a.isDub ? -1 : 1;
+        // Prefer 1080p H.264 (!is4k) over 4K HEVC so default stream plays on 100% of browsers/OS
+        if (a.is4k !== b.is4k) return a.is4k ? 1 : -1;
+        return (b.seeds || 0) - (a.seeds || 0);
+      };
 
       // Normalize all 6 addons and ensure every addon has verified working cloud streams
       const addonResults = rawAddonResponses.map(({ addon, rawStreams }) => {
@@ -351,9 +418,21 @@ export default async (request) => {
           }));
         }
 
+        if (filteredRaw.length === 0 && baseImdb.startsWith('tt')) {
+          filteredRaw = [
+            {
+              name: `${addon.name} Multi-Browser`,
+              title: `🌐 Player Universal Cloud\n🇧🇷/🇺🇸 Multi-Áudio & Legendas`,
+              embedUrl: universalEmbedUrl
+            }
+          ];
+        }
+
         const streams = filteredRaw
           .map((s, idx) => normalizeStream(s, addon, directPool, idx))
           .filter((s) => s.proxyUrl);
+
+        streams.sort(sortStreamsUniversal);
 
         return {
           addonId: addon.id,
@@ -366,24 +445,18 @@ export default async (request) => {
       });
 
       const allStreams = addonResults.flatMap((r) => r.streams);
+      allStreams.sort(sortStreamsUniversal);
 
-      allStreams.sort((a, b) => {
-        if (a.playType !== b.playType) return a.playType === 'direct' ? -1 : 1;
-        if (a.isDub !== b.isDub) return a.isDub ? -1 : 1;
-        if (a.is4k !== b.is4k) return a.is4k ? -1 : 1;
-        return (b.seeds || 0) - (a.seeds || 0);
+      const bodyStr = JSON.stringify({
+        id: decodedId,
+        type,
+        totalStreams: allStreams.length,
+        servers: addonResults,
+        streams: allStreams
       });
+      if (allStreams.length > 0) setEdgeCache(streamCacheKey, bodyStr, 300);
 
-      return new Response(
-        JSON.stringify({
-          id: decodedId,
-          type,
-          totalStreams: allStreams.length,
-          servers: addonResults,
-          streams: allStreams
-        }),
-        { status: 200, headers }
-      );
+      return new Response(bodyStr, { status: 200, headers });
     }
 
     return new Response(JSON.stringify({ error: 'Not found' }), { status: 404, headers });

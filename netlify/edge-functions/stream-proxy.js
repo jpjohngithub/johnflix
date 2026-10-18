@@ -1,3 +1,5 @@
+const redirectCache = new Map();
+
 export default async (request, context) => {
   if (request.method === 'OPTIONS') {
     return new Response(null, {
@@ -25,14 +27,16 @@ export default async (request, context) => {
     targetUrl = targetUrl.replace('http://', 'https://');
   }
 
-  const rangeHeader = request.headers.get('range') || 'bytes=0-';
+  const clientRange = request.headers.get('range');
+  const rangeHeader = clientRange || (request.method === 'HEAD' ? 'bytes=0-1' : 'bytes=0-');
 
   try {
-    let currentUrl = targetUrl;
+    const cached = redirectCache.get(targetUrl);
+    let currentUrl = (cached && cached.expires > Date.now()) ? cached.finalUrl : targetUrl;
     let upstreamRes = null;
 
-    // Follow up to 5 redirects manually to preserve Range & Stremio User-Agent headers across HTTP/HTTPS hops
-    for (let i = 0; i < 5; i++) {
+    // Follow up to 6 redirects manually using GET, then cache the final storage URL
+    for (let i = 0; i < 6; i++) {
       const fetchHeaders = new Headers({
         'User-Agent': 'Stremio/4.4.168 (Lavf/58.76.100)',
         'Accept': '*/*'
@@ -42,19 +46,24 @@ export default async (request, context) => {
       }
 
       upstreamRes = await fetch(currentUrl, {
-        method: request.method === 'HEAD' ? 'HEAD' : 'GET',
+        method: 'GET',
         headers: fetchHeaders,
         redirect: 'manual'
       });
 
       if ([301, 302, 303, 307, 308].includes(upstreamRes.status)) {
         const loc = upstreamRes.headers.get('location');
+        try { await upstreamRes.body?.cancel(); } catch {}
         if (loc) {
           currentUrl = new URL(loc, currentUrl).toString();
           continue;
         }
       }
       break;
+    }
+
+    if (currentUrl !== targetUrl && upstreamRes && upstreamRes.status >= 200 && upstreamRes.status < 300) {
+      redirectCache.set(targetUrl, { finalUrl: currentUrl, expires: Date.now() + 15 * 60 * 1000 });
     }
 
     if (!upstreamRes) {
@@ -85,9 +94,18 @@ export default async (request, context) => {
     const cr = upstreamRes.headers.get('content-range') || '';
     const totalMatch = cr.match(/\/(\d+)$/);
     if (totalMatch && parseInt(totalMatch[1], 10) < 300000) {
+      try { await upstreamRes.body?.cancel(); } catch {}
       return new Response('Stub stream rejected', {
         status: 404,
         headers: { 'Access-Control-Allow-Origin': '*' }
+      });
+    }
+
+    if (request.method === 'HEAD') {
+      try { await upstreamRes.body?.cancel(); } catch {}
+      return new Response(null, {
+        status: clientRange ? upstreamRes.status : 200,
+        headers: resHeaders
       });
     }
 
