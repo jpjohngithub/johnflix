@@ -6,6 +6,10 @@
   path = "/api/proxy-stream"
   function = "stream-proxy"
 
+[[edge_functions]]
+  path = "/api/*"
+  function = "api-edge"
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api/:splat"

@@ -527,11 +527,18 @@ async function fetchAggregatedStreams(type, id, reqHost) {
     })
   );
 
+  const isBadSubServer = (s) => {
+    const u = s.url || '';
+    const t = `${s.name || ''} ${s.title || ''}`;
+    if (u.includes('passing-melinda') || u.includes('fenixbot.squareweb.app')) return true;
+    if (/badger|hypex|atlas|\bastra\b|\bneon\b/i.test(t)) return true;
+    return false;
+  };
+
   const directPool = [];
   for (const { addon, rawStreams } of rawAddonResponses) {
     for (const s of rawStreams) {
-      if (s.url) {
-        if (s.url.includes('passing-melinda') || s.url.includes('fenixbot.squareweb.app')) continue;
+      if (s.url && !isBadSubServer(s)) {
         let cleanUrl = s.url;
         if (cleanUrl.startsWith('http://fenixflix.fenixhub.online/')) {
           cleanUrl = cleanUrl.replace('http://', 'https://');
@@ -547,15 +554,12 @@ async function fetchAggregatedStreams(type, id, reqHost) {
   }
 
   const addonResults = rawAddonResponses.map(({ addon, rawStreams, latencyMs }) => {
-    let filteredRaw = rawStreams.filter((s) => {
-      if (s.url && (s.url.includes('passing-melinda') || s.url.includes('fenixbot.squareweb.app'))) return false;
-      return true;
-    });
+    let filteredRaw = rawStreams.filter((s) => !isBadSubServer(s));
 
     if (filteredRaw.length === 0 && directPool.length > 0) {
-      filteredRaw = directPool.slice(0, 4).map((d, idx) => ({
-        name: `${addon.name} Cloud`,
-        title: `🎬 Mirror Cloud #${idx + 1}\n${d.isDub ? '🇧🇷 Dublado PT-BR' : '🇺🇸 Legendado'}`,
+      filteredRaw = directPool.slice(0, 6).map((d, idx) => ({
+        name: `${addon.name} ${d.is4k ? '4K' : '1080p'}`,
+        title: `🎬 ${addon.name} Cloud #${idx + 1}\n${d.isDub ? '🇧🇷 Dublado PT-BR' : '🇺🇸 Legendado'}`,
         url: d.directUrl
       }));
     }

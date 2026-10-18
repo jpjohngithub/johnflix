@@ -82,6 +82,15 @@ export default async (request, context) => {
       resHeaders.set('accept-ranges', 'bytes');
     }
 
+    const cr = upstreamRes.headers.get('content-range') || '';
+    const totalMatch = cr.match(/\/(\d+)$/);
+    if (totalMatch && parseInt(totalMatch[1], 10) < 300000) {
+      return new Response('Stub stream rejected', {
+        status: 404,
+        headers: { 'Access-Control-Allow-Origin': '*' }
+      });
+    }
+
     return new Response(upstreamRes.body, {
       status: upstreamRes.status,
       headers: resHeaders
