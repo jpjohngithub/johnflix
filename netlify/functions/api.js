@@ -213,6 +213,20 @@ exports.handler = async (event) => {
 
   try {
     if (rawPath === '/api/addons') {
+      if (q.ping === '1') {
+        const statuses = await Promise.all(
+          ADDONS.map(async (a) => {
+            const t0 = Date.now();
+            try {
+              const m = await fetchJson(a.manifestUrl, 5000);
+              return { ...a, online: true, version: m.version, description: m.description, pingMs: Date.now() - t0 };
+            } catch (e) {
+              return { ...a, online: false, error: e.message, pingMs: Date.now() - t0 };
+            }
+          })
+        );
+        return { statusCode: 200, headers, body: JSON.stringify({ addons: statuses }) };
+      }
       return { statusCode: 200, headers, body: JSON.stringify({ addons: ADDONS }) };
     }
 
@@ -321,19 +335,20 @@ exports.handler = async (event) => {
           try {
             const data = await fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 7500);
             const rawStreams = Array.isArray(data?.streams) ? data.streams : [];
-            const streams = rawStreams.map((s) => normalizeStream(s, addon)).filter((s) => s.directUrl || s.playType === 'direct');
-            return { addonId: addon.id, addonName: addon.name, badge: addon.badge, count: streams.length, streams };
+            const streams = rawStreams.map((s) => normalizeStream(s, addon)).filter((s) => s.proxyUrl);
+            return { addonId: addon.id, addonName: addon.name, badge: addon.badge, color: addon.color, count: streams.length, streams };
           } catch (e) {
-            return { addonId: addon.id, addonName: addon.name, badge: addon.badge, count: 0, streams: [] };
+            return { addonId: addon.id, addonName: addon.name, badge: addon.badge, color: addon.color, count: 0, streams: [] };
           }
         })
       );
 
       const allStreams = addonResults.flatMap((r) => r.streams);
       allStreams.sort((a, b) => {
+        if (a.playType !== b.playType) return a.playType === 'direct' ? -1 : 1;
         if (a.isDub !== b.isDub) return a.isDub ? -1 : 1;
         if (a.is4k !== b.is4k) return a.is4k ? -1 : 1;
-        return 0;
+        return (b.seeds || 0) - (a.seeds || 0);
       });
 
       return {

@@ -81,6 +81,11 @@
     playerServerDrawer: document.getElementById('playerServerDrawer'),
     closeDrawerBtn: document.getElementById('closeDrawerBtn'),
     playerDrawerList: document.getElementById('playerDrawerList'),
+    openServersBtn: document.getElementById('openServersBtn'),
+    footerServersBtn: document.getElementById('footerServersBtn'),
+    serversModal: document.getElementById('serversModal'),
+    closeServersModalBtn: document.getElementById('closeServersModalBtn'),
+    serversModalList: document.getElementById('serversModalList'),
     toast: document.getElementById('toastNotification')
   };
 
@@ -184,6 +189,22 @@
       if (e.key === 'Enter') createNewPlaylist();
     });
 
+    // Discreet Servers Modal
+    if (el.openServersBtn) {
+      el.openServersBtn.addEventListener('click', openServersModal);
+    }
+    if (el.footerServersBtn) {
+      el.footerServersBtn.addEventListener('click', openServersModal);
+    }
+    if (el.closeServersModalBtn) {
+      el.closeServersModalBtn.addEventListener('click', () => el.serversModal.classList.add('hidden'));
+    }
+    if (el.serversModal) {
+      el.serversModal.addEventListener('click', (e) => {
+        if (e.target === el.serversModal) el.serversModal.classList.add('hidden');
+      });
+    }
+
     // Player controls
     el.closePlayerBtn.addEventListener('click', stopAndClosePlayer);
     el.switchServerBtn.addEventListener('click', () => {
@@ -212,6 +233,8 @@
       if (e.key === 'Escape') {
         if (!el.playerOverlay.classList.contains('hidden')) {
           stopAndClosePlayer();
+        } else if (el.serversModal && !el.serversModal.classList.contains('hidden')) {
+          el.serversModal.classList.add('hidden');
         } else if (!el.playlistModal.classList.contains('hidden')) {
           el.playlistModal.classList.add('hidden');
         } else if (!el.detailsModal.classList.contains('hidden')) {
@@ -714,9 +737,9 @@
     };
     el.streamAddonTabs.appendChild(allBtn);
 
-    servers.filter((s) => s.count > 0).forEach((srv) => {
+    servers.forEach((srv) => {
       const btn = document.createElement('button');
-      btn.className = `addon-tab ${state.activeAddonFilter === srv.addonId ? 'active' : ''}`;
+      btn.className = `addon-tab ${state.activeAddonFilter === srv.addonId ? 'active' : ''} ${srv.count === 0 ? 'empty' : ''}`;
       btn.textContent = `${srv.addonName} (${srv.count})`;
       btn.onclick = () => {
         state.activeAddonFilter = srv.addonId;
@@ -736,7 +759,7 @@
     if (!filtered.length) {
       el.streamsList.innerHTML = `
         <div style="grid-column:1/-1;padding:24px;background:rgba(255,255,255,0.03);border-radius:12px;text-align:center;color:var(--text-muted);">
-          Nenhuma fonte encontrada para esta seleção.
+          Este servidor não retornou links para este título específico. Selecione outro servidor acima ou "Todos".
         </div>
       `;
       return;
@@ -745,6 +768,7 @@
     filtered.forEach((stream) => {
       const card = document.createElement('div');
       card.className = 'stream-item';
+      const seedsTag = stream.seeds ? ` • 👤 ${stream.seeds}` : '';
 
       card.innerHTML = `
         <div class="stream-top">
@@ -755,7 +779,7 @@
           <span class="stream-quality">${escapeHtml(stream.quality)}</span>
         </div>
         <div class="stream-bottom">
-          <span>${escapeHtml(stream.audio)}</span>
+          <span>${escapeHtml(stream.audio)}${seedsTag}</span>
           <span class="stream-play-tag">▶ Assistir</span>
         </div>
       `;
@@ -763,6 +787,46 @@
       card.addEventListener('click', () => launchCloudPlayer(stream));
       el.streamsList.appendChild(card);
     });
+  }
+
+  async function openServersModal() {
+    if (!el.serversModal) return;
+    el.serversModal.classList.remove('hidden');
+    el.serversModalList.innerHTML = `
+      <div class="streams-loading">
+        <div class="spinner-purple"></div>
+        <span>Verificando os 6 servidores...</span>
+      </div>
+    `;
+
+    try {
+      const res = await fetch('/api/addons?ping=1');
+      const data = await res.json();
+      const addons = data.addons || state.addons || [];
+      el.serversModalList.innerHTML = '';
+
+      addons.forEach((a) => {
+        const row = document.createElement('div');
+        row.className = 'server-modal-row';
+        const isOnline = a.online !== false;
+        const pingText = a.pingMs ? ` • ${a.pingMs}ms` : '';
+        row.innerHTML = `
+          <div class="server-modal-left">
+            <span class="server-dot" style="background:${a.color || '#a855f7'}"></span>
+            <div class="server-modal-info">
+              <h4>${escapeHtml(a.name)} <span class="meta-pill">${escapeHtml(a.badge || 'CLOUD')}</span></h4>
+              <p>${escapeHtml(a.manifestUrl)}</p>
+            </div>
+          </div>
+          <span class="server-status-tag" style="${isOnline ? '' : 'color:#f87171;border-color:rgba(248,113,113,0.3);background:rgba(248,113,113,0.12)'}">
+            ${isOnline ? `Ativo${pingText}` : 'Offline'}
+          </span>
+        `;
+        el.serversModalList.appendChild(row);
+      });
+    } catch (e) {
+      el.serversModalList.innerHTML = `<p style="color:var(--text-muted)">Erro ao listar servidores.</p>`;
+    }
   }
 
   function closeDetailsModal() {

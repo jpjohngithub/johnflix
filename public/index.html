@@ -40,6 +40,13 @@
         <input type="text" id="searchInput" placeholder="Títulos, gêneros..." autocomplete="off" />
         <button class="search-clear hidden" id="searchClear" title="Limpar">&times;</button>
       </div>
+
+      <button class="nav-subtle-icon" id="openServersBtn" title="Servidores Conectados">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="2" y="3" width="20" height="7" rx="2"/><rect x="2" y="14" width="20" height="7" rx="2"/>
+          <circle cx="6" cy="6.5" r="1" fill="currentColor"/><circle cx="6" cy="17.5" r="1" fill="currentColor"/>
+        </svg>
+      </button>
     </div>
   </header>
 
@@ -135,13 +142,13 @@
         <!-- Streams Panel -->
         <div class="streams-section">
           <div class="streams-header">
-            <h3>Opções de Áudio &amp; Qualidade <span class="stream-counter" id="streamCounter">0</span></h3>
+            <h3>Servidores &amp; Opções <span class="stream-counter" id="streamCounter">0</span></h3>
             <div class="stream-filters" id="streamAddonTabs"></div>
           </div>
 
           <div class="streams-loading hidden" id="streamsLoading">
             <div class="spinner-purple"></div>
-            <span>Buscando fontes em alta definição...</span>
+            <span>Consultando os 6 servidores conectados...</span>
           </div>
 
           <div class="streams-list" id="streamsList"></div>
@@ -164,6 +171,18 @@
         </div>
 
         <div class="playlist-picker-list" id="playlistPickerList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Discreet Connected Servers Modal -->
+  <div class="modal-backdrop hidden" id="serversModal">
+    <div class="modal-card modal-sm">
+      <button class="modal-close" id="closeServersModalBtn">&times;</button>
+      <div class="modal-body">
+        <h2 class="status-modal-title">Servidores Adicionados (6)</h2>
+        <p class="status-modal-sub" style="color:var(--text-muted);font-size:0.84rem;margin-bottom:16px;">Todos os 6 addons estão integrados e são consultados automaticamente em cada filme ou episódio.</p>
+        <div class="servers-modal-list" id="serversModalList"></div>
       </div>
     </div>
   </div>
@@ -214,7 +233,10 @@
   <footer class="footer">
     <div class="footer-inner">
       <span class="brand-word">John<span class="brand-flix">Flix</span></span>
-      <span>© 2026 JohnFlix</span>
+      <div class="footer-links">
+        <button class="footer-subtle-btn" id="footerServersBtn">Servidores (6)</button>
+        <span>© 2026 JohnFlix</span>
+      </div>
     </div>
   </footer>
 
