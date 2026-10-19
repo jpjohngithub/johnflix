@@ -354,6 +354,7 @@
 
   function stopHeroTrailer() {
     clearTimeout(state.heroTrailerTimer);
+    clearTimeout(state.heroLoopTimer);
     if (el.heroTrailerWrap) {
       el.heroTrailerWrap.classList.remove('playing');
       el.heroTrailerWrap.innerHTML = '';
@@ -372,7 +373,7 @@
       if (!ytId || state.heroItems[state.heroIndex]?.id !== item.id) return;
       if (!el.detailsModal.classList.contains('hidden') || !el.playerOverlay.classList.contains('hidden')) return;
       const iframe = document.createElement('iframe');
-      iframe.src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(ytId)}?autoplay=1&mute=1&controls=0&showinfo=0&rel=0&loop=1&playlist=${encodeURIComponent(ytId)}&modestbranding=1&iv_load_policy=3&disablekb=1&fs=0&playsinline=1&start=10&end=65`;
+      iframe.src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(ytId)}?autoplay=1&mute=1&controls=0&showinfo=0&rel=0&enablejsapi=1&playsinline=1&cc_load_policy=0&modestbranding=1&iv_load_policy=3&disablekb=1&fs=0&playsinline=1&start=10&end=62`;
       iframe.allow = 'autoplay; encrypted-media';
       iframe.tabIndex = -1;
       iframe.setAttribute('aria-hidden', 'true');
@@ -388,6 +389,12 @@
       };
       el.heroTrailerWrap.innerHTML = '';
       el.heroTrailerWrap.appendChild(iframe);
+      state.heroLoopTimer = setTimeout(() => {
+        if (state.heroItems[state.heroIndex]?.id === item.id && !el.heroBanner.classList.contains('hidden')) {
+          el.heroTrailerWrap.classList.remove('playing');
+          setTimeout(() => mountHeroTrailer(item), 400);
+        }
+      }, 50000);
     };
 
     state.heroTrailerTimer = setTimeout(async () => {
@@ -525,8 +532,8 @@
     if (!item || !el.heroBookmarkIcon) return;
     const inList = isInMyList(item.id);
     el.heroBookmarkIcon.innerHTML = inList
-      ? '<path d="M20 6L9 17l-5-5"/>'
-      : '<path d="M12 5v14M5 12h14"/>';
+      ? '<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" fill="currentColor"/>'
+      : '<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" fill="none"/>';
   }
 
   // Render Catalog Rows or My List / Playlists Views
@@ -686,6 +693,9 @@
     });
   }
 
+  const BOOK_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>';
+  const BOOKF_ICON = '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>';
+
   function createMediaCard(item, opts = {}) {
     const card = document.createElement('article');
     card.className = opts.isTop10 ? 'media-card top10-card' : 'media-card';
@@ -711,10 +721,8 @@
       <div class="card-poster-wrap">
         <img class="card-poster" src="${item.poster || fallbackPoster}" alt="${escapeHtml(item.name)}" loading="lazy" onerror="this.onerror=null;this.src='https://placehold.co/300x450/160b2b/a855f7?text=${encodeURIComponent(item.name)}'" />
         <div class="card-quick-actions">
-          <button class="card-action-btn mylist-btn ${inList ? 'active' : ''}" title="${inList ? 'Remover da Minha Lista' : 'Adicionar à Minha Lista'}">${inList ? '✓' : '+'}</button>
-          <button class="card-action-btn pl-btn" title="Adicionar à Playlist">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-          </button>
+          <button class="card-action-btn mylist-btn ${inList ? 'active' : ''}" title="${inList ? 'Remover da Minha Lista' : 'Salvar na Minha Lista'}">${inList ? BOOKF_ICON : BOOK_ICON}</button>
+          <button class="card-action-btn pl-btn" title="Adicionar à Playlist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg></button>
           ${removeBtnHtml}
         </div>
         <div class="card-overlay">
@@ -750,7 +758,7 @@
       toggleMyList(item);
       const nowIn = isInMyList(item.id);
       mylistBtn.classList.toggle('active', nowIn);
-      mylistBtn.textContent = nowIn ? '✓' : '+';
+      mylistBtn.innerHTML = nowIn ? BOOKF_ICON : BOOK_ICON;
       if (state.activeFilter === 'mylist') renderCatalogRows();
     });
 
@@ -780,6 +788,7 @@
     card.addEventListener('touchstart', triggerPrefetch, { once: true, passive: true });
 
     card.addEventListener('click', () => {
+      state.pendingResume = opts.isContinueWatching ? (item.savedTime || 0) : 0;
       if (item.targetStreamId && item.type === 'series') {
         openItemDetails(item, true, item.targetStreamId, item.season, item.episode);
       } else {
@@ -968,7 +977,7 @@
       el.modalTrailerWrap.classList.remove('playing');
       return;
     }
-    const embedUrl = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(ytId)}?autoplay=1&mute=1&controls=0&showinfo=0&rel=0&loop=1&playlist=${encodeURIComponent(ytId)}&modestbranding=1&iv_load_policy=3&disablekb=1&fs=0&playsinline=1&start=10&end=65`;
+    const embedUrl = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(ytId)}?autoplay=1&mute=1&controls=0&showinfo=0&rel=0&enablejsapi=1&playsinline=1&cc_load_policy=0&modestbranding=1&iv_load_policy=3&disablekb=1&fs=0&playsinline=1&start=10&end=62`;
     el.modalTrailerWrap.innerHTML = `<iframe src="${embedUrl}" title="Trailer Preview" allow="autoplay; encrypted-media" tabindex="-1"></iframe>`;
     setTimeout(() => {
       if (!el.detailsModal.classList.contains('hidden')) {
@@ -1417,9 +1426,21 @@
       el.playerLoader.classList.add('hidden');
     };
 
-    el.cloudVideo.onloadedmetadata = hideLoader;
-    el.cloudVideo.onloadeddata = hideLoader;
-    el.cloudVideo.oncanplay = hideLoader;
+    const resumeAt = state.pendingResume > 5 ? state.pendingResume : 0;
+    let resumeApplied = false;
+    const applyResume = () => {
+      if (resumeApplied || !resumeAt) return;
+      const dur = el.cloudVideo.duration;
+      if (Number.isFinite(dur) && dur > 0 && resumeAt < dur - 10) {
+        try { el.cloudVideo.currentTime = resumeAt; } catch (e) {}
+      }
+      resumeApplied = true;
+      state.pendingResume = 0;
+    };
+
+    el.cloudVideo.onloadedmetadata = () => { applyResume(); hideLoader(); };
+    el.cloudVideo.onloadeddata = () => { applyResume(); hideLoader(); };
+    el.cloudVideo.oncanplay = () => { applyResume(); hideLoader(); };
     el.cloudVideo.onplaying = hideLoader;
     el.cloudVideo.onerror = () => {
       el.playerLoaderTitle.textContent = 'Esta fonte demorou ou falhou ao responder';

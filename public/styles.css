@@ -122,36 +122,39 @@ html, body {
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
 }
 .nav-link {
   background: transparent;
   border: none;
-  color: var(--text-secondary);
-  font-size: 0.92rem;
-  font-weight: 600;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  font-weight: 500;
   padding: 8px 14px;
-  border-radius: 99px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: var(--transition);
+  transition: color 0.2s ease, background-color 0.2s ease;
   display: flex;
   align-items: center;
   gap: 6px;
+  position: relative;
 }
 .nav-link:hover {
-  color: #fff;
-  background: rgba(168, 85, 247, 0.12);
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.06);
 }
 .nav-link.active {
-  color: #fff;
-  background: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(236, 72, 153, 0.2));
-  border: 1px solid rgba(168, 85, 247, 0.45);
-  box-shadow: 0 0 16px rgba(168, 85, 247, 0.25);
+  color: #ffffff;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: none;
 }
 .badge-count {
-  background: var(--purple-bright);
+  background: rgba(168, 85, 247, 0.9);
   color: #fff;
-  font-size: 0.7rem;
+  font-size: 0.68rem;
+  font-weight: 700;
   padding: 1px 6px;
   border-radius: 99px;
 }
@@ -2346,5 +2349,122 @@ html, body {
   }
   .stream-quality {
     display: none;
+  }
+}
+
+/* Mobile Experience Optimization */
+@media (max-width: 768px) {
+  /* Complete removal of background trailer embeds on mobile to prevent native touch media overlays */
+  .hero-trailer-wrap,
+  .modal-trailer-wrap {
+    display: none !important;
+  }
+
+  /* Full screen touch targets & smooth horizontal sliders */
+  .row-slider {
+    gap: 12px;
+    padding: 4px 16px 14px;
+    scroll-padding: 0 16px;
+  }
+  .media-card {
+    flex: 0 0 135px;
+  }
+  .media-card .card-poster-wrap {
+    border-radius: 8px;
+  }
+  .media-card.top10-card {
+    flex: 0 0 185px;
+    padding-left: 52px;
+  }
+
+  /* Always visible quick action buttons on touch screens with comfortable 36px touch target */
+  .card-quick-actions {
+    opacity: 1 !important;
+    transform: none !important;
+    top: 6px;
+    right: 6px;
+    gap: 6px;
+  }
+  .card-action-btn {
+    width: 32px;
+    height: 32px;
+    background: rgba(10, 5, 22, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+
+  /* Cleaner Hero on mobile */
+  .hero {
+    height: auto;
+    min-height: 440px;
+    padding: 76px 16px 24px;
+  }
+  .hero-content {
+    max-width: 100%;
+  }
+  .hero-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+  }
+  .btn-hero-play {
+    flex: 1;
+    justify-content: center;
+    padding: 12px 20px;
+  }
+  .btn-hero-info {
+    flex: 1;
+    justify-content: center;
+    padding: 12px 14px;
+    font-size: 0.88rem;
+  }
+  .btn-icon-only {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+  }
+
+  /* Modern Bottom Navigation Bar with safe-area spacing and active pill */
+  .mobile-bottom-nav {
+    height: calc(58px + env(safe-area-inset-bottom, 0px));
+    background: rgba(8, 4, 16, 0.96);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .mobile-nav-item {
+    font-size: 0.65rem;
+    font-weight: 500;
+    color: #94a3b8 !important;
+  }
+  .mobile-nav-item svg {
+    width: 22px;
+    height: 22px;
+  }
+  .mobile-nav-item.active {
+    color: #ffffff !important;
+    font-weight: 700;
+  }
+  .mobile-nav-item.active svg {
+    color: #c084fc;
+    transform: scale(1.1);
+  }
+
+  /* Seamless mobile modal sheet */
+  .modal-backdrop {
+    background: rgba(2, 1, 6, 0.88);
+  }
+  .modal-card {
+    max-height: 90vh;
+    border-radius: 20px 20px 0 0;
+    background: #0d0818;
+  }
+  .modal-hero {
+    min-height: 240px;
+    padding: 20px 18px 16px;
+  }
+  .modal-body {
+    padding: 12px 18px 36px;
+  }
+  .stream-item {
+    padding: 13px 14px;
   }
 }
