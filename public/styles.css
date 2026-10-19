@@ -488,6 +488,8 @@ html, body {
 .catalog-row {
   margin-bottom: 38px;
   padding: 0 4%;
+  content-visibility: auto;
+  contain-intrinsic-size: 0 320px;
 }
 .row-header {
   display: flex;
@@ -1993,6 +1995,7 @@ html, body {
   border-radius: 10px;
   overflow: visible;
   box-shadow: none;
+  will-change: transform;
 }
 .media-card:hover {
   transform: translateY(-4px);
@@ -2003,6 +2006,7 @@ html, body {
   border-radius: 10px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
   transition: box-shadow 0.3s ease, transform 0.3s ease;
+  transform: translateZ(0);
 }
 .media-card:hover .card-poster-wrap {
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.75), 0 0 0 2px rgba(255, 255, 255, 0.85);
