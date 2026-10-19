@@ -92,7 +92,7 @@ const MOVIE_ADDONS = [
   {
     id: 'framextv',
     name: 'FrameXTV (Inglês)',
-    badge: '🇺🇸 INGLÊS',
+    badge: 'INGLÊS',
     type: 'direct',
     category: 'movie_series',
     isEnglishOnly: true,
@@ -104,7 +104,7 @@ const MOVIE_ADDONS = [
   {
     id: 'torrentio',
     name: 'Torrentio (Inglês)',
-    badge: '🇺🇸 INGLÊS',
+    badge: 'INGLÊS',
     type: 'p2p',
     category: 'movie_series',
     isEnglishOnly: true,
@@ -116,7 +116,7 @@ const MOVIE_ADDONS = [
   {
     id: 'flixstreams',
     name: 'Flix-Streams (Inglês)',
-    badge: '🇺🇸 INGLÊS',
+    badge: 'INGLÊS',
     type: 'direct',
     category: 'movie_series',
     isEnglishOnly: true,
@@ -263,14 +263,14 @@ function normalizeStream(rawStream, addon, fallbackDirectUrls = [], idx = 0, eng
   const isDub = forceEn ? false : /dublado|🇧🇷|🇵🇹|portugu[eê]s|dual|pt-br|nacional|comando|bludv|mico/i.test(titleText);
   const isLeg = /legendado|🇺🇸|🇬🇧|leg\b|🧩/i.test(titleText);
   const audio = forceEn
-    ? '🇺🇸 Inglês (Original)'
+    ? 'Inglês (Original)'
     : isDub && isLeg
-      ? 'Dual Áudio 🇧🇷/🇺🇸'
+      ? 'Dual Áudio PT/EN'
       : isDub
-        ? 'Dublado PT-BR 🇧🇷'
+        ? 'Dublado PT-BR'
         : isLeg
-          ? 'Legendado PT-BR 💬'
-          : 'Dublado / Dual 🇧🇷';
+          ? 'Legendado PT-BR'
+          : 'Dublado / Dual';
 
   const seedMatch = titleText.match(/👤\s*(\d+)/);
   const seeds = seedMatch ? parseInt(seedMatch[1], 10) : null;
@@ -399,26 +399,26 @@ export default async (request) => {
     }
 
     if (rawPath === '/api/catalogs') {
-      const cachedCat = getEdgeCache('catalogs:v6');
+      const cachedCat = getEdgeCache('catalogs:v7');
       if (cachedCat) return new Response(cachedCat, { status: 200, headers });
 
       const sources = [
-        { id: 'fenix_movies_pop', title: '🔥 Em Alta Hoje', type: 'movie', category: 'trending', url: 'https://fenixflix.fenixhub.online/catalog/movie/populares_fenix.json', limit: 36 },
-        { id: 'cinemeta_top_movies', title: '🎬 Sucessos de Bilheteria Mundial', type: 'movie', category: 'trending', url: 'https://v3-cinemeta.strem.io/catalog/movie/top.json', limit: 36 },
-        { id: 'fenix_series_pop', title: '📺 Séries Mais Assistidas', type: 'series', category: 'trending', url: 'https://fenixflix.fenixhub.online/catalog/series/populares_fenix.json', limit: 36 },
-        { id: 'cinemeta_action', title: '💥 Ação & Adrenalina', type: 'movie', category: 'action', url: 'https://v3-cinemeta.strem.io/catalog/movie/top/genre=Action.json', limit: 36 },
-        { id: 'cinemeta_scifi', title: '🚀 Ficção Científica & Fantasia', type: 'movie', category: 'scifi', url: 'https://v3-cinemeta.strem.io/catalog/movie/top/genre=Sci-Fi.json', limit: 36 },
-        { id: 'cinemeta_horror', title: '👻 Terror & Suspense Sobrenatural', type: 'movie', category: 'horror', url: 'https://v3-cinemeta.strem.io/catalog/movie/top/genre=Horror.json', limit: 36 },
-        { id: 'cinemeta_top_series', title: '🏆 Séries Aclamadas pela Crítica', type: 'series', category: 'acclaimed', url: 'https://v3-cinemeta.strem.io/catalog/series/top.json', limit: 36 },
-        { id: 'cinemeta_comedy', title: '😂 Comédia para Maratonar', type: 'movie', category: 'comedy', url: 'https://v3-cinemeta.strem.io/catalog/movie/top/genre=Comedy.json', limit: 36 },
-        { id: 'cinemeta_animation', title: '🎨 Animação & Família', type: 'movie', category: 'animation', url: 'https://v3-cinemeta.strem.io/catalog/movie/top/genre=Animation.json', limit: 36 },
-        { id: 'fenix_movies_rec', title: '🆕 Adicionados Recentemente', type: 'movie', category: 'recent', url: 'https://fenixflix.fenixhub.online/catalog/movie/recentes_servidor.json', limit: 36 },
-        { id: 'bestcine_trending', title: '🇧🇷 Favoritos no Brasil', type: 'movie', category: 'trending', url: 'https://bestcine.dpdns.org/catalog/movie/bestcine_trending.json', limit: 36 },
+        { id: 'fenix_movies_pop', title: 'Em Alta Hoje', type: 'movie', category: 'trending', url: 'https://fenixflix.fenixhub.online/catalog/movie/populares_fenix.json', limit: 36 },
+        { id: 'cinemeta_top_movies', title: 'Sucessos de Bilheteria', type: 'movie', category: 'trending', url: 'https://v3-cinemeta.strem.io/catalog/movie/top.json', limit: 36 },
+        { id: 'fenix_series_pop', title: 'Séries Mais Assistidas', type: 'series', category: 'trending', url: 'https://fenixflix.fenixhub.online/catalog/series/populares_fenix.json', limit: 36 },
+        { id: 'cinemeta_action', title: 'Ação e Aventura', type: 'movie', category: 'action', url: 'https://v3-cinemeta.strem.io/catalog/movie/top/genre=Action.json', limit: 36 },
+        { id: 'cinemeta_scifi', title: 'Ficção Científica e Fantasia', type: 'movie', category: 'scifi', url: 'https://v3-cinemeta.strem.io/catalog/movie/top/genre=Sci-Fi.json', limit: 36 },
+        { id: 'cinemeta_horror', title: 'Terror e Suspense', type: 'movie', category: 'horror', url: 'https://v3-cinemeta.strem.io/catalog/movie/top/genre=Horror.json', limit: 36 },
+        { id: 'cinemeta_top_series', title: 'Séries Aclamadas pela Crítica', type: 'series', category: 'acclaimed', url: 'https://v3-cinemeta.strem.io/catalog/series/top.json', limit: 36 },
+        { id: 'cinemeta_comedy', title: 'Comédia', type: 'movie', category: 'comedy', url: 'https://v3-cinemeta.strem.io/catalog/movie/top/genre=Comedy.json', limit: 36 },
+        { id: 'cinemeta_animation', title: 'Animação e Família', type: 'movie', category: 'animation', url: 'https://v3-cinemeta.strem.io/catalog/movie/top/genre=Animation.json', limit: 36 },
+        { id: 'fenix_movies_rec', title: 'Adicionados Recentemente', type: 'movie', category: 'recent', url: 'https://fenixflix.fenixhub.online/catalog/movie/recentes_servidor.json', limit: 36 },
+        { id: 'bestcine_trending', title: 'Favoritos no Brasil', type: 'movie', category: 'trending', url: 'https://bestcine.dpdns.org/catalog/movie/bestcine_trending.json', limit: 36 },
         // Live TV Channels Catalogs (Fenix TV / NexoTV / Eh! IPTV)
-        { id: 'tv_reidoscanais', title: '🏆 Esportes, Filmes & Variedades Ao Vivo', type: 'tv', tvCategory: 'Esportes & Filmes', url: 'https://fenixtv.fenixhub.online/catalog/tv/tv_reidoscanais.json', limit: 60 },
-        { id: 'tv_exploud', title: '📺 Canais Principais & Abertos', type: 'tv', tvCategory: 'Principais', url: 'https://fenixtv.fenixhub.online/catalog/tv/tv_exploud.json', limit: 60 },
-        { id: 'tv_eventos', title: '⚽ Jogos & Eventos de Hoje', type: 'tv', tvCategory: 'Eventos', url: 'https://fenixtv.fenixhub.online/catalog/tv/tv_eventos.json', limit: 40 },
-        { id: 'tv_nettv', title: '📡 Grade Completa (Uptv)', type: 'tv', tvCategory: 'Grade HD', url: 'https://fenixtv.fenixhub.online/catalog/tv/tv_nettv.json', limit: 80 }
+        { id: 'tv_reidoscanais', title: 'Esportes, Filmes e Variedades Ao Vivo', type: 'tv', tvCategory: 'Esportes & Filmes', url: 'https://fenixtv.fenixhub.online/catalog/tv/tv_reidoscanais.json', limit: 60 },
+        { id: 'tv_exploud', title: 'Canais Principais e Abertos', type: 'tv', tvCategory: 'Principais', url: 'https://fenixtv.fenixhub.online/catalog/tv/tv_exploud.json', limit: 60 },
+        { id: 'tv_eventos', title: 'Jogos e Eventos Ao Vivo', type: 'tv', tvCategory: 'Eventos', url: 'https://fenixtv.fenixhub.online/catalog/tv/tv_eventos.json', limit: 40 },
+        { id: 'tv_nettv', title: 'Grade Completa de Canais', type: 'tv', tvCategory: 'Grade HD', url: 'https://fenixtv.fenixhub.online/catalog/tv/tv_nettv.json', limit: 80 }
       ];
 
       const richById = new Map();
@@ -469,10 +469,14 @@ export default async (request) => {
         })
       );
 
-      // Enrich top FenixFlix items with Cinemeta trailer ytId & rating in parallel if not already in richById
-      const fenixTop = rows.find((r) => r.id === 'fenix_movies_pop')?.items?.slice(0, 6) || [];
+      // Enrich top FenixFlix & Cinemeta items with trailer ytId & rating in parallel if not already in richById
+      const heroCandidates = [
+        ...(rows.find((r) => r.id === 'fenix_movies_pop')?.items?.slice(0, 8) || []),
+        ...(rows.find((r) => r.id === 'cinemeta_top_movies')?.items?.slice(0, 6) || []),
+        ...(rows.find((r) => r.id === 'fenix_series_pop')?.items?.slice(0, 4) || [])
+      ];
       await Promise.all(
-        fenixTop.map(async (item) => {
+        heroCandidates.map(async (item) => {
           const cached = richById.get(item.id);
           if (cached && cached.ytId) return;
           try {
@@ -529,7 +533,7 @@ export default async (request) => {
       if (top10Pool.length >= 5) {
         rows.unshift({
           id: 'top10_brasil',
-          title: '🏆 Top 10 no Brasil Hoje',
+          title: 'Top 10 no Brasil Hoje',
           type: 'movie',
           category: 'trending',
           isTop10: true,
@@ -539,7 +543,7 @@ export default async (request) => {
 
       const validRows = rows.filter((r) => r.items.length > 0);
       const bodyStr = JSON.stringify({ rows: validRows, catalogs: validRows, addons: ADDONS, tvAddons: TV_ADDONS, movieAddons: MOVIE_ADDONS });
-      if (validRows.length > 0) setEdgeCache('catalogs:v6', bodyStr, 300);
+      if (validRows.length > 0) setEdgeCache('catalogs:v7', bodyStr, 300);
       return new Response(bodyStr, { status: 200, headers });
     }
 
@@ -811,7 +815,7 @@ export default async (request) => {
               quality,
               is4k: false,
               isDub: true,
-              audio: '🇧🇷 Ao Vivo PT-BR',
+              audio: 'Ao Vivo PT-BR',
               seeds: null,
               playType: 'hls',
               directUrl: s.url,

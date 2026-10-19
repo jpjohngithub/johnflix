@@ -5,6 +5,7 @@
     addons: [],
     heroItems: [],
     heroIndex: 0,
+  heroSeq: 0,
     heroTimer: null,
     heroTrailerTimer: null,
     activeFilter: 'all',
@@ -399,28 +400,15 @@
     if (!state.heroItems.length) return;
     el.heroIndicators.innerHTML = '';
     state.heroItems.forEach((item, idx) => {
-      const card = document.createElement('button');
-      card.className = `hero-rec-card ${idx === 0 ? 'active' : ''}`;
-      const thumbUrl = item.background || item.poster || `https://images.metahub.space/background/medium/${item.id}/img`;
-      const typeTag = item.type === 'series' ? 'Série' : 'Filme';
-      const ratingTag = item.imdbRating ? `★ ${item.imdbRating}` : item.year || '';
-      card.innerHTML = `
-        <img class="hero-rec-thumb" src="${thumbUrl}" alt="${escapeHtml(item.name)}" loading="lazy" onerror="this.onerror=null;this.src='${item.poster || ''}'" />
-        <div class="hero-rec-overlay">
-          <div class="hero-rec-title">${escapeHtml(item.name)}</div>
-          <div class="hero-rec-meta">
-            <span>${typeTag}</span>
-            ${ratingTag ? `<span>• ${escapeHtml(ratingTag)}</span>` : ''}
-          </div>
-        </div>
-        <div class="hero-rec-bar"></div>
-      `;
-      card.addEventListener('click', () => {
+      const dot = document.createElement('button');
+      dot.className = `hero-dot ${idx === 0 ? 'active' : ''}`;
+      dot.setAttribute('aria-label', item.name);
+      dot.addEventListener('click', () => {
         state.heroIndex = idx;
         updateHeroSlide();
         restartHeroTimer();
       });
-      el.heroIndicators.appendChild(card);
+      el.heroIndicators.appendChild(dot);
     });
     updateHeroSlide();
     restartHeroTimer();
@@ -435,74 +423,83 @@
     }, 16000);
   }
 
+  const logoDarkCache = new Map();
+
+  function detectDarkLogo(img) {
+    try {
+      const w = 48;
+      const h = Math.max(8, Math.round((img.naturalHeight / img.naturalWidth) * w)) || 16;
+      const c = document.createElement('canvas');
+      c.width = w;
+      c.height = h;
+      const ctx = c.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(img, 0, 0, w, h);
+      const d = ctx.getImageData(0, 0, w, h).data;
+      let sum = 0;
+      let n = 0;
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i + 3] > 40) {
+          sum += (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]);
+          n += 1;
+        }
+      }
+      return n > 0 && (sum / n) < 95;
+    } catch (e) {
+      return false;
+    }
+  }
+
   function updateHeroSlide() {
     const item = state.heroItems[state.heroIndex];
     if (!item) return;
+    const seq = ++state.heroSeq;
 
     const bgUrl = item.background || `https://images.metahub.space/background/large/${item.id}/img`;
     el.heroBackdrop.style.backgroundImage = `url('${bgUrl}'), url('${item.poster || ''}')`;
-    el.heroTitle.textContent = item.name;
-    el.heroDesc.textContent = item.description || 'Assista em Full HD e 4K nos servidores de alta velocidade integrados ao JohnFlix.';
+    el.heroDesc.textContent = item.description || '';
 
     if (el.heroFeaturedTag) {
-      el.heroFeaturedTag.textContent = `🔥 TOP #${state.heroIndex + 1} EM DESTAQUE`;
+      el.heroFeaturedTag.textContent = `TOP ${state.heroIndex + 1} EM DESTAQUE`;
     }
 
-    if (el.heroLogo) {
-      const logoUrl = item.logo || (item.id && item.id.startsWith('tt') ? `https://images.metahub.space/logo/medium/${item.id}/img` : '');
-      if (logoUrl) {
-        el.heroLogo.classList.add('hidden');
-        el.heroTitle.classList.remove('hidden');
-        el.heroLogo.onload = () => {
-          el.heroLogo.classList.remove('hidden');
-          el.heroTitle.classList.add('hidden');
-        };
-        el.heroLogo.onerror = () => {
-          el.heroLogo.classList.add('hidden');
-          el.heroTitle.classList.remove('hidden');
-        };
+    // Brand: keep both hidden until the logo resolves, then show exactly one (no text->logo flicker)
+    el.heroLogo.classList.add('hidden');
+    el.heroTitle.classList.add('hidden');
+    el.heroTitle.textContent = item.name;
+    const logoUrl = item.logo || (item.id && item.id.startsWith('tt') ? `https://images.metahub.space/logo/medium/${item.id}/img` : '');
+    const showTitle = () => {
+      if (seq !== state.heroSeq) return;
+      el.heroLogo.classList.add('hidden');
+      el.heroTitle.classList.remove('hidden');
+    };
+    if (logoUrl) {
+      const probe = new Image();
+      probe.crossOrigin = 'anonymous';
+      probe.onload = () => {
+        if (seq !== state.heroSeq) return;
+        if (!logoDarkCache.has(logoUrl)) logoDarkCache.set(logoUrl, detectDarkLogo(probe));
+        el.heroLogo.classList.toggle('logo-dark', logoDarkCache.get(logoUrl));
         el.heroLogo.src = logoUrl;
-      } else {
-        el.heroLogo.classList.add('hidden');
-        el.heroTitle.classList.remove('hidden');
-      }
+        el.heroLogo.alt = item.name;
+        el.heroLogo.classList.remove('hidden');
+      };
+      probe.onerror = showTitle;
+      probe.src = logoUrl;
+    } else {
+      showTitle();
     }
 
-    const typeLabel = item.type === 'series' ? 'Série' : 'Filme';
     const ratingHtml = item.imdbRating ? `<span class="meta-rating">★ ${item.imdbRating}</span>` : '';
     const yearHtml = item.year ? `<span>${item.year}</span>` : '';
-    const runtimeHtml = item.runtime ? `<span>• ${escapeHtml(item.runtime)}</span>` : '';
-    const genresList = Array.isArray(item.genres) && item.genres.length ? item.genres.slice(0, 3).join(' / ') : '';
-    const genresHtml = genresList ? `<span style="color:#cbd5e1;">• ${escapeHtml(genresList)}</span>` : '';
+    const runtimeHtml = item.runtime ? `<span>${escapeHtml(item.runtime)}</span>` : '';
+    const genresList = Array.isArray(item.genres) && item.genres.length ? item.genres.slice(0, 2).join(' · ') : '';
+    const genresHtml = genresList ? `<span>${escapeHtml(genresList)}</span>` : '';
 
-    el.heroMeta.innerHTML = `
-      <span class="meta-pill">${typeLabel}</span>
-      <span class="meta-pill" style="background:rgba(34,197,94,0.18);border-color:rgba(34,197,94,0.4);color:#86efac;">DUBLADO &amp; LEG</span>
-      ${ratingHtml}
-      ${yearHtml}
-      ${runtimeHtml}
-      ${genresHtml}
-    `;
-
-    if (el.heroCast) {
-      if (Array.isArray(item.cast) && item.cast.length) {
-        el.heroCast.innerHTML = `<strong>Elenco:</strong> ${escapeHtml(item.cast.slice(0, 4).join(', '))}`;
-        el.heroCast.classList.remove('hidden');
-      } else {
-        el.heroCast.innerHTML = '';
-        el.heroCast.classList.add('hidden');
-      }
-    }
+    el.heroMeta.innerHTML = [ratingHtml, yearHtml, runtimeHtml, genresHtml].filter(Boolean).join('');
 
     updateHeroBookmarkIcon();
-    const cards = el.heroIndicators.querySelectorAll('.hero-rec-card');
-    cards.forEach((c, i) => {
-      const isAct = i === state.heroIndex;
-      c.classList.toggle('active', isAct);
-      if (isAct && el.heroIndicators.scrollWidth > el.heroIndicators.clientWidth) {
-        const targetLeft = Math.max(0, c.offsetLeft - el.heroIndicators.clientWidth / 2 + c.clientWidth / 2);
-        el.heroIndicators.scrollTo({ left: targetLeft, behavior: 'smooth' });
-      }
+    el.heroIndicators.querySelectorAll('.hero-dot').forEach((d, i) => {
+      d.classList.toggle('active', i === state.heroIndex);
     });
 
     mountHeroTrailer(item);
@@ -571,13 +568,13 @@
       tvHeader.innerHTML = `
         <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.22);border-radius:14px;padding:16px 20px;">
           <div>
-            <h2 style="font-size:1.35rem;font-weight:800;margin:0 0 4px;">📺 Canais de TV ao Vivo</h2>
+            <h2 style="font-size:1.35rem;font-weight:800;margin:0 0 4px;">Canais de TV ao Vivo</h2>
             <p style="color:var(--text-muted);font-size:0.86rem;margin:0;">Esportes, Filmes, Séries, Abertos e Eventos transmitidos pelos addons dedicados de TV.</p>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <span class="meta-pill" style="background:rgba(249,115,22,0.2);color:#fdba74;border:1px solid rgba(249,115,22,0.35);">● Fenix TV</span>
-            <span class="meta-pill" style="background:rgba(6,182,212,0.2);color:#67e8f9;border:1px solid rgba(6,182,212,0.35);">● NexoTV</span>
-            <span class="meta-pill" style="background:rgba(234,179,8,0.2);color:#fde047;border:1px solid rgba(234,179,8,0.35);">● Eh! Tudo TV</span>
+            <span class="meta-pill" style="background:rgba(249,115,22,0.2);color:#fdba74;border:1px solid rgba(249,115,22,0.35);">Fenix TV</span>
+            <span class="meta-pill" style="background:rgba(6,182,212,0.2);color:#67e8f9;border:1px solid rgba(6,182,212,0.35);">NexoTV</span>
+            <span class="meta-pill" style="background:rgba(234,179,8,0.2);color:#fde047;border:1px solid rgba(234,179,8,0.35);">Eh! Tudo TV</span>
           </div>
         </div>
       `;
@@ -696,18 +693,9 @@
       ? escapeHtml(item.epLabel)
       : [item.year, genreStr, item.imdbRating ? `★ ${item.imdbRating}` : ''].filter(Boolean).join(' • ');
 
-    const typeLabel = item.type === 'tv' ? 'AO VIVO' : (item.type === 'series' ? 'SÉRIE' : 'FILME');
-    const topBadgesHtml = `
-      <div class="card-top-badges">
-        <span class="card-badge type">${typeLabel}</span>
-        ${item.imdbRating ? `<span class="card-badge rating">★ ${escapeHtml(String(item.imdbRating))}</span>` : ''}
-      </div>
-    `;
-
     const innerCardHtml = `
       <div class="card-poster-wrap">
         <img class="card-poster" src="${item.poster || fallbackPoster}" alt="${escapeHtml(item.name)}" loading="lazy" onerror="this.onerror=null;this.src='https://placehold.co/300x450/160b2b/a855f7?text=${encodeURIComponent(item.name)}'" />
-        ${topBadgesHtml}
         <div class="card-quick-actions">
           <button class="card-action-btn mylist-btn ${inList ? 'active' : ''}" title="${inList ? 'Remover da Minha Lista' : 'Adicionar à Minha Lista'}">${inList ? '✓' : '+'}</button>
           <button class="card-action-btn pl-btn" title="Adicionar à Playlist">
@@ -724,13 +712,18 @@
       </div>
       <div class="card-info">
         <h3 class="card-title" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</h3>
-        ${subText ? `<div class="card-sub"><span>${subText}</span></div>` : ''}
+        <div class="card-sub">${subText ? `<span>${subText}</span>` : '&nbsp;'}</div>
       </div>
     `;
 
     if (opts.isTop10) {
+      const rankStr = String(opts.rank || 1);
+      const vbW = rankStr.length > 1 ? 230 : 120;
       card.innerHTML = `
-        <span class="top10-rank-num">${opts.rank || 1}</span>
+        <svg class="top10-rank-svg ${rankStr.length > 1 ? 'wide' : ''}" viewBox="0 0 ${vbW} 170" aria-hidden="true">
+          <text x="${vbW / 2}" y="152" text-anchor="middle" font-family="Outfit, Inter, sans-serif" font-size="176" font-weight="800" letter-spacing="-8"
+            fill="#0c0618" stroke="#d8b4fe" stroke-width="3.5" stroke-linejoin="round" paint-order="stroke">${rankStr}</text>
+        </svg>
         <div class="card-inner-box">${innerCardHtml}</div>
       `;
     } else {
@@ -1037,7 +1030,7 @@
     el.modalTitle.textContent = item.name;
     el.modalDesc.textContent = item.description || (item.type === 'tv' ? 'Transmissão de canal de TV ao vivo pelos addons de TV conectados.' : '');
     const typePill = item.type === 'tv'
-      ? '<span class="meta-pill" style="background:rgba(239,68,68,0.22);color:#fca5a5;border:1px solid rgba(239,68,68,0.4);">🔴 TV AO VIVO</span>'
+      ? '<span class="meta-pill" style="background:rgba(239,68,68,0.22);color:#fca5a5;border:1px solid rgba(239,68,68,0.4);">TV AO VIVO</span>'
       : item.type === 'series'
         ? '<span class="meta-pill">Série</span>'
         : '<span class="meta-pill">Filme</span>';
@@ -1241,7 +1234,7 @@
     servers.forEach((srv) => {
       const btn = document.createElement('button');
       btn.className = `addon-tab ${state.activeAddonFilter === srv.addonId ? 'active' : ''} ${srv.count === 0 ? 'empty' : ''}`;
-      const engTag = srv.isEnglishOnly && !srv.addonName.includes('🇺🇸') ? '🇺🇸 ' : '';
+      const engTag = srv.isEnglishOnly && !srv.addonName.includes('') ? '' : '';
       btn.textContent = `${engTag}${srv.addonName} (${srv.count})`;
       btn.onclick = () => {
         state.activeAddonFilter = srv.addonId;
@@ -1270,9 +1263,9 @@
     filtered.forEach((stream) => {
       const card = document.createElement('div');
       card.className = 'stream-item';
-      const seedsTag = stream.seeds ? ` • 👤 ${stream.seeds}` : '';
+      const seedsTag = stream.seeds ? ` • ${stream.seeds}` : '';
       const audioHtml = stream.isEnglishOnly
-        ? `<span style="color:#fcd34d;font-weight:600;">${escapeHtml(stream.audio || '🇺🇸 Inglês (Sem Áudio BR)')}</span>`
+        ? `<span style="color:#fcd34d;font-weight:600;">${escapeHtml(stream.audio || 'Inglês (Sem Áudio BR)')}</span>`
         : `<span>${escapeHtml(stream.audio)}${seedsTag}</span>`;
 
       card.innerHTML = `
@@ -1519,7 +1512,7 @@
         </div>
         <div class="stream-bottom">
           <span>${escapeHtml(s.audio)}</span>
-          <span class="stream-play-tag">${s.proxyUrl === activeStream.proxyUrl ? '● Ativo' : '▶ Trocar'}</span>
+          <span class="stream-play-tag">${s.proxyUrl === activeStream.proxyUrl ? 'Ativo' : '▶ Trocar'}</span>
         </div>
       `;
       item.addEventListener('click', () => launchCloudPlayer(s));
