@@ -66,6 +66,7 @@
     modalDesc: document.getElementById('modalDesc'),
     modalCast: document.getElementById('modalCast'),
     modalMyListBtn: document.getElementById('modalMyListBtn'),
+  modalPlayBtn: document.getElementById('modalPlayBtn'),
     modalPlaylistBtn: document.getElementById('modalPlaylistBtn'),
     modalRecsSection: document.getElementById('modalRecsSection'),
     modalRecsSlider: document.getElementById('modalRecsSlider'),
@@ -238,6 +239,18 @@
         updateModalMyListButton();
       }
     });
+    if (el.modalPlayBtn) {
+      el.modalPlayBtn.addEventListener('click', () => {
+        const list = state.activeAddonFilter === 'all'
+          ? state.currentStreams
+          : state.currentStreams.filter((s) => s.addonId === state.activeAddonFilter);
+        if (list.length) {
+          launchCloudPlayer(list[0]);
+        } else {
+          document.querySelector('.streams-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    }
     el.modalPlaylistBtn.addEventListener('click', () => {
       if (state.currentItem) openPlaylistModal(state.currentItem);
     });
@@ -353,6 +366,7 @@
   function mountHeroTrailer(item) {
     stopHeroTrailer();
     if (!item || !el.heroTrailerWrap) return;
+    if (window.matchMedia('(hover: none), (pointer: coarse), (max-width: 900px)').matches) return;
 
     const injectIframe = (ytId) => {
       if (!ytId || state.heroItems[state.heroIndex]?.id !== item.id) return;
@@ -949,7 +963,7 @@
 
   function mountModalTrailer(ytId) {
     if (!el.modalTrailerWrap) return;
-    if (!ytId) {
+    if (!ytId || window.matchMedia('(hover: none), (pointer: coarse), (max-width: 900px)').matches) {
       el.modalTrailerWrap.innerHTML = '';
       el.modalTrailerWrap.classList.remove('playing');
       return;
@@ -1113,7 +1127,7 @@
   function updateModalMyListButton() {
     if (!state.currentItem || !el.modalMyListBtn) return;
     const inList = isInMyList(state.currentItem.id);
-    el.modalMyListBtn.textContent = inList ? '✓ Na Minha Lista' : '+ Minha Lista';
+    el.modalMyListBtn.textContent = inList ? 'Na Minha Lista' : '+ Minha Lista';
   }
 
   function setupSeriesEpisodes(videos, autoPlayFirst, customStreamId, customSeason, customEp) {
@@ -1263,23 +1277,17 @@
     filtered.forEach((stream) => {
       const card = document.createElement('div');
       card.className = 'stream-item';
-      const seedsTag = stream.seeds ? ` • ${stream.seeds}` : '';
-      const audioHtml = stream.isEnglishOnly
-        ? `<span style="color:#fcd34d;font-weight:600;">${escapeHtml(stream.audio || 'Inglês (Sem Áudio BR)')}</span>`
-        : `<span>${escapeHtml(stream.audio)}${seedsTag}</span>`;
+      const seedsTag = stream.seeds ? ` · ${stream.seeds}` : '';
+      const audioText = `${stream.audio || ''}${seedsTag}`;
 
       card.innerHTML = `
-        <div class="stream-top">
-          <span class="stream-server-name">
-            <span style="width:8px;height:8px;border-radius:50%;background:${stream.addonColor};display:inline-block;"></span>
-            ${escapeHtml(stream.serverLabel)}
-          </span>
-          <span class="stream-quality">${escapeHtml(stream.quality)}</span>
+        <span class="stream-dot" style="background:${stream.addonColor}"></span>
+        <div class="stream-main">
+          <span class="stream-server-name">${escapeHtml(stream.serverLabel)}</span>
+          <span class="stream-audio ${stream.isEnglishOnly ? 'is-en' : ''}">${escapeHtml(audioText)}</span>
         </div>
-        <div class="stream-bottom">
-          ${audioHtml}
-          <span class="stream-play-tag">▶ Assistir</span>
-        </div>
+        <span class="stream-quality">${escapeHtml(stream.quality)}</span>
+        <span class="stream-play-ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 9-14 9V3z"/></svg></span>
       `;
 
       card.addEventListener('click', () => launchCloudPlayer(stream));

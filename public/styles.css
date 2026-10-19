@@ -1978,3 +1978,373 @@ html, body {
 .card-info { min-height: 52px; }
 .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; margin-bottom: 12px; font-size: 0.9rem; color: #cbd5e1; }
 @media (max-width: 768px) { .media-card.top10-card:has(.top10-rank-svg.wide) { padding-left: 80px; flex-basis: 208px; } .top10-rank-svg.wide { width: 98px; } }
+
+/* ==========================================================================
+   PREMIUM POLISH — cards, details modal, server list
+   ========================================================================== */
+
+/* Cards: poster-first, minimal, no frame */
+.media-card {
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  overflow: visible;
+  box-shadow: none;
+}
+.media-card:hover {
+  transform: translateY(-4px);
+  box-shadow: none;
+  border: none;
+}
+.card-poster-wrap {
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+.media-card:hover .card-poster-wrap {
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.75), 0 0 0 2px rgba(255, 255, 255, 0.85);
+}
+.card-overlay {
+  background: linear-gradient(0deg, rgba(5, 2, 12, 0.7) 0%, rgba(5, 2, 12, 0.08) 55%, transparent 100%);
+}
+.card-play-circle {
+  width: 44px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.6);
+}
+.card-info {
+  background: transparent;
+  padding: 10px 2px 0;
+  min-height: 48px;
+}
+.card-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #e8e6f0;
+}
+.card-sub {
+  font-size: 0.74rem;
+  color: #7c7896;
+  margin-top: 3px;
+}
+.media-card:hover .card-title {
+  color: #fff;
+}
+.media-card.top10-card .card-inner-box {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  overflow: visible;
+}
+.media-card.top10-card .card-poster-wrap {
+  box-shadow: -8px 10px 26px rgba(0, 0, 0, 0.8), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+.media-card.top10-card:hover .card-inner-box {
+  box-shadow: none;
+}
+.media-card.top10-card:hover .card-poster-wrap {
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.75), 0 0 0 2px rgba(255, 255, 255, 0.85);
+}
+
+.row-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.22rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #f1eefb;
+}
+.catalog-row {
+  margin-bottom: 14px;
+}
+
+/* Details modal: cinematic layout */
+.modal-backdrop {
+  background: rgba(3, 1, 8, 0.82);
+}
+.modal-card {
+  max-width: 1020px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: #0d0818;
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.9);
+}
+.modal-card.modal-sm {
+  max-width: 560px;
+}
+.modal-close {
+  background: rgba(10, 5, 20, 0.7);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+.modal-close:hover {
+  background: #fff;
+  color: #090414;
+  transform: none;
+}
+.modal-hero {
+  min-height: 460px;
+  padding: 40px 44px 30px;
+  background-position: center 20%;
+}
+.modal-hero-Vignette {
+  background:
+    linear-gradient(0deg, #0d0818 2%, rgba(13, 8, 24, 0.82) 34%, rgba(13, 8, 24, 0.15) 70%, rgba(13, 8, 24, 0.35) 100%),
+    linear-gradient(90deg, rgba(13, 8, 24, 0.75) 0%, rgba(13, 8, 24, 0) 62%);
+}
+.modal-hero-content {
+  max-width: 640px;
+}
+.modal-title {
+  font-size: clamp(1.9rem, 3.4vw, 2.9rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  margin-bottom: 14px;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.7);
+}
+.modal-meta {
+  align-items: center;
+  gap: 8px 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #d4d0e4;
+}
+.modal-meta .meta-pill {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 4px;
+  color: #fff;
+  padding: 2px 9px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.modal-meta .meta-genre {
+  color: #a9a4c2;
+}
+.modal-desc {
+  font-size: 0.97rem;
+  line-height: 1.6;
+  color: rgba(236, 233, 248, 0.88);
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.modal-cast {
+  font-size: 0.82rem;
+  color: #8f8aa8;
+  margin-top: 10px;
+}
+.modal-actions-bar {
+  gap: 10px;
+  margin-top: 22px;
+  flex-wrap: wrap;
+}
+.modal-play-btn {
+  padding: 12px 30px;
+  border-radius: 8px;
+  background: #fff;
+  color: #090414;
+  font-weight: 700;
+  font-size: 0.98rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.modal-play-btn:hover {
+  background: #ece9f5;
+  color: #090414;
+  transform: translateY(-1px);
+}
+.modal-play-btn svg {
+  width: 18px;
+  height: 18px;
+}
+.modal-ghost-btn {
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 0.92rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(8px);
+}
+.modal-ghost-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+.modal-body {
+  padding: 8px 44px 44px;
+}
+
+/* Section headings in modal */
+.streams-header h3,
+.series-header h3,
+.modal-recs-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #f1eefb;
+}
+.stream-counter {
+  background: rgba(255, 255, 255, 0.1);
+  color: #cfcbe2;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 99px;
+  margin-left: 8px;
+}
+
+/* Server filter tabs: quiet underline-style pills */
+.stream-filters {
+  gap: 8px;
+}
+.addon-tab {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #aaa5c4;
+  border-radius: 6px;
+  padding: 7px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.addon-tab:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+.addon-tab.active {
+  background: #fff;
+  border-color: #fff;
+  color: #090414;
+}
+
+/* Server list: clean single-column rows */
+.streams-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 16px;
+}
+.stream-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+.stream-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+  transform: none;
+}
+.stream-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.stream-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.stream-server-name {
+  font-size: 0.93rem;
+  font-weight: 600;
+  color: #f1eefb;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+.stream-audio {
+  font-size: 0.78rem;
+  color: #8f8aa8;
+}
+.stream-audio.is-en {
+  color: #d9b45a;
+}
+.stream-quality {
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #d4d0e4;
+  border-radius: 4px;
+  padding: 3px 9px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: none;
+}
+.stream-play-ico {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.stream-play-ico svg {
+  width: 14px;
+  height: 14px;
+  margin-left: 2px;
+}
+.stream-item:hover .stream-play-ico {
+  background: #fff;
+  color: #090414;
+}
+
+/* Episodes */
+.ep-card {
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+.ep-card:hover,
+.ep-card.active {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+.season-select {
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+@media (max-width: 768px) {
+  .modal-backdrop {
+    padding: 0;
+    align-items: flex-end;
+  }
+  .modal-card {
+    max-height: 94vh;
+    border-radius: 18px 18px 0 0;
+  }
+  .modal-hero {
+    min-height: 380px;
+    padding: 28px 20px 22px;
+  }
+  .modal-body {
+    padding: 6px 18px 32px;
+  }
+  .modal-play-btn {
+    flex: 1;
+    justify-content: center;
+  }
+  .stream-item {
+    padding: 11px 12px;
+    gap: 10px;
+  }
+  .stream-quality {
+    display: none;
+  }
+}
