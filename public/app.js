@@ -18,6 +18,8 @@
     activeAddonFilter: 'all',
     telemetryTimer: null,
     playlistTargetItem: null,
+    nextEpisodeTarget: null,
+    nextEpisodeDismissed: false,
     myList: JSON.parse(localStorage.getItem('johnflix_mylist') || '[]'),
     playlists: JSON.parse(localStorage.getItem('johnflix_playlists') || '[]'),
     continueWatching: JSON.parse(localStorage.getItem('johnflix_cw') || '[]')
@@ -99,6 +101,11 @@
     playerServerDrawer: document.getElementById('playerServerDrawer'),
     closeDrawerBtn: document.getElementById('closeDrawerBtn'),
     playerDrawerList: document.getElementById('playerDrawerList'),
+    nextEpCard: document.getElementById('nextEpCard'),
+    nextEpTitle: document.getElementById('nextEpTitle'),
+    nextEpPlayBtn: document.getElementById('nextEpPlayBtn'),
+    nextEpBtnText: document.getElementById('nextEpBtnText'),
+    nextEpDismissBtn: document.getElementById('nextEpDismissBtn'),
     openServersBtn: document.getElementById('openServersBtn'),
     footerServersBtn: document.getElementById('footerServersBtn'),
     serversModal: document.getElementById('serversModal'),
@@ -310,7 +317,26 @@
       if (state.currentItem && el.cloudVideo.currentTime > 5) {
         saveContinueWatching(state.currentItem, el.cloudVideo.currentTime, el.cloudVideo.duration);
       }
+      checkNextEpisodePrompt();
     });
+    el.cloudVideo.addEventListener('ended', () => {
+      if (state.currentItem?.type === 'series' && state.nextEpisodeTarget && !state.nextEpisodeDismissed) {
+        triggerPlayNextEpisode();
+      }
+    });
+
+    if (el.nextEpPlayBtn) {
+      el.nextEpPlayBtn.addEventListener('click', () => {
+        triggerPlayNextEpisode();
+      });
+    }
+
+    if (el.nextEpDismissBtn) {
+      el.nextEpDismissBtn.addEventListener('click', () => {
+        state.nextEpisodeDismissed = true;
+        hideNextEpisodePrompt();
+      });
+    }
 
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
@@ -1383,6 +1409,8 @@
 
     clearVideoHandlers();
     destroyHls();
+    state.nextEpisodeDismissed = false;
+    hideNextEpisodePrompt();
 
     const epSuffix = state.currentItem?.type === 'series'
       ? ` — T${state.currentSeason}:E${state.currentEpisode}`
@@ -1575,6 +1603,8 @@
     clearVideoHandlers();
     destroyHls();
     stopTorrentTelemetry();
+    hideNextEpisodePrompt();
+    state.nextEpisodeDismissed = false;
     el.cloudVideo.pause();
     el.cloudVideo.removeAttribute('src');
     el.cloudVideo.load();
@@ -1586,6 +1616,109 @@
     el.playerOverlay.classList.add('hidden');
     if (el.detailsModal.classList.contains('hidden')) {
       document.body.style.overflow = '';
+    }
+  }
+
+  function getNextEpisode() {
+    if (!state.currentItem || state.currentItem.type !== 'series') return null;
+    const videos = state.currentMeta?.videos;
+    if (!Array.isArray(videos) || videos.length === 0) return null;
+
+    const curS = Number(state.currentSeason) || 1;
+    const curE = Number(state.currentEpisode) || 1;
+
+    // 1. Check next episode in current season
+    const sameSeasonNext = videos.find((v) => Number(v.season) === curS && (Number(v.episode) || Number(v.number)) === curE + 1);
+    if (sameSeasonNext) {
+      return {
+        season: curS,
+        episode: curE + 1,
+        title: sameSeasonNext.name || sameSeasonNext.title || `Episódio ${curE + 1}`,
+        id: sameSeasonNext.id || `${state.currentItem.id}:${curS}:${curE + 1}`
+      };
+    }
+
+    // 2. Check episode 1 of next season
+    const nextSeasonFirst = videos.find((v) => Number(v.season) === curS + 1 && ((Number(v.episode) || Number(v.number)) === 1));
+    if (nextSeasonFirst) {
+      return {
+        season: curS + 1,
+        episode: 1,
+        title: nextSeasonFirst.name || nextSeasonFirst.title || `Episódio 1`,
+        id: nextSeasonFirst.id || `${state.currentItem.id}:${curS + 1}:1`
+      };
+    }
+
+    return null;
+  }
+
+  function checkNextEpisodePrompt() {
+    if (!el.cloudVideo || !el.nextEpCard || state.nextEpisodeDismissed) return;
+    if (state.currentItem?.type !== 'series') {
+      hideNextEpisodePrompt();
+      return;
+    }
+
+    const dur = el.cloudVideo.duration;
+    const cur = el.cloudVideo.currentTime;
+    if (!Number.isFinite(dur) || dur < 60) return;
+
+    // Trigger when within last 45 seconds or >= 95% of duration (credits)
+    const timeLeft = dur - cur;
+    const isNearEnd = timeLeft <= 50 || (cur / dur) >= 0.95;
+
+    if (isNearEnd) {
+      const nextEp = getNextEpisode();
+      if (!nextEp) {
+        hideNextEpisodePrompt();
+        return;
+      }
+      state.nextEpisodeTarget = nextEp;
+      if (el.nextEpTitle) {
+        el.nextEpTitle.textContent = `T${nextEp.season}:E${nextEp.episode} • ${nextEp.title}`;
+      }
+      if (el.nextEpBtnText) {
+        const sec = Math.max(0, Math.round(timeLeft));
+        el.nextEpBtnText.textContent = timeLeft > 0 && timeLeft <= 50 ? `Próximo (${sec}s)` : 'Assistir Agora';
+      }
+      el.nextEpCard.classList.remove('hidden');
+    } else {
+      hideNextEpisodePrompt();
+    }
+  }
+
+  function hideNextEpisodePrompt() {
+    if (el.nextEpCard) {
+      el.nextEpCard.classList.add('hidden');
+    }
+  }
+
+  async function triggerPlayNextEpisode() {
+    const nextEp = state.nextEpisodeTarget || getNextEpisode();
+    if (!nextEp || !state.currentItem) return;
+
+    hideNextEpisodePrompt();
+    state.nextEpisodeDismissed = false;
+    state.currentSeason = nextEp.season;
+    state.currentEpisode = nextEp.episode;
+
+    el.playerTitle.textContent = `${state.currentItem.name || state.currentItem.title} — T${nextEp.season}:E${nextEp.episode}`;
+    el.playerLoader.classList.remove('hidden');
+    el.playerLoaderTitle.textContent = 'Carregando próximo episódio...';
+    el.playerLoaderSub.textContent = `T${nextEp.season}:E${nextEp.episode} • ${nextEp.title}`;
+
+    try {
+      const data = await prefetchStreams('series', nextEp.id);
+      state.currentStreams = data.streams || [];
+      if (state.currentStreams.length > 0) {
+        launchCloudPlayer(state.currentStreams[0]);
+      } else {
+        el.playerLoaderTitle.textContent = 'Nenhuma fonte encontrada';
+        el.playerLoaderSub.textContent = 'Não foi possível encontrar servidores para este episódio.';
+      }
+    } catch (err) {
+      el.playerLoaderTitle.textContent = 'Erro ao carregar';
+      el.playerLoaderSub.textContent = 'Falha ao buscar fontes do próximo episódio.';
     }
   }
 
