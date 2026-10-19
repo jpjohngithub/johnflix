@@ -53,40 +53,75 @@
 
   <!-- Main Content Container -->
   <main id="mainContent">
-    <!-- Hero Billboard Banner -->
+    <!-- Hero Billboard Banner (Cinematic Video Trailer + Expanded Recommendations Dock) -->
     <section class="hero" id="heroBanner">
       <div class="hero-backdrop" id="heroBackdrop"></div>
+      <div class="hero-trailer-wrap" id="heroTrailerWrap"></div>
       <div class="hero-vignette"></div>
 
-      <div class="hero-content">
-        <h1 class="hero-title" id="heroTitle">Carregando...</h1>
-        <div class="hero-meta" id="heroMeta"></div>
-        <p class="hero-desc" id="heroDesc"></p>
+      <div class="hero-main-layout">
+        <div class="hero-content">
+          <div class="hero-top-badges">
+            <span class="hero-featured-tag" id="heroFeaturedTag">🔥 DESTAQUE JOHNFLIX</span>
+            <span class="hero-trailer-pill hidden" id="heroTrailerPill">
+              <span class="pulse-dot"></span> 🔇 Prévia do Trailer
+            </span>
+          </div>
 
-        <div class="hero-actions">
-          <button class="btn btn-primary" id="heroPlayBtn">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 9-14 9V3z"/></svg>
-            <span>Assistir</span>
-          </button>
-          <button class="btn btn-glass" id="heroInfoBtn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
-            </svg>
-            <span>Detalhes</span>
-          </button>
-          <button class="btn btn-icon-only" id="heroBookmarkBtn" title="Minha Lista">
-            <svg id="heroBookmarkIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-          </button>
-          <button class="btn btn-icon-only" id="heroPlaylistBtn" title="Salvar em Playlist">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-            </svg>
-          </button>
+          <img class="hero-logo hidden" id="heroLogo" alt="Logo" />
+          <h1 class="hero-title" id="heroTitle">Carregando...</h1>
+          <div class="hero-meta" id="heroMeta"></div>
+          <p class="hero-desc" id="heroDesc"></p>
+          <div class="hero-cast" id="heroCast"></div>
+
+          <div class="hero-actions">
+            <button class="btn btn-primary btn-hero-play" id="heroPlayBtn">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 9-14 9V3z"/></svg>
+              <span>Assistir Agora</span>
+            </button>
+            <button class="btn btn-glass btn-hero-info" id="heroInfoBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+              </svg>
+              <span>Mais Informações</span>
+            </button>
+            <button class="btn btn-icon-only" id="heroBookmarkBtn" title="Minha Lista">
+              <svg id="heroBookmarkIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+            <button class="btn btn-icon-only" id="heroPlaylistBtn" title="Salvar em Playlist">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Expanded Hero Recommendations Dock -->
+        <div class="hero-recs-dock">
+          <div class="hero-recs-header">
+            <span class="hero-recs-label">RECOMENDAÇÕES EM DESTAQUE</span>
+            <div class="hero-recs-nav">
+              <button class="hero-step-btn" id="heroPrevBtn" aria-label="Anterior">&#10094;</button>
+              <button class="hero-step-btn" id="heroNextBtn" aria-label="Próximo">&#10095;</button>
+            </div>
+          </div>
+          <div class="hero-indicators" id="heroIndicators"></div>
         </div>
       </div>
+    </section>
 
-      <!-- Hero Carousel Indicators -->
-      <div class="hero-indicators" id="heroIndicators"></div>
+    <!-- Home Quick Genre / Category Bar -->
+    <section class="home-category-bar" id="homeCategoryBar">
+      <div class="category-pills-scroll" id="categoryPillsContainer">
+        <button class="cat-pill active" data-cat="all">✨ Para Você</button>
+        <button class="cat-pill" data-cat="trending">🔥 Em Alta</button>
+        <button class="cat-pill" data-cat="action">💥 Ação &amp; Aventura</button>
+        <button class="cat-pill" data-cat="scifi">🚀 Ficção &amp; Fantasia</button>
+        <button class="cat-pill" data-cat="horror">👻 Terror &amp; Suspense</button>
+        <button class="cat-pill" data-cat="comedy">😂 Comédia</button>
+        <button class="cat-pill" data-cat="animation">🎨 Animação &amp; Família</button>
+        <button class="cat-pill" data-cat="acclaimed">🏆 Aclamados pela Crítica</button>
+      </div>
     </section>
 
     <!-- Search Results Grid (Hidden by default) -->
@@ -101,7 +136,7 @@
     <!-- Continue Watching Row (Dynamic) -->
     <section class="catalog-row hidden" id="continueWatchingRow">
       <div class="row-header">
-        <h2 class="row-title">Continuar Assistindo</h2>
+        <h2 class="row-title">⏱️ Continuar Assistindo</h2>
       </div>
       <div class="row-slider-wrap">
         <div class="row-slider" id="continueWatchingSlider"></div>
@@ -118,11 +153,13 @@
       <button class="modal-close" id="closeDetailsBtn" aria-label="Fechar">&times;</button>
 
       <div class="modal-hero" id="modalHero">
+        <div class="modal-trailer-wrap" id="modalTrailerWrap"></div>
         <div class="modal-hero-Vignette"></div>
         <div class="modal-hero-content">
           <h2 class="modal-title" id="modalTitle">Título</h2>
           <div class="modal-meta" id="modalMeta"></div>
           <p class="modal-desc" id="modalDesc"></p>
+          <div class="modal-cast" id="modalCast"></div>
           <div class="modal-actions-bar">
             <button class="btn btn-sm btn-glass" id="modalMyListBtn">+ Minha Lista</button>
             <button class="btn btn-sm btn-glass" id="modalPlaylistBtn">+ Adicionar à Playlist</button>
@@ -153,6 +190,12 @@
           </div>
 
           <div class="streams-list" id="streamsList"></div>
+        </div>
+
+        <!-- Modal Recommendations Section -->
+        <div class="modal-recs-section hidden" id="modalRecsSection">
+          <h3 class="modal-recs-title">✨ Títulos Semelhantes &amp; Recomendações</h3>
+          <div class="row-slider" id="modalRecsSlider"></div>
         </div>
       </div>
     </div>

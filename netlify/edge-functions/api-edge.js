@@ -399,16 +399,21 @@ export default async (request) => {
     }
 
     if (rawPath === '/api/catalogs') {
-      const cachedCat = getEdgeCache('catalogs:v4');
+      const cachedCat = getEdgeCache('catalogs:v6');
       if (cachedCat) return new Response(cachedCat, { status: 200, headers });
 
       const sources = [
-        { id: 'fenix_movies_pop', title: 'Em Alta Hoje', type: 'movie', url: 'https://fenixflix.fenixhub.online/catalog/movie/populares_fenix.json', limit: 24 },
-        { id: 'cinemeta_top_movies', title: 'Sucessos de Bilheteria', type: 'movie', url: 'https://v3-cinemeta.strem.io/catalog/movie/top.json', limit: 24 },
-        { id: 'fenix_series_pop', title: 'Séries em Destaque', type: 'series', url: 'https://fenixflix.fenixhub.online/catalog/series/populares_fenix.json', limit: 24 },
-        { id: 'cinemeta_top_series', title: 'Séries Aclamadas pela Crítica', type: 'series', url: 'https://v3-cinemeta.strem.io/catalog/series/top.json', limit: 24 },
-        { id: 'fenix_movies_rec', title: 'Adicionados Recentemente', type: 'movie', url: 'https://fenixflix.fenixhub.online/catalog/movie/recentes_servidor.json', limit: 24 },
-        { id: 'bestcine_trending', title: 'Top Brasil', type: 'movie', url: 'https://bestcine.dpdns.org/catalog/movie/bestcine_trending.json', limit: 24 },
+        { id: 'fenix_movies_pop', title: '🔥 Em Alta Hoje', type: 'movie', category: 'trending', url: 'https://fenixflix.fenixhub.online/catalog/movie/populares_fenix.json', limit: 36 },
+        { id: 'cinemeta_top_movies', title: '🎬 Sucessos de Bilheteria Mundial', type: 'movie', category: 'trending', url: 'https://v3-cinemeta.strem.io/catalog/movie/top.json', limit: 36 },
+        { id: 'fenix_series_pop', title: '📺 Séries Mais Assistidas', type: 'series', category: 'trending', url: 'https://fenixflix.fenixhub.online/catalog/series/populares_fenix.json', limit: 36 },
+        { id: 'cinemeta_action', title: '💥 Ação & Adrenalina', type: 'movie', category: 'action', url: 'https://v3-cinemeta.strem.io/catalog/movie/top/genre=Action.json', limit: 36 },
+        { id: 'cinemeta_scifi', title: '🚀 Ficção Científica & Fantasia', type: 'movie', category: 'scifi', url: 'https://v3-cinemeta.strem.io/catalog/movie/top/genre=Sci-Fi.json', limit: 36 },
+        { id: 'cinemeta_horror', title: '👻 Terror & Suspense Sobrenatural', type: 'movie', category: 'horror', url: 'https://v3-cinemeta.strem.io/catalog/movie/top/genre=Horror.json', limit: 36 },
+        { id: 'cinemeta_top_series', title: '🏆 Séries Aclamadas pela Crítica', type: 'series', category: 'acclaimed', url: 'https://v3-cinemeta.strem.io/catalog/series/top.json', limit: 36 },
+        { id: 'cinemeta_comedy', title: '😂 Comédia para Maratonar', type: 'movie', category: 'comedy', url: 'https://v3-cinemeta.strem.io/catalog/movie/top/genre=Comedy.json', limit: 36 },
+        { id: 'cinemeta_animation', title: '🎨 Animação & Família', type: 'movie', category: 'animation', url: 'https://v3-cinemeta.strem.io/catalog/movie/top/genre=Animation.json', limit: 36 },
+        { id: 'fenix_movies_rec', title: '🆕 Adicionados Recentemente', type: 'movie', category: 'recent', url: 'https://fenixflix.fenixhub.online/catalog/movie/recentes_servidor.json', limit: 36 },
+        { id: 'bestcine_trending', title: '🇧🇷 Favoritos no Brasil', type: 'movie', category: 'trending', url: 'https://bestcine.dpdns.org/catalog/movie/bestcine_trending.json', limit: 36 },
         // Live TV Channels Catalogs (Fenix TV / NexoTV / Eh! IPTV)
         { id: 'tv_reidoscanais', title: '🏆 Esportes, Filmes & Variedades Ao Vivo', type: 'tv', tvCategory: 'Esportes & Filmes', url: 'https://fenixtv.fenixhub.online/catalog/tv/tv_reidoscanais.json', limit: 60 },
         { id: 'tv_exploud', title: '📺 Canais Principais & Abertos', type: 'tv', tvCategory: 'Principais', url: 'https://fenixtv.fenixhub.online/catalog/tv/tv_exploud.json', limit: 60 },
@@ -416,21 +421,47 @@ export default async (request) => {
         { id: 'tv_nettv', title: '📡 Grade Completa (Uptv)', type: 'tv', tvCategory: 'Grade HD', url: 'https://fenixtv.fenixhub.online/catalog/tv/tv_nettv.json', limit: 80 }
       ];
 
+      const richById = new Map();
+
       const rows = await Promise.all(
         sources.map(async (src) => {
           try {
             const data = await fetchJson(src.url, 3400);
-            const metas = (data?.metas || []).slice(0, src.limit || 24).map((m) => ({
-              id: m.id || m.imdb_id,
-              type: src.type === 'tv' ? 'tv' : (m.type || src.type),
-              name: m.name,
-              poster: m.poster || m.logo || `https://images.metahub.space/poster/medium/${m.id}/img`,
-              background: m.background || m.poster || m.logo || `https://images.metahub.space/background/medium/${m.id}/img`,
-              year: m.releaseInfo || m.year || (src.type === 'tv' ? 'AO VIVO' : ''),
-              imdbRating: m.imdbRating || '',
-              description: m.description || '',
-              genres: m.genres || (src.tvCategory ? [src.tvCategory] : [])
-            }));
+            const metas = (data?.metas || []).slice(0, src.limit || 36).map((m) => {
+              const itemId = m.id || m.imdb_id || '';
+              const isImdb = itemId.startsWith('tt');
+              const ytId = m.trailers?.[0]?.source || m.trailerStreams?.[0]?.ytId || '';
+              const item = {
+                id: itemId,
+                type: src.type === 'tv' ? 'tv' : (m.type || src.type),
+                name: m.name,
+                logo: m.logo || (isImdb ? `https://images.metahub.space/logo/medium/${itemId}/img` : ''),
+                poster: m.poster || m.logo || (isImdb ? `https://images.metahub.space/poster/medium/${itemId}/img` : ''),
+                background: m.background || (isImdb ? `https://images.metahub.space/background/large/${itemId}/img` : (m.poster || m.logo || '')),
+                year: String(m.releaseInfo || m.year || (src.type === 'tv' ? 'AO VIVO' : '')).split('–')[0],
+                runtime: m.runtime || '',
+                imdbRating: m.imdbRating || '',
+                description: m.description || '',
+                genres: m.genres || m.genre || (src.tvCategory ? [src.tvCategory] : []),
+                cast: Array.isArray(m.cast) ? m.cast.slice(0, 4) : [],
+                ytId
+              };
+              if (isImdb) {
+                const prev = richById.get(itemId) || {};
+                richById.set(itemId, {
+                  ...prev,
+                  ytId: item.ytId || prev.ytId || '',
+                  imdbRating: item.imdbRating || prev.imdbRating || '',
+                  year: item.year || prev.year || '',
+                  runtime: item.runtime || prev.runtime || '',
+                  genres: (item.genres && item.genres.length) ? item.genres : (prev.genres || []),
+                  cast: (item.cast && item.cast.length) ? item.cast : (prev.cast || []),
+                  ptName: src.id.startsWith('fenix_') ? item.name : (prev.ptName || ''),
+                  ptDesc: src.id.startsWith('fenix_') ? item.description : (prev.ptDesc || '')
+                });
+              }
+              return item;
+            });
             return { ...src, items: metas };
           } catch (e) {
             return { ...src, items: [] };
@@ -438,9 +469,77 @@ export default async (request) => {
         })
       );
 
+      // Enrich top FenixFlix items with Cinemeta trailer ytId & rating in parallel if not already in richById
+      const fenixTop = rows.find((r) => r.id === 'fenix_movies_pop')?.items?.slice(0, 6) || [];
+      await Promise.all(
+        fenixTop.map(async (item) => {
+          const cached = richById.get(item.id);
+          if (cached && cached.ytId) return;
+          try {
+            const d = await fetchJson(`https://v3-cinemeta.strem.io/meta/${item.type}/${item.id}.json`, 1800);
+            const m = d?.meta;
+            if (m) {
+              const ytId = m.trailers?.[0]?.source || m.trailerStreams?.[0]?.ytId || '';
+              const prev = richById.get(item.id) || {};
+              richById.set(item.id, {
+                ...prev,
+                ytId: ytId || prev.ytId || '',
+                imdbRating: m.imdbRating || prev.imdbRating || '',
+                year: String(m.releaseInfo || m.year || prev.year || '').split('–')[0],
+                runtime: m.runtime || prev.runtime || '',
+                genres: m.genres || prev.genres || [],
+                cast: Array.isArray(m.cast) ? m.cast.slice(0, 4) : (prev.cast || [])
+              });
+            }
+          } catch (e) {}
+        })
+      );
+
+      // Merge enriched data (localized PT title/desc + trailer ytId + rating + genres) across all rows
+      rows.forEach((row) => {
+        if (row.type === 'tv') return;
+        row.items.forEach((item) => {
+          const rich = richById.get(item.id);
+          if (rich) {
+            if (rich.ptName) item.name = rich.ptName;
+            if (rich.ptDesc) item.description = rich.ptDesc;
+            if (!item.ytId && rich.ytId) item.ytId = rich.ytId;
+            if (!item.imdbRating && rich.imdbRating) item.imdbRating = rich.imdbRating;
+            if (!item.year && rich.year) item.year = rich.year;
+            if (!item.runtime && rich.runtime) item.runtime = rich.runtime;
+            if ((!item.genres || !item.genres.length) && rich.genres?.length) item.genres = rich.genres;
+            if ((!item.cast || !item.cast.length) && rich.cast?.length) item.cast = rich.cast;
+          }
+        });
+      });
+
+      // Build "Top 10 no Brasil Hoje" row from the top movies & series
+      const top10Pool = [];
+      const popMovies = rows.find((r) => r.id === 'fenix_movies_pop')?.items || [];
+      const popBlockbusters = rows.find((r) => r.id === 'cinemeta_top_movies')?.items || [];
+      const popSeries = rows.find((r) => r.id === 'fenix_series_pop')?.items || [];
+      for (let i = 0; i < 15 && top10Pool.length < 10; i++) {
+        for (const list of [popMovies, popBlockbusters, popSeries]) {
+          if (list[i] && top10Pool.length < 10 && !top10Pool.some((x) => x.id === list[i].id)) {
+            top10Pool.push({ ...list[i], rank: top10Pool.length + 1 });
+          }
+        }
+      }
+
+      if (top10Pool.length >= 5) {
+        rows.unshift({
+          id: 'top10_brasil',
+          title: '🏆 Top 10 no Brasil Hoje',
+          type: 'movie',
+          category: 'trending',
+          isTop10: true,
+          items: top10Pool
+        });
+      }
+
       const validRows = rows.filter((r) => r.items.length > 0);
       const bodyStr = JSON.stringify({ rows: validRows, catalogs: validRows, addons: ADDONS, tvAddons: TV_ADDONS, movieAddons: MOVIE_ADDONS });
-      if (validRows.length > 0) setEdgeCache('catalogs:v4', bodyStr, 300);
+      if (validRows.length > 0) setEdgeCache('catalogs:v6', bodyStr, 300);
       return new Response(bodyStr, { status: 200, headers });
     }
 
