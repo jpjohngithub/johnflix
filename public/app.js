@@ -769,7 +769,7 @@
     `;
     el.catalogContainer.appendChild(section);
 
-    const reload = () => { exploreState.skip = 0; exploreState.items = []; exploreState.done = false; exploreState.seq++; loadExplore(true); };
+    const reload = () => { exploreState.skip = 0; exploreState.items = []; exploreState.done = false; exploreState.loading = false; exploreState.seq++; loadExplore(true); };
     section.querySelectorAll('[data-etype]').forEach((b) => b.addEventListener('click', () => {
       exploreState.type = b.dataset.etype; renderCatalogRows(); reload();
     }));
