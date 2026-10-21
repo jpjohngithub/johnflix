@@ -1,4 +1,4 @@
-const MOVIE_ADDONS = [
+﻿const MOVIE_ADDONS = [
   {
     id: 'bestcine',
     name: 'BestCine',
@@ -112,6 +112,17 @@ const MOVIE_ADDONS = [
     baseUrl: 'https://torrentio.strem.fun',
     logo: 'https://torrentio.strem.fun/images/logo_v1.png',
     color: '#ef4444'
+  },
+  {
+    id: 'superflix',
+    name: 'SuperFlix (Dublado)',
+    badge: 'DUBLADO BR',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://superflixapi.fun/',
+    baseUrl: 'https://superflixapi.fun',
+    logo: 'https://superflixapi.fun/favicon.ico',
+    color: '#e11d48'
   },
   {
     id: 'flixstreams',
@@ -863,6 +874,30 @@ export default async (request) => {
 
       const rawAddonResponses = await Promise.all(
         MOVIE_ADDONS.map(async (addon) => {
+          if (addon.id === 'superflix') {
+            const tmdbId = await tmdbPromise;
+            if (!tmdbId) return { addon, rawStreams: [] };
+            const isSeries = type === 'series';
+            const sEmbed = isSeries
+              ? 'https://superflixapi.fun/serie/' + tmdbId + '/' + epSeason + '/' + epNumber + '#noBackground#noEpList#noLink'
+              : 'https://superflixapi.fun/filme/' + tmdbId + '#noBackground#noLink';
+            const vidsrcPt = isSeries
+              ? 'https://vidsrc.sh/embed/tv?tmdb=' + tmdbId + '&season=' + epSeason + '&episode=' + epNumber + '&ds_lang=pt'
+              : 'https://vidsrc.sh/embed/movie?tmdb=' + tmdbId + '&ds_lang=pt';
+            const raw = [
+              {
+                name: 'SuperFlix • Dublado BR',
+                title: '🇧🇷 Servidor Dublado Cloud (SuperFlix)\n🇧🇷 Áudio Dublado PT-BR',
+                embedUrl: sEmbed
+              },
+              {
+                name: 'VidSrc BR • Dublado/Dual',
+                title: '🇧🇷 Servidor Brasil Multiserver (VidSrc)\n🇧🇷 Áudio Dublado / PT-BR',
+                embedUrl: vidsrcPt
+              }
+            ];
+            return { addon, rawStreams: raw };
+          }
           if (addon.id === 'framextv') {
             const tmdbId = await tmdbPromise;
             const fxStreams = await fetchFrameXTVStreams(type, tmdbId, epSeason, epNumber);
