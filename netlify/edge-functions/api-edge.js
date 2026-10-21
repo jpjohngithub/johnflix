@@ -241,26 +241,6 @@ async function fetchFrameXTVStreams(type, tmdbId, season = 1, episode = 1) {
     }
   );
 
-  const mk = (movieUrl, tvUrl) => (mediaType === 'tv' ? tvUrl : movieUrl);
-  const extra = [
-    ['VidLink', mk(`https://vidlink.pro/movie/${tmdbId}?autoplay=true`, `https://vidlink.pro/tv/${tmdbId}/${season}/${episode}?autoplay=true`)],
-    ['VidSrc CC', mk(`https://vidsrc.cc/v2/embed/movie/${tmdbId}`, `https://vidsrc.cc/v2/embed/tv/${tmdbId}/${season}/${episode}`)],
-    ['VidSrc XYZ', mk(`https://vidsrc.xyz/embed/movie?tmdb=${tmdbId}`, `https://vidsrc.xyz/embed/tv?tmdb=${tmdbId}&season=${season}&episode=${episode}`)],
-    ['VidSrc TO', mk(`https://vidsrc.to/embed/movie/${tmdbId}`, `https://vidsrc.to/embed/tv/${tmdbId}/${season}/${episode}`)],
-    ['Embed.su', mk(`https://embed.su/embed/movie/${tmdbId}`, `https://embed.su/embed/tv/${tmdbId}/${season}/${episode}`)],
-    ['AutoEmbed', mk(`https://player.autoembed.cc/embed/movie/${tmdbId}`, `https://player.autoembed.cc/embed/tv/${tmdbId}/${season}/${episode}`)],
-    ['2Embed', mk(`https://www.2embed.cc/embed/${tmdbId}`, `https://www.2embed.cc/embedtv/${tmdbId}&s=${season}&e=${episode}`)],
-    ['MultiEmbed', mk(`https://multiembed.mov/?video_id=${tmdbId}&tmdb=1`, `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${season}&e=${episode}`)],
-    ['SmashyStream', mk(`https://player.smashy.stream/movie/${tmdbId}`, `https://player.smashy.stream/tv/${tmdbId}?s=${season}&e=${episode}`)]
-  ];
-  for (const [label, url] of extra) {
-    out.push({
-      name: `${label} - Multi-Server`,
-      title: `${label} (HD)\nIngles (Original)`,
-      embedUrl: url
-    });
-  }
-
   return out;
 }
 
