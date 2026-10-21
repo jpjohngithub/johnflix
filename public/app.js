@@ -576,6 +576,11 @@
     }
     renderContinueWatching();
 
+    if (state.activeFilter === 'explore') {
+      renderExploreView();
+      return;
+    }
+
     if (state.activeFilter === 'mylist') {
       const section = document.createElement('section');
       section.className = 'search-section';
@@ -721,6 +726,140 @@
 
   const BOOK_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>';
   const BOOKF_ICON = '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>';
+
+  // Explore view (genre / year / rating / sort filters over Cinemeta catalogs)
+  const exploreState = { type: 'movie', genre: '', yearFrom: '', yearTo: '', minRating: 0, sort: 'popular', skip: 0, items: [], loading: false, done: false, seq: 0 };
+  const EXPLORE_GENRES = ['Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary', 'Drama', 'Family', 'Fantasy', 'History', 'Horror', 'Mystery', 'Romance', 'Sci-Fi', 'Thriller', 'War', 'Western'];
+
+  function renderExploreView() {
+    const section = document.createElement('section');
+    section.className = 'explore-section';
+    const chip = (v, label, active, attr) => `<button class="explore-chip ${active ? 'active' : ''}" data-${attr}="${v}">${label}</button>`;
+    const thisYear = new Date().getFullYear();
+    section.innerHTML = `
+      <div class="explore-head">
+        <h2>Explorar</h2>
+        <div class="explore-seg">
+          ${chip('movie', 'Filmes', exploreState.type === 'movie', 'etype')}
+          ${chip('series', 'Séries', exploreState.type === 'series', 'etype')}
+        </div>
+      </div>
+      <div class="explore-filters">
+        <div class="explore-chips">
+          ${chip('', 'Todos', !exploreState.genre, 'egenre')}
+          ${EXPLORE_GENRES.map((g) => chip(g, g, exploreState.genre === g, 'egenre')).join('')}
+        </div>
+        <div class="explore-controls">
+          <label>Ano de <input type="number" id="exYearFrom" min="1900" max="${thisYear}" placeholder="1990" value="${exploreState.yearFrom}"></label>
+          <label>até <input type="number" id="exYearTo" min="1900" max="${thisYear}" placeholder="${thisYear}" value="${exploreState.yearTo}"></label>
+          <label>Nota mín. <span id="exRatingVal">${exploreState.minRating || 0}</span>
+            <input type="range" id="exRating" min="0" max="9" step="0.5" value="${exploreState.minRating}"></label>
+          <label>Ordenar
+            <select id="exSort">
+              <option value="popular" ${exploreState.sort === 'popular' ? 'selected' : ''}>Popularidade</option>
+              <option value="rating" ${exploreState.sort === 'rating' ? 'selected' : ''}>Melhor avaliados</option>
+              <option value="newest" ${exploreState.sort === 'newest' ? 'selected' : ''}>Mais recentes</option>
+              <option value="oldest" ${exploreState.sort === 'oldest' ? 'selected' : ''}>Mais antigos</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="media-grid" id="exploreGrid"></div>
+      <div class="explore-more"><button class="btn btn-glass" id="exploreMoreBtn">Carregar mais</button></div>
+    `;
+    el.catalogContainer.appendChild(section);
+
+    const reload = () => { exploreState.skip = 0; exploreState.items = []; exploreState.done = false; exploreState.seq++; loadExplore(true); };
+    section.querySelectorAll('[data-etype]').forEach((b) => b.addEventListener('click', () => {
+      exploreState.type = b.dataset.etype; renderCatalogRows(); reload();
+    }));
+    section.querySelectorAll('[data-egenre]').forEach((b) => b.addEventListener('click', () => {
+      exploreState.genre = b.dataset.egenre;
+      section.querySelectorAll('[data-egenre]').forEach((x) => x.classList.toggle('active', x === b));
+      reload();
+    }));
+    let t = null;
+    const onYear = () => {
+      exploreState.yearFrom = section.querySelector('#exYearFrom').value;
+      exploreState.yearTo = section.querySelector('#exYearTo').value;
+      clearTimeout(t); t = setTimeout(() => drawExplore(true), 250);
+    };
+    section.querySelector('#exYearFrom').addEventListener('input', onYear);
+    section.querySelector('#exYearTo').addEventListener('input', onYear);
+    section.querySelector('#exRating').addEventListener('input', (e) => {
+      exploreState.minRating = Number(e.target.value);
+      section.querySelector('#exRatingVal').textContent = exploreState.minRating;
+      drawExplore(true);
+    });
+    section.querySelector('#exSort').addEventListener('change', (e) => { exploreState.sort = e.target.value; drawExplore(true); });
+    section.querySelector('#exploreMoreBtn').addEventListener('click', () => loadExplore(false));
+
+    if (exploreState.items.length) drawExplore(true); else reload();
+  }
+
+  async function loadExplore(fresh) {
+    if (exploreState.loading || exploreState.done) return;
+    const grid = document.getElementById('exploreGrid');
+    if (!grid) return;
+    exploreState.loading = true;
+    const seq = exploreState.seq;
+    const moreBtn = document.getElementById('exploreMoreBtn');
+    if (moreBtn) moreBtn.textContent = 'Carregando...';
+    if (fresh) grid.innerHTML = '<p style="color:var(--text-muted);grid-column:1/-1;">Carregando...</p>';
+    try {
+      const extra = [];
+      if (exploreState.genre) extra.push(`genre=${encodeURIComponent(exploreState.genre)}`);
+      if (exploreState.skip) extra.push(`skip=${exploreState.skip}`);
+      const url = `https://v3-cinemeta.strem.io/catalog/${exploreState.type}/top${extra.length ? '/' + extra.join('&') : ''}.json`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (seq !== exploreState.seq) return;
+      const metas = Array.isArray(data.metas) ? data.metas : [];
+      if (metas.length === 0) exploreState.done = true;
+      exploreState.skip += metas.length;
+      const known = new Set(exploreState.items.map((i) => i.id));
+      metas.forEach((m, idx) => {
+        if (known.has(m.id)) return;
+        exploreState.items.push({ ...m, type: exploreState.type, _rank: exploreState.items.length + idx });
+      });
+    } catch (e) {
+      exploreState.done = true;
+    } finally {
+      if (seq === exploreState.seq) {
+        exploreState.loading = false;
+        drawExplore(true);
+      }
+    }
+  }
+
+  function drawExplore() {
+    const grid = document.getElementById('exploreGrid');
+    if (!grid) return;
+    const yf = Number(exploreState.yearFrom) || 0;
+    const yt = Number(exploreState.yearTo) || 9999;
+    const yearOf = (i) => parseInt(String(i.year || i.releaseInfo || '').slice(0, 4), 10) || 0;
+    let list = exploreState.items.filter((i) => {
+      const y = yearOf(i);
+      if ((yf || yt < 9999) && !y) return false;
+      return y >= yf && y <= yt && (Number(i.imdbRating) || 0) >= exploreState.minRating;
+    });
+    const s = exploreState.sort;
+    if (s === 'rating') list.sort((a, b) => (Number(b.imdbRating) || 0) - (Number(a.imdbRating) || 0));
+    else if (s === 'newest') list.sort((a, b) => yearOf(b) - yearOf(a));
+    else if (s === 'oldest') list.sort((a, b) => (yearOf(a) || 9999) - (yearOf(b) || 9999));
+    else list.sort((a, b) => a._rank - b._rank);
+    grid.innerHTML = '';
+    if (!list.length) {
+      grid.innerHTML = `<p style="color:var(--text-muted);grid-column:1/-1;">${exploreState.loading ? 'Carregando...' : 'Nenhum título com esses filtros. Tente carregar mais.'}</p>`;
+    } else {
+      list.forEach((item) => grid.appendChild(createMediaCard(item)));
+    }
+    const moreBtn = document.getElementById('exploreMoreBtn');
+    if (moreBtn) {
+      moreBtn.textContent = 'Carregar mais';
+      moreBtn.parentElement.classList.toggle('hidden', exploreState.done);
+    }
+  }
 
   function createMediaCard(item, opts = {}) {
     const card = document.createElement('article');
