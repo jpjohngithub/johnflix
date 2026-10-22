@@ -724,7 +724,7 @@ export default async (request) => {
       const decodedId = decodeURIComponent(rawId);
       const encodedId = encodeURIComponent(decodedId);
 
-      const streamCacheKey = `streams:v4:${type}:${decodedId}`;
+      const streamCacheKey = `streams:v5:${type}:${decodedId}`;
       const cachedStreams = getEdgeCache(streamCacheKey);
       if (cachedStreams) return new Response(cachedStreams, { status: 200, headers });
 

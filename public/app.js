@@ -1,4 +1,4 @@
-(() => {
+﻿(() => {
   // Application State
   const state = {
     catalogRows: [],
@@ -1383,13 +1383,16 @@
     renderSeasonEpisodes(initialSeason, autoPlayFirst, customEp);
   }
 
+  let currentLoadTargetId = null;
   async function loadStreamsForTarget(type, targetId, autoPlayFirst = false) {
+    currentLoadTargetId = targetId;
     el.streamsLoading.classList.remove('hidden');
     el.streamsList.innerHTML = '';
     el.streamCounter.textContent = '...';
 
     try {
       const data = await prefetchStreams(type, targetId);
+      if (currentLoadTargetId !== targetId) return;
       el.streamsLoading.classList.add('hidden');
 
       state.currentStreams = data.streams || [];
@@ -1402,6 +1405,7 @@
         launchCloudPlayer(state.currentStreams[0]);
       }
     } catch (err) {
+      if (currentLoadTargetId !== targetId) return;
       el.streamsLoading.classList.add('hidden');
       el.streamsList.innerHTML = `<p style="color:#f87171;">Erro ao carregar fontes.</p>`;
     }
