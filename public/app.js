@@ -1625,10 +1625,20 @@
       }
     };
 
-    // Engine 2: Universal HLS (.m3u8) via hls.js or Safari Native HLS
+    // Engine 2: Universal HLS (.m3u8) via Safari Native HLS or hls.js
     const isHls = stream.playType === 'hls' || (stream.proxyUrl && stream.proxyUrl.includes('.m3u8')) || (stream.directUrl && stream.directUrl.includes('.m3u8'));
     if (isHls) {
       const hlsUrl = stream.directUrl || stream.proxyUrl;
+
+      // On iOS Safari and iPadOS, native HLS pipeline has hardware acceleration, Picture-in-Picture, AirPlay and avoids MSE bugs
+      const isAppleNative = !!(navigator.userAgent && /iPhone|iPad|iPod|Macintosh/i.test(navigator.userAgent) && el.cloudVideo.canPlayType('application/vnd.apple.mpegurl'));
+      if (isAppleNative) {
+        el.cloudVideo.src = hlsUrl;
+        el.cloudVideo.load();
+        startVideoPlayback();
+        return;
+      }
+
       if (window.Hls && window.Hls.isSupported()) {
         class CustomTvLoader extends window.Hls.DefaultConfig.loader {
           load(context, config, callbacks) {
@@ -1657,6 +1667,9 @@
         hlsInstance = new window.Hls({
           enableWorker: true,
           lowLatencyMode: false,
+          backBufferLength: 60,
+          maxBufferLength: 30,
+          maxMaxBufferLength: 60,
           loader: CustomTvLoader
         });
         hlsInstance.loadSource(hlsUrl);
@@ -1672,6 +1685,13 @@
             } else if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR) {
               hlsInstance.recoverMediaError();
             } else {
+              if (el.cloudVideo.canPlayType('application/vnd.apple.mpegurl')) {
+                destroyHls();
+                el.cloudVideo.src = hlsUrl;
+                el.cloudVideo.load();
+                startVideoPlayback();
+                return;
+              }
               el.playerLoaderTitle.textContent = 'Sinal indisponível no momento';
               el.playerLoaderSub.textContent = 'Clique em "Opções de Player" acima se quiser escolher outra fonte.';
             }
@@ -1686,11 +1706,24 @@
       }
     }
 
-    // Engine 1: Direct Cloud MP4 Stream
+    // Engine 1: Direct Cloud MP4 Stream (with direct URL fallback if proxy has issue)
     el.cloudVideo.pause();
     el.cloudVideo.src = stream.proxyUrl;
     el.cloudVideo.load();
     startVideoPlayback();
+
+    let retryDirectTried = false;
+    el.cloudVideo.onerror = () => {
+      if (!retryDirectTried && stream.directUrl && stream.directUrl !== stream.proxyUrl) {
+        retryDirectTried = true;
+        el.cloudVideo.src = stream.directUrl;
+        el.cloudVideo.load();
+        startVideoPlayback();
+        return;
+      }
+      el.playerLoaderTitle.textContent = 'Esta fonte demorou ou falhou ao responder';
+      el.playerLoaderSub.textContent = 'Se desejar, clique em "Opções de Player" acima para escolher outro servidor.';
+    };
   }
 
   function renderPlayerDrawer(activeStream) {

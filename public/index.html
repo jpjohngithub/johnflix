@@ -238,8 +238,8 @@
     </div>
 
     <div class="player-stage">
-      <video id="cloudVideo" controls playsinline webkit-playsinline x-webkit-airplay="allow" preload="auto"></video>
-      <iframe id="cloudEmbed" class="hidden" allowfullscreen allow="autoplay; encrypted-media; fullscreen; picture-in-picture" referrerpolicy="origin"></iframe>
+      <video id="cloudVideo" controls playsinline webkit-playsinline x-webkit-airplay="allow" preload="auto" crossorigin="anonymous"></video>
+      <iframe id="cloudEmbed" class="hidden" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true" allow="autoplay; encrypted-media; fullscreen; picture-in-picture; screen-wake-lock" referrerpolicy="no-referrer-when-downgrade" sandbox="allow-forms allow-scripts allow-same-origin allow-presentation allow-popups-to-escape-sandbox"></iframe>
 
       <div class="player-loader hidden" id="playerLoader">
         <div class="loader-ring"></div>
