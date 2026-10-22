@@ -1,4 +1,4 @@
-const http = require('http');
+﻿const http = require('http');
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
@@ -453,23 +453,13 @@ function normalizeStream(rawStream, addon, fallbackDirectUrls = []) {
     proxyUrl = `/api/proxy-stream?url=${encodeURIComponent(streamUrl)}`;
   } else if (rawStream.infoHash) {
     const hash = rawStream.infoHash.toLowerCase();
-    const matchingCloud = fallbackDirectUrls.find((f) => f.isDub === isDub && f.is4k === is4k)
-      || fallbackDirectUrls.find((f) => f.isDub === isDub)
-      || fallbackDirectUrls[0];
-
-    if (matchingCloud && matchingCloud.directUrl) {
-      playType = 'direct';
-      streamUrl = matchingCloud.directUrl;
-      proxyUrl = `/api/proxy-stream?url=${encodeURIComponent(streamUrl)}`;
-    } else {
-      playType = 'torrent';
-      const trackers = (rawStream.sources || [])
-        .filter((s) => typeof s === 'string' && s.startsWith('tracker:'))
-        .map((s) => s.replace(/^tracker:/, ''));
-      const trQuery = trackers.slice(0, 5).map((t) => `tr=${encodeURIComponent(t)}`).join('&');
-      const fileIdxParam = rawStream.fileIdx !== undefined ? `&fileIdx=${rawStream.fileIdx}` : '';
-      proxyUrl = `/api/torrent/${hash}/stream.mp4?${trQuery}${fileIdxParam}`;
-    }
+    playType = 'torrent';
+    const trackers = (rawStream.sources || [])
+      .filter((s) => typeof s === 'string' && s.startsWith('tracker:'))
+      .map((s) => s.replace(/^tracker:/, ''));
+    const trQuery = trackers.slice(0, 5).map((t) => `tr=${encodeURIComponent(t)}`).join('&');
+    const fileIdxParam = rawStream.fileIdx !== undefined ? `&fileIdx=${rawStream.fileIdx}` : '';
+    proxyUrl = `/api/torrent/${hash}/stream.mp4?${trQuery}${fileIdxParam}`;
     magnetUri = `magnet:?xt=urn:btih:${hash}&dn=${encodeURIComponent(rawStream.title || 'JohnFlix')}`;
   }
 
@@ -555,14 +545,6 @@ async function fetchAggregatedStreams(type, id, reqHost) {
 
   const addonResults = rawAddonResponses.map(({ addon, rawStreams, latencyMs }) => {
     let filteredRaw = rawStreams.filter((s) => !isBadSubServer(s));
-
-    if (filteredRaw.length === 0 && directPool.length > 0) {
-      filteredRaw = directPool.slice(0, 6).map((d, idx) => ({
-        name: `${addon.name} ${d.is4k ? '4K' : '1080p'}`,
-        title: `🎬 ${addon.name} Cloud #${idx + 1}\n${d.isDub ? '🇧🇷 Dublado PT-BR' : '🇺🇸 Legendado'}`,
-        url: d.directUrl
-      }));
-    }
 
     const streams = filteredRaw
       .map((s) => normalizeStream(s, addon, directPool))

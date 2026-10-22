@@ -310,28 +310,8 @@ function normalizeStream(rawStream, addon, fallbackDirectUrls = [], idx = 0, eng
     proxyUrl = embedUrl;
   } else if (rawStream.infoHash) {
     const hash = rawStream.infoHash.toLowerCase();
-    const targetPool = forceEn && englishPool.length > 0 ? englishPool : fallbackDirectUrls;
-    const exactMatch = targetPool.filter((f) => f.isDub === isDub && f.is4k === is4k);
-    const dubMatch = targetPool.filter((f) => f.isDub === isDub && !f.is4k);
-    const pool = exactMatch.length > 0 ? exactMatch : dubMatch.length > 0 ? dubMatch : targetPool;
-    const matchingCloud = pool.length > 0 ? pool[idx % pool.length] : null;
-
-    if (matchingCloud && matchingCloud.directUrl) {
-      streamUrl = matchingCloud.directUrl;
-      if (streamUrl.includes('.m3u8')) {
-        playType = 'hls';
-        proxyUrl = streamUrl;
-      } else if (streamUrl.includes('workers.dev')) {
-        playType = 'direct';
-        proxyUrl = streamUrl;
-      } else {
-        playType = 'direct';
-        proxyUrl = `/api/proxy-stream?url=${encodeURIComponent(streamUrl)}`;
-      }
-    } else {
-      playType = 'webtor';
-      proxyUrl = `/api/torrent/${hash}/stream.mp4`;
-    }
+    playType = 'webtor';
+    proxyUrl = `/api/torrent/${hash}/stream.mp4`;
   }
 
   let serverLabel = (rawStream.name || addon.name).replace(/\n/g, ' ');
@@ -977,28 +957,6 @@ export default async (request) => {
       const addonResults = rawAddonResponses.map(({ addon, rawStreams }) => {
         let filteredRaw = rawStreams.filter((s) => !isBadSubServer(s));
         const poolToUse = addon.isEnglishOnly && englishPool.length > 0 ? englishPool : directPool;
-
-        if (filteredRaw.length === 0 && poolToUse.length > 0) {
-          filteredRaw = poolToUse.slice(0, 6).map((d, idx) => ({
-            name: `${addon.name} ${d.is4k ? '4K' : '1080p'}`,
-            title: addon.isEnglishOnly
-              ? `🇺🇸 ${addon.name} Cloud #${idx + 1}\n🇺🇸 Inglês (Original)`
-              : `🎬 ${addon.name} Cloud #${idx + 1}\n${d.isDub ? '🇧🇷 Dublado PT-BR' : '🇺🇸 Legendado'}`,
-            url: d.directUrl
-          }));
-        }
-
-        if (filteredRaw.length === 0 && baseImdb.startsWith('tt')) {
-          filteredRaw = [
-            {
-              name: `${addon.name} Multi-Browser`,
-              title: addon.isEnglishOnly
-                ? `🇺🇸 Player Universal Cloud\n🇺🇸 Inglês (Original)`
-                : `🌐 Player Universal Cloud\n🇧🇷/🇺🇸 Multi-Áudio & Legendas`,
-              embedUrl: universalEmbedUrl
-            }
-          ];
-        }
 
         const streams = filteredRaw
           .map((s, idx) => normalizeStream(s, addon, directPool, idx, englishPool))
