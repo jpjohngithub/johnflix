@@ -884,13 +884,13 @@ export default async (request) => {
             return { addon, rawStreams: fxStreams };
           }
 
-          const primaryPromise = fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 2600)
+          const primaryPromise = fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 4500)
             .then((d) => (Array.isArray(d?.streams) && d.streams.length > 0 ? d.streams : Promise.reject(new Error('empty'))));
 
           const tasks = [primaryPromise];
           if (addon.fallbackUrl) {
             tasks.push(
-              fetchJson(`${addon.fallbackUrl}/stream/${type}/${encodedId}.json`, 2600)
+              fetchJson(`${addon.fallbackUrl}/stream/${type}/${encodedId}.json`, 4500)
                 .then((d) => (Array.isArray(d?.streams) && d.streams.length > 0 ? d.streams : Promise.reject(new Error('empty'))))
             );
           }
