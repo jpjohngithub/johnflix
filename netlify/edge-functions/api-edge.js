@@ -354,6 +354,128 @@ function setEdgeCache(key, val, ttlSec = 300) {
   edgeCache.set(key, { val, exp: Date.now() + ttlSec * 1000 });
 }
 
+// ===== IPTV Brasil (iptv-org) fallback + HLS proxy com CORS =====
+const IPTV_URL = 'https://iptv-org.github.io/iptv/countries/br.m3u';
+const iptvCache = { exp: 0, list: [] };
+const b64uEnc = (s) => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const b64uDec = (s) => decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_/g, '/'))));
+
+async function proxySign(value) {
+  const secret = (typeof Deno !== 'undefined' && Deno.env.get('PROXY_SECRET')) || 'jf-hls-proxy-v1';
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(sig)).slice(0, 16).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function hlsProxied(u) {
+  return `/api/hls-proxy?url=${encodeURIComponent(u)}&s=${await proxySign(u)}&x=index.m3u8`;
+}
+
+async function getIptvBr() {
+  if (iptvCache.exp > Date.now() && iptvCache.list.length) return iptvCache.list;
+  try {
+    const res = await fetch(IPTV_URL, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+    if (!res.ok) throw new Error('iptv');
+    const lines = (await res.text()).split(/\r?\n/);
+    const out = [];
+    const seen = new Set();
+    for (let i = 0; i < lines.length; i++) {
+      if (!lines[i].startsWith('#EXTINF')) continue;
+      const info = lines[i];
+      let j = i + 1;
+      while (j < lines.length && (!lines[j].trim() || lines[j].startsWith('#'))) j++;
+      const url = (lines[j] || '').trim();
+      if (!/^https?:\/\//i.test(url)) continue;
+      const name = (info.split(',').slice(1).join(',') || '').replace(/\s*\[[^\]]*\]/g, '').replace(/\s*\(\d+p\)/gi, '').trim();
+      if (!name || /geo-?blocked/i.test(info) || seen.has(name.toLowerCase())) continue;
+      seen.add(name.toLowerCase());
+      const logo = (info.match(/tvg-logo="([^"]*)"/) || [])[1] || '';
+      const group = (info.match(/group-title="([^"]*)"/) || [])[1] || 'Canais';
+      out.push({ url, name, logo, group: group.split(';')[0] });
+    }
+    if (out.length) { iptvCache.list = out; iptvCache.exp = Date.now() + 30 * 60 * 1000; }
+  } catch (e) {}
+  return iptvCache.list;
+}
+
+const GROUP_PT = { News: 'Notícias', Sports: 'Esportes', Movies: 'Filmes', Kids: 'Infantil', Music: 'Música', Entertainment: 'Entretenimento', General: 'Geral', Culture: 'Cultura', Documentary: 'Documentários', Religious: 'Religiosos', Series: 'Séries', Animation: 'Animação', Education: 'Educação', Lifestyle: 'Estilo de Vida', Comedy: 'Comédia', Undefined: 'Variedades', Public: 'TV Pública', Legislative: 'Legislativo', Weather: 'Clima', Business: 'Negócios' };
+
+async function iptvRows() {
+  const list = await getIptvBr();
+  if (!list.length) return [];
+  const toItem = (ch) => ({
+    id: `tv:iptvorg:${b64uEnc(ch.url)}`,
+    type: 'tv',
+    name: ch.name,
+    logo: ch.logo,
+    poster: ch.logo,
+    background: ch.logo,
+    year: 'AO VIVO',
+    runtime: '',
+    imdbRating: '',
+    description: '',
+    genres: [GROUP_PT[ch.group] || ch.group],
+    cast: [],
+    ytId: ''
+  });
+  const groups = new Map();
+  list.forEach((ch) => {
+    const g = GROUP_PT[ch.group] || ch.group;
+    if (!groups.has(g)) groups.set(g, []);
+    groups.get(g).push(ch);
+  });
+  const rows = [{ id: 'tv_iptv_all', title: 'Canais de TV do Brasil', type: 'tv', category: 'tv', tvCategory: 'Brasil', items: list.slice(0, 80).map(toItem) }];
+  [...groups.entries()].filter(([, v]) => v.length >= 3).sort((a, b) => b[1].length - a[1].length).slice(0, 6).forEach(([g, v]) => {
+    rows.push({ id: `tv_iptv_${b64uEnc(g).slice(0, 10)}`, title: `TV • ${g}`, type: 'tv', category: 'tv', tvCategory: g, items: v.slice(0, 60).map(toItem) });
+  });
+  return rows;
+}
+
+const PRIVATE_HOST = /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|0\.|\[?::1|\[?f[cd])/i;
+
+async function hlsProxyHandler(request, url) {
+  const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Expose-Headers': 'Content-Length, Content-Range' };
+  const target = url.searchParams.get('url') || '';
+  const sig = url.searchParams.get('s') || '';
+  let t;
+  try { t = new URL(target); } catch (e) { return new Response('bad url', { status: 400, headers: cors }); }
+  if (!/^https?:$/.test(t.protocol) || PRIVATE_HOST.test(t.hostname)) return new Response('forbidden', { status: 403, headers: cors });
+  if (sig !== (await proxySign(target))) return new Response('forbidden', { status: 403, headers: cors });
+
+  const fh = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126 Safari/537.36', Accept: '*/*' };
+  const range = request.headers.get('range');
+  if (range) fh.Range = range;
+  let up;
+  try { up = await fetch(target, { headers: fh, redirect: 'follow' }); } catch (e) { return new Response('upstream error', { status: 502, headers: cors }); }
+  if (!up.ok && up.status !== 206) return new Response('upstream ' + up.status, { status: 502, headers: cors });
+
+  const ct = up.headers.get('content-type') || '';
+  const isM3u8 = /mpegurl/i.test(ct) || /\.m3u8(\?|$)/i.test(t.pathname + t.search);
+  if (isM3u8) {
+    const text = await up.text();
+    if (!text.startsWith('#EXTM3U')) return new Response(text, { status: 200, headers: { ...cors, 'Content-Type': ct || 'text/plain' } });
+    const base = up.url || target;
+    const abs = (u) => { try { return new URL(u, base).href; } catch (e) { return null; } };
+    const out = await Promise.all(text.split(/\r?\n/).map(async (line) => {
+      if (!line.trim()) return line;
+      if (line.startsWith('#')) {
+        const m = [...line.matchAll(/URI="([^"]+)"/g)];
+        let res = line;
+        for (const x of m) {
+          const a = abs(x[1]);
+          if (a) res = res.replace(x[0], `URI="${await hlsProxied(a)}"`);
+        }
+        return res;
+      }
+      const a = abs(line.trim());
+      return a ? await hlsProxied(a) : line;
+    }));
+    return new Response(out.join('\n'), { status: 200, headers: { ...cors, 'Content-Type': 'application/vnd.apple.mpegurl', 'Cache-Control': 'no-store' } });
+  }
+  const h = { ...cors, 'Content-Type': ct || 'video/mp2t', 'Cache-Control': 'public, max-age=20' };
+  ['content-length', 'content-range', 'accept-ranges'].forEach((k) => { const v = up.headers.get(k); if (v) h[k] = v; });
+  return new Response(up.body, { status: up.status, headers: h });
+}
 export default async (request) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -389,8 +511,10 @@ export default async (request) => {
       return new Response(JSON.stringify({ addons: ADDONS }), { status: 200, headers });
     }
 
+    if (rawPath === '/api/hls-proxy') return hlsProxyHandler(request, url);
+
     if (rawPath === '/api/catalogs') {
-      const cachedCat = getEdgeCache('catalogs:v8');
+      const cachedCat = getEdgeCache('catalogs:v9');
       if (cachedCat) return new Response(cachedCat, { status: 200, headers });
 
       const sources = [
@@ -547,6 +671,10 @@ export default async (request) => {
         });
       }
 
+      // Fallback de TV: se o FenixTV estiver fora do ar, usa canais abertos do Brasil (iptv-org)
+      if (!rows.some((r) => r.type === 'tv' && r.items.length > 0)) {
+        try { rows.push(...(await iptvRows())); } catch (e) {}
+      }
       // Variedade: remove lixo antigo/sem capa, evita repetir titulos entre prateleiras e alterna a ordem diariamente
       const daySeed = Math.floor(Date.now() / 86400000);
       const seededRand = (seed) => { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; };
@@ -590,7 +718,7 @@ export default async (request) => {
       rows.push(...topFirst, ...interleaved, ...tvRows);
       const validRows = rows.filter((r) => r.items.length > 0);
       const bodyStr = JSON.stringify({ rows: validRows, catalogs: validRows, addons: ADDONS, tvAddons: TV_ADDONS, movieAddons: MOVIE_ADDONS });
-      if (validRows.length > 0) setEdgeCache('catalogs:v8', bodyStr, 300);
+      if (validRows.length > 0) setEdgeCache('catalogs:v9', bodyStr, 300);
       return new Response(bodyStr, { status: 200, headers });
     }
 
@@ -785,6 +913,19 @@ export default async (request) => {
       if (cachedStreams) return new Response(cachedStreams, { status: 200, headers });
 
       // === LIVE TV CHANNELS STREAM AGGREGATION (ONLY TV ADDONS) ===
+      if (type === 'tv' && decodedId.startsWith('tv:iptvorg:')) {
+        let src = '';
+        try { src = b64uDec(decodedId.slice('tv:iptvorg:'.length)); } catch (e) {}
+        const list = await getIptvBr();
+        const ch = list.find((x) => x.url === src);
+        const streams = ch ? [{
+          addonId: 'iptvorg', addonName: 'IPTV Brasil', addonLogo: '', addonBadge: 'TV AO VIVO', addonColor: '#22c55e',
+          serverLabel: 'IPTV Brasil • Ao Vivo', rawName: 'IPTV Brasil', rawTitle: ch.name, quality: 'HD Ao Vivo', is4k: false, isDub: true,
+          audio: 'Ao Vivo PT-BR', seeds: null, playType: 'hls', directUrl: await hlsProxied(src), proxyUrl: await hlsProxied(src)
+        }] : [];
+        const body = JSON.stringify({ id: decodedId, type: 'tv', totalStreams: streams.length, servers: [{ addonId: 'iptvorg', addonName: 'IPTV Brasil', badge: 'TV AO VIVO', color: '#22c55e', count: streams.length, streams }], streams });
+        return new Response(body, { status: 200, headers });
+      }
       if (type === 'tv') {
         let rawTvStreams = [];
         try {
