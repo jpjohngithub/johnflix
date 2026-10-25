@@ -1,4 +1,4 @@
-﻿const MOVIE_ADDONS = [
+const MOVIE_ADDONS = [
   {
     id: 'bestcine',
     name: 'BestCine',
@@ -390,7 +390,7 @@ export default async (request) => {
     }
 
     if (rawPath === '/api/catalogs') {
-      const cachedCat = getEdgeCache('catalogs:v7');
+      const cachedCat = getEdgeCache('catalogs:v8');
       if (cachedCat) return new Response(cachedCat, { status: 200, headers });
 
       const sources = [
@@ -405,7 +405,22 @@ export default async (request) => {
         { id: 'cinemeta_animation', title: 'Animação e Família', type: 'movie', category: 'animation', url: 'https://v3-cinemeta.strem.io/catalog/movie/top/genre=Animation.json', limit: 36 },
         { id: 'fenix_movies_rec', title: 'Adicionados Recentemente', type: 'movie', category: 'recent', url: 'https://fenixflix.fenixhub.online/catalog/movie/recentes_servidor.json', limit: 36 },
         { id: 'bestcine_trending', title: 'Favoritos no Brasil', type: 'movie', category: 'trending', url: 'https://bestcine.dpdns.org/catalog/movie/bestcine_trending.json', limit: 36 },
-        // Live TV Channels Catalogs (Fenix TV / NexoTV / Eh! IPTV)
+        { id: 'cinemeta_drama', title: 'Drama Aclamado', type: 'movie', category: 'drama', url: 'https://v3-cinemeta.strem.io/catalog/movie/top/genre=Drama.json', limit: 36 },
+        { id: 'cinemeta_crime', title: 'Crime e Investigação', type: 'movie', category: 'crime', url: 'https://v3-cinemeta.strem.io/catalog/movie/top/genre=Crime.json', limit: 36 },
+        { id: 'cinemeta_thriller', title: 'Thrillers de Prender a Respiração', type: 'movie', category: 'thriller', url: 'https://v3-cinemeta.strem.io/catalog/movie/top/genre=Thriller.json', limit: 36 },
+        { id: 'cinemeta_romance', title: 'Romance', type: 'movie', category: 'romance', url: 'https://v3-cinemeta.strem.io/catalog/movie/top/genre=Romance.json', limit: 36 },
+        { id: 'cinemeta_adventure', title: 'Aventuras Épicas', type: 'movie', category: 'adventure', url: 'https://v3-cinemeta.strem.io/catalog/movie/top/genre=Adventure.json', limit: 36 },
+        { id: 'cinemeta_fantasy', title: 'Mundos de Fantasia', type: 'movie', category: 'fantasy', url: 'https://v3-cinemeta.strem.io/catalog/movie/top/genre=Fantasy.json', limit: 36 },
+        { id: 'cinemeta_mystery', title: 'Mistério e Suspense', type: 'movie', category: 'mystery', url: 'https://v3-cinemeta.strem.io/catalog/movie/top/genre=Mystery.json', limit: 36 },
+        { id: 'cinemeta_family', title: 'Para Ver em Família', type: 'movie', category: 'family', url: 'https://v3-cinemeta.strem.io/catalog/movie/top/genre=Family.json', limit: 36 },
+        { id: 'cinemeta_history', title: 'História e Guerra', type: 'movie', category: 'history', url: 'https://v3-cinemeta.strem.io/catalog/movie/top/genre=History.json', limit: 36 },
+        { id: 'cinemeta_docs', title: 'Documentários', type: 'movie', category: 'documentary', url: 'https://v3-cinemeta.strem.io/catalog/movie/top/genre=Documentary.json', limit: 36 },
+        { id: 'cinemeta_series_drama', title: 'Séries de Drama', type: 'series', category: 'drama', url: 'https://v3-cinemeta.strem.io/catalog/series/top/genre=Drama.json', limit: 36 },
+        { id: 'cinemeta_series_crime', title: 'Séries de Crime', type: 'series', category: 'crime', url: 'https://v3-cinemeta.strem.io/catalog/series/top/genre=Crime.json', limit: 36 },
+        { id: 'cinemeta_series_comedy', title: 'Séries de Comédia', type: 'series', category: 'comedy', url: 'https://v3-cinemeta.strem.io/catalog/series/top/genre=Comedy.json', limit: 36 },
+        { id: 'cinemeta_series_scifi', title: 'Séries de Ficção e Fantasia', type: 'series', category: 'scifi', url: 'https://v3-cinemeta.strem.io/catalog/series/top/genre=Sci-Fi.json', limit: 36 },
+        { id: 'cinemeta_series_anim', title: 'Animações e Animes', type: 'series', category: 'animation', url: 'https://v3-cinemeta.strem.io/catalog/series/top/genre=Animation.json', limit: 36 },
+        { id: 'cinemeta_series_docs', title: 'Séries Documentais', type: 'series', category: 'documentary', url: 'https://v3-cinemeta.strem.io/catalog/series/top/genre=Documentary.json', limit: 36 },        // Live TV Channels Catalogs (Fenix TV / NexoTV / Eh! IPTV)
         { id: 'tv_reidoscanais', title: 'Esportes, Filmes e Variedades Ao Vivo', type: 'tv', tvCategory: 'Esportes & Filmes', url: 'https://fenixtv.fenixhub.online/catalog/tv/tv_reidoscanais.json', limit: 60 },
         { id: 'tv_exploud', title: 'Canais Principais e Abertos', type: 'tv', tvCategory: 'Principais', url: 'https://fenixtv.fenixhub.online/catalog/tv/tv_exploud.json', limit: 60 },
         { id: 'tv_eventos', title: 'Jogos e Eventos Ao Vivo', type: 'tv', tvCategory: 'Eventos', url: 'https://fenixtv.fenixhub.online/catalog/tv/tv_eventos.json', limit: 40 },
@@ -532,9 +547,50 @@ export default async (request) => {
         });
       }
 
+      // Variedade: remove lixo antigo/sem capa, evita repetir titulos entre prateleiras e alterna a ordem diariamente
+      const daySeed = Math.floor(Date.now() / 86400000);
+      const seededRand = (seed) => { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; };
+      const strHash = (str) => { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+      const GENRE_ROWS = /^cinemeta_(?!top)/;
+      const seenIds = new Set();
+      const topRow = rows.find((r) => r.isTop10);
+      if (topRow) topRow.items.forEach((i) => seenIds.add(i.id));
+      const orderedRows = rows.filter((r) => r.type !== 'tv' && !r.isTop10);
+      orderedRows.forEach((row) => {
+        const rand = seededRand(daySeed ^ strHash(row.id));
+        let items = row.items.filter((i) => {
+          if (!i.id || !i.poster) return false;
+          if (/^tt0{4,}/.test(i.id)) return false;
+          const y = parseInt(i.year, 10);
+          if (y && y < 1970 && row.id === 'fenix_movies_rec') return false;
+          return true;
+        });
+        if (GENRE_ROWS.test(row.id)) {
+          items = items.map((i) => ({ i, k: rand() })).sort((a, b) => a.k - b.k).map((x) => x.i);
+        }
+        row.items = items.filter((i) => {
+          if (seenIds.has(i.id)) return false;
+          seenIds.add(i.id);
+          return true;
+        });
+      });
+      // Intercala filmes e series nas prateleiras para a home nao ficar monotona
+      const typeOrder = new Map();
+      const interleaved = [];
+      const movieRows = rows.filter((r) => r.type === 'movie' && !r.isTop10 && r.items.length >= 6);
+      const seriesRows = rows.filter((r) => r.type === 'series' && r.items.length >= 6);
+      const tvRows = rows.filter((r) => r.type === 'tv');
+      const topFirst = rows.filter((r) => r.isTop10);
+      const maxLen = Math.max(movieRows.length, seriesRows.length);
+      for (let i = 0; i < maxLen; i++) {
+        if (movieRows[i]) interleaved.push(movieRows[i]);
+        if (seriesRows[i]) interleaved.push(seriesRows[i]);
+      }
+      rows.length = 0;
+      rows.push(...topFirst, ...interleaved, ...tvRows);
       const validRows = rows.filter((r) => r.items.length > 0);
       const bodyStr = JSON.stringify({ rows: validRows, catalogs: validRows, addons: ADDONS, tvAddons: TV_ADDONS, movieAddons: MOVIE_ADDONS });
-      if (validRows.length > 0) setEdgeCache('catalogs:v7', bodyStr, 300);
+      if (validRows.length > 0) setEdgeCache('catalogs:v8', bodyStr, 300);
       return new Response(bodyStr, { status: 200, headers });
     }
 
