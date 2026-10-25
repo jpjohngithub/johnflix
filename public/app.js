@@ -1,4 +1,4 @@
-﻿(() => {
+(() => {
   // Application State
   const state = {
     catalogRows: [],
@@ -1272,7 +1272,7 @@
       const metaData = await metaRes.json();
       if (metaData && metaData.meta) {
         state.currentMeta = metaData.meta;
-        if (metaData.meta.description && !item.description) {
+        if (metaData.meta.description && (!item.description || /^Elenco:/i.test(item.description))) {
           el.modalDesc.textContent = metaData.meta.description;
         }
         if (metaData.meta.background) {
@@ -1345,7 +1345,7 @@
         card.className = `ep-card ${isCurrent ? 'active' : ''}`;
         card.innerHTML = `
           <div class="ep-top-row">
-            <span class="ep-num">EP ${epNum}</span>
+            <span class="ep-num" data-n="${epNum}">EP ${epNum}</span>
             <button class="ep-pl-btn" title="Salvar este episódio em uma Playlist">+ Playlist</button>
           </div>
           <span class="ep-name">${escapeHtml(epTitle)}</span>
