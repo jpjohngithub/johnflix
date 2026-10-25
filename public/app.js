@@ -664,17 +664,13 @@
     } else if (state.activeFilter === 'tv') {
       rows = rows.filter((r) => r.type === 'tv');
       const tvHeader = document.createElement('section');
-      tvHeader.style.padding = '96px 4% 8px';
+      tvHeader.className = 'tv-live-banner';
       tvHeader.innerHTML = `
-        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.22);border-radius:14px;padding:16px 20px;">
-          <div>
-            <h2 style="font-size:1.35rem;font-weight:800;margin:0 0 4px;">Canais de TV ao Vivo</h2>
-            <p style="color:var(--text-muted);font-size:0.86rem;margin:0;">Esportes, Filmes, Séries, Abertos e Eventos transmitidos pelos addons dedicados de TV.</p>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <span class="meta-pill" style="background:rgba(249,115,22,0.2);color:#fdba74;border:1px solid rgba(249,115,22,0.35);">Fenix TV</span>
-            <span class="meta-pill" style="background:rgba(6,182,212,0.2);color:#67e8f9;border:1px solid rgba(6,182,212,0.35);">NexoTV</span>
-            <span class="meta-pill" style="background:rgba(234,179,8,0.2);color:#fde047;border:1px solid rgba(234,179,8,0.35);">Eh! Tudo TV</span>
+        <div class="tv-live-banner-inner">
+          <div class="tv-live-banner-copy">
+            <span class="tv-live-kicker"><span class="live-dot-pulse"></span> TRANSMISSÃO DIRETA</span>
+            <h2>Canais de TV ao Vivo</h2>
+            <p>Canais abertos nacionais, esportes, notícias e variedades com reprodução instantânea.</p>
           </div>
         </div>
       `;

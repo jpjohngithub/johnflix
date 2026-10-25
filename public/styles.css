@@ -3125,3 +3125,233 @@ body.auth-locked { overflow: hidden; }
   .nav-user-btn { padding: 0 6px; }
 }
 
+/* ===== Studio-Grade Editorial Polish (Anti-AI Refinement) ===== */
+:root {
+  --bg-base: #07050f;
+  --bg-surface: #0e0a1a;
+  --bg-card: #130e24;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+}
+
+html, body {
+  background-color: #07050f;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+/* Remove floating AI neon blobs; use subtle top cinema spotlight instead */
+.ambient-glow {
+  display: none !important;
+}
+
+/* Cleaner navbar with crisp hairline border on scroll */
+.navbar {
+  height: 70px;
+  padding: 0 4.5%;
+  background: linear-gradient(180deg, rgba(7,5,15,.92) 0%, rgba(7,5,15,.42) 68%, transparent 100%);
+}
+.navbar.scrolled {
+  background: rgba(9, 6, 18, 0.88);
+  backdrop-filter: blur(20px) saturate(135%);
+  -webkit-backdrop-filter: blur(20px) saturate(135%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.07), 0 12px 32px rgba(0, 0, 0, 0.55);
+}
+.brand-word {
+  font-size: 1.55rem;
+  letter-spacing: -0.03em;
+}
+.nav-link {
+  font-size: .86rem;
+  padding: 7px 14px;
+  border-radius: 8px;
+}
+.nav-link.active {
+  background: rgba(168, 85, 247, 0.14);
+  border-color: rgba(168, 85, 247, 0.28);
+}
+
+/* Hero stage & restrained typography */
+.hero {
+  background: #07050f;
+  padding: 96px 4.5% 48px;
+}
+.hero-vignette {
+  background:
+    linear-gradient(90deg, #07050f 0%, rgba(7,5,15,.94) 25%, rgba(7,5,15,.52) 48%, rgba(7,5,15,.08) 76%, rgba(7,5,15,.28) 100%),
+    linear-gradient(0deg, #07050f 0%, rgba(7,5,15,.9) 15%, rgba(7,5,15,.12) 44%, rgba(7,5,15,.38) 100%);
+}
+.hero-rank-badge {
+  background: #9333ea;
+  box-shadow: none;
+  border-radius: 4px;
+  font-size: .72rem;
+}
+.hero-trailer-live-pill {
+  background: rgba(15, 10, 28, 0.72);
+  border: 1px solid rgba(192, 132, 252, 0.35);
+  box-shadow: none;
+}
+
+/* Catalog shelves: seamless overlap into hero, hover-only arrows, crisp cards */
+.catalog-container {
+  position: relative;
+  z-index: 4;
+  margin-top: -22px;
+  padding-bottom: 72px;
+}
+.catalog-row {
+  padding: 0 4.5%;
+  margin-bottom: 28px;
+}
+.row-header {
+  align-items: center;
+  margin-bottom: 10px;
+}
+.row-title {
+  font-family: 'Outfit', 'Inter', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: #f3f1f8;
+}
+.row-nav {
+  opacity: 0;
+  transition: opacity .18s ease;
+}
+.catalog-row:hover .row-nav {
+  opacity: 1;
+}
+.row-nav-btn {
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #e2e8f0;
+  font-size: .74rem;
+}
+.row-nav-btn:hover {
+  background: #9333ea;
+  border-color: #a855f7;
+  color: #fff;
+}
+.row-slider {
+  gap: 14px;
+  padding: 6px 2px 14px;
+}
+.media-card {
+  flex: 0 0 186px;
+}
+.card-poster-wrap {
+  border-radius: 8px;
+  background: #120d22;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.media-card:hover {
+  transform: translateY(-4px);
+}
+.media-card:hover .card-poster-wrap {
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.8), 0 0 0 1.5px #a855f7;
+}
+.card-title {
+  font-size: .85rem;
+  font-weight: 600;
+  color: #ece9f5;
+}
+.card-sub {
+  font-size: .73rem;
+  color: #7e7894;
+}
+
+/* Live TV Channels Header (no inline rainbow pills) */
+.tv-live-banner {
+  padding: 96px 4.5% 12px;
+}
+.tv-live-banner-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, rgba(147, 51, 234, 0.14) 0%, rgba(18, 12, 34, 0.7) 100%);
+  border: 1px solid rgba(168, 85, 247, 0.22);
+}
+.tv-live-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: .68rem;
+  font-weight: 800;
+  letter-spacing: .12em;
+  color: #c084fc;
+  margin-bottom: 4px;
+}
+.tv-live-banner-copy h2 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #fff;
+  margin: 0 0 2px;
+}
+.tv-live-banner-copy p {
+  font-size: .85rem;
+  color: #94a3b8;
+  margin: 0;
+}
+
+/* Auth Gate — Studio Dark Glass without gradient text clichés */
+.auth-gate {
+  background: rgba(5, 3, 12, 0.68);
+  backdrop-filter: blur(22px) saturate(130%);
+  -webkit-backdrop-filter: blur(22px) saturate(130%);
+}
+.auth-card {
+  background: #0e0a1a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 32px 28px 26px;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.85);
+}
+.auth-brand {
+  font-family: 'Outfit', 'Inter', sans-serif;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: none;
+  -webkit-text-fill-color: initial;
+  color: #fff;
+}
+.auth-submit {
+  background: #9333ea;
+  border-radius: 10px;
+  box-shadow: none;
+  transition: background .18s ease;
+}
+.auth-submit:hover {
+  background: #a855f7;
+  transform: none;
+}
+
+/* Player Overlay & Drawer refinement */
+.player-drawer {
+  background: rgba(14, 10, 26, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85);
+}
+.toast {
+  background: rgba(14, 10, 26, 0.96);
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  border-radius: 10px;
+}
+.footer {
+  background: #07050f;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 32px 4.5%;
+}
+
+@media (max-width: 900px) {
+  .catalog-container { margin-top: 0; }
+  .tv-live-banner { padding: 84px 16px 8px; }
+}
+
+
