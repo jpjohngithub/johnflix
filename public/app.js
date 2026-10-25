@@ -39,8 +39,12 @@
     heroBanner: document.getElementById('heroBanner'),
     heroBackdrop: document.getElementById('heroBackdrop'),
     heroTrailerWrap: document.getElementById('heroTrailerWrap'),
+    heroRankBadge: document.getElementById('heroRankBadge'),
     heroFeaturedTag: document.getElementById('heroFeaturedTag'),
     heroTrailerPill: document.getElementById('heroTrailerPill'),
+    heroMuteBtn: document.getElementById('heroMuteBtn'),
+    heroMuteIcon: document.getElementById('heroMuteIcon'),
+    heroAgeChip: document.getElementById('heroAgeChip'),
     heroLogo: document.getElementById('heroLogo'),
     heroTitle: document.getElementById('heroTitle'),
     heroMeta: document.getElementById('heroMeta'),
@@ -134,6 +138,15 @@
     window.addEventListener('scroll', () => {
       el.navbar.classList.toggle('scrolled', window.scrollY > 30);
     });
+    window.addEventListener('storage', () => {
+      try {
+        state.myList = JSON.parse(localStorage.getItem('johnflix_mylist') || '[]');
+        state.playlists = JSON.parse(localStorage.getItem('johnflix_playlists') || '[]');
+        state.continueWatching = JSON.parse(localStorage.getItem('johnflix_cw') || '[]');
+        updateBadges();
+        renderContinueWatching();
+      } catch (e) {}
+    });
 
     document.querySelectorAll('.nav-link').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -222,6 +235,20 @@
         state.heroIndex = (state.heroIndex + 1) % state.heroItems.length;
         updateHeroSlide();
         restartHeroTimer();
+      });
+    }
+    if (el.heroMuteBtn) {
+      el.heroMuteBtn.addEventListener('click', () => {
+        state.heroMuted = state.heroMuted === false;
+        const iframe = el.heroTrailerWrap && el.heroTrailerWrap.querySelector('iframe');
+        if (iframe && iframe.contentWindow) {
+          iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: state.heroMuted ? 'mute' : 'unMute', args: [] }), '*');
+        }
+        if (el.heroMuteIcon) {
+          el.heroMuteIcon.innerHTML = state.heroMuted
+            ? '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>'
+            : '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>';
+        }
       });
     }
 
@@ -388,6 +415,9 @@
     if (el.heroTrailerPill) {
       el.heroTrailerPill.classList.add('hidden');
     }
+    if (el.heroMuteBtn) {
+      el.heroMuteBtn.classList.add('hidden');
+    }
   }
 
   function mountHeroTrailer(item) {
@@ -398,6 +428,10 @@
     const injectIframe = (ytId) => {
       if (!ytId || state.heroItems[state.heroIndex]?.id !== item.id) return;
       if (!el.detailsModal.classList.contains('hidden') || !el.playerOverlay.classList.contains('hidden')) return;
+      state.heroMuted = true;
+      if (el.heroMuteIcon) {
+        el.heroMuteIcon.innerHTML = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>';
+      }
       const iframe = document.createElement('iframe');
       iframe.src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(ytId)}?autoplay=1&mute=1&controls=0&showinfo=0&rel=0&enablejsapi=1&playsinline=1&cc_load_policy=0&modestbranding=1&iv_load_policy=3&disablekb=1&fs=0&playsinline=1&start=10&end=62`;
       iframe.allow = 'autoplay; encrypted-media';
@@ -409,6 +443,7 @@
             if (state.heroItems[state.heroIndex]?.id === item.id) {
               el.heroTrailerWrap.classList.add('playing');
               if (el.heroTrailerPill) el.heroTrailerPill.classList.remove('hidden');
+              if (el.heroMuteBtn) el.heroMuteBtn.classList.remove('hidden');
             }
           }, 550);
         }
@@ -505,8 +540,15 @@
     el.heroBackdrop.style.backgroundImage = `url('${bgUrl}'), url('${item.poster || ''}')`;
     el.heroDesc.textContent = item.description || '';
 
+    if (el.heroRankBadge) {
+      el.heroRankBadge.textContent = `#${state.heroIndex + 1}`;
+    }
     if (el.heroFeaturedTag) {
-      el.heroFeaturedTag.textContent = `TOP ${state.heroIndex + 1} EM DESTAQUE`;
+      el.heroFeaturedTag.textContent = item.type === 'series' ? 'SÉRIE EM ALTA HOJE' : 'FILME EM ALTA HOJE';
+    }
+    if (el.heroAgeChip) {
+      const g = (item.genres || []).join(' ').toLowerCase();
+      el.heroAgeChip.textContent = /horror|terror|crime|thriller|war/i.test(g) ? '16' : /animation|family|kids|com/i.test(g) ? '12' : '14';
     }
 
     // Brand: keep both hidden until the logo resolves, then show exactly one (no text->logo flicker)
@@ -539,10 +581,11 @@
     const ratingHtml = item.imdbRating ? `<span class="meta-rating">★ ${item.imdbRating}</span>` : '';
     const yearHtml = item.year ? `<span>${item.year}</span>` : '';
     const runtimeHtml = item.runtime ? `<span>${escapeHtml(item.runtime)}</span>` : '';
+    const hdHtml = `<span class="hero-quality-chip">4K HDR</span>`;
     const genresList = Array.isArray(item.genres) && item.genres.length ? item.genres.slice(0, 2).join(' · ') : '';
     const genresHtml = genresList ? `<span>${escapeHtml(genresList)}</span>` : '';
 
-    el.heroMeta.innerHTML = [ratingHtml, yearHtml, runtimeHtml, genresHtml].filter(Boolean).join('');
+    el.heroMeta.innerHTML = [ratingHtml, yearHtml, runtimeHtml, hdHtml, genresHtml].filter(Boolean).join('<span class="hero-meta-dot">•</span>');
 
     updateHeroBookmarkIcon();
     el.heroIndicators.querySelectorAll('.hero-dot').forEach((d, i) => {

@@ -8,8 +8,9 @@
     "dev": "node server.js"
   },
   "dependencies": {
-    "torrent-stream": "^1.2.0",
+    "@netlify/blobs": "^11.1.6",
     "mime": "^3.0.0",
-    "range-parser": "^1.2.1"
+    "range-parser": "^1.2.1",
+    "torrent-stream": "^1.2.0"
   }
 }

@@ -52,6 +52,24 @@
           <circle cx="6" cy="6.5" r="1" fill="currentColor"/><circle cx="6" cy="17.5" r="1" fill="currentColor"/>
         </svg>
       </button>
+
+      <div class="nav-user-wrap" id="navUserWrap">
+        <button class="nav-user-btn" id="navUserBtn" title="Conta / Perfil">
+          <span class="nav-user-avatar" id="navUserAvatar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            </svg>
+          </span>
+          <span class="nav-user-label" id="navUserLabel">Entrar</span>
+        </button>
+        <div class="nav-user-menu hidden" id="navUserMenu">
+          <div class="nav-user-info">
+            <strong id="navMenuName">Visitante</strong>
+            <span id="navMenuEmail">Modo convidado</span>
+          </div>
+          <button type="button" class="nav-menu-action" id="navLogoutBtn">Sair da conta</button>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -66,7 +84,8 @@
       <div class="hero-main-layout">
         <div class="hero-content" id="heroContentBox">
           <div class="hero-top-badges">
-            <span class="hero-featured-tag" id="heroFeaturedTag">EM DESTAQUE</span>
+            <span class="hero-rank-badge" id="heroRankBadge">#1</span>
+            <span class="hero-featured-tag" id="heroFeaturedTag">EM ALTA HOJE</span>
           </div>
 
           <div class="hero-brand-wrap">
@@ -85,7 +104,7 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
               </svg>
-              <span>Mais Informações</span>
+              <span>Detalhes</span>
             </button>
             <button class="btn btn-icon-only" id="heroBookmarkBtn" title="Minha Lista">
               <svg id="heroBookmarkIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
@@ -97,6 +116,13 @@
         </div>
 
         <div class="hero-bottom-bar">
+          <button class="hero-mute-btn hidden" id="heroMuteBtn" title="Ativar/Desativar som do trailer" aria-label="Som do trailer">
+            <svg id="heroMuteIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>
+            </svg>
+          </button>
+          <span class="hero-age-chip" id="heroAgeChip">16</span>
           <div class="hero-indicators" id="heroIndicators"></div>
           <div class="hero-recs-nav">
             <button class="hero-step-btn" id="heroPrevBtn" aria-label="Anterior">&#10094;</button>
@@ -322,6 +348,7 @@
         <svg viewBox="0 0 48 48" width="18" height="18"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17.5z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.5-.8-3-.8-4.7s.3-3.2.8-4.7l-7.9-6.1C.9 16.4 0 20.1 0 24s.9 7.6 2.6 10.8l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.8 2.3-8.4 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>
         <span>Continuar com Google</span>
       </button>
+      <div id="googleGsiWrap" class="hidden" style="display:flex;justify-content:center;margin-bottom:4px;"></div>
       <div class="auth-divider"><span>ou</span></div>
       <form id="authForm" novalidate autocomplete="on">
         <label class="auth-field" id="authNameField" hidden>
