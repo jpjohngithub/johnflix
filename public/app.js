@@ -91,6 +91,8 @@
     createPlaylistBtn: document.getElementById('createPlaylistBtn'),
     playlistPickerList: document.getElementById('playlistPickerList'),
     playerOverlay: document.getElementById('playerOverlay'),
+    playerTopbar: document.getElementById('playerTopbar'),
+    playerStage: document.getElementById('playerStage'),
     closePlayerBtn: document.getElementById('closePlayerBtn'),
     playerTitle: document.getElementById('playerTitle'),
     playerServerBadge: document.getElementById('playerServerBadge'),
@@ -98,11 +100,13 @@
     telemetryPeers: document.getElementById('telemetryPeers'),
     telemetrySpeed: document.getElementById('telemetrySpeed'),
     switchServerBtn: document.getElementById('switchServerBtn'),
+    playerFullscreenBtn: document.getElementById('playerFullscreenBtn'),
     cloudVideo: document.getElementById('cloudVideo'),
     cloudEmbed: document.getElementById('cloudEmbed'),
     playerLoader: document.getElementById('playerLoader'),
     playerLoaderTitle: document.getElementById('playerLoaderTitle'),
     playerLoaderSub: document.getElementById('playerLoaderSub'),
+    playerLoaderSwitchBtn: document.getElementById('playerLoaderSwitchBtn'),
     playerServerDrawer: document.getElementById('playerServerDrawer'),
     closeDrawerBtn: document.getElementById('closeDrawerBtn'),
     playerDrawerList: document.getElementById('playerDrawerList'),
@@ -128,7 +132,92 @@
     toastTimer = setTimeout(() => el.toast.classList.add('hidden'), 2600);
   }
 
+  const THEME_PRESETS = [
+    { id: 'purple', name: 'Roxo Original', color: '#a855f7' },
+    { id: 'crimson', name: 'Vermelho Cinema', color: '#e50914' },
+    { id: 'royal', name: 'Azul Max', color: '#3b82f6' },
+    { id: 'emerald', name: 'Verde Esmeralda', color: '#10b981' },
+    { id: 'amber', name: 'Ouro Imperial', color: '#f59e0b' },
+    { id: 'rose', name: 'Rosa Neon', color: '#ec4899' },
+    { id: 'cyan', name: 'Ciano Cyber', color: '#06b6d4' },
+    { id: 'indigo', name: 'Índigo Profundo', color: '#6366f1' }
+  ];
+
+  function hexToRgb(hex) {
+    const clean = String(hex || '').replace('#', '').trim();
+    const num = parseInt(clean.length === 3 ? clean.split('').map((c) => c + c).join('') : clean, 16);
+    if (Number.isNaN(num)) return { r: 168, g: 85, b: 247 };
+    return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+  }
+
+  function shiftHex(hex, amt) {
+    const { r, g, b } = hexToRgb(hex);
+    const clamp = (v) => Math.max(0, Math.min(255, Math.round(v)));
+    const toH = (v) => clamp(v).toString(16).padStart(2, '0');
+    return `#${toH(r + amt)}${toH(g + amt)}${toH(b + amt)}`;
+  }
+
+  function loadCustomConfig() {
+    try {
+      const saved = JSON.parse(localStorage.getItem('johnflix_custom') || 'null');
+      return {
+        siteName: (saved && typeof saved.siteName === 'string' && saved.siteName.trim()) ? saved.siteName.trim().slice(0, 28) : 'JohnFlix',
+        accentColor: (saved && /^#[0-9a-fA-F]{6}$/.test(saved.accentColor)) ? saved.accentColor : '#a855f7'
+      };
+    } catch (e) {
+      return { siteName: 'JohnFlix', accentColor: '#a855f7' };
+    }
+  }
+
+  function applyCustomConfig(cfg) {
+    const name = (cfg && cfg.siteName ? cfg.siteName.trim() : 'JohnFlix') || 'JohnFlix';
+    const color = (cfg && /^#[0-9a-fA-F]{6}$/.test(cfg.accentColor)) ? cfg.accentColor : '#a855f7';
+    const { r, g, b } = hexToRgb(color);
+    const deep = shiftHex(color, -38);
+    const light = shiftHex(color, 38);
+
+    const root = document.documentElement;
+    root.style.setProperty('--purple-bright', color);
+    root.style.setProperty('--purple-primary', color);
+    root.style.setProperty('--purple-deep', deep);
+    root.style.setProperty('--purple-light', light);
+    root.style.setProperty('--purple-glow', `rgba(${r}, ${g}, ${b}, 0.45)`);
+    root.style.setProperty('--accent-rgb', `${r}, ${g}, ${b}`);
+    root.style.setProperty('--border-subtle', `rgba(${r}, ${g}, ${b}, 0.22)`);
+
+    // Split name into main + highlighted suffix (e.g. "John" + "Flix" or last 4 chars / second word)
+    let firstPart = name;
+    let secondPart = '';
+    if (/flix$/i.test(name) && name.length > 4) {
+      firstPart = name.slice(0, -4);
+      secondPart = name.slice(-4);
+    } else if (name.includes(' ')) {
+      const parts = name.split(/\s+/);
+      secondPart = parts.pop();
+      firstPart = parts.join(' ') + ' ';
+    } else if (name.length > 4) {
+      const cut = Math.ceil(name.length * 0.55);
+      firstPart = name.slice(0, cut);
+      secondPart = name.slice(cut);
+    }
+
+    document.title = name.toUpperCase();
+    document.querySelectorAll('.brand-word').forEach((node) => {
+      node.innerHTML = `${escapeHtml(firstPart)}<span class="brand-flix">${escapeHtml(secondPart)}</span>`;
+    });
+    const authBrand = document.querySelector('.auth-brand');
+    if (authBrand) authBrand.textContent = name.toUpperCase();
+    const copyEl = document.getElementById('footerCopyright');
+    if (copyEl) copyEl.textContent = `© 2026 ${name}`;
+
+    // Update Top 10 SVG stroke dynamically
+    document.querySelectorAll('.top10-rank-svg text').forEach((t) => {
+      t.setAttribute('stroke', light);
+    });
+  }
+
   async function init() {
+    applyCustomConfig(loadCustomConfig());
     updateBadges();
     renderContinueWatching();
     bindEvents();
@@ -144,10 +233,25 @@
         state.myList = JSON.parse(localStorage.getItem('johnflix_mylist') || '[]');
         state.playlists = JSON.parse(localStorage.getItem('johnflix_playlists') || '[]');
         state.continueWatching = JSON.parse(localStorage.getItem('johnflix_cw') || '[]');
+        applyCustomConfig(loadCustomConfig());
         updateBadges();
         renderContinueWatching();
       } catch (e) {}
     });
+
+    const navCustBtn = document.getElementById('navCustomizeBtn');
+    if (navCustBtn) {
+      navCustBtn.addEventListener('click', () => {
+        document.getElementById('navUserMenu')?.classList.add('hidden');
+        document.querySelectorAll('.nav-link').forEach((b) => {
+          b.classList.toggle('active', b.dataset.filter === 'customize');
+        });
+        state.activeFilter = 'customize';
+        closeSearch();
+        renderCatalogRows();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
 
     document.querySelectorAll('.nav-link').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -325,12 +429,55 @@
 
     // Player controls
     el.closePlayerBtn.addEventListener('click', stopAndClosePlayer);
-    el.switchServerBtn.addEventListener('click', () => {
+    el.switchServerBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
       el.playerServerDrawer.classList.toggle('hidden');
+      showPlayerHud();
     });
     el.closeDrawerBtn.addEventListener('click', () => {
       el.playerServerDrawer.classList.add('hidden');
     });
+    if (el.playerLoaderSwitchBtn) {
+      el.playerLoaderSwitchBtn.addEventListener('click', () => {
+        el.playerServerDrawer.classList.remove('hidden');
+        showPlayerHud();
+      });
+    }
+    if (el.playerFullscreenBtn) {
+      el.playerFullscreenBtn.addEventListener('click', () => {
+        togglePlayerFullscreen();
+      });
+    }
+
+    // Auto-hide Player HUD on inactivity + mobile swipe on Hero
+    if (el.playerOverlay) {
+      ['mousemove', 'pointerdown', 'touchstart'].forEach((ev) => {
+        el.playerOverlay.addEventListener(ev, () => showPlayerHud(), { passive: true });
+      });
+    }
+
+    if (el.heroBanner) {
+      let touchX = 0;
+      let touchY = 0;
+      el.heroBanner.addEventListener('touchstart', (e) => {
+        if (e.touches && e.touches[0]) {
+          touchX = e.touches[0].clientX;
+          touchY = e.touches[0].clientY;
+        }
+      }, { passive: true });
+      el.heroBanner.addEventListener('touchend', (e) => {
+        if (!e.changedTouches || !e.changedTouches[0] || !state.heroItems.length) return;
+        const dx = e.changedTouches[0].clientX - touchX;
+        const dy = e.changedTouches[0].clientY - touchY;
+        if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+          state.heroIndex = dx < 0
+            ? (state.heroIndex + 1) % state.heroItems.length
+            : (state.heroIndex - 1 + state.heroItems.length) % state.heroItems.length;
+          updateHeroSlide();
+          restartHeroTimer();
+        }
+      }, { passive: true });
+    }
 
     el.cloudVideo.addEventListener('waiting', () => {
       el.playerLoader.classList.remove('hidden');
@@ -654,6 +801,11 @@
       return;
     }
 
+    if (state.activeFilter === 'customize') {
+      renderCustomizeSection();
+      return;
+    }
+
     let rows = state.catalogRows;
     if (state.activeFilter === 'all') {
       rows = rows.filter((r) => r.type !== 'tv');
@@ -766,6 +918,140 @@
       }
       wrap.appendChild(block);
     });
+  }
+
+  function renderCustomizeSection() {
+    const cfg = loadCustomConfig();
+    const section = document.createElement('section');
+    section.className = 'customize-section';
+    section.innerHTML = `
+      <div class="customize-container">
+        <div class="customize-header">
+          <div>
+            <span class="customize-kicker">IDENTIDADE VISUAL</span>
+            <h2>Personalizar Plataforma</h2>
+            <p>Altere o nome exibido no topo e escolha a cor principal de destaque do seu streaming.</p>
+          </div>
+          <button type="button" class="btn btn-glass btn-sm" id="resetCustomBtn">Restaurar Padrão</button>
+        </div>
+
+        <div class="customize-grid">
+          <div class="customize-card">
+            <label class="customize-label" for="customSiteNameInput">Nome do Streaming</label>
+            <p class="customize-hint">Exibido na barra superior, título da aba, rodapé e tela de acesso.</p>
+            <input type="text" id="customSiteNameInput" class="customize-text-input" maxlength="28" value="${escapeHtml(cfg.siteName)}" placeholder="Ex: JohnFlix, CineMax, PrimeBR..." />
+
+            <div class="customize-divider"></div>
+
+            <label class="customize-label">Cor Principal do Tema</label>
+            <p class="customize-hint">Aplica-se à marca, botões, indicadores, bordas em foco e selos.</p>
+            <div class="customize-swatches" id="customSwatches">
+              ${THEME_PRESETS.map((p) => `
+                <button type="button" class="swatch-btn ${cfg.accentColor.toLowerCase() === p.color.toLowerCase() ? 'active' : ''}" data-color="${p.color}" title="${p.name}">
+                  <span class="swatch-dot" style="background:${p.color}"></span>
+                  <span class="swatch-name">${p.name}</span>
+                </button>
+              `).join('')}
+            </div>
+
+            <div class="customize-color-picker-row">
+              <label for="customHexPicker">Ou escolha qualquer cor personalizada:</label>
+              <div class="color-picker-control">
+                <input type="color" id="customHexPicker" value="${escapeHtml(cfg.accentColor)}" />
+                <input type="text" id="customHexText" class="customize-hex-input" maxlength="7" value="${escapeHtml(cfg.accentColor.toUpperCase())}" />
+              </div>
+            </div>
+
+            <div class="customize-actions">
+              <button type="button" class="btn btn-primary" id="saveCustomBtn">Salvar Personalização</button>
+            </div>
+          </div>
+
+          <div class="customize-preview-card">
+            <span class="customize-kicker">PRÉ-VISUALIZAÇÃO AO VIVO</span>
+            <div class="preview-stage">
+              <div class="preview-nav">
+                <span class="brand-word" id="previewBrandWord">John<span class="brand-flix">Flix</span></span>
+                <span class="preview-nav-pill">Início</span>
+              </div>
+              <div class="preview-hero-box">
+                <span class="preview-badge">#1 EM ALTA HOJE</span>
+                <h3 id="previewHeroTitle">Experiência Cinematográfica</h3>
+                <p>Interface personalizada em tempo real com a identidade e cor que você escolher.</p>
+                <div class="preview-btns">
+                  <span class="preview-cta-primary">▶ Assistir</span>
+                  <span class="preview-cta-ghost">Detalhes</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    el.catalogContainer.appendChild(section);
+
+    const nameInput = section.querySelector('#customSiteNameInput');
+    const colorPicker = section.querySelector('#customHexPicker');
+    const hexText = section.querySelector('#customHexText');
+    let currentColor = cfg.accentColor;
+
+    const liveUpdate = () => {
+      const next = {
+        siteName: nameInput.value.trim() || 'JohnFlix',
+        accentColor: /^#[0-9a-fA-F]{6}$/.test(currentColor) ? currentColor : '#a855f7'
+      };
+      applyCustomConfig(next);
+    };
+
+    nameInput.addEventListener('input', liveUpdate);
+
+    section.querySelectorAll('.swatch-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        currentColor = btn.dataset.color;
+        colorPicker.value = currentColor;
+        hexText.value = currentColor.toUpperCase();
+        section.querySelectorAll('.swatch-btn').forEach((b) => b.classList.toggle('active', b === btn));
+        liveUpdate();
+      });
+    });
+
+    colorPicker.addEventListener('input', (e) => {
+      currentColor = e.target.value;
+      hexText.value = currentColor.toUpperCase();
+      section.querySelectorAll('.swatch-btn').forEach((b) => b.classList.toggle('active', b.dataset.color.toLowerCase() === currentColor.toLowerCase()));
+      liveUpdate();
+    });
+
+    hexText.addEventListener('input', (e) => {
+      const v = e.target.value.trim();
+      if (/^#[0-9a-fA-F]{6}$/.test(v)) {
+        currentColor = v;
+        colorPicker.value = v;
+        section.querySelectorAll('.swatch-btn').forEach((b) => b.classList.toggle('active', b.dataset.color.toLowerCase() === v.toLowerCase()));
+        liveUpdate();
+      }
+    });
+
+    section.querySelector('#saveCustomBtn').addEventListener('click', () => {
+      const saved = {
+        siteName: nameInput.value.trim() || 'JohnFlix',
+        accentColor: /^#[0-9a-fA-F]{6}$/.test(currentColor) ? currentColor : '#a855f7'
+      };
+      localStorage.setItem('johnflix_custom', JSON.stringify(saved));
+      applyCustomConfig(saved);
+      showToast('Personalização salva com sucesso!');
+    });
+
+    section.querySelector('#resetCustomBtn').addEventListener('click', () => {
+      const def = { siteName: 'JohnFlix', accentColor: '#a855f7' };
+      localStorage.setItem('johnflix_custom', JSON.stringify(def));
+      applyCustomConfig(def);
+      renderCatalogRows();
+      showToast('Padrão original restaurado.');
+    });
+
+    liveUpdate();
   }
 
   const BOOK_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>';
@@ -1570,6 +1856,35 @@
 
   // Universal Cloud Video Player (HTML5 MP4 + HLS.js + Safari Native HLS + Cloud Embed — No Auto-Switching)
   let hlsInstance = null;
+  let playerHudTimer = null;
+
+  function showPlayerHud() {
+    if (!el.playerOverlay || el.playerOverlay.classList.contains('hidden')) return;
+    el.playerOverlay.classList.remove('hud-idle');
+    clearTimeout(playerHudTimer);
+    playerHudTimer = setTimeout(() => {
+      if (!el.playerServerDrawer.classList.contains('hidden')) return;
+      el.playerOverlay.classList.add('hud-idle');
+    }, 3200);
+  }
+
+  async function togglePlayerFullscreen() {
+    try {
+      const doc = document;
+      const inFs = doc.fullscreenElement || doc.webkitFullscreenElement;
+      if (inFs) {
+        if (doc.exitFullscreen) await doc.exitFullscreen();
+        else if (doc.webkitExitFullscreen) doc.webkitExitFullscreen();
+        try { screen.orientation?.unlock?.(); } catch (e) {}
+      } else {
+        const target = el.playerOverlay;
+        if (target?.requestFullscreen) await target.requestFullscreen();
+        else if (target?.webkitRequestFullscreen) target.webkitRequestFullscreen();
+        else if (el.cloudVideo?.webkitEnterFullscreen) el.cloudVideo.webkitEnterFullscreen();
+        try { await screen.orientation?.lock?.('landscape'); } catch (e) {}
+      }
+    } catch (e) {}
+  }
 
   function clearVideoHandlers() {
     if (!el.cloudVideo) return;
@@ -1590,9 +1905,10 @@
   function launchCloudPlayer(stream) {
     stopHeroTrailer();
     stopModalTrailer();
-    el.playerOverlay.classList.remove('hidden');
+    el.playerOverlay.classList.remove('hidden', 'hud-idle');
     el.playerServerDrawer.classList.add('hidden');
     document.body.style.overflow = 'hidden';
+    showPlayerHud();
 
     clearVideoHandlers();
     destroyHls();
@@ -1605,8 +1921,9 @@
     el.playerTitle.textContent = `${state.currentItem ? state.currentItem.name : 'Reproduzindo'}${epSuffix}`;
 
     el.playerLoader.classList.remove('hidden');
-    el.playerLoaderTitle.textContent = 'Carregando servidor selecionado...';
-    el.playerLoaderSub.textContent = `${stream.serverLabel} (${stream.quality})`;
+    el.playerLoaderTitle.textContent = 'Conectando ao servidor...';
+    el.playerLoaderSub.textContent = `${stream.serverLabel} • ${stream.quality}`;
+    if (el.playerLoaderSwitchBtn) el.playerLoaderSwitchBtn.classList.add('hidden');
 
     if (stream.playType === 'torrent') {
       startTorrentTelemetry(stream.infoHash);
@@ -1659,7 +1976,8 @@
     el.cloudVideo.onplaying = hideLoader;
     el.cloudVideo.onerror = () => {
       el.playerLoaderTitle.textContent = 'Esta fonte demorou ou falhou ao responder';
-      el.playerLoaderSub.textContent = 'Se desejar, clique em "Opções de Player" acima para escolher outro servidor.';
+      el.playerLoaderSub.textContent = 'Toque abaixo para trocar de servidor.';
+      if (el.playerLoaderSwitchBtn) el.playerLoaderSwitchBtn.classList.remove('hidden');
     };
 
     const startVideoPlayback = () => {
@@ -1741,7 +2059,8 @@
                 return;
               }
               el.playerLoaderTitle.textContent = 'Sinal indisponível no momento';
-              el.playerLoaderSub.textContent = 'Clique em "Opções de Player" acima se quiser escolher outra fonte.';
+              el.playerLoaderSub.textContent = 'Toque abaixo para escolher outra fonte.';
+              if (el.playerLoaderSwitchBtn) el.playerLoaderSwitchBtn.classList.remove('hidden');
             }
           }
         });
@@ -1770,27 +2089,24 @@
         return;
       }
       el.playerLoaderTitle.textContent = 'Esta fonte demorou ou falhou ao responder';
-      el.playerLoaderSub.textContent = 'Se desejar, clique em "Opções de Player" acima para escolher outro servidor.';
+      el.playerLoaderSub.textContent = 'Toque abaixo para escolher outro servidor.';
+      if (el.playerLoaderSwitchBtn) el.playerLoaderSwitchBtn.classList.remove('hidden');
     };
   }
 
   function renderPlayerDrawer(activeStream) {
     el.playerDrawerList.innerHTML = '';
     state.currentStreams.forEach((s) => {
+      const isAct = s.proxyUrl === activeStream.proxyUrl;
       const item = document.createElement('div');
-      item.className = 'stream-item';
-      if (s.proxyUrl === activeStream.proxyUrl) {
-        item.style.borderColor = '#4ade80';
-      }
+      item.className = `drawer-stream-row ${isAct ? 'active' : ''}`;
       item.innerHTML = `
-        <div class="stream-top">
-          <span class="stream-server-name">${escapeHtml(s.serverLabel)}</span>
-          <span class="stream-quality">${escapeHtml(s.quality)}</span>
+        <span class="stream-dot" style="background:${s.addonColor || 'var(--purple-bright)'}"></span>
+        <div class="drawer-stream-info">
+          <strong>${escapeHtml(s.serverLabel)}</strong>
+          <span>${escapeHtml(s.audio || 'Dublado / Legendado')} • ${escapeHtml(s.quality || 'HD')}</span>
         </div>
-        <div class="stream-bottom">
-          <span>${escapeHtml(s.audio)}</span>
-          <span class="stream-play-tag">${s.proxyUrl === activeStream.proxyUrl ? 'Ativo' : '▶ Trocar'}</span>
-        </div>
+        <span class="drawer-stream-status">${isAct ? 'Ativo' : 'Assistir'}</span>
       `;
       item.addEventListener('click', () => launchCloudPlayer(s));
       el.playerDrawerList.appendChild(item);
@@ -1820,11 +2136,16 @@
   }
 
   function stopAndClosePlayer() {
+    clearTimeout(playerHudTimer);
     clearVideoHandlers();
     destroyHls();
     stopTorrentTelemetry();
     hideNextEpisodePrompt();
     state.nextEpisodeDismissed = false;
+    try {
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+      screen.orientation?.unlock?.();
+    } catch (e) {}
     el.cloudVideo.pause();
     el.cloudVideo.removeAttribute('src');
     el.cloudVideo.load();

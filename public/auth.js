@@ -1,6 +1,6 @@
 (() => {
   const KEY = 'johnflix_session';
-  const DATA_KEYS = ['johnflix_mylist', 'johnflix_playlists', 'johnflix_cw'];
+  const DATA_KEYS = ['johnflix_mylist', 'johnflix_playlists', 'johnflix_cw', 'johnflix_custom'];
   const gate = document.getElementById('authGate');
   if (!gate) return;
 

@@ -281,7 +281,7 @@ async function handleLogout(req) {
   return json(200, { ok: true }, { 'Set-Cookie': sessionCookie('', 0, req) });
 }
 
-const DATA_KEYS = ['johnflix_mylist', 'johnflix_playlists', 'johnflix_cw'];
+const DATA_KEYS = ['johnflix_mylist', 'johnflix_playlists', 'johnflix_cw', 'johnflix_custom'];
 
 async function handleData(req) {
   const user = await currentUser(req);
