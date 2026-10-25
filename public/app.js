@@ -41,6 +41,7 @@
     heroTrailerWrap: document.getElementById('heroTrailerWrap'),
     heroRankBadge: document.getElementById('heroRankBadge'),
     heroFeaturedTag: document.getElementById('heroFeaturedTag'),
+    heroTrailerLivePill: document.getElementById('heroTrailerLivePill'),
     heroTrailerPill: document.getElementById('heroTrailerPill'),
     heroMuteBtn: document.getElementById('heroMuteBtn'),
     heroMuteIcon: document.getElementById('heroMuteIcon'),
@@ -412,6 +413,9 @@
       el.heroTrailerWrap.classList.remove('playing');
       el.heroTrailerWrap.innerHTML = '';
     }
+    if (el.heroTrailerLivePill) {
+      el.heroTrailerLivePill.classList.add('hidden');
+    }
     if (el.heroTrailerPill) {
       el.heroTrailerPill.classList.add('hidden');
     }
@@ -442,10 +446,11 @@
           setTimeout(() => {
             if (state.heroItems[state.heroIndex]?.id === item.id) {
               el.heroTrailerWrap.classList.add('playing');
+              if (el.heroTrailerLivePill) el.heroTrailerLivePill.classList.remove('hidden');
               if (el.heroTrailerPill) el.heroTrailerPill.classList.remove('hidden');
               if (el.heroMuteBtn) el.heroMuteBtn.classList.remove('hidden');
             }
-          }, 550);
+          }, 450);
         }
       };
       el.heroTrailerWrap.innerHTML = '';
@@ -475,7 +480,7 @@
           }
         } catch (e) {}
       }
-    }, 750);
+    }, 450);
   }
 
   function setupHeroCarousel() {

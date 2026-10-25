@@ -400,8 +400,46 @@ async function getIptvBr() {
 
 const GROUP_PT = { News: 'Notícias', Sports: 'Esportes', Movies: 'Filmes', Kids: 'Infantil', Music: 'Música', Entertainment: 'Entretenimento', General: 'Geral', Culture: 'Cultura', Documentary: 'Documentários', Religious: 'Religiosos', Series: 'Séries', Animation: 'Animação', Education: 'Educação', Lifestyle: 'Estilo de Vida', Comedy: 'Comédia', Undefined: 'Variedades', Public: 'TV Pública', Legislative: 'Legislativo', Weather: 'Clima', Business: 'Negócios' };
 
+const STATIC_NATIONAL_CHANNELS = [
+  {
+    name: 'TV Globo (Ao Vivo)',
+    url: 'http://hls1.sua.tv/live/globotvbahiafhdbr2/s.m3u8',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/TV_Globo_2021.svg/512px-TV_Globo_2021.svg.png',
+    group: 'General'
+  },
+  {
+    name: 'SBT (Ao Vivo)',
+    url: 'https://video09.logicahost.com.br/sbtcuiaba/sbtcuiaba/playlist.m3u8',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Sistema_Brasileiro_de_Televis%C3%A3o_logo.svg/512px-Sistema_Brasileiro_de_Televis%C3%A3o_logo.svg.png',
+    group: 'General'
+  },
+  {
+    name: 'SBT Interior (HD)',
+    url: 'https://video09.logicahost.com.br/sbtmutum/sbtmutum/playlist.m3u8',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Sistema_Brasileiro_de_Televis%C3%A3o_logo.svg/512px-Sistema_Brasileiro_de_Televis%C3%A3o_logo.svg.png',
+    group: 'General'
+  },
+  {
+    name: 'Record News (Ao Vivo)',
+    url: 'https://jmp2.uk/plu-6102e04e9ab1db0007a980a1.m3u8',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/Record_News_2023.svg/512px-Record_News_2023.svg.png',
+    group: 'News'
+  },
+  {
+    name: 'TV Cultura (Ao Vivo)',
+    url: 'https://fpa-gateway.tvcultura.com.br:8181/memfs/606caef0-a290-413d-9f1f-8fcdb3a73831.m3u8',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/TV_Cultura_logo.svg/512px-TV_Cultura_logo.svg.png',
+    group: 'General'
+  }
+];
+
 async function iptvRows() {
-  const list = await getIptvBr();
+  const dynamicList = await getIptvBr();
+  const staticUrls = new Set(STATIC_NATIONAL_CHANNELS.map((c) => c.url));
+  const list = [
+    ...STATIC_NATIONAL_CHANNELS,
+    ...dynamicList.filter((c) => !staticUrls.has(c.url))
+  ];
   if (!list.length) return [];
   const toItem = (ch) => ({
     id: `tv:iptvorg:${b64uEnc(ch.url)}`,
@@ -424,7 +462,24 @@ async function iptvRows() {
     if (!groups.has(g)) groups.set(g, []);
     groups.get(g).push(ch);
   });
-  const rows = [{ id: 'tv_iptv_all', title: 'Canais de TV do Brasil', type: 'tv', category: 'tv', tvCategory: 'Brasil', items: list.slice(0, 80).map(toItem) }];
+  const rows = [
+    {
+      id: 'tv_nacionais',
+      title: 'Canais Abertos Nacionais (Globo, SBT, Record, Cultura)',
+      type: 'tv',
+      category: 'tv',
+      tvCategory: 'Abertos',
+      items: STATIC_NATIONAL_CHANNELS.map(toItem)
+    },
+    {
+      id: 'tv_iptv_all',
+      title: 'Todos os Canais de TV do Brasil',
+      type: 'tv',
+      category: 'tv',
+      tvCategory: 'Brasil',
+      items: list.slice(0, 80).map(toItem)
+    }
+  ];
   [...groups.entries()].filter(([, v]) => v.length >= 3).sort((a, b) => b[1].length - a[1].length).slice(0, 6).forEach(([g, v]) => {
     rows.push({ id: `tv_iptv_${b64uEnc(g).slice(0, 10)}`, title: `TV • ${g}`, type: 'tv', category: 'tv', tvCategory: g, items: v.slice(0, 60).map(toItem) });
   });
@@ -916,14 +971,15 @@ export default async (request) => {
       if (type === 'tv' && decodedId.startsWith('tv:iptvorg:')) {
         let src = '';
         try { src = b64uDec(decodedId.slice('tv:iptvorg:'.length)); } catch (e) {}
-        const list = await getIptvBr();
-        const ch = list.find((x) => x.url === src);
-        const streams = ch ? [{
-          addonId: 'iptvorg', addonName: 'IPTV Brasil', addonLogo: '', addonBadge: 'TV AO VIVO', addonColor: '#22c55e',
-          serverLabel: 'IPTV Brasil • Ao Vivo', rawName: 'IPTV Brasil', rawTitle: ch.name, quality: 'HD Ao Vivo', is4k: false, isDub: true,
+        const dynamicList = await getIptvBr();
+        const fullList = [...STATIC_NATIONAL_CHANNELS, ...dynamicList];
+        const ch = fullList.find((x) => x.url === src) || { name: 'Canal de TV', url: src };
+        const streams = src ? [{
+          addonId: 'iptvorg', addonName: 'TV Brasil Ao Vivo', addonLogo: '', addonBadge: 'TV AO VIVO', addonColor: '#a855f7',
+          serverLabel: `${ch.name} • Transmissão Direta`, rawName: 'TV Brasil', rawTitle: ch.name, quality: '1080p HD Ao Vivo', is4k: false, isDub: true,
           audio: 'Ao Vivo PT-BR', seeds: null, playType: 'hls', directUrl: await hlsProxied(src), proxyUrl: await hlsProxied(src)
         }] : [];
-        const body = JSON.stringify({ id: decodedId, type: 'tv', totalStreams: streams.length, servers: [{ addonId: 'iptvorg', addonName: 'IPTV Brasil', badge: 'TV AO VIVO', color: '#22c55e', count: streams.length, streams }], streams });
+        const body = JSON.stringify({ id: decodedId, type: 'tv', totalStreams: streams.length, servers: [{ addonId: 'iptvorg', addonName: 'TV Brasil Ao Vivo', badge: 'TV AO VIVO', color: '#a855f7', count: streams.length, streams }], streams });
         return new Response(body, { status: 200, headers });
       }
       if (type === 'tv') {
@@ -1021,7 +1077,44 @@ export default async (request) => {
           };
         });
 
-        const allTvStreams = tvAddonResults.flatMap((r) => r.streams);
+        let allTvStreams = tvAddonResults.flatMap((r) => r.streams);
+
+        // Fallback para canais nacionais conhecidos se os addons do FenixTV estiverem sem stream
+        if (allTvStreams.length === 0) {
+          const lowerId = decodedId.toLowerCase();
+          const matchStatic = STATIC_NATIONAL_CHANNELS.find((c) => {
+            const n = c.name.toLowerCase();
+            return (lowerId.includes('globo') && n.includes('globo')) ||
+                   (lowerId.includes('sbt') && n.includes('sbt')) ||
+                   (lowerId.includes('cultura') && n.includes('cultura')) ||
+                   (lowerId.includes('record') && n.includes('record'));
+          });
+          if (matchStatic) {
+            const direct = await hlsProxied(matchStatic.url);
+            const fallbackStream = {
+              addonId: 'iptvorg',
+              addonName: 'TV Brasil Ao Vivo',
+              addonLogo: matchStatic.logo,
+              addonBadge: 'TV AO VIVO',
+              addonColor: '#a855f7',
+              serverLabel: `${matchStatic.name} • Transmissão Direta`,
+              rawName: 'TV Brasil',
+              rawTitle: matchStatic.name,
+              quality: '1080p HD Ao Vivo',
+              is4k: false,
+              isDub: true,
+              audio: 'Ao Vivo PT-BR',
+              seeds: null,
+              playType: 'hls',
+              directUrl: direct,
+              proxyUrl: direct
+            };
+            allTvStreams = [fallbackStream];
+            tvAddonResults[0].streams = [fallbackStream];
+            tvAddonResults[0].count = 1;
+          }
+        }
+
         const tvBody = JSON.stringify({
           id: decodedId,
           type: 'tv',
