@@ -304,7 +304,8 @@
     let searchTimer = null;
     el.searchInput.addEventListener('input', (e) => {
       const val = e.target.value;
-      if (val.trim().toLowerCase() === 'johntri2') {
+      const cleanCode = val.trim().toLowerCase();
+      if (cleanCode === 'johntri2' || cleanCode === 'jonhtri2') {
         clearTimeout(searchTimer);
         el.searchInput.value = '';
         el.searchClear.classList.add('hidden');
@@ -2362,28 +2363,64 @@
     el.catalogContainer.classList.add('hidden');
 
     const allResults = state.lastSearchResults || [];
-    let filtered = allResults;
-    let tabLabel = 'Resultados';
+    const counts = {
+      all: allResults.length,
+      movie: allResults.filter((i) => i.type === 'movie').length,
+      series: allResults.filter((i) => i.type === 'series').length,
+      tv: allResults.filter((i) => i.type === 'tv').length
+    };
 
-    if (state.activeFilter === 'movie') {
+    const sFilter = state.searchTypeFilter || (['movie', 'series', 'tv'].includes(state.activeFilter) ? state.activeFilter : 'all');
+    let filtered = allResults;
+    let tabLabel = 'Todos os resultados';
+
+    if (sFilter === 'movie') {
       filtered = allResults.filter((i) => i.type === 'movie');
       tabLabel = 'Filmes';
-    } else if (state.activeFilter === 'series') {
+    } else if (sFilter === 'series') {
       filtered = allResults.filter((i) => i.type === 'series');
       tabLabel = 'Séries';
-    } else if (state.activeFilter === 'tv') {
+    } else if (sFilter === 'tv') {
       filtered = allResults.filter((i) => i.type === 'tv');
       tabLabel = 'Canais de TV';
-    } else if (state.activeFilter === 'mylist') {
-      filtered = allResults.filter((i) => isInMyList(i.id));
-      tabLabel = 'Na Minha Lista';
     }
 
-    el.searchTitle.textContent = `${tabLabel} para "${query}" (${filtered.length})`;
+    el.searchTitle.innerHTML = `${tabLabel} para <span class="search-query-highlight">"${escapeHtml(query)}"</span> <span class="search-count-pill">${filtered.length}</span>`;
+
+    const filterBar = document.getElementById('searchFilterBar');
+    if (filterBar) {
+      const pills = [
+        { id: 'all', label: 'Todos', count: counts.all },
+        { id: 'movie', label: 'Filmes', count: counts.movie },
+        { id: 'series', label: 'Séries', count: counts.series },
+        { id: 'tv', label: 'Canais de TV', count: counts.tv }
+      ];
+      filterBar.innerHTML = pills
+        .map(
+          (p) =>
+            `<button type="button" class="search-filter-pill ${sFilter === p.id ? 'active' : ''}" data-sfilter="${p.id}">
+              <span>${p.label}</span>
+              <span class="sfilter-badge">${p.count}</span>
+            </button>`
+        )
+        .join('');
+      filterBar.querySelectorAll('.search-filter-pill').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          state.searchTypeFilter = btn.dataset.sfilter;
+          renderFilteredSearchResults(query);
+        });
+      });
+    }
+
     el.searchGrid.innerHTML = '';
 
     if (!filtered.length) {
-      el.searchGrid.innerHTML = `<p style="color:var(--text-muted);grid-column:1/-1;">Nenhum resultado em <strong>${tabLabel}</strong> para "${escapeHtml(query)}".</p>`;
+      el.searchGrid.innerHTML = `
+        <div class="search-empty-card">
+          <div class="search-empty-title">Nenhum título encontrado em ${tabLabel}</div>
+          <p class="search-empty-sub">Não encontramos resultados para <strong>"${escapeHtml(query)}"</strong>. Verifique a ortografia ou tente buscar por outro termo ou categoria acima.</p>
+        </div>
+      `;
       return;
     }
     filtered.forEach((item) => {
@@ -2394,14 +2431,20 @@
   // Search handler
   async function performSearch(query) {
     state.lastSearchQuery = query;
+    state.searchTypeFilter = ['movie', 'series', 'tv'].includes(state.activeFilter) ? state.activeFilter : 'all';
     el.searchSection.classList.remove('hidden');
     el.heroBanner.classList.add('hidden');
     if (el.homeCategoryBar) el.homeCategoryBar.classList.add('hidden');
     stopHeroTrailer();
     el.continueWatchingRow.classList.add('hidden');
     el.catalogContainer.classList.add('hidden');
-    el.searchTitle.textContent = `Buscando "${query}"...`;
-    el.searchGrid.innerHTML = '';
+    el.searchTitle.innerHTML = `Buscando por <span class="search-query-highlight">"${escapeHtml(query)}"</span>...`;
+    el.searchGrid.innerHTML = `
+      <div class="streams-loading" style="grid-column:1/-1;margin:28px 0;">
+        <div class="spinner-purple"></div>
+        <span>Pesquisando no catálogo JohnFlix...</span>
+      </div>
+    `;
 
     // Instant local match from loaded catalogs & My List while API resolves
     const localMap = new Map();

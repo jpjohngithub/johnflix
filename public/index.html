@@ -13,7 +13,7 @@
   <link rel="dns-prefetch" href="https://fenixtv.fenixhub.online" />
   <link rel="dns-prefetch" href="https://v3-cinemeta.strem.io" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/styles.css?v=20261026o" />
+  <link rel="stylesheet" href="/styles.css?v=20261026p" />
 </head>
 <body>
   <!-- Site Intro Splash Animation -->
@@ -138,9 +138,15 @@
 
     <!-- Search Results Grid (Hidden by default) -->
     <section class="search-section hidden" id="searchSection">
-      <div class="section-header">
-        <h2 id="searchTitle">Resultados</h2>
-        <button class="btn btn-sm btn-glass" id="closeSearchBtn">Voltar</button>
+      <div class="search-header-card">
+        <div class="search-header-top">
+          <div class="search-title-group">
+            <span class="search-kicker">PESQUISA GLOBAL</span>
+            <h2 id="searchTitle">Resultados</h2>
+          </div>
+          <button class="btn btn-sm btn-glass search-back-btn" id="closeSearchBtn">Voltar ao Catálogo</button>
+        </div>
+        <div class="search-filter-bar" id="searchFilterBar"></div>
       </div>
       <div class="media-grid" id="searchGrid"></div>
     </section>
@@ -352,7 +358,7 @@
   </footer>
 
   <script defer src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
-  <script defer src="/config.js?v=20261026o"></script>
-  <script defer src="/app.js?v=20261026o"></script>
+  <script defer src="/config.js?v=20261026p"></script>
+  <script defer src="/app.js?v=20261026p"></script>
 </body>
 </html>
