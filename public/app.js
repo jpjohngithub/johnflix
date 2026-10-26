@@ -3219,14 +3219,18 @@
     } catch (e) {}
   }
 
+  let blackScreenWatchdogTimer = null;
   function clearVideoHandlers() {
     clearTimeout(playerStallTimer);
+    clearTimeout(blackScreenWatchdogTimer);
     if (!el.cloudVideo) return;
     el.cloudVideo.onloadedmetadata = null;
     el.cloudVideo.onloadeddata = null;
     el.cloudVideo.oncanplay = null;
     el.cloudVideo.onplaying = null;
     el.cloudVideo.onerror = null;
+    el.cloudVideo.onwaiting = null;
+    el.cloudVideo.onstalled = null;
   }
 
   function destroyHls() {
@@ -3280,7 +3284,14 @@
         el.playerLoader.classList.add('hidden');
       };
       el.cloudEmbed.src = stream.proxyUrl;
-      setTimeout(() => el.playerLoader.classList.add('hidden'), 1400);
+      setTimeout(() => el.playerLoader.classList.add('hidden'), 1200);
+
+      // Embed black screen watchdog: show switch button if iframe hangs
+      blackScreenWatchdogTimer = setTimeout(() => {
+        if (!el.playerOverlay.classList.contains('hidden') && el.cloudVideo.classList.contains('hidden')) {
+          if (el.playerLoaderSwitchBtn) el.playerLoaderSwitchBtn.classList.remove('hidden');
+        }
+      }, 6500);
       return;
     }
 
@@ -3332,16 +3343,57 @@
 
     el.cloudVideo.onloadedmetadata = () => { applyResume(); hideLoader(); };
     el.cloudVideo.onloadeddata = () => { applyResume(); hideLoader(); };
-    el.cloudVideo.oncanplay = verifyVideoTrack;
-    el.cloudVideo.onplaying = verifyVideoTrack;
+    let bufferStallTimer = null;
+    el.cloudVideo.onwaiting = () => {
+      clearTimeout(bufferStallTimer);
+      bufferStallTimer = setTimeout(() => {
+        if (!el.playerOverlay.classList.contains('hidden') && el.cloudVideo.currentTime < 1) {
+          if (stream.embedUrl && el.cloudEmbed) {
+            destroyHls();
+            el.cloudVideo.pause();
+            el.cloudVideo.classList.add('hidden');
+            el.cloudEmbed.classList.remove('hidden');
+            el.cloudEmbed.src = stream.embedUrl;
+            el.playerLoader.classList.add('hidden');
+            return;
+          }
+          tryNextWorkingStream(stream);
+        }
+      }, 4500);
+    };
+    el.cloudVideo.onplaying = () => {
+      clearTimeout(bufferStallTimer);
+      verifyVideoTrack();
+    };
 
-    // Stall watchdog: if a server takes too long without delivering frames, automatically switch to the next server
-    const stallLimit = state.currentItem?.type === 'tv' ? 12000 : 6500;
+    // Anti-Black-Screen Watchdog: verifies video frames actually decode and advance
+    const stallLimit = state.currentItem?.type === 'tv' ? 10000 : 5000;
+    blackScreenWatchdogTimer = setTimeout(() => {
+      if (el.playerOverlay.classList.contains('hidden')) return;
+      if (!el.cloudVideo.classList.contains('hidden')) {
+        const hasFrames = el.cloudVideo.currentTime > 0.2 && el.cloudVideo.videoWidth > 0;
+        if (!hasFrames) {
+          if (stream.embedUrl && el.cloudEmbed) {
+            destroyHls();
+            el.cloudVideo.pause();
+            el.cloudVideo.removeAttribute('src');
+            el.cloudVideo.classList.add('hidden');
+            el.cloudEmbed.classList.remove('hidden');
+            el.cloudEmbed.src = stream.embedUrl;
+            el.playerLoader.classList.add('hidden');
+            showToast('Alternando para player compatível');
+            return;
+          }
+          tryNextWorkingStream(stream);
+        }
+      }
+    }, stallLimit);
+
     playerStallTimer = setTimeout(() => {
       if (!playbackStarted && !el.playerOverlay.classList.contains('hidden')) {
         tryNextWorkingStream(stream);
       }
-    }, stallLimit);
+    }, stallLimit + 1500);
 
     // Subtitles auto-fetch via LegendasBR
     Array.from(el.cloudVideo.querySelectorAll('track')).forEach((t) => t.remove());
