@@ -4097,20 +4097,59 @@ html, body {
   transition: opacity .5s ease, transform .5s cubic-bezier(.22,1,.36,1);
 }
 
-/* Cinema Minimal Default Mode (`trailer-focus`): completely hides the left info block; only shows when user clicks "Informações a mais" */
+/* Cinema Minimal Default Mode (`trailer-focus`): keeps the left block visible in a compact scale, then expands when clicking "Informações a mais" */
 .hero.trailer-focus .hero-content {
-  opacity: 0 !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-  transform: translateY(12px) scale(0.96);
-  max-height: 0 !important;
-  overflow: hidden !important;
+  max-width: 420px;
 }
-.hero.trailer-focus .hero-main-layout {
-  justify-content: flex-end;
+.hero.trailer-focus .hero-brand-wrap {
+  min-height: 44px;
+  margin-bottom: 6px;
 }
-.hero-content {
-  transition: opacity .35s ease, transform .35s cubic-bezier(.22,1,.36,1), visibility .35s;
+.hero.trailer-focus .hero-logo {
+  max-width: 195px;
+  max-height: 60px;
+}
+.hero.trailer-focus .hero-title {
+  font-size: clamp(1.45rem, 2.3vw, 2.05rem);
+  margin-bottom: 6px;
+}
+.hero.trailer-focus .hero-meta {
+  font-size: .78rem;
+  gap: 7px;
+  margin-bottom: 6px;
+}
+.hero.trailer-focus .hero-desc {
+  font-size: .82rem;
+  line-height: 1.45;
+  -webkit-line-clamp: 2;
+  max-width: 390px;
+  margin-bottom: 12px;
+  color: rgba(226, 232, 240, 0.78);
+}
+.hero.trailer-focus .hero-actions {
+  gap: 8px;
+}
+.hero.trailer-focus .btn-hero-play,
+.hero.trailer-focus .btn-hero-info {
+  height: 38px;
+  padding: 0 16px;
+  font-size: .82rem;
+  border-radius: 8px;
+}
+.hero.trailer-focus .hero-actions .btn-icon-only {
+  width: 38px;
+  height: 38px;
+}
+.hero-content,
+.hero-brand-wrap,
+.hero-logo,
+.hero-title,
+.hero-meta,
+.hero-desc,
+.btn-hero-play,
+.btn-hero-info,
+.hero-actions .btn-icon-only {
+  transition: all .35s cubic-bezier(.22,1,.36,1);
 }
 
 /* Interactive Recommendations Dock on the right of Hero */
