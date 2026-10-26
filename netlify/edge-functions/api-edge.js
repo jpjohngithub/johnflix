@@ -498,7 +498,7 @@ function normalizeStream(rawStream, addon, fallbackDirectUrls = [], idx = 0, eng
     playType,
     directUrl: streamUrl,
     proxyUrl,
-    embedUrl,
+    embedUrl: embedUrl || universalEmbedUrl || null,
     infoHash: rawStream.infoHash ? rawStream.infoHash.toLowerCase() : null,
     fileIdx: rawStream.fileIdx !== undefined ? rawStream.fileIdx : null
   };

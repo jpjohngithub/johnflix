@@ -3317,6 +3317,13 @@
       setTimeout(() => {
         if (!el.playerOverlay.classList.contains('hidden') && !el.cloudVideo.paused && el.cloudVideo.currentTime > 0.4) {
           if (el.cloudVideo.videoWidth === 0 && el.cloudVideo.videoHeight === 0 && state.currentItem?.type !== 'tv') {
+            if (stream.embedUrl && el.cloudEmbed) {
+              el.cloudVideo.pause();
+              el.cloudVideo.classList.add('hidden');
+              el.cloudEmbed.classList.remove('hidden');
+              el.cloudEmbed.src = stream.embedUrl;
+              return;
+            }
             tryNextWorkingStream(stream);
           }
         }
@@ -3473,6 +3480,14 @@
         el.cloudVideo.src = stream.directUrl;
         el.cloudVideo.load();
         startVideoPlayback();
+        return;
+      }
+      if (stream.embedUrl && el.cloudEmbed) {
+        el.cloudVideo.pause();
+        el.cloudVideo.classList.add('hidden');
+        el.cloudEmbed.classList.remove('hidden');
+        el.cloudEmbed.src = stream.embedUrl;
+        el.playerLoader.classList.add('hidden');
         return;
       }
       tryNextWorkingStream(stream);
