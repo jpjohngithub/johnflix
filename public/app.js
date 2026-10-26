@@ -233,7 +233,15 @@
     updateBadges();
     renderContinueWatching();
     bindEvents();
+    const splashEl = document.getElementById('siteIntroSplash');
+    setTimeout(() => {
+      if (splashEl) splashEl.classList.add('splash-hide');
+    }, 1150);
+    setTimeout(() => {
+      if (splashEl) splashEl.remove();
+    }, 1750);
     await loadHomeCatalog();
+    if (splashEl) splashEl.classList.add('splash-hide');
   }
 
   function bindEvents() {
@@ -608,7 +616,7 @@
       const series = [];
       state.catalogRows.forEach((r) => {
         if (r.type === 'tv' || r.isTop10) return;
-        (r.items || []).slice(0, 10).forEach((item) => {
+        (r.items || []).slice(0, 18).forEach((item) => {
           if (!item || !item.id || !String(item.id).startsWith('tt') || seenHero.has(item.id)) return;
           if (!item.description || String(item.description).length < 40) return;
           seenHero.add(item.id);
@@ -616,17 +624,32 @@
           (item.type === 'series' ? series : movies).push(item);
         });
       });
-      const daySeed = Math.floor(Date.now() / 86400000);
-      const rnd = (() => { let x = daySeed * 9301 + 49297; return () => { x = (x * 9301 + 49297) % 233280; return x / 233280; }; })();
-      const shuffle = (arr) => arr.map((v) => [rnd(), v]).sort((p, q) => p[0] - q[0]).map((p) => p[1]);
-      const score = (it) => (it.ytId ? 3 : 0) + (Number(it.imdbRating) >= 7.4 ? 1 : 0);
-      const pick = (arr, n) => shuffle(arr).sort((p, q) => score(q) - score(p)).slice(0, n);
+      // Fresh random shuffle on every page reload so recommendations are never repetitive
+      const shuffle = (arr) => {
+        const copy = [...arr];
+        for (let i = copy.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [copy[i], copy[j]] = [copy[j], copy[i]];
+        }
+        return copy;
+      };
+      const pick = (arr, n) => {
+        const qualityPool = arr.filter((it) => it.ytId || Number(it.imdbRating) >= 7.0);
+        const source = qualityPool.length >= n ? qualityPool : arr;
+        return shuffle(source).slice(0, n);
+      };
       const mv = pick(movies, 5);
       const sr = pick(series, 5);
       const mixed = [];
+      const startWithSeries = Math.random() > 0.5;
       for (let i = 0; i < Math.max(mv.length, sr.length); i++) {
-        if (mv[i]) mixed.push(mv[i]);
-        if (sr[i]) mixed.push(sr[i]);
+        if (startWithSeries) {
+          if (sr[i]) mixed.push(sr[i]);
+          if (mv[i]) mixed.push(mv[i]);
+        } else {
+          if (mv[i]) mixed.push(mv[i]);
+          if (sr[i]) mixed.push(sr[i]);
+        }
       }
       state.heroItems = mixed.slice(0, 8);
       setupHeroCarousel();
@@ -1058,7 +1081,7 @@
 
     const mainContentEl = document.getElementById('mainContent');
     if (mainContentEl) {
-      mainContentEl.classList.toggle('no-hero-offset', isMovieOrSeriesTab);
+      mainContentEl.classList.toggle('no-hero-offset', isMovieOrSeriesTab || state.activeFilter === 'tv');
     }
 
     if (el.homeCategoryBar) {
@@ -1095,18 +1118,6 @@
       rows = rows.filter((r) => r.type === 'series');
     } else if (state.activeFilter === 'tv') {
       rows = rows.filter((r) => r.type === 'tv');
-      const tvHeader = document.createElement('section');
-      tvHeader.className = 'tv-live-banner';
-      tvHeader.innerHTML = `
-        <div class="tv-live-banner-inner">
-          <div class="tv-live-banner-copy">
-            <span class="tv-live-kicker"><span class="live-dot-pulse"></span> TRANSMISSÃO DIRETA</span>
-            <h2>Canais de TV ao Vivo</h2>
-            <p>Canais abertos nacionais, esportes, notícias e variedades com reprodução instantânea.</p>
-          </div>
-        </div>
-      `;
-      el.catalogContainer.appendChild(tvHeader);
     }
 
     if (isHomeView && state.activeHomeCategory && state.activeHomeCategory !== 'all') {
@@ -1241,13 +1252,13 @@
       <div class="mylist-hub-header">
         <div class="mylist-subtabs" role="tablist">
           <button type="button" class="mylist-subtab ${state.myListSubTab === 'swipe' ? 'active' : ''}" data-subtab="swipe">
-            <span>🔥 TinderFlix</span>
+            <span>TinderFlix</span>
           </button>
           <button type="button" class="mylist-subtab ${state.myListSubTab === 'watchlist' ? 'active' : ''}" data-subtab="watchlist">
-            <span>♥ Minha Lista (${state.myList.length})</span>
+            <span>Minha Lista (${state.myList.length})</span>
           </button>
           <button type="button" class="mylist-subtab ${state.myListSubTab === 'playlists' ? 'active' : ''}" data-subtab="playlists">
-            <span>📂 Playlists (${state.playlists.length})</span>
+            <span>Playlists (${state.playlists.length})</span>
           </button>
         </div>
       </div>
@@ -1281,7 +1292,7 @@
     container.appendChild(wrap);
     const grid = wrap.querySelector('#myListGrid');
     if (!state.myList.length) {
-      grid.innerHTML = `<div class="swipe-empty-card" style="grid-column:1/-1;"><p style="color:var(--text-muted);margin:0 0 14px;">Sua lista ainda está vazia. Deslize para a direita no <strong>TinderFlix</strong> para salvar seus favoritos!</p><button type="button" class="btn btn-sm btn-primary" id="goToSwipeFromWatchlistBtn">🔥 Ir para o TinderFlix</button></div>`;
+      grid.innerHTML = `<div class="swipe-empty-card" style="grid-column:1/-1;"><p style="color:var(--text-muted);margin:0 0 14px;">Sua lista ainda está vazia. Deslize para a direita no <strong>TinderFlix</strong> para salvar seus favoritos!</p><button type="button" class="btn btn-sm btn-primary" id="goToSwipeFromWatchlistBtn">Ir para o TinderFlix</button></div>`;
       grid.querySelector('#goToSwipeFromWatchlistBtn')?.addEventListener('click', () => {
         state.myListSubTab = 'swipe';
         renderCatalogRows();
@@ -1366,13 +1377,13 @@
 
           <div class="swipe-quick-bar">
             <button type="button" class="swipe-qbtn" id="swipeUndoBtn" ${state.swipeHistory.length === 0 ? 'disabled' : ''}>
-              ↶ Desfazer
+              Desfazer
             </button>
             <button type="button" class="swipe-qbtn" id="swipeTrailerBtn">
-              🎬 Trailer
+              Trailer
             </button>
             <button type="button" class="swipe-qbtn" id="swipeDetailsSheetBtn">
-              ↓ Ficha Técnica
+              Ficha Técnica
             </button>
             <button type="button" class="swipe-qbtn" id="swipeAddPlaylistBtn">
               + Playlist
@@ -1538,8 +1549,8 @@
       : (typeof meta.director === 'string' && meta.director ? [meta.director] : []);
     const ratingNum = Number(meta.imdbRating || item.imdbRating) || 7.6;
     const awardsText = meta.awards || (ratingNum >= 8.2
-      ? '🏆 Aclamado pela Crítica Internacional • Destaque em Premiações & IMDb Top Rated'
-      : '🎬 Seleção Oficial de Catálogo • Aprovado pelo Público');
+      ? 'Aclamado pela Crítica Internacional • Destaque em Premiações & IMDb Top Rated'
+      : 'Seleção Oficial de Catálogo • Aprovado pelo Público');
 
     sheet.innerHTML = `
       <div class="swipe-tech-grid">
@@ -1548,7 +1559,6 @@
           <p>${escapeHtml(meta.description || item.description || 'Sinopse detalhada indisponível.')}</p>
 
           <div class="swipe-awards-box">
-            <span class="swipe-awards-icon">🏆</span>
             <div>
               <strong>Prémios, Nomeações &amp; Reconhecimento</strong>
               <p>${escapeHtml(awardsText)}</p>
@@ -1557,8 +1567,8 @@
 
           <h4>Elenco &amp; Equipa Técnica <small>(Clique num ator ou realizador para pesquisar a sua filmografia)</small></h4>
           <div class="swipe-cast-chips">
-            ${directors.map((d) => `<button type="button" class="swipe-person-chip director" data-person="${escapeHtml(d)}">🎬 Realizador: ${escapeHtml(d)}</button>`).join('')}
-            ${cast.length ? cast.map((c) => `<button type="button" class="swipe-person-chip" data-person="${escapeHtml(c)}">👤 ${escapeHtml(c)}</button>`).join('') : '<span style="color:var(--text-muted);font-size:0.84rem;">Elenco principal listado na ficha oficial.</span>'}
+            ${directors.map((d) => `<button type="button" class="swipe-person-chip director" data-person="${escapeHtml(d)}">Realizador: ${escapeHtml(d)}</button>`).join('')}
+            ${cast.length ? cast.map((c) => `<button type="button" class="swipe-person-chip" data-person="${escapeHtml(c)}">${escapeHtml(c)}</button>`).join('') : '<span style="color:var(--text-muted);font-size:0.84rem;">Elenco principal listado na ficha oficial.</span>'}
           </div>
         </div>
 
