@@ -1014,206 +1014,56 @@ export default async (request) => {
       return new Response(bodyStr, { status: 200, headers });
     }
 
-    if (rawPath === '/api/youtube/channels') {
-      const channels = [
-        {
-          id: 'mrbeast',
-          name: 'MrBeast',
-          handle: '@MrBeast',
-          feedQuery: 'channel_id=UCX6OQ3DkcsbYNE6H8uQQuVA',
-          avatar: 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=180&auto=format&fit=crop&q=80',
-          banner: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&auto=format&fit=crop&q=80',
-          subscribers: '320M inscritos',
-          category: 'Entretenimento',
-          description: 'Maior criador de conteúdo do mundo com desafios épicos, jogos e prêmios milionários.'
-        },
-        {
-          id: 'canal_nostalgia',
-          name: 'Canal Nostalgia',
-          handle: '@fecastanhari',
-          feedQuery: 'user=fecastanhari',
-          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=180&auto=format&fit=crop&q=80',
-          banner: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80',
-          subscribers: '14.2M inscritos',
-          category: 'História & Documentários',
-          description: 'Documentários aprofundados sobre história, cinema, ciência e acontecimentos do mundo por Felipe Castanhari.'
-        },
-        {
-          id: 'alanzoka',
-          name: 'Alanzoka',
-          handle: '@alanzoka',
-          feedQuery: 'user=alanzoka',
-          avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=180&auto=format&fit=crop&q=80',
-          banner: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200&auto=format&fit=crop&q=80',
-          subscribers: '7.8M inscritos',
-          category: 'Gaming',
-          description: 'Gameplays diárias, reações engraçadas e lançamentos de jogos com Alanzoka.'
-        },
-        {
-          id: 'manual_do_mundo',
-          name: 'Manual do Mundo',
-          handle: '@ManualdoMundo',
-          feedQuery: 'user=ManualdoMundo',
-          avatar: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=180&auto=format&fit=crop&q=80',
-          banner: 'https://images.unsplash.com/photo-1507668077129-56e32842fceb?w=1200&auto=format&fit=crop&q=80',
-          subscribers: '18.9M inscritos',
-          category: 'Ciência & Curiosidades',
-          description: 'Experiências científicas, como as coisas funcionam e invenções incríveis com Iberê Thenório.'
-        },
-        {
-          id: 'flow_podcast',
-          name: 'Flow Podcast',
-          handle: '@FlowPodcast',
-          feedQuery: 'user=FlowPodcast',
-          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=180&auto=format&fit=crop&q=80',
-          banner: 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=1200&auto=format&fit=crop&q=80',
-          subscribers: '5.5M inscritos',
-          category: 'Podcasts',
-          description: 'Conversas descontraídas e entrevistas sem censura com convidados especiais.'
-        },
-        {
-          id: 'cazetv',
-          name: 'CazéTV',
-          handle: '@CazeTV',
-          feedQuery: 'channel_id=UChL84Fw7_z4U1Z3x7G0-T_Q',
-          avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=180&auto=format&fit=crop&q=80',
-          banner: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=1200&auto=format&fit=crop&q=80',
-          subscribers: '16.5M inscritos',
-          category: 'Esportes & Reações',
-          description: 'Transmissões ao vivo, resumos de futebol e comentários bem-humorados com Casimiro Miguel.'
-        },
-        {
-          id: 'pewdiepie',
-          name: 'PewDiePie',
-          handle: '@PewDiePie',
-          feedQuery: 'user=PewDiePie',
-          avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=180&auto=format&fit=crop&q=80',
-          banner: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1200&auto=format&fit=crop&q=80',
-          subscribers: '111M inscritos',
-          category: 'Gaming',
-          description: 'O pioneiro do YouTube com vlogs, reviews e cultura pop da internet.'
-        },
-        {
-          id: 'kurzgesagt',
-          name: 'Kurzgesagt – In a Nutshell',
-          handle: '@kurzgesagt',
-          feedQuery: 'user=kurzgesagt',
-          avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=180&auto=format&fit=crop&q=80',
-          banner: 'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=1200&auto=format&fit=crop&q=80',
-          subscribers: '23M inscritos',
-          category: 'Ciência & Curiosidades',
-          description: 'Animações deslumbrantes explicando o universo, buracos negros, biologia e o futuro da humanidade.'
-        },
-        {
-          id: 'veritasium',
-          name: 'Veritasium',
-          handle: '@Veritasium',
-          feedQuery: 'user=Veritasium',
-          avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=180&auto=format&fit=crop&q=80',
-          banner: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=1200&auto=format&fit=crop&q=80',
-          subscribers: '16.8M inscritos',
-          category: 'Ciência & Curiosidades',
-          description: 'Um elemento da verdade: vídeos instigantes sobre física, experimentos e mistérios científicos.'
-        },
-        {
-          id: 'ei_nerd',
-          name: 'Ei Nerd',
-          handle: '@einerd',
-          feedQuery: 'channel_id=UC3t_dptz_2T-c8S_58tKk2A',
-          avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=180&auto=format&fit=crop&q=80',
-          banner: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=1200&auto=format&fit=crop&q=80',
-          subscribers: '14.1M inscritos',
-          category: 'Geek & Cinema',
-          description: 'Tudo sobre animes, Marvel, DC, novidades do cinema e teorias nerds com Peter Jordan.'
-        }
-      ];
-      return new Response(JSON.stringify({ channels }), { status: 200, headers });
-    }
-
-    if (rawPath === '/api/youtube/feed') {
-      const channelId = (url.searchParams.get('channelId') || '').trim();
-      const rawUser = (url.searchParams.get('user') || '').trim();
-      const rawQuery = (url.searchParams.get('query') || '').trim();
-
-      const CHANNELS_MAP = {
-        mrbeast: { id: 'mrbeast', name: 'MrBeast', feed: 'channel_id=UCX6OQ3DkcsbYNE6H8uQQuVA' },
-        canal_nostalgia: { id: 'canal_nostalgia', name: 'Canal Nostalgia', feed: 'user=fecastanhari' },
-        alanzoka: { id: 'alanzoka', name: 'Alanzoka', feed: 'user=alanzoka' },
-        manual_do_mundo: { id: 'manual_do_mundo', name: 'Manual do Mundo', feed: 'user=ManualdoMundo' },
-        flow_podcast: { id: 'flow_podcast', name: 'Flow Podcast', feed: 'user=FlowPodcast' },
-        cazetv: { id: 'cazetv', name: 'CazéTV', feed: 'channel_id=UChL84Fw7_z4U1Z3x7G0-T_Q' },
-        pewdiepie: { id: 'pewdiepie', name: 'PewDiePie', feed: 'user=PewDiePie' },
-        kurzgesagt: { id: 'kurzgesagt', name: 'Kurzgesagt', feed: 'user=kurzgesagt' },
-        veritasium: { id: 'veritasium', name: 'Veritasium', feed: 'user=Veritasium' },
-        ei_nerd: { id: 'ei_nerd', name: 'Ei Nerd', feed: 'channel_id=UC3t_dptz_2T-c8S_58tKk2A' }
-      };
-
-      const feedsToFetch = [];
-      if (channelId && CHANNELS_MAP[channelId]) {
-        feedsToFetch.push(CHANNELS_MAP[channelId]);
-      } else if (rawUser) {
-        feedsToFetch.push({ id: rawUser, name: rawUser, feed: `user=${encodeURIComponent(rawUser)}` });
-      } else if (rawQuery) {
-        feedsToFetch.push({ id: 'custom', name: 'Canal', feed: rawQuery });
-      } else {
-        feedsToFetch.push(
-          CHANNELS_MAP.mrbeast,
-          CHANNELS_MAP.canal_nostalgia,
-          CHANNELS_MAP.alanzoka,
-          CHANNELS_MAP.manual_do_mundo,
-          CHANNELS_MAP.kurzgesagt,
-          CHANNELS_MAP.ei_nerd
-        );
-      }
-
-      const allVideos = [];
-      await Promise.all(
-        feedsToFetch.map(async (c) => {
-          try {
-            const feedRes = await fetch(`https://www.youtube.com/feeds/videos.xml?${c.feed}`, {
-              headers: { 'User-Agent': 'Mozilla/5.0' },
-              signal: AbortSignal.timeout(3500)
-            });
-            if (!feedRes.ok) return;
-            const xml = await feedRes.text();
-            const entryRe = /<entry>([\s\S]*?)<\/entry>/g;
-            let m;
-            while ((m = entryRe.exec(xml)) !== null) {
-              const blk = m[1];
-              const ytId = (blk.match(/<yt:videoId>(.*?)<\/yt:videoId>/) || [])[1];
-              const title = (blk.match(/<title>(.*?)<\/title>/) || [])[1];
-              const pub = (blk.match(/<published>(.*?)<\/published>/) || [])[1];
-              const desc = (blk.match(/<media:description>([\s\S]*?)<\/media:description>/) || [])[1] || '';
-              const author = (blk.match(/<author>[\s\S]*?<name>(.*?)<\/name>/) || [])[1] || c.name;
-              if (ytId && title) {
-                allVideos.push({
-                  id: `yt_${ytId}`,
-                  ytId,
-                  title: title.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>'),
-                  channelId: c.id,
-                  channelName: author,
-                  published: pub,
-                  publishedTs: pub ? new Date(pub).getTime() : 0,
-                  description: desc.slice(0, 240),
-                  thumbnail: `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg`,
-                  type: 'youtube'
-                });
-              }
-            }
-          } catch (e) {}
-        })
-      );
-
-      allVideos.sort((a, b) => b.publishedTs - a.publishedTs);
-      return new Response(JSON.stringify({ videos: allVideos }), { status: 200, headers });
-    }
-
     if (rawPath === '/api/catalog/more') {
       const rowId = (url.searchParams.get('id') || '').trim();
       const rowType = (url.searchParams.get('type') || 'movie').trim();
-      const genre = (url.searchParams.get('genre') || '').trim();
+      let genre = (url.searchParams.get('genre') || '').trim();
+      const category = (url.searchParams.get('category') || '').trim();
+      const rowTitle = (url.searchParams.get('title') || '').trim();
+      const rowUrl = (url.searchParams.get('url') || '').trim();
 
-      const moreCacheKey = `catalog_more:${rowId}:${rowType}:${genre}`;
+      const GENRE_MAP = {
+        horror: 'Horror',
+        terror: 'Horror',
+        action: 'Action',
+        acao: 'Action',
+        scifi: 'Sci-Fi',
+        ficcao: 'Sci-Fi',
+        comedy: 'Comedy',
+        comedia: 'Comedy',
+        animation: 'Animation',
+        animacao: 'Animation',
+        drama: 'Drama',
+        crime: 'Crime',
+        thriller: 'Thriller',
+        suspense: 'Thriller',
+        romance: 'Romance',
+        adventure: 'Adventure',
+        aventura: 'Adventure',
+        fantasy: 'Fantasy',
+        fantasia: 'Fantasy',
+        mystery: 'Mystery',
+        misterio: 'Mystery',
+        family: 'Family',
+        familia: 'Family',
+        history: 'History',
+        guerra: 'History',
+        documentary: 'Documentary',
+        documentario: 'Documentary',
+        docs: 'Documentary'
+      };
+
+      if (!genre) {
+        const key = (category || rowId.replace(/^cinemeta_|^fenix_/, '')).toLowerCase();
+        for (const [k, v] of Object.entries(GENRE_MAP)) {
+          if (key.includes(k) || rowTitle.toLowerCase().includes(k)) {
+            genre = v;
+            break;
+          }
+        }
+      }
+
+      const moreCacheKey = `catalog_more_v2:${rowId}:${rowType}:${genre}:${category}`;
       const cached = getEdgeCache(moreCacheKey);
       if (cached) return new Response(cached, { status: 200, headers });
 
@@ -1224,12 +1074,17 @@ export default async (request) => {
           `https://v3-cinemeta.strem.io/catalog/${rowType}/top/genre=${encodeURIComponent(genre)}&skip=50.json`,
           `https://v3-cinemeta.strem.io/catalog/${rowType}/top/genre=${encodeURIComponent(genre)}&skip=100.json`
         );
+      } else if (rowUrl && rowUrl.includes('.json')) {
+        const base = rowUrl.replace(/\.json$/, '');
+        pages.push(
+          rowUrl,
+          rowUrl.includes('?') || rowUrl.includes('&') ? `${base}&skip=50.json` : `${base}/skip=50.json`,
+          rowUrl.includes('?') || rowUrl.includes('&') ? `${base}&skip=100.json` : `${base}/skip=100.json`
+        );
       } else if (rowId.includes('fenix')) {
         pages.push(
           `https://fenixflix.fenixhub.online/catalog/${rowType}/destaques_fenix.json`,
-          `https://fenixflix.fenixhub.online/catalog/${rowType}/destaques_fenix/skip=50.json`,
-          `https://v3-cinemeta.strem.io/catalog/${rowType}/top.json`,
-          `https://v3-cinemeta.strem.io/catalog/${rowType}/top/skip=50.json`
+          `https://fenixflix.fenixhub.online/catalog/${rowType}/destaques_fenix/skip=50.json`
         );
       } else {
         pages.push(
@@ -1251,7 +1106,7 @@ export default async (request) => {
         }
       }
 
-      const resBody = JSON.stringify({ items: combined });
+      const resBody = JSON.stringify({ items: combined, genre: genre || '' });
       if (combined.length > 0) setEdgeCache(moreCacheKey, resBody, 600);
       return new Response(resBody, { status: 200, headers });
     }
