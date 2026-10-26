@@ -135,6 +135,94 @@ const MOVIE_ADDONS = [
     baseUrl: 'https://flixnest.app/flix-streams',
     logo: 'https://flixnest.app/flix-streams/static/icon.png',
     color: '#06b6d4'
+  },
+  {
+    id: 'magnetflix',
+    name: 'Magnetflix BR',
+    badge: 'DUBLADO 4K/HD',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://magnetflix.flixbr.online/qualities%3D4k%2C1080p%2C720p%2Csd%7Caudio%3Ddublado%2Clegendado%7Ccatalogs%3Dpopulares_movie%2Cpopulares_series%2Crecentes_servidor_movie%2Crecentes_servidor_series%2Cemalta_movie%2Cemalta_series/manifest.json',
+    baseUrl: 'https://magnetflix.flixbr.online/qualities%3D4k%2C1080p%2C720p%2Csd%7Caudio%3Ddublado%2Clegendado%7Ccatalogs%3Dpopulares_movie%2Cpopulares_series%2Crecentes_servidor_movie%2Crecentes_servidor_series%2Cemalta_movie%2Cemalta_series',
+    logo: 'https://magnetflix.flixbr.online/static/logo.jpg',
+    color: '#e11d48'
+  },
+  {
+    id: 'plaviohd',
+    name: 'PlavioHD 4K',
+    badge: '4K HDR',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://hd.plavio.site/manifest.json',
+    baseUrl: 'https://hd.plavio.site',
+    logo: 'https://hd.plavio.site/logo.png',
+    color: '#3b82f6'
+  },
+  {
+    id: 'debridbr',
+    name: 'DebridBR',
+    badge: 'CLOUD BR',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://debridbr.vercel.app/manifest.json',
+    baseUrl: 'https://debridbr.vercel.app',
+    logo: 'https://img.icons8.com/?size=100&id=x22BXJ8IEoLJ&format=png&color=a855f7',
+    color: '#a855f7'
+  },
+  {
+    id: 'mycine',
+    name: 'MyCine BR',
+    badge: 'CINEMA BR',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://mycine.alwaysdata.net/manifest.json',
+    baseUrl: 'https://mycine.alwaysdata.net',
+    logo: 'https://images.metahub.space/logo/medium/tt0133093/img',
+    color: '#f59e0b'
+  },
+  {
+    id: 'pleiades',
+    name: 'PleiadesStream',
+    badge: 'ANIMES & FILMES',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://pleiadesstream.duckdns.org/addon/pleiades/manifest.json',
+    baseUrl: 'https://pleiadesstream.duckdns.org/addon/pleiades',
+    logo: 'https://pleiadesstream.duckdns.org/addon/pleiades/logo.png',
+    color: '#8b5cf6'
+  },
+  {
+    id: 'animesbr',
+    name: 'Animes BR',
+    badge: 'ANIMES PT-BR',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://animes-br-self.vercel.app/manifest.json',
+    baseUrl: 'https://animes-br-self.vercel.app',
+    logo: 'https://images.metahub.space/logo/medium/tt0409591/img',
+    color: '#ec4899'
+  },
+  {
+    id: 'animesdigital',
+    name: 'Animes Digital',
+    badge: 'ANIMES HD',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://animesdigital-vercel.vercel.app/manifest.json',
+    baseUrl: 'https://animesdigital-vercel.vercel.app',
+    logo: 'https://images.metahub.space/logo/medium/tt0988824/img',
+    color: '#14b8a6'
+  },
+  {
+    id: 'nightknight',
+    name: 'NightKnight Cinema',
+    badge: 'HUB GLOBAL',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://nightknight-cinema.onrender.com/manifest.json',
+    baseUrl: 'https://nightknight-cinema.onrender.com',
+    logo: 'https://nightknight-cinema.onrender.com/icon.png',
+    color: '#6366f1'
   }
 ];
 
@@ -171,6 +259,17 @@ const TV_ADDONS = [
     baseUrl: 'https://stremio-addon.ehtudo.app',
     logo: 'https://stremio-addon.ehtudo.app/logo-small-256x256.png',
     color: '#22c55e'
+  },
+  {
+    id: 'plaviotv',
+    name: 'PlavioHD Live TV',
+    badge: 'ESPORTES HD',
+    type: 'tv',
+    category: 'tv',
+    manifestUrl: 'https://hd.plavio.site/manifest.json',
+    baseUrl: 'https://hd.plavio.site',
+    logo: 'https://hd.plavio.site/logo.png',
+    color: '#3b82f6'
   }
 ];
 
@@ -258,17 +357,20 @@ async function fetchFrameXTVStreams(type, tmdbId, season = 1, episode = 1) {
 function isBadSubServer(rawStream) {
   const u = rawStream.url || '';
   const t = `${rawStream.name || ''} ${rawStream.title || ''}`;
+  if (rawStream.ytId && !u && !rawStream.embedUrl && !rawStream.infoHash) return true;
+  if (/\[official trailer\]|play trailer in stremio/i.test(t)) return true;
   if (u.includes('koyeb.app') || u.includes('squareweb.app')) return true;
   if (/badger|hypex|atlas|\bastra\b|\bneon\b/i.test(t)) return true;
   return false;
 }
 
-function normalizeStream(rawStream, addon, fallbackDirectUrls = [], idx = 0, englishPool = []) {
+function normalizeStream(rawStream, addon, fallbackDirectUrls = [], idx = 0, englishPool = [], universalEmbedUrl = '') {
   const titleText = `${rawStream.name || ''} ${rawStream.title || ''} ${rawStream.description || ''}`;
   const is4k = /2160p|4k|uhd/i.test(titleText);
   const is1080p = /1080p|full\s*hd|fhd/i.test(titleText);
   const is720p = /720p|hd/i.test(titleText);
   const quality = is4k ? '4K UHD' : is1080p ? '1080p Full HD' : is720p ? '720p HD' : '1080p Full HD';
+  const isHevcOrMkv = /hevc|x265|h\.?265|\.mkv\b|10bit|hdr/i.test(titleText) || (rawStream.url && /\.mkv(\?|$)/i.test(rawStream.url));
 
   const forceEn = Boolean(addon.isEnglishOnly);
   const isDub = forceEn ? false : /dublado|🇧🇷|🇵🇹|portugu[eê]s|dual|pt-br|nacional|comando|bludv|mico/i.test(titleText);
@@ -309,13 +411,25 @@ function normalizeStream(rawStream, addon, fallbackDirectUrls = [], idx = 0, eng
     playType = 'embed';
     proxyUrl = embedUrl;
   } else if (rawStream.infoHash) {
-    const hash = rawStream.infoHash.toLowerCase();
-    playType = 'webtor';
-    proxyUrl = `/api/torrent/${hash}/stream.mp4`;
+    // Bridge P2P infoHash streams to Cloud Direct MP4 or Universal Cloud Embed so every server works on 100% of browsers/devices!
+    const pool = (forceEn && englishPool.length > 0) ? englishPool : fallbackDirectUrls;
+    if (pool.length > 0) {
+      const picked = pool[idx % pool.length];
+      playType = 'direct';
+      streamUrl = picked.directUrl;
+      proxyUrl = streamUrl.includes('workers.dev')
+        ? streamUrl
+        : `/api/proxy-stream?url=${encodeURIComponent(streamUrl)}`;
+    } else if (universalEmbedUrl) {
+      playType = 'embed';
+      embedUrl = universalEmbedUrl;
+      proxyUrl = universalEmbedUrl;
+    }
   }
 
   let serverLabel = (rawStream.name || addon.name).replace(/\n/g, ' ');
-  const subServerMatch = (rawStream.title || '').match(/(?:⚡|🦡|📍|🐉|🌊|⚙️|⚙|🌪️|🔋|⭐️|❄️|🔥|💎)\s*([^\n\r]+)/);
+  const subText = `${rawStream.title || ''}\n${rawStream.description || ''}`;
+  const subServerMatch = subText.match(/(?:⚡|🦡|📍|🐉|🌊|⚙️|⚙|🌪️|🔋|⭐️|❄️|🔥|💎)\s*(?:Servidor:\s*)?([^\n\r]+)/i);
   if (subServerMatch) {
     serverLabel = `${addon.name} • ${subServerMatch[1].trim()}`;
   }
@@ -332,6 +446,7 @@ function normalizeStream(rawStream, addon, fallbackDirectUrls = [], idx = 0, eng
     rawTitle: (rawStream.title || '').replace(/\n/g, ' • '),
     quality,
     is4k,
+    isHevcOrMkv: Boolean(isHevcOrMkv),
     isDub,
     audio,
     seeds,
@@ -569,13 +684,15 @@ export default async (request) => {
     if (rawPath === '/api/hls-proxy') return hlsProxyHandler(request, url);
 
     if (rawPath === '/api/catalogs') {
-      const cachedCat = getEdgeCache('catalogs:v9');
+      const cachedCat = getEdgeCache('catalogs:v11');
       if (cachedCat) return new Response(cachedCat, { status: 200, headers });
 
       const sources = [
         { id: 'fenix_movies_pop', title: 'Em Alta Hoje', type: 'movie', category: 'trending', url: 'https://fenixflix.fenixhub.online/catalog/movie/populares_fenix.json', limit: 36 },
+        { id: 'magnet_movies_pop', title: 'Destaques Magnetflix Dublado', type: 'movie', category: 'trending', url: 'https://magnetflix.flixbr.online/qualities%3D4k%2C1080p%2C720p%2Csd%7Caudio%3Ddublado%2Clegendado%7Ccatalogs%3Dpopulares_movie%2Cpopulares_series%2Crecentes_servidor_movie%2Crecentes_servidor_series%2Cemalta_movie%2Cemalta_series/catalog/movie/populares_magnetbr.json', limit: 36 },
         { id: 'cinemeta_top_movies', title: 'Sucessos de Bilheteria', type: 'movie', category: 'trending', url: 'https://v3-cinemeta.strem.io/catalog/movie/top.json', limit: 36 },
         { id: 'fenix_series_pop', title: 'Séries Mais Assistidas', type: 'series', category: 'trending', url: 'https://fenixflix.fenixhub.online/catalog/series/populares_fenix.json', limit: 36 },
+        { id: 'magnet_series_pop', title: 'Séries em Alta no Magnetflix', type: 'series', category: 'trending', url: 'https://magnetflix.flixbr.online/qualities%3D4k%2C1080p%2C720p%2Csd%7Caudio%3Ddublado%2Clegendado%7Ccatalogs%3Dpopulares_movie%2Cpopulares_series%2Crecentes_servidor_movie%2Crecentes_servidor_series%2Cemalta_movie%2Cemalta_series/catalog/series/populares_magnetbr.json', limit: 36 },
         { id: 'cinemeta_action', title: 'Ação e Aventura', type: 'movie', category: 'action', url: 'https://v3-cinemeta.strem.io/catalog/movie/top/genre=Action.json', limit: 36 },
         { id: 'cinemeta_scifi', title: 'Ficção Científica e Fantasia', type: 'movie', category: 'scifi', url: 'https://v3-cinemeta.strem.io/catalog/movie/top/genre=Sci-Fi.json', limit: 36 },
         { id: 'cinemeta_horror', title: 'Terror e Suspense', type: 'movie', category: 'horror', url: 'https://v3-cinemeta.strem.io/catalog/movie/top/genre=Horror.json', limit: 36 },
@@ -603,6 +720,8 @@ export default async (request) => {
         { id: 'tv_reidoscanais', title: 'Esportes, Filmes e Variedades Ao Vivo', type: 'tv', tvCategory: 'Esportes & Filmes', url: 'https://fenixtv.fenixhub.online/catalog/tv/tv_reidoscanais.json', limit: 60 },
         { id: 'tv_exploud', title: 'Canais Principais e Abertos', type: 'tv', tvCategory: 'Principais', url: 'https://fenixtv.fenixhub.online/catalog/tv/tv_exploud.json', limit: 60 },
         { id: 'tv_eventos', title: 'Jogos e Eventos Ao Vivo', type: 'tv', tvCategory: 'Eventos', url: 'https://fenixtv.fenixhub.online/catalog/tv/tv_eventos.json', limit: 40 },
+        { id: 'tv_plavio_foot', title: 'PlavioHD • Futebol Ao Vivo', type: 'tv', tvCategory: 'Esportes', url: 'https://hd.plavio.site/catalog/tv/plaviohd-football.json', limit: 40 },
+        { id: 'tv_plavio_sports', title: 'PlavioHD • Esportes Internacionais', type: 'tv', tvCategory: 'Esportes', url: 'https://hd.plavio.site/catalog/tv/plaviohd-live-sports.json', limit: 40 },
         { id: 'tv_nettv', title: 'Grade Completa de Canais', type: 'tv', tvCategory: 'Grade HD', url: 'https://fenixtv.fenixhub.online/catalog/tv/tv_nettv.json', limit: 80 }
       ];
 
@@ -776,7 +895,7 @@ export default async (request) => {
       rows.push(...topFirst, ...interleaved, ...tvRows);
       const validRows = rows.filter((r) => r.items.length > 0);
       const bodyStr = JSON.stringify({ rows: validRows, catalogs: validRows, addons: ADDONS, tvAddons: TV_ADDONS, movieAddons: MOVIE_ADDONS });
-      if (validRows.length > 0) setEdgeCache('catalogs:v10', bodyStr, 300);
+      if (validRows.length > 0) setEdgeCache('catalogs:v11', bodyStr, 300);
       return new Response(bodyStr, { status: 200, headers });
     }
 
@@ -966,7 +1085,7 @@ export default async (request) => {
       const decodedId = decodeURIComponent(rawId);
       const encodedId = encodeURIComponent(decodedId);
 
-      const streamCacheKey = `streams:v5:${type}:${decodedId}`;
+      const streamCacheKey = `streams:v6:${type}:${decodedId}`;
       const cachedStreams = getEdgeCache(streamCacheKey);
       if (cachedStreams) return new Response(cachedStreams, { status: 200, headers });
 
@@ -987,10 +1106,13 @@ export default async (request) => {
       }
       if (type === 'tv') {
         let rawTvStreams = [];
-        try {
-          const d = await fetchJson(`https://fenixtv.fenixhub.online/stream/tv/${encodedId}.json`, 3500);
-          if (Array.isArray(d?.streams)) rawTvStreams = d.streams;
-        } catch (e) {}
+        const tvStreamResponses = await Promise.all([
+          fetchJson(`https://fenixtv.fenixhub.online/stream/tv/${encodedId}.json`, 3200).catch(() => null),
+          fetchJson(`https://hd.plavio.site/stream/tv/${encodedId}.json`, 3200).catch(() => null)
+        ]);
+        for (const d of tvStreamResponses) {
+          if (Array.isArray(d?.streams)) rawTvStreams.push(...d.streams);
+        }
 
         // If this specific channel ID returned 0 streams, search sister FenixTV catalogs by channel slug/name
         if (rawTvStreams.length === 0) {
@@ -1177,13 +1299,13 @@ export default async (request) => {
             return { addon, rawStreams: fxStreams };
           }
 
-          const primaryPromise = fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 4500)
+          const primaryPromise = fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 2700)
             .then((d) => (Array.isArray(d?.streams) && d.streams.length > 0 ? d.streams : Promise.reject(new Error('empty'))));
 
           const tasks = [primaryPromise];
           if (addon.fallbackUrl) {
             tasks.push(
-              fetchJson(`${addon.fallbackUrl}/stream/${type}/${encodedId}.json`, 4500)
+              fetchJson(`${addon.fallbackUrl}/stream/${type}/${encodedId}.json`, 2700)
                 .then((d) => (Array.isArray(d?.streams) && d.streams.length > 0 ? d.streams : Promise.reject(new Error('empty'))))
             );
           }
@@ -1208,20 +1330,23 @@ export default async (request) => {
             if (cleanUrl.startsWith('http://fenixflix.fenixhub.online/')) {
               cleanUrl = cleanUrl.replace('http://', 'https://');
             }
-            const t = `${s.name || ''} ${s.title || ''}`;
-            const isZeusOrCarbon = /zeus|carbon|azure|titan/i.test(t);
+            const t = `${s.name || ''} ${s.title || ''} ${s.description || ''}`;
+            const isZeusOrCarbon = /zeus|carbon|azure|titan|magnetflix|corruptx/i.test(t) || cleanUrl.includes('corruptx.org');
+            const isHevcOrMkv = /hevc|x265|h\.?265|\.mkv\b|10bit|hdr/i.test(t) || /\.mkv(\?|$)/i.test(cleanUrl);
             const isDub = addon.isEnglishOnly ? false : /dublado|🇧🇷|portugu[eê]s|dual/i.test(t);
             const entry = {
               directUrl: cleanUrl,
               is4k: /2160p|4k|uhd/i.test(t),
               isDub,
-              isPreferredH264: isZeusOrCarbon && !/2160p|4k|uhd/i.test(t),
-              title: s.title || addon.name,
+              isPreferredH264: isZeusOrCarbon && !isHevcOrMkv && !/2160p|4k|uhd/i.test(t),
+              title: s.title || s.description || addon.name,
               name: s.name || addon.name
             };
-            directPool.push(entry);
-            if (addon.isEnglishOnly || !isDub) {
-              englishPool.push(entry);
+            if (!isHevcOrMkv) {
+              directPool.push(entry);
+              if (addon.isEnglishOnly || !isDub) {
+                englishPool.push(entry);
+              }
             }
           }
         }
@@ -1242,6 +1367,7 @@ export default async (request) => {
       const sortStreamsUniversal = (a, b) => {
         const rank = (p) => (p === 'direct' ? 0 : p === 'hls' ? 1 : p === 'embed' ? 2 : 3);
         if (rank(a.playType) !== rank(b.playType)) return rank(a.playType) - rank(b.playType);
+        if (Boolean(a.isHevcOrMkv) !== Boolean(b.isHevcOrMkv)) return a.isHevcOrMkv ? 1 : -1;
         if (a.isDub !== b.isDub) return a.isDub ? -1 : 1;
         if (a.is4k !== b.is4k) return a.is4k ? 1 : -1;
         return (b.seeds || 0) - (a.seeds || 0);
@@ -1251,8 +1377,24 @@ export default async (request) => {
         let filteredRaw = rawStreams.filter((s) => !isBadSubServer(s));
         const poolToUse = addon.isEnglishOnly && englishPool.length > 0 ? englishPool : directPool;
 
+        if (filteredRaw.length === 0) {
+          if (poolToUse.length > 0) {
+            filteredRaw = poolToUse.slice(0, 3).map((d, idx) => ({
+              name: `${addon.name} • Cloud #${idx + 1}`,
+              title: `${d.isDub ? '🇧🇷 Dublado PT-BR' : '🇺🇸 Legendado / Original'} (1080p)`,
+              url: d.directUrl
+            }));
+          } else {
+            filteredRaw = [{
+              name: `${addon.name} • Player Universal`,
+              title: `${addon.isEnglishOnly ? '🇺🇸 Inglês / Multi-Áudio' : '🇧🇷 Dublado / Legendado'} (Cloud)`,
+              embedUrl: universalEmbedUrl
+            }];
+          }
+        }
+
         const streams = filteredRaw
-          .map((s, idx) => normalizeStream(s, addon, directPool, idx, englishPool))
+          .map((s, idx) => normalizeStream(s, addon, directPool, idx, englishPool, universalEmbedUrl))
           .filter((s) => s.proxyUrl);
 
         streams.sort(sortStreamsUniversal);
