@@ -4588,3 +4588,667 @@ html, body {
     background: transparent !important;
   }
 }
+
+/* ===== TAB TRANSITION ANIMATIONS & HERO COLLAPSE ON FILMES/SÉRIES ===== */
+@keyframes tabContentEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(22px) scale(0.992);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes catalogSlideUpAnim {
+  0% {
+    opacity: 0;
+    transform: translateY(80px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tab-enter-anim {
+  animation: tabContentEnter 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.catalog-slide-up {
+  animation: catalogSlideUpAnim 0.56s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+#heroBanner {
+  transition: max-height 0.56s cubic-bezier(0.22, 1, 0.36, 1),
+              min-height 0.56s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.42s ease,
+              transform 0.56s cubic-bezier(0.22, 1, 0.36, 1),
+              margin 0.56s cubic-bezier(0.22, 1, 0.36, 1),
+              padding 0.56s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#heroBanner.hero-collapsing {
+  max-height: 0 !important;
+  min-height: 0 !important;
+  height: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  opacity: 0 !important;
+  transform: translateY(-48px) scale(0.98) !important;
+  pointer-events: none !important;
+  overflow: hidden !important;
+}
+
+#heroBanner.hero-expanding {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.cat-bar-top-offset {
+  padding-top: 86px !important;
+  transition: padding-top 0.48s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ===== MINHA LISTA HUB & TINDER PARA FILMES NA TV (SWIPE TV) ===== */
+.mylist-hub-section {
+  padding: 96px 4.5% 48px;
+  max-width: 1560px;
+  margin: 0 auto;
+}
+
+.mylist-hub-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 22px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mylist-hub-kicker {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: var(--purple-light, #c084fc);
+  margin-bottom: 4px;
+}
+
+.mylist-hub-title-wrap h2 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.65rem;
+  font-weight: 800;
+  margin: 0;
+  color: #fff;
+}
+
+.mylist-subtabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(15, 10, 28, 0.78);
+  padding: 6px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mylist-subtab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: #cbd5e1;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.22s ease;
+}
+
+.mylist-subtab:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.mylist-subtab.active {
+  background: var(--purple-primary, #a855f7);
+  color: #fff;
+  box-shadow: 0 6px 20px rgba(168, 85, 247, 0.38);
+}
+
+/* Swipe Filters Bar */
+.swipe-filters-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 22px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: rgba(14, 10, 26, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+}
+
+.swipe-genres-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.swipe-genres-row::-webkit-scrollbar {
+  display: none;
+}
+
+.swipe-genre-chip {
+  flex: 0 0 auto;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: #cbd5e1;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.swipe-genre-chip:hover {
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #fff;
+}
+.swipe-genre-chip.active {
+  background: var(--purple-primary, #a855f7);
+  border-color: var(--purple-light, #c084fc);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(168, 85, 247, 0.35);
+}
+
+.swipe-sort-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.swipe-sort-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 4px;
+  border-radius: 10px;
+}
+
+.swipe-sort-pill {
+  padding: 5px 12px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.swipe-sort-pill.active {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+/* Swipe Deck Stage */
+.swipe-deck-row {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr) 110px;
+  align-items: center;
+  gap: 18px;
+}
+
+.swipe-side-arrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 18px 10px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(14, 10, 26, 0.72);
+  color: #e2e8f0;
+  cursor: pointer;
+  transition: all 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.swipe-side-arrow:hover {
+  transform: scale(1.05);
+}
+.swipe-skip-arrow:hover {
+  border-color: rgba(239, 68, 68, 0.55);
+  background: rgba(239, 68, 68, 0.12);
+}
+.swipe-like-arrow:hover {
+  border-color: rgba(16, 185, 129, 0.55);
+  background: rgba(16, 185, 129, 0.12);
+}
+
+.swipe-key-hint {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+}
+
+.swipe-arrow-circle {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+.swipe-arrow-circle.skip {
+  background: rgba(239, 68, 68, 0.18);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+.swipe-arrow-circle.like {
+  background: rgba(16, 185, 129, 0.18);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+.swipe-arrow-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+/* Main Interactive Spotlight Card */
+.swipe-card {
+  position: relative;
+  border-radius: 22px;
+  overflow: hidden;
+  background: #0d0918;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  box-shadow: 0 28px 75px rgba(0, 0, 0, 0.78);
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.28s ease;
+}
+
+.swipe-card.swiping-left {
+  transform: translateX(-140px) rotate(-6deg) scale(0.95);
+  opacity: 0;
+}
+.swipe-card.swiping-right {
+  transform: translateX(140px) rotate(6deg) scale(0.95);
+  opacity: 0;
+}
+
+.swipe-card-stamp {
+  position: absolute;
+  top: 24px;
+  z-index: 6;
+  padding: 6px 16px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+.swipe-card-stamp.skip-stamp {
+  left: 24px;
+  border: 2px solid #f87171;
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.18);
+}
+.swipe-card-stamp.like-stamp {
+  right: 24px;
+  border: 2px solid #34d399;
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.18);
+}
+.swipe-card.swiping-left .skip-stamp,
+.swipe-card.swiping-right .like-stamp {
+  opacity: 1;
+}
+
+.swipe-card-backdrop {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0.24;
+  filter: blur(8px) saturate(125%);
+  transform: scale(1.06);
+  pointer-events: none;
+}
+
+.swipe-card-inner {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 28px;
+  padding: 28px;
+  align-items: center;
+}
+
+.swipe-card-poster {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.swipe-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.swipe-badge-type {
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--purple-primary, #a855f7);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.swipe-badge-meta {
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.swipe-badge-imdb {
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(245, 158, 11, 0.2);
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  color: #fbbf24;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.swipe-card-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(1.5rem, 2.5vw, 2.2rem);
+  font-weight: 800;
+  color: #fff;
+  margin: 0 0 6px;
+  line-height: 1.15;
+}
+
+.swipe-card-genres {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--purple-light, #c084fc);
+  margin-bottom: 12px;
+}
+
+.swipe-card-synopsis {
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: #cbd5e1;
+  margin: 0 0 18px;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Streaming Availability Shortcuts */
+.swipe-streaming-bar {
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.swipe-stream-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+
+.swipe-stream-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.swipe-platform-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border-radius: 9px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-decoration: none;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: #f8fafc;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.swipe-platform-btn:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.32);
+  background: rgba(255, 255, 255, 0.13);
+}
+.swipe-platform-btn.johnflix-direct {
+  background: var(--purple-primary, #a855f7);
+  border-color: var(--purple-light, #c084fc);
+  color: #fff;
+}
+.swipe-platform-btn.netflix {
+  background: rgba(229, 9, 20, 0.2);
+  border-color: rgba(229, 9, 20, 0.5);
+  color: #fca5a5;
+}
+.swipe-platform-btn.prime {
+  background: rgba(0, 168, 225, 0.18);
+  border-color: rgba(0, 168, 225, 0.45);
+  color: #7dd3fc;
+}
+.swipe-platform-btn.justwatch {
+  background: rgba(234, 179, 8, 0.16);
+  border-color: rgba(234, 179, 8, 0.45);
+  color: #fde047;
+}
+
+/* Bottom Quick Options Bar */
+.swipe-quick-bar {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 20px;
+  background: rgba(6, 4, 14, 0.78);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.swipe-qbtn {
+  padding: 8px 15px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: #e2e8f0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.swipe-qbtn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+.swipe-qbtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Deep Technical Sheet (Down Arrow / Ficha Técnica Completa) */
+.swipe-tech-sheet {
+  position: relative;
+  z-index: 2;
+  padding: 24px 28px;
+  background: rgba(8, 5, 18, 0.94);
+  border-top: 1px solid rgba(168, 85, 247, 0.25);
+  animation: tabContentEnter 0.35s ease both;
+}
+
+.swipe-tech-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 24px;
+}
+
+.swipe-tech-main h4,
+.swipe-tech-reviews h4 {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #fff;
+  margin: 0 0 8px;
+}
+.swipe-tech-main h4 small {
+  font-weight: 500;
+  color: #94a3b8;
+  font-size: 0.76rem;
+}
+
+.swipe-tech-main p {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: #cbd5e1;
+  margin: 0 0 16px;
+}
+
+.swipe-awards-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  margin-bottom: 16px;
+}
+.swipe-awards-icon {
+  font-size: 1.4rem;
+}
+.swipe-awards-box strong {
+  display: block;
+  font-size: 0.8rem;
+  color: #fbbf24;
+}
+.swipe-awards-box p {
+  margin: 2px 0 0;
+  font-size: 0.82rem;
+  color: #fde68a;
+}
+
+.swipe-cast-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.swipe-person-chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: #e2e8f0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.swipe-person-chip:hover {
+  background: var(--purple-primary, #a855f7);
+  border-color: var(--purple-light, #c084fc);
+  color: #fff;
+}
+
+.swipe-review-card {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 10px;
+}
+.swipe-review-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 0.8rem;
+}
+.swipe-review-score {
+  color: #fbbf24;
+  font-weight: 800;
+}
+.swipe-review-card p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.swipe-empty-card {
+  text-align: center;
+  padding: 48px 24px;
+  border-radius: 18px;
+  background: rgba(14, 10, 26, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 900px) {
+  .swipe-deck-row {
+    grid-template-columns: 1fr;
+  }
+  .swipe-side-arrow {
+    display: none;
+  }
+  .swipe-card-inner {
+    grid-template-columns: 1fr;
+    text-align: center;
+    padding: 20px;
+  }
+  .swipe-card-poster {
+    max-width: 190px;
+    margin: 0 auto;
+  }
+  .swipe-card-badges,
+  .swipe-stream-buttons {
+    justify-content: center;
+  }
+  .swipe-tech-grid {
+    grid-template-columns: 1fr;
+  }
+}

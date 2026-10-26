@@ -684,7 +684,7 @@ export default async (request) => {
     if (rawPath === '/api/hls-proxy') return hlsProxyHandler(request, url);
 
     if (rawPath === '/api/catalogs') {
-      const cachedCat = getEdgeCache('catalogs:v11');
+      const cachedCat = getEdgeCache('catalogs:v12');
       if (cachedCat) return new Response(cachedCat, { status: 200, headers });
 
       const sources = [
@@ -738,9 +738,14 @@ export default async (request) => {
               const rawBg = String(m.background || '');
               const validWideBg = rawBg && (rawBg.includes('images.metahub.space') || rawBg.includes('image.tmdb.org')) && !rawBg.includes('poster');
               const cleanBg = validWideBg ? rawBg : (isImdb ? `https://images.metahub.space/background/large/${itemId}/img` : (rawBg || m.poster || m.logo || ''));
+              const rawRel = String(m.releaseInfo || m.year || '');
+              const looksLikeSeries = /\b(animated series|tv series|miniseries|temporada|season)\b/i.test(`${m.name || ''} ${m.description || ''}`) || /\d{4}\s*[–-]\s*(\d{4}|$)/.test(rawRel) || (Array.isArray(m.videos) && m.videos.length > 1);
+              let resolvedType = src.type === 'tv' ? 'tv' : (m.type || src.type);
+              if (resolvedType === 'movie' && looksLikeSeries) resolvedType = 'series';
+              const isCinemetaRow = src.id.startsWith('cinemeta_');
               const item = {
                 id: itemId,
-                type: src.type === 'tv' ? 'tv' : (m.type || src.type),
+                type: resolvedType,
                 name: m.name,
                 logo: m.logo || (isImdb ? `https://images.metahub.space/logo/medium/${itemId}/img` : ''),
                 poster: m.poster || m.logo || (isImdb ? `https://images.metahub.space/poster/medium/${itemId}/img` : ''),
@@ -757,6 +762,7 @@ export default async (request) => {
                 const prev = richById.get(itemId) || {};
                 richById.set(itemId, {
                   ...prev,
+                  trueType: isCinemetaRow ? src.type : (prev.trueType || (looksLikeSeries ? 'series' : '')),
                   ytId: item.ytId || prev.ytId || '',
                   imdbRating: item.imdbRating || prev.imdbRating || '',
                   year: item.year || prev.year || '',
@@ -785,15 +791,25 @@ export default async (request) => {
       await Promise.all(
         heroCandidates.map(async (item) => {
           const cached = richById.get(item.id);
-          if (cached && cached.ytId) return;
+          if (cached && cached.ytId && cached.trueType) return;
           try {
-            const d = await fetchJson(`https://v3-cinemeta.strem.io/meta/${item.type}/${item.id}.json`, 1800);
-            const m = d?.meta;
+            let d = await fetchJson(`https://v3-cinemeta.strem.io/meta/${item.type}/${item.id}.json`, 1800).catch(() => null);
+            let m = d?.meta;
+            let detectedType = (m && (m.name || (Array.isArray(m.videos) && m.videos.length > 0))) ? (Array.isArray(m.videos) && m.videos.length > 1 ? 'series' : item.type) : '';
+            if (!m || !m.name) {
+              const altType = item.type === 'series' ? 'movie' : 'series';
+              const dAlt = await fetchJson(`https://v3-cinemeta.strem.io/meta/${altType}/${item.id}.json`, 1800).catch(() => null);
+              if (dAlt?.meta?.name) {
+                m = dAlt.meta;
+                detectedType = altType;
+              }
+            }
             if (m) {
               const ytId = m.trailers?.[0]?.source || m.trailerStreams?.[0]?.ytId || '';
               const prev = richById.get(item.id) || {};
               richById.set(item.id, {
                 ...prev,
+                trueType: detectedType || prev.trueType || item.type,
                 ytId: ytId || prev.ytId || '',
                 imdbRating: m.imdbRating || prev.imdbRating || '',
                 year: String(m.releaseInfo || m.year || prev.year || '').split('–')[0],
@@ -806,12 +822,15 @@ export default async (request) => {
         })
       );
 
-      // Merge enriched data (localized PT title/desc + trailer ytId + rating + genres) across all rows
+      // Merge enriched data (trueType + localized PT title/desc + trailer ytId + rating + genres) across all rows
+      const misplacedSeries = [];
+      const misplacedMovies = [];
       rows.forEach((row) => {
         if (row.type === 'tv') return;
-        row.items.forEach((item) => {
+        row.items = row.items.filter((item) => {
           const rich = richById.get(item.id);
           if (rich) {
+            if (rich.trueType) item.type = rich.trueType;
             if (rich.ptName) item.name = rich.ptName;
             if (rich.ptDesc) item.description = rich.ptDesc;
             if (!item.ytId && rich.ytId) item.ytId = rich.ytId;
@@ -821,8 +840,25 @@ export default async (request) => {
             if ((!item.genres || !item.genres.length) && rich.genres?.length) item.genres = rich.genres;
             if ((!item.cast || !item.cast.length) && rich.cast?.length) item.cast = rich.cast;
           }
+          if (row.type === 'movie' && item.type === 'series') {
+            misplacedSeries.push(item);
+            return false;
+          }
+          if (row.type === 'series' && item.type === 'movie') {
+            misplacedMovies.push(item);
+            return false;
+          }
+          return true;
         });
       });
+      if (misplacedSeries.length) {
+        const sRow = rows.find((r) => r.id === 'fenix_series_pop' || r.type === 'series');
+        if (sRow) sRow.items.unshift(...misplacedSeries);
+      }
+      if (misplacedMovies.length) {
+        const mRow = rows.find((r) => r.id === 'fenix_movies_pop' || r.type === 'movie');
+        if (mRow) mRow.items.unshift(...misplacedMovies);
+      }
 
       // Build "Top 10 no Brasil Hoje" row from the top movies & series
       const top10Pool = [];
@@ -895,7 +931,7 @@ export default async (request) => {
       rows.push(...topFirst, ...interleaved, ...tvRows);
       const validRows = rows.filter((r) => r.items.length > 0);
       const bodyStr = JSON.stringify({ rows: validRows, catalogs: validRows, addons: ADDONS, tvAddons: TV_ADDONS, movieAddons: MOVIE_ADDONS });
-      if (validRows.length > 0) setEdgeCache('catalogs:v11', bodyStr, 300);
+      if (validRows.length > 0) setEdgeCache('catalogs:v12', bodyStr, 300);
       return new Response(bodyStr, { status: 200, headers });
     }
 
@@ -1070,9 +1106,19 @@ export default async (request) => {
       if (cachedMeta) return new Response(cachedMeta, { status: 200, headers });
 
       try {
-        const data = await fetchJson(`https://v3-cinemeta.strem.io/meta/${type}/${encodeURIComponent(decodedId)}.json`, 3200);
-        const bodyStr = JSON.stringify({ meta: data.meta || null });
-        if (data.meta) setEdgeCache(cacheKey, bodyStr, 1800);
+        let data = await fetchJson(`https://v3-cinemeta.strem.io/meta/${type}/${encodeURIComponent(decodedId)}.json`, 2800).catch(() => null);
+        let meta = data?.meta || null;
+        if (!meta || !meta.name) {
+          const altType = type === 'series' ? 'movie' : 'series';
+          const altData = await fetchJson(`https://v3-cinemeta.strem.io/meta/${altType}/${encodeURIComponent(decodedId)}.json`, 2800).catch(() => null);
+          if (altData?.meta?.name) {
+            meta = { ...altData.meta, type: altType };
+          }
+        } else if (Array.isArray(meta.videos) && meta.videos.length > 1) {
+          meta.type = 'series';
+        }
+        const bodyStr = JSON.stringify({ meta });
+        if (meta) setEdgeCache(cacheKey, bodyStr, 1800);
         return new Response(bodyStr, { status: 200, headers });
       } catch (e) {
         return new Response(JSON.stringify({ meta: { id: decodedId, type, name: decodedId } }), { status: 200, headers });

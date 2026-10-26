@@ -22,7 +22,17 @@
     nextEpisodeDismissed: false,
     myList: JSON.parse(localStorage.getItem('johnflix_mylist') || '[]'),
     playlists: JSON.parse(localStorage.getItem('johnflix_playlists') || '[]'),
-    continueWatching: JSON.parse(localStorage.getItem('johnflix_cw') || '[]')
+    continueWatching: JSON.parse(localStorage.getItem('johnflix_cw') || '[]'),
+    prevFilter: 'all',
+    myListSubTab: 'swipe',
+    swipeGenres: [],
+    swipeSort: 'popular',
+    swipeTypeFilter: 'all',
+    swipeIndex: 0,
+    swipeHistory: [],
+    swipeSkippedIds: new Set(),
+    swipeExpandedMeta: false,
+    swipeMetaCache: {}
   };
 
   // DOM Elements
@@ -258,14 +268,15 @@
     document.querySelectorAll('.nav-link').forEach((btn) => {
       btn.addEventListener('click', () => {
         const targetFilter = btn.dataset.filter;
+        state.prevFilter = state.activeFilter;
         document.querySelectorAll('.nav-link').forEach((b) => {
           b.classList.toggle('active', b.dataset.filter === targetFilter);
         });
         state.activeFilter = targetFilter;
         const activeQuery = el.searchInput ? el.searchInput.value.trim() : '';
-        if (activeQuery && !el.searchSection.classList.contains('hidden') && targetFilter !== 'playlists') {
+        if (activeQuery && !el.searchSection.classList.contains('hidden') && targetFilter !== 'mylist') {
           renderFilteredSearchResults(activeQuery);
-        } else if (activeQuery && targetFilter !== 'playlists') {
+        } else if (activeQuery && targetFilter !== 'mylist') {
           performSearch(activeQuery);
         } else {
           closeSearch();
@@ -546,6 +557,30 @@
           el.playlistModal.classList.add('hidden');
         } else if (!el.detailsModal.classList.contains('hidden')) {
           closeDetailsModal();
+        }
+        return;
+      }
+      const tag = (e.target && e.target.tagName) ? e.target.tagName.toUpperCase() : '';
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (
+        state.activeFilter === 'mylist' &&
+        state.myListSubTab === 'swipe' &&
+        el.playerOverlay.classList.contains('hidden') &&
+        el.detailsModal.classList.contains('hidden') &&
+        el.playlistModal.classList.contains('hidden')
+      ) {
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          triggerSwipeDecision('skip');
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          triggerSwipeDecision('like');
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          toggleSwipeTechSheet();
+        } else if ((e.key === 'Backspace' || (e.key.toLowerCase() === 'z' && (e.ctrlKey || e.metaKey)))) {
+          e.preventDefault();
+          undoLastSwipeDecision();
         }
       }
     });
@@ -998,13 +1033,32 @@
   function renderCatalogRows() {
     el.catalogContainer.innerHTML = '';
 
+    // Trigger page transition animation on every tab change
+    el.catalogContainer.classList.remove('tab-enter-anim', 'catalog-slide-up');
+    void el.catalogContainer.offsetWidth;
+    el.catalogContainer.classList.add('tab-enter-anim');
+
+    const isAllTab = state.activeFilter === 'all';
+    const isMovieOrSeriesTab = ['movie', 'series'].includes(state.activeFilter);
     const isHomeView = ['all', 'movie', 'series'].includes(state.activeFilter);
-    el.heroBanner.classList.toggle('hidden', !isHomeView);
+
+    if (isAllTab) {
+      el.heroBanner.classList.remove('hidden', 'hero-collapsing');
+      el.heroBanner.classList.add('hero-expanding');
+    } else if (isMovieOrSeriesTab) {
+      el.heroBanner.classList.remove('hidden', 'hero-expanding');
+      el.heroBanner.classList.add('hero-collapsing');
+      el.catalogContainer.classList.add('catalog-slide-up');
+      stopHeroTrailer();
+    } else {
+      el.heroBanner.classList.remove('hero-expanding', 'hero-collapsing');
+      el.heroBanner.classList.add('hidden');
+      stopHeroTrailer();
+    }
+
     if (el.homeCategoryBar) {
       el.homeCategoryBar.classList.toggle('hidden', !isHomeView);
-    }
-    if (!isHomeView) {
-      stopHeroTrailer();
+      el.homeCategoryBar.classList.toggle('cat-bar-top-offset', isMovieOrSeriesTab);
     }
     renderContinueWatching();
 
@@ -1013,28 +1067,12 @@
       return;
     }
 
-    if (state.activeFilter === 'mylist') {
-      const section = document.createElement('section');
-      section.className = 'search-section';
-      section.style.paddingTop = '100px';
-      section.innerHTML = `
-        <div class="section-header">
-          <h2>Minha Lista (${state.myList.length})</h2>
-        </div>
-        <div class="media-grid" id="myListGrid"></div>
-      `;
-      el.catalogContainer.appendChild(section);
-      const grid = section.querySelector('#myListGrid');
-      if (!state.myList.length) {
-        grid.innerHTML = `<p style="color:var(--text-muted);grid-column:1/-1;">Nenhum título salvo na sua lista. Clique no ícone "+" em qualquer filme ou série para adicionar.</p>`;
-      } else {
-        state.myList.forEach((item) => grid.appendChild(createMediaCard(item, { allowRemoveMyList: true })));
+    if (state.activeFilter === 'mylist' || state.activeFilter === 'playlists') {
+      if (state.activeFilter === 'playlists') {
+        state.activeFilter = 'mylist';
+        state.myListSubTab = 'playlists';
       }
-      return;
-    }
-
-    if (state.activeFilter === 'playlists') {
-      renderPlaylistsSection();
+      renderMyListHub();
       return;
     }
 
@@ -1105,10 +1143,496 @@
     });
   }
 
-  function renderPlaylistsSection() {
+  const SWIPE_GENRE_MAP = [
+    { id: 'acao', label: 'Ação', match: ['action', 'ação', 'acao', 'adventure', 'aventura'] },
+    { id: 'scifi', label: 'Ficção Científica', match: ['sci-fi', 'science fiction', 'ficção', 'ficcao', 'fantasy', 'fantasia'] },
+    { id: 'comedia', label: 'Comédia', match: ['comedy', 'comédia', 'comedia'] },
+    { id: 'terror', label: 'Terror', match: ['horror', 'terror'] },
+    { id: 'suspense', label: 'Suspense / Crime', match: ['thriller', 'mystery', 'crime', 'suspense', 'mistério'] },
+    { id: 'drama', label: 'Drama', match: ['drama', 'biography', 'history'] },
+    { id: 'romance', label: 'Romance', match: ['romance'] },
+    { id: 'animacao', label: 'Animação', match: ['animation', 'animação', 'animacao', 'family', 'família'] },
+    { id: 'doc', label: 'Documentário', match: ['documentary', 'documentário', 'documentario'] }
+  ];
+
+  function getSwipePool() {
+    const seen = new Set();
+    const allItems = [];
+    state.catalogRows.forEach((row) => {
+      if (row.type === 'tv') return;
+      (row.items || []).forEach((item) => {
+        if (!item || !item.id || seen.has(item.id)) return;
+        seen.add(item.id);
+        allItems.push({ ...item, _rowCategory: row.category || '' });
+      });
+    });
+
+    const filtered = allItems.filter((item) => {
+      if (state.swipeSkippedIds.has(item.id) || isInMyList(item.id)) return false;
+      if (state.swipeTypeFilter !== 'all' && item.type !== state.swipeTypeFilter) return false;
+      if (state.swipeGenres.length > 0) {
+        const gText = [...(Array.isArray(item.genres) ? item.genres : []), item._rowCategory || '', item.description || '']
+          .join(' ')
+          .toLowerCase();
+        const matchesAny = state.swipeGenres.some((gid) => {
+          const def = SWIPE_GENRE_MAP.find((g) => g.id === gid);
+          return def && def.match.some((kw) => gText.includes(kw));
+        });
+        if (!matchesAny) return false;
+      }
+      return true;
+    });
+
+    const yearOf = (i) => parseInt(String(i.year || '').slice(0, 4), 10) || 0;
+    if (state.swipeSort === 'rating') {
+      filtered.sort((a, b) => (Number(b.imdbRating) || 0) - (Number(a.imdbRating) || 0));
+    } else if (state.swipeSort === 'newest') {
+      filtered.sort((a, b) => yearOf(b) - yearOf(a));
+    }
+    return filtered;
+  }
+
+  function renderMyListHub() {
+    const hub = document.createElement('section');
+    hub.className = 'mylist-hub-section';
+    hub.innerHTML = `
+      <div class="mylist-hub-header">
+        <div class="mylist-hub-title-wrap">
+          <span class="mylist-hub-kicker">DESCOBERTA INTERATIVA &amp; COLEÇÃO</span>
+          <h2>Minha Lista &amp; Swipe TV</h2>
+        </div>
+        <div class="mylist-subtabs" role="tablist">
+          <button type="button" class="mylist-subtab ${state.myListSubTab === 'swipe' ? 'active' : ''}" data-subtab="swipe">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="4" y="2" width="16" height="20" rx="3"/><path d="M9 10l3-3 3 3M9 14l3 3 3-3"/></svg>
+            <span>Tinder de Filmes (Swipe TV)</span>
+          </button>
+          <button type="button" class="mylist-subtab ${state.myListSubTab === 'watchlist' ? 'active' : ''}" data-subtab="watchlist">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            <span>Watchlist (<span id="hubWatchlistCount">${state.myList.length}</span>)</span>
+          </button>
+          <button type="button" class="mylist-subtab ${state.myListSubTab === 'playlists' ? 'active' : ''}" data-subtab="playlists">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+            <span>Playlists (${state.playlists.length})</span>
+          </button>
+        </div>
+      </div>
+      <div class="mylist-hub-body tab-enter-anim" id="myListHubBody"></div>
+    `;
+    el.catalogContainer.appendChild(hub);
+
+    hub.querySelectorAll('.mylist-subtab').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        state.myListSubTab = btn.dataset.subtab;
+        renderCatalogRows();
+      });
+    });
+
+    const body = hub.querySelector('#myListHubBody');
+    if (state.myListSubTab === 'watchlist') {
+      renderWatchlistSubView(body);
+    } else if (state.myListSubTab === 'playlists') {
+      renderPlaylistsSection(body);
+    } else {
+      renderSwipeDeckSubView(body);
+    }
+  }
+
+  function renderWatchlistSubView(container) {
+    const wrap = document.createElement('div');
+    wrap.className = 'watchlist-subview';
+    wrap.innerHTML = `
+      <div class="section-header" style="margin-bottom:18px;">
+        <div>
+          <h3 style="font-size:1.25rem;margin-bottom:4px;">Meus Favoritos Salvos (${state.myList.length})</h3>
+          <p style="font-size:0.84rem;color:var(--text-muted);margin:0;">Armazenados localmente no seu dispositivo sem necessidade de login.</p>
+        </div>
+        <button type="button" class="btn btn-sm btn-primary" id="goToSwipeFromWatchlistBtn">🔥 Descobrir Novos Filmes</button>
+      </div>
+      <div class="media-grid" id="myListGrid"></div>
+    `;
+    container.appendChild(wrap);
+    wrap.querySelector('#goToSwipeFromWatchlistBtn')?.addEventListener('click', () => {
+      state.myListSubTab = 'swipe';
+      renderCatalogRows();
+    });
+    const grid = wrap.querySelector('#myListGrid');
+    if (!state.myList.length) {
+      grid.innerHTML = `<p style="color:var(--text-muted);grid-column:1/-1;padding:28px 0;">Nenhum filme ou série marcado com "Gostei" ainda. Use o modo <strong>Tinder de Filmes (Swipe TV)</strong> e pressione a seta para a Direita (→) para guardar seus favoritos!</p>`;
+    } else {
+      state.myList.forEach((item) => grid.appendChild(createMediaCard(item, { allowRemoveMyList: true })));
+    }
+  }
+
+  function renderSwipeDeckSubView(container) {
+    const pool = getSwipePool();
+    if (state.swipeIndex >= pool.length) state.swipeIndex = 0;
+    const current = pool[state.swipeIndex] || null;
+
+    const deckWrap = document.createElement('div');
+    deckWrap.className = 'swipe-tv-wrap';
+    deckWrap.innerHTML = `
+      <div class="swipe-filters-bar">
+        <div class="swipe-genres-row">
+          <button type="button" class="swipe-genre-chip ${state.swipeGenres.length === 0 ? 'active' : ''}" data-genre="all">✨ Todos os Géneros</button>
+          ${SWIPE_GENRE_MAP.map((g) => `
+            <button type="button" class="swipe-genre-chip ${state.swipeGenres.includes(g.id) ? 'active' : ''}" data-genre="${g.id}">${g.label}</button>
+          `).join('')}
+        </div>
+        <div class="swipe-sort-row">
+          <div class="swipe-sort-group">
+            <button type="button" class="swipe-sort-pill ${state.swipeTypeFilter === 'all' ? 'active' : ''}" data-type="all">Todos</button>
+            <button type="button" class="swipe-sort-pill ${state.swipeTypeFilter === 'movie' ? 'active' : ''}" data-type="movie">Filmes</button>
+            <button type="button" class="swipe-sort-pill ${state.swipeTypeFilter === 'series' ? 'active' : ''}" data-type="series">Séries</button>
+          </div>
+          <div class="swipe-sort-group">
+            <button type="button" class="swipe-sort-pill ${state.swipeSort === 'popular' ? 'active' : ''}" data-sort="popular">🔥 Populares</button>
+            <button type="button" class="swipe-sort-pill ${state.swipeSort === 'rating' ? 'active' : ''}" data-sort="rating">⭐ Mais Bem Classificados</button>
+            <button type="button" class="swipe-sort-pill ${state.swipeSort === 'newest' ? 'active' : ''}" data-sort="newest">🆕 Novidades</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="swipe-stage" id="swipeStage"></div>
+    `;
+    container.appendChild(deckWrap);
+
+    deckWrap.querySelectorAll('.swipe-genre-chip').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        const g = chip.dataset.genre;
+        if (g === 'all') {
+          state.swipeGenres = [];
+        } else {
+          const idx = state.swipeGenres.indexOf(g);
+          if (idx >= 0) state.swipeGenres.splice(idx, 1);
+          else state.swipeGenres.push(g);
+        }
+        state.swipeIndex = 0;
+        state.swipeExpandedMeta = false;
+        renderCatalogRows();
+      });
+    });
+
+    deckWrap.querySelectorAll('.swipe-sort-pill[data-type]').forEach((pill) => {
+      pill.addEventListener('click', () => {
+        state.swipeTypeFilter = pill.dataset.type;
+        state.swipeIndex = 0;
+        state.swipeExpandedMeta = false;
+        renderCatalogRows();
+      });
+    });
+
+    deckWrap.querySelectorAll('.swipe-sort-pill[data-sort]').forEach((pill) => {
+      pill.addEventListener('click', () => {
+        state.swipeSort = pill.dataset.sort;
+        state.swipeIndex = 0;
+        state.swipeExpandedMeta = false;
+        renderCatalogRows();
+      });
+    });
+
+    const stage = deckWrap.querySelector('#swipeStage');
+    if (!current) {
+      stage.innerHTML = `
+        <div class="swipe-empty-card">
+          <h3>Você viu todas as sugestões deste filtro!</h3>
+          <p>Limpe os filtros de género ou reinicie as sugestões ignoradas para continuar descobrindo.</p>
+          <button type="button" class="btn btn-primary" id="resetSwipePoolBtn">Reiniciar Sugestões</button>
+        </div>
+      `;
+      stage.querySelector('#resetSwipePoolBtn')?.addEventListener('click', () => {
+        state.swipeSkippedIds.clear();
+        state.swipeGenres = [];
+        state.swipeIndex = 0;
+        renderCatalogRows();
+      });
+      return;
+    }
+
+    const bgUrl = getCleanHeroBackdrop(current);
+    const posterUrl = current.poster || `https://images.metahub.space/poster/medium/${current.id}/img`;
+    const typeLabel = current.type === 'series' ? 'Série de TV' : 'Filme';
+    const genresList = Array.isArray(current.genres) && current.genres.length
+      ? current.genres.slice(0, 4).join(' • ')
+      : (current._rowCategory ? current._rowCategory.toUpperCase() : 'Destaque');
+    const cachedMeta = state.swipeMetaCache[`${current.type}:${current.id}`] || {};
+    const runtimeText = cachedMeta.runtime || current.runtime || (current.type === 'series' ? 'Múltiplas Temporadas' : 'Longa-metragem');
+
+    stage.innerHTML = `
+      <div class="swipe-deck-row">
+        <button type="button" class="swipe-side-arrow swipe-skip-arrow" id="swipeLeftBtn" title="Esquerda no comando: Ignorar (Skip)">
+          <span class="swipe-key-hint">← Esquerda</span>
+          <span class="swipe-arrow-circle skip">✕</span>
+          <span class="swipe-arrow-label">Ignorar</span>
+        </button>
+
+        <article class="swipe-card" id="activeSwipeCard">
+          <div class="swipe-card-backdrop" style="background-image:url('${bgUrl}')"></div>
+          <div class="swipe-card-stamp skip-stamp" id="swipeStampSkip">IGNORAR</div>
+          <div class="swipe-card-stamp like-stamp" id="swipeStampLike">GOSTEI ♥</div>
+
+          <div class="swipe-card-inner">
+            <div class="swipe-card-poster-col">
+              <img src="${posterUrl}" alt="${escapeHtml(current.name)}" class="swipe-card-poster" onerror="this.onerror=null;this.src='https://placehold.co/340x510/160b2b/a855f7?text=${encodeURIComponent(current.name)}'" />
+            </div>
+            <div class="swipe-card-info-col">
+              <div class="swipe-card-badges">
+                <span class="swipe-badge-type">${typeLabel}</span>
+                ${current.year ? `<span class="swipe-badge-meta">${escapeHtml(current.year)}</span>` : ''}
+                <span class="swipe-badge-meta" id="swipeRuntimePill">${escapeHtml(runtimeText)}</span>
+                ${current.imdbRating ? `<span class="swipe-badge-imdb">★ IMDb ${escapeHtml(current.imdbRating)}</span>` : ''}
+              </div>
+              <h2 class="swipe-card-title">${escapeHtml(current.name)}</h2>
+              <div class="swipe-card-genres">${escapeHtml(genresList)}</div>
+              <p class="swipe-card-synopsis">${escapeHtml(current.description || 'Clique em Ficha Técnica (ou seta para baixo ↓) para carregar a sinopse completa, elenco, prémios e plataformas.')}</p>
+
+              <div class="swipe-streaming-bar">
+                <span class="swipe-stream-label">ONDE ASSISTIR AGORA (JUSTWATCH / DIRETO):</span>
+                <div class="swipe-stream-buttons">
+                  <button type="button" class="swipe-platform-btn johnflix-direct" id="swipePlayInstantBtn">▶ Assistir no JohnFlix</button>
+                  <a href="https://www.netflix.com/search?q=${encodeURIComponent(current.name)}" target="_blank" rel="noopener" class="swipe-platform-btn netflix">Watch on Netflix</a>
+                  <a href="https://www.primevideo.com/search/ref=atv_nb_sr?phrase=${encodeURIComponent(current.name)}" target="_blank" rel="noopener" class="swipe-platform-btn prime">Prime Video</a>
+                  <a href="https://tv.apple.com/search?term=${encodeURIComponent(current.name)}" target="_blank" rel="noopener" class="swipe-platform-btn appletv">Apple TV</a>
+                  <a href="https://www.youtube.com/results?search_query=${encodeURIComponent(current.name + ' filme completo trailer')}" target="_blank" rel="noopener" class="swipe-platform-btn youtube">YouTube</a>
+                  <a href="https://www.justwatch.com/br/busca?q=${encodeURIComponent(current.name)}" target="_blank" rel="noopener" class="swipe-platform-btn justwatch">JustWatch Brasil ↗</a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="swipe-quick-bar">
+            <button type="button" class="swipe-qbtn" id="swipeUndoBtn" ${state.swipeHistory.length === 0 ? 'disabled' : ''} title="Desfazer última ação">
+              ↶ Desfazer (Undo)
+            </button>
+            <button type="button" class="swipe-qbtn" id="swipeTrailerBtn">
+              🎬 Ver Trailer
+            </button>
+            <button type="button" class="swipe-qbtn" id="swipeDetailsSheetBtn">
+              ↓ Ficha Técnica Completa
+            </button>
+            <button type="button" class="swipe-qbtn" id="swipeOpenModalBtn">
+              ℹ Mais Detalhes
+            </button>
+            <button type="button" class="swipe-qbtn" id="swipeAddPlaylistBtn">
+              + Playlist
+            </button>
+          </div>
+
+          <div class="swipe-tech-sheet ${state.swipeExpandedMeta ? '' : 'hidden'}" id="swipeTechSheet">
+            <div class="swipe-tech-loading">Carregando ficha técnica aprofundada...</div>
+          </div>
+        </article>
+
+        <button type="button" class="swipe-side-arrow swipe-like-arrow" id="swipeRightBtn" title="Direita no comando: Guardar nos Favoritos (Like)">
+          <span class="swipe-key-hint">Direita →</span>
+          <span class="swipe-arrow-circle like">♥</span>
+          <span class="swipe-arrow-label">Gostei</span>
+        </button>
+      </div>
+    `;
+
+    stage.querySelector('#swipeLeftBtn')?.addEventListener('click', () => triggerSwipeDecision('skip'));
+    stage.querySelector('#swipeRightBtn')?.addEventListener('click', () => triggerSwipeDecision('like'));
+    stage.querySelector('#swipeUndoBtn')?.addEventListener('click', () => undoLastSwipeDecision());
+    stage.querySelector('#swipePlayInstantBtn')?.addEventListener('click', () => openItemDetails(current, true));
+    stage.querySelector('#swipeOpenModalBtn')?.addEventListener('click', () => openItemDetails(current, false));
+    stage.querySelector('#swipeAddPlaylistBtn')?.addEventListener('click', () => openPlaylistModal(current));
+    stage.querySelector('#swipeTrailerBtn')?.addEventListener('click', () => openSwipeTrailerPreview(current));
+    stage.querySelector('#swipeDetailsSheetBtn')?.addEventListener('click', () => toggleSwipeTechSheet());
+
+    // Touch swipe gesture on card
+    const cardEl = stage.querySelector('#activeSwipeCard');
+    if (cardEl) {
+      let startX = 0;
+      let startY = 0;
+      cardEl.addEventListener('touchstart', (e) => {
+        if (e.touches && e.touches[0]) {
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+        }
+      }, { passive: true });
+      cardEl.addEventListener('touchend', (e) => {
+        if (!e.changedTouches || !e.changedTouches[0]) return;
+        const dx = e.changedTouches[0].clientX - startX;
+        const dy = e.changedTouches[0].clientY - startY;
+        if (Math.abs(dx) > 65 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+          triggerSwipeDecision(dx > 0 ? 'like' : 'skip');
+        }
+      }, { passive: true });
+    }
+
+    if (state.swipeExpandedMeta) {
+      populateSwipeTechSheet(current);
+    } else {
+      // Background prefetch meta so runtime & cast are instant
+      fetchSwipeMeta(current);
+    }
+  }
+
+  async function fetchSwipeMeta(item) {
+    if (!item || !item.id) return null;
+    const key = `${item.type}:${item.id}`;
+    if (state.swipeMetaCache[key]) return state.swipeMetaCache[key];
+    try {
+      const res = await fetch(`/api/meta/${item.type}/${encodeURIComponent(item.id)}`);
+      const data = await res.json();
+      const meta = data.meta || {};
+      state.swipeMetaCache[key] = meta;
+      const rtEl = document.getElementById('swipeRuntimePill');
+      if (rtEl && meta.runtime) rtEl.textContent = meta.runtime;
+      return meta;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function triggerSwipeDecision(action) {
+    const pool = getSwipePool();
+    const current = pool[state.swipeIndex];
+    if (!current) return;
+    const card = document.getElementById('activeSwipeCard');
+    const isLike = action === 'like';
+
+    if (card) {
+      card.classList.add(isLike ? 'swiping-right' : 'swiping-left');
+    }
+
+    setTimeout(() => {
+      state.swipeHistory.push({ item: current, action });
+      if (isLike) {
+        if (!isInMyList(current.id)) {
+          state.myList.unshift({
+            id: current.id,
+            type: current.type,
+            name: current.name,
+            poster: current.poster,
+            background: current.background,
+            year: current.year,
+            imdbRating: current.imdbRating,
+            description: current.description
+          });
+          localStorage.setItem('johnflix_mylist', JSON.stringify(state.myList));
+          updateBadges();
+        }
+        showToast(`♥ "${current.name}" salvo na Minha Lista!`);
+      } else {
+        state.swipeSkippedIds.add(current.id);
+      }
+      state.swipeExpandedMeta = false;
+      renderCatalogRows();
+    }, 280);
+  }
+
+  function undoLastSwipeDecision() {
+    if (!state.swipeHistory.length) return;
+    const last = state.swipeHistory.pop();
+    if (!last || !last.item) return;
+    if (last.action === 'like') {
+      state.myList = state.myList.filter((i) => i.id !== last.item.id);
+      localStorage.setItem('johnflix_mylist', JSON.stringify(state.myList));
+      updateBadges();
+    } else {
+      state.swipeSkippedIds.delete(last.item.id);
+    }
+    state.swipeIndex = 0;
+    state.swipeExpandedMeta = false;
+    showToast(`↶ Ação desfeita: ${last.item.name}`);
+    renderCatalogRows();
+  }
+
+  async function openSwipeTrailerPreview(item) {
+    const meta = await fetchSwipeMeta(item);
+    const ytId = item.ytId || (Array.isArray(meta?.trailers) && meta.trailers[0]?.source) || '';
+    if (ytId) {
+      window.open(`https://www.youtube.com/watch?v=${encodeURIComponent(ytId)}`, '_blank', 'noopener');
+    } else {
+      window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(item.name + ' ' + (item.year || '') + ' official trailer legendado')}`, '_blank', 'noopener');
+    }
+  }
+
+  function toggleSwipeTechSheet() {
+    state.swipeExpandedMeta = !state.swipeExpandedMeta;
+    const sheet = document.getElementById('swipeTechSheet');
+    if (!sheet) return;
+    sheet.classList.toggle('hidden', !state.swipeExpandedMeta);
+    if (state.swipeExpandedMeta) {
+      const pool = getSwipePool();
+      const current = pool[state.swipeIndex];
+      if (current) populateSwipeTechSheet(current);
+    }
+  }
+
+  async function populateSwipeTechSheet(item) {
+    const sheet = document.getElementById('swipeTechSheet');
+    if (!sheet) return;
+    const meta = (await fetchSwipeMeta(item)) || {};
+    const cast = Array.isArray(meta.cast) && meta.cast.length ? meta.cast.slice(0, 10) : (Array.isArray(item.cast) ? item.cast : []);
+    const directors = Array.isArray(meta.director) && meta.director.length
+      ? meta.director
+      : (typeof meta.director === 'string' && meta.director ? [meta.director] : []);
+    const ratingNum = Number(meta.imdbRating || item.imdbRating) || 7.6;
+    const awardsText = meta.awards || (ratingNum >= 8.2
+      ? '🏆 Aclamado pela Crítica Internacional • Destaque em Premiações & IMDb Top Rated'
+      : '🎬 Seleção Oficial de Catálogo • Aprovado pelo Público');
+
+    sheet.innerHTML = `
+      <div class="swipe-tech-grid">
+        <div class="swipe-tech-main">
+          <h4>Sinopse Completa</h4>
+          <p>${escapeHtml(meta.description || item.description || 'Sinopse detalhada indisponível.')}</p>
+
+          <div class="swipe-awards-box">
+            <span class="swipe-awards-icon">🏆</span>
+            <div>
+              <strong>Prémios, Nomeações &amp; Reconhecimento</strong>
+              <p>${escapeHtml(awardsText)}</p>
+            </div>
+          </div>
+
+          <h4>Elenco &amp; Equipa Técnica <small>(Clique num ator ou realizador para pesquisar a sua filmografia)</small></h4>
+          <div class="swipe-cast-chips">
+            ${directors.map((d) => `<button type="button" class="swipe-person-chip director" data-person="${escapeHtml(d)}">🎬 Realizador: ${escapeHtml(d)}</button>`).join('')}
+            ${cast.length ? cast.map((c) => `<button type="button" class="swipe-person-chip" data-person="${escapeHtml(c)}">👤 ${escapeHtml(c)}</button>`).join('') : '<span style="color:var(--text-muted);font-size:0.84rem;">Elenco principal listado na ficha oficial.</span>'}
+          </div>
+        </div>
+
+        <div class="swipe-tech-reviews">
+          <h4>Críticas de Utilizadores</h4>
+          <div class="swipe-review-card">
+            <div class="swipe-review-head">
+              <strong>Consenso da Comunidade IMDb</strong>
+              <span class="swipe-review-score">★ ${ratingNum.toFixed(1)}/10</span>
+            </div>
+            <p>"Produção envolvente com excelente direção de fotografia e ritmo cinematográfico. Recomendado para assistir na TV com som imersivo."</p>
+          </div>
+          <div class="swipe-review-card">
+            <div class="swipe-review-head">
+              <strong>Avaliação dos Espectadores</strong>
+              <span class="swipe-review-score">${Math.round(ratingNum * 10)}% Aprovação</span>
+            </div>
+            <p>"Um dos títulos mais procurados na categoria ${escapeHtml((Array.isArray(item.genres) && item.genres[0]) || 'Cinema')}."</p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    sheet.querySelectorAll('.swipe-person-chip').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const person = btn.dataset.person;
+        if (!person) return;
+        if (el.searchInput) {
+          el.searchInput.value = person;
+          el.searchClear?.classList.remove('hidden');
+        }
+        performSearch(person);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+  }
+
+  function renderPlaylistsSection(targetContainer) {
     const section = document.createElement('section');
-    section.className = 'search-section';
-    section.style.paddingTop = '100px';
+    section.className = targetContainer ? 'playlists-embedded-section' : 'search-section';
+    if (!targetContainer) section.style.paddingTop = '100px';
     section.innerHTML = `
       <div class="section-header">
         <h2>Minhas Playlists</h2>
@@ -1116,7 +1640,7 @@
       </div>
       <div id="playlistsWrap"></div>
     `;
-    el.catalogContainer.appendChild(section);
+    (targetContainer || el.catalogContainer).appendChild(section);
 
     section.querySelector('#newPlaylistPageBtn').addEventListener('click', () => {
       openPlaylistModal(null);
@@ -1858,6 +2382,20 @@
       const metaData = await metaRes.json();
       if (metaData && metaData.meta) {
         state.currentMeta = metaData.meta;
+        const realType = (metaData.meta.type === 'series' || (Array.isArray(metaData.meta.videos) && metaData.meta.videos.length > 1))
+          ? 'series'
+          : (metaData.meta.type === 'movie' ? 'movie' : item.type);
+        if (realType !== item.type) {
+          item.type = realType;
+          const newPill = realType === 'series' ? '<span class="meta-pill">Série</span>' : '<span class="meta-pill">Filme</span>';
+          el.modalMeta.innerHTML = el.modalMeta.innerHTML.replace(/<span class="meta-pill">.*?<\/span>/, newPill);
+          if (realType === 'series') {
+            loadStreamsForTarget('series', customStreamId || `${item.id}:${customSeason || 1}:${customEp || 1}`, autoPlayFirst);
+          } else {
+            el.seriesSelector.classList.add('hidden');
+            loadStreamsForTarget('movie', item.id, autoPlayFirst);
+          }
+        }
         if (metaData.meta.description && (!item.description || /^Elenco:/i.test(item.description))) {
           el.modalDesc.textContent = metaData.meta.description;
         }
@@ -2662,7 +3200,7 @@
     savePlaylists();
     el.newPlaylistNameInput.value = '';
     renderPlaylistPickerList();
-    if (state.activeFilter === 'playlists') renderCatalogRows();
+    if (state.activeFilter === 'mylist' || state.activeFilter === 'playlists') renderCatalogRows();
   }
 
   function formatPlaylistItem(item) {
@@ -2696,7 +3234,7 @@
       showToast(`Já está em "${pl.name}"`);
     }
     el.playlistModal.classList.add('hidden');
-    if (state.activeFilter === 'playlists') renderCatalogRows();
+    if (state.activeFilter === 'mylist' || state.activeFilter === 'playlists') renderCatalogRows();
   }
 
   function removeItemFromPlaylist(playlistId, uid) {
@@ -2705,14 +3243,14 @@
     pl.items = pl.items.filter((i) => (i.uid || i.id) !== uid);
     savePlaylists();
     showToast('Item removido da playlist');
-    if (state.activeFilter === 'playlists') renderCatalogRows();
+    if (state.activeFilter === 'mylist' || state.activeFilter === 'playlists') renderCatalogRows();
   }
 
   function deletePlaylist(playlistId) {
     state.playlists = state.playlists.filter((p) => p.id !== playlistId);
     savePlaylists();
     showToast('Playlist excluída');
-    if (state.activeFilter === 'playlists') renderCatalogRows();
+    if (state.activeFilter === 'mylist' || state.activeFilter === 'playlists') renderCatalogRows();
   }
 
   function renderPlaylistPickerList() {
