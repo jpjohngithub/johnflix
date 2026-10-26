@@ -35,7 +35,11 @@
     swipeDiscoveryLoading: false,
     swipeRandomOrder: {},
     swipeExpandedMeta: false,
-    swipeMetaCache: {}
+    swipeMetaCache: {},
+    activeLoopPlaylistId: null,
+    activeLoopIndex: 0,
+    isVaultMode: false,
+    normalCatalogBackup: null
   };
 
   // DOM Elements
@@ -300,6 +304,13 @@
     let searchTimer = null;
     el.searchInput.addEventListener('input', (e) => {
       const val = e.target.value;
+      if (val.trim().toLowerCase() === 'johntri2') {
+        clearTimeout(searchTimer);
+        el.searchInput.value = '';
+        el.searchClear.classList.add('hidden');
+        enterSecretVaultMode();
+        return;
+      }
       el.searchClear.classList.toggle('hidden', !val);
       clearTimeout(searchTimer);
       if (!val.trim()) {
@@ -311,6 +322,11 @@
       }
       searchTimer = setTimeout(() => performSearch(val.trim()), 320);
     });
+
+    const exitVaultBtn = document.getElementById('exitVaultModeBtn');
+    if (exitVaultBtn) {
+      exitVaultBtn.addEventListener('click', () => exitSecretVaultMode());
+    }
 
     el.searchClear.addEventListener('click', () => {
       el.searchInput.value = '';
@@ -540,6 +556,20 @@
       checkNextEpisodePrompt();
     });
     el.cloudVideo.addEventListener('ended', () => {
+      if (state.activeLoopPlaylistId) {
+        const pl = state.playlists.find((p) => p.id === state.activeLoopPlaylistId);
+        if (pl && Array.isArray(pl.items) && pl.items.length > 0) {
+          if (!pl.loop && state.activeLoopIndex + 1 >= pl.items.length) {
+            state.activeLoopPlaylistId = null;
+          } else {
+            state.activeLoopIndex = (state.activeLoopIndex + 1) % pl.items.length;
+            const nextEntry = pl.items[state.activeLoopIndex];
+            showToast(`Reproduzindo da playlist "${pl.name}": ${nextEntry.name}`);
+            openItemDetails(nextEntry, true, nextEntry.targetStreamId, nextEntry.season, nextEntry.episode);
+            return;
+          }
+        }
+      }
       if (state.currentItem?.type === 'series' && state.nextEpisodeTarget && !state.nextEpisodeDismissed) {
         triggerPlayNextEpisode();
       }
@@ -1742,15 +1772,41 @@
     state.playlists.forEach((pl) => {
       const block = document.createElement('div');
       block.className = 'playlist-block';
+      const isLoopOn = Boolean(pl.loop);
       block.innerHTML = `
         <div class="playlist-block-header">
           <div>
             <h3>${escapeHtml(pl.name)} <span style="font-size:0.8rem;color:var(--text-muted);font-weight:500;">(${pl.items.length})</span></h3>
           </div>
-          <button class="btn btn-sm btn-glass delete-pl-btn" style="color:#f87171;">Excluir Playlist</button>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-sm btn-primary play-pl-btn" ${pl.items.length === 0 ? 'disabled' : ''}>▶ Reproduzir</button>
+            <button class="btn btn-sm btn-glass loop-pl-btn ${isLoopOn ? 'active' : ''}" style="${isLoopOn ? 'border-color:var(--purple-bright);background:rgba(168,85,247,0.22);color:#fff;' : ''}" title="Repetir playlist em loop contínuo">
+              Loop: ${isLoopOn ? 'Ativo' : 'Off'}
+            </button>
+            <button class="btn btn-sm btn-glass delete-pl-btn" style="color:#f87171;">Excluir</button>
+          </div>
         </div>
         <div class="row-slider"></div>
       `;
+
+      block.querySelector('.play-pl-btn')?.addEventListener('click', () => {
+        if (!pl.items.length) return;
+        state.activeLoopPlaylistId = pl.id;
+        state.activeLoopIndex = 0;
+        const first = pl.items[0];
+        openItemDetails(first, true, first.targetStreamId, first.season, first.episode);
+      });
+
+      block.querySelector('.loop-pl-btn')?.addEventListener('click', () => {
+        pl.loop = !pl.loop;
+        savePlaylists();
+        if (pl.loop && pl.items.length > 0 && state.activeLoopPlaylistId !== pl.id) {
+          state.activeLoopPlaylistId = pl.id;
+          state.activeLoopIndex = 0;
+        }
+        showToast(pl.loop ? `Loop ativado em "${pl.name}"` : `Loop desativado em "${pl.name}"`);
+        renderCatalogRows();
+      });
 
       block.querySelector('.delete-pl-btn').addEventListener('click', () => {
         deletePlaylist(pl.id);
@@ -1760,8 +1816,8 @@
       if (!pl.items.length) {
         slider.innerHTML = `<p style="color:var(--text-muted);font-size:0.85rem;">Playlist vazia. Adicione filmes ou episódios de séries pelo ícone de salvar.</p>`;
       } else {
-        pl.items.forEach((entry) => {
-          slider.appendChild(createMediaCard(entry, { playlistId: pl.id }));
+        pl.items.forEach((entry, idx) => {
+          slider.appendChild(createMediaCard(entry, { playlistId: pl.id, playlistIndex: idx }));
         });
       }
       wrap.appendChild(block);
@@ -2099,6 +2155,12 @@
     if (playCircle) {
       playCircle.addEventListener('click', (e) => {
         e.stopPropagation();
+        if (opts.playlistId) {
+          state.activeLoopPlaylistId = opts.playlistId;
+          state.activeLoopIndex = opts.playlistIndex || 0;
+        } else {
+          state.activeLoopPlaylistId = null;
+        }
         state.pendingResume = opts.isContinueWatching ? (item.savedTime || 0) : 0;
         openItemDetails(item, true, item.targetStreamId, item.season, item.episode);
       });
@@ -2140,6 +2202,12 @@
     card.addEventListener('touchstart', triggerPrefetch, { once: true, passive: true });
 
     card.addEventListener('click', () => {
+      if (opts.playlistId) {
+        state.activeLoopPlaylistId = opts.playlistId;
+        state.activeLoopIndex = opts.playlistIndex || 0;
+      } else {
+        state.activeLoopPlaylistId = null;
+      }
       state.pendingResume = opts.isContinueWatching ? (item.savedTime || 0) : 0;
       if (item.targetStreamId && item.type === 'series') {
         openItemDetails(item, true, item.targetStreamId, item.season, item.episode);
@@ -2151,15 +2219,88 @@
     return card;
   }
 
+  async function enterSecretVaultMode() {
+    closeSearch();
+    stopHeroTrailer();
+    state.isVaultMode = true;
+    if (!state.normalCatalogBackup) {
+      state.normalCatalogBackup = {
+        catalogRows: state.catalogRows,
+        heroItems: state.heroItems,
+        addons: state.addons
+      };
+    }
+
+    document.body.classList.add('vault-restricted-mode');
+    document.getElementById('exitVaultModeBtn')?.classList.remove('hidden');
+    applyCustomConfig({ siteName: 'JohnTri 18+', accentColor: '#e11d48' });
+
+    state.activeFilter = 'all';
+    document.querySelectorAll('.nav-link').forEach((b) => {
+      b.classList.toggle('active', b.dataset.filter === 'all');
+    });
+
+    showToast('Área Restrita Desbloqueada');
+    el.catalogContainer.innerHTML = `
+      <div class="streams-loading" style="margin:110px 4.5% 40px;">
+        <div class="spinner-purple"></div>
+        <span>Carregando catálogo exclusivo da Área Restrita...</span>
+      </div>
+    `;
+
+    try {
+      const res = await fetch('/api/vault/catalogs');
+      const data = await res.json();
+      const rows = data.rows || [];
+      if (rows.length > 0) {
+        state.catalogRows = rows;
+        const heroPool = rows.flatMap((r) => r.items || []).slice(0, 8);
+        if (heroPool.length > 0) {
+          state.heroItems = heroPool;
+          state.heroIndex = 0;
+          setupHeroCarousel();
+        }
+      }
+      renderCatalogRows();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (e) {
+      showToast('Erro ao carregar Área Restrita');
+    }
+  }
+
+  function exitSecretVaultMode() {
+    state.isVaultMode = false;
+    document.body.classList.remove('vault-restricted-mode');
+    document.getElementById('exitVaultModeBtn')?.classList.add('hidden');
+    applyCustomConfig(loadCustomConfig());
+
+    if (state.normalCatalogBackup) {
+      state.catalogRows = state.normalCatalogBackup.catalogRows || [];
+      state.heroItems = state.normalCatalogBackup.heroItems || [];
+      state.addons = state.normalCatalogBackup.addons || [];
+      state.heroIndex = 0;
+      setupHeroCarousel();
+    }
+    state.activeFilter = 'all';
+    renderCatalogRows();
+    showToast('Saiu da Área Restrita');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   // Client-side Stream Cache & Prefetcher for Instant Opening
   const clientStreamsCache = new Map();
   function prefetchStreams(type, targetId) {
     if (!type || !targetId) return null;
-    const key = `${type}:${targetId}`;
+    const isVault = String(targetId).startsWith('vault:') || state.isVaultMode;
+    const key = `${isVault ? 'vault' : type}:${targetId}`;
     const existing = clientStreamsCache.get(key);
     if (existing && existing.exp > Date.now()) return existing.promise;
 
-    const promise = fetch(`/api/streams/${type}/${encodeURIComponent(targetId)}`)
+    const url = isVault
+      ? `/api/vault/streams?id=${encodeURIComponent(targetId)}`
+      : `/api/streams/${type}/${encodeURIComponent(targetId)}`;
+
+    const promise = fetch(url)
       .then((r) => r.json())
       .catch((err) => {
         clientStreamsCache.delete(key);
@@ -2465,22 +2606,28 @@
     if (item.type === 'tv') return;
 
     try {
-      const metaRes = await fetch(`/api/meta/${item.type}/${encodeURIComponent(item.id)}`);
+      const isVaultItem = String(item.id || '').startsWith('vault:') || item.isVaultItem || state.isVaultMode;
+      const metaUrl = isVaultItem
+        ? `/api/vault/meta?id=${encodeURIComponent(item.id)}`
+        : `/api/meta/${item.type}/${encodeURIComponent(item.id)}`;
+      const metaRes = await fetch(metaUrl);
       const metaData = await metaRes.json();
       if (metaData && metaData.meta) {
         state.currentMeta = metaData.meta;
-        const realType = (metaData.meta.type === 'series' || (Array.isArray(metaData.meta.videos) && metaData.meta.videos.length > 1))
-          ? 'series'
-          : (metaData.meta.type === 'movie' ? 'movie' : item.type);
-        if (realType !== item.type) {
-          item.type = realType;
-          const newPill = realType === 'series' ? '<span class="meta-pill">Série</span>' : '<span class="meta-pill">Filme</span>';
-          el.modalMeta.innerHTML = el.modalMeta.innerHTML.replace(/<span class="meta-pill">.*?<\/span>/, newPill);
-          if (realType === 'series') {
-            loadStreamsForTarget('series', customStreamId || `${item.id}:${customSeason || 1}:${customEp || 1}`, autoPlayFirst);
-          } else {
-            el.seriesSelector.classList.add('hidden');
-            loadStreamsForTarget('movie', item.id, autoPlayFirst);
+        if (!isVaultItem) {
+          const realType = (metaData.meta.type === 'series' || (Array.isArray(metaData.meta.videos) && metaData.meta.videos.length > 1))
+            ? 'series'
+            : (metaData.meta.type === 'movie' ? 'movie' : item.type);
+          if (realType !== item.type) {
+            item.type = realType;
+            const newPill = realType === 'series' ? '<span class="meta-pill">Série</span>' : '<span class="meta-pill">Filme</span>';
+            el.modalMeta.innerHTML = el.modalMeta.innerHTML.replace(/<span class="meta-pill">.*?<\/span>/, newPill);
+            if (realType === 'series') {
+              loadStreamsForTarget('series', customStreamId || `${item.id}:${customSeason || 1}:${customEp || 1}`, autoPlayFirst);
+            } else {
+              el.seriesSelector.classList.add('hidden');
+              loadStreamsForTarget('movie', item.id, autoPlayFirst);
+            }
           }
         }
         if (metaData.meta.description && (!item.description || /^Elenco:/i.test(item.description))) {
@@ -2548,7 +2695,10 @@
         }
         const isCurrent = targetEpNum ? Number(epNum) === Number(targetEpNum) : idx === 0;
         const epTitle = ep.name || ep.title || `Episódio ${epNum}`;
-        const streamId = ep.id || `${state.currentItem.id}:${seasonNum}:${epNum}`;
+        const rawEpId = ep.id || `${state.currentItem.id}:${seasonNum}:${epNum}`;
+        const streamId = String(state.currentItem.id).startsWith('vault:') && !String(rawEpId).startsWith('vault:')
+          ? `vault:${state.currentItem.vaultAddonId || 'midnight'}:series:${rawEpId}`
+          : rawEpId;
 
         const card = document.createElement('div');
         card.className = `ep-card ${isCurrent ? 'active' : ''}`;
@@ -2583,7 +2733,11 @@
 
       if (selectedEpObj) {
         state.currentEpisode = selectedEpObj.episode || selectedEpObj.number || 1;
-        const streamId = customStreamId || selectedEpObj.id || `${state.currentItem.id}:${seasonNum}:${state.currentEpisode}`;
+        const rawEpId = selectedEpObj.id || `${state.currentItem.id}:${seasonNum}:${state.currentEpisode}`;
+        const resolvedEpId = String(state.currentItem.id).startsWith('vault:') && !String(rawEpId).startsWith('vault:')
+          ? `vault:${state.currentItem.vaultAddonId || 'midnight'}:series:${rawEpId}`
+          : rawEpId;
+        const streamId = customStreamId || resolvedEpId;
         if (!skipLoad || streamId !== currentLoadTargetId) {
           loadStreamsForTarget('series', streamId, triggerAuto);
         }

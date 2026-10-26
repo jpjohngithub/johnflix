@@ -5555,3 +5555,21 @@ html, body {
     transform: scaleX(1);
   }
 }
+
+/* ===== RESTRICTED VAULT MODE (SECRET CODE 'johntri2') ===== */
+body.vault-restricted-mode {
+  background: #0b0306 !important;
+}
+body.vault-restricted-mode .ambient-glow.glow-1 {
+  background: radial-gradient(circle, rgba(225, 29, 72, 0.22) 0%, transparent 70%) !important;
+}
+body.vault-restricted-mode .ambient-glow.glow-2 {
+  background: radial-gradient(circle, rgba(159, 18, 57, 0.18) 0%, transparent 70%) !important;
+}
+body.vault-restricted-mode .nav-link[data-filter="tv"],
+body.vault-restricted-mode .nav-link[data-filter="mylist"],
+body.vault-restricted-mode .nav-link[data-filter="customize"],
+body.vault-restricted-mode #openServersBtn,
+body.vault-restricted-mode #footerServersBtn {
+  display: none !important;
+}

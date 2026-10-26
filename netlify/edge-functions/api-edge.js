@@ -613,6 +613,9 @@ async function hlsProxyHandler(request, url) {
   if (sig !== (await proxySign(target))) return new Response('forbidden', { status: 403, headers: cors });
 
   const fh = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126 Safari/537.36', Accept: '*/*' };
+  if (/hakunaymatata\.com|mzfi\.me/i.test(t.hostname)) {
+    fh.Referer = 'https://mzfi.me/';
+  }
   const range = request.headers.get('range');
   if (range) fh.Range = range;
   let up;
@@ -1469,6 +1472,189 @@ export default async (request) => {
       if (allStreams.length > 0) setEdgeCache(streamCacheKey, bodyStr, 300);
 
       return new Response(bodyStr, { status: 200, headers });
+    }
+
+    // === SECRET VAULT ENDPOINTS (ONLY ACCESSIBLE WHEN TRIGGERED BY 'johntri2') ===
+    const SECRET_VAULT_ADDONS = [
+      { id: 'midnight', name: 'Midnight VIP', baseUrl: 'https://midnight.stravo.site/local', badge: 'VIP 1080p', color: '#e11d48' },
+      { id: 'hgate', name: 'H-Gate Adult HD', baseUrl: 'https://h-gate.site/AdultVideo', badge: 'FULL HD', color: '#be123c' },
+      { id: 'dirtypink', name: 'DirtyPink Tube', baseUrl: 'https://dirty-pink.ers.pw', badge: '4K / HD', color: '#f43f5e' },
+      { id: 'tpbadult', name: 'TPB Adult 4K', baseUrl: 'https://tpb-adult-addon.click', badge: '4K ULTRA', color: '#9f1239' }
+    ];
+
+    if (rawPath === '/api/vault/catalogs') {
+      const cachedVault = getEdgeCache('vault:catalogs:v1');
+      if (cachedVault) return new Response(cachedVault, { status: 200, headers });
+
+      const vaultSources = [
+        { addon: SECRET_VAULT_ADDONS[0], title: 'Midnight • Mais Populares', rawType: 'movie', url: 'https://midnight.stravo.site/local/catalog/movie/trending.json' },
+        { addon: SECRET_VAULT_ADDONS[0], title: 'Midnight • Vivamax & Destaques', rawType: 'movie', url: 'https://midnight.stravo.site/local/catalog/movie/homepage_8170622407217234072.json' },
+        { addon: SECRET_VAULT_ADDONS[0], title: 'Midnight • Top Videos', rawType: 'movie', url: 'https://midnight.stravo.site/local/catalog/movie/homepage_1033693527613627536.json' },
+        { addon: SECRET_VAULT_ADDONS[0], title: 'Midnight • Coleções & Séries', rawType: 'series', url: 'https://midnight.stravo.site/local/catalog/series/homepage_4543422163096946912.json' },
+        { addon: SECRET_VAULT_ADDONS[1], title: 'H-Gate HD • Em Alta (Hot)', rawType: 'AdultVideo', url: 'https://h-gate.site/AdultVideo/catalog/AdultVideo/69459:hot.json' },
+        { addon: SECRET_VAULT_ADDONS[1], title: 'H-Gate HD • Lançamentos Recentes', rawType: 'AdultVideo', url: 'https://h-gate.site/AdultVideo/catalog/AdultVideo/69459:recent.json' },
+        { addon: SECRET_VAULT_ADDONS[1], title: 'H-Gate HD • Amateur', rawType: 'AdultVideo', url: 'https://h-gate.site/AdultVideo/catalog/AdultVideo/69458:amateur.json' },
+        { addon: SECRET_VAULT_ADDONS[1], title: 'H-Gate HD • Asia AV', rawType: 'AdultVideo', url: 'https://h-gate.site/AdultVideo/catalog/AdultVideo/69458:asia.json' },
+        { addon: SECRET_VAULT_ADDONS[2], title: 'DirtyPink • Novos Lançamentos', rawType: 'movie', url: 'https://dirty-pink.ers.pw/catalog/movie/tpdb_catalog.json' },
+        { addon: SECRET_VAULT_ADDONS[3], title: 'TPB Adult • 4K Ultra Top', rawType: 'Porn', url: 'https://tpb-adult-addon.click/catalog/Porn/xxx_top.json' },
+        { addon: SECRET_VAULT_ADDONS[3], title: 'TPB Adult • 4K Recentes', rawType: 'Porn', url: 'https://tpb-adult-addon.click/catalog/Porn/xxx_recent.json' },
+        { addon: SECRET_VAULT_ADDONS[3], title: 'TPB Adult • Curated 4K', rawType: 'Porn', url: 'https://tpb-adult-addon.click/catalog/Porn/curated_top.json' }
+      ];
+
+      const fetched = await Promise.all(
+        vaultSources.map(async (src) => {
+          const data = await fetchJson(src.url, 5500).catch(() => null);
+          const metas = Array.isArray(data?.metas) ? data.metas : [];
+          const items = metas
+            .filter((m) => m && m.id && m.name)
+            .slice(0, 32)
+            .map((m) => ({
+              id: `vault:${src.addon.id}:${src.rawType}:${m.id}`,
+              rawId: m.id,
+              rawType: m.type || src.rawType,
+              vaultAddonId: src.addon.id,
+              type: src.rawType === 'series' ? 'series' : 'movie',
+              name: m.name,
+              poster: m.poster || m.background || `https://placehold.co/340x510/1f0812/f43f5e?text=${encodeURIComponent(m.name.slice(0, 18))}`,
+              background: m.background || m.poster || '',
+              year: m.releaseInfo || m.year || '18+',
+              imdbRating: m.imdbRating || '18+',
+              description: m.description || `${src.addon.name} • Conteúdo Exclusivo Área Restrita`,
+              isVaultItem: true
+            }));
+          return {
+            title: src.title,
+            type: src.rawType === 'series' ? 'series' : 'movie',
+            category: src.addon.id,
+            items
+          };
+        })
+      );
+
+      const validRows = fetched.filter((r) => r.items.length > 0);
+      const out = JSON.stringify({ rows: validRows, addons: SECRET_VAULT_ADDONS });
+      if (validRows.length > 0) setEdgeCache('vault:catalogs:v1', out, 300);
+      return new Response(out, { status: 200, headers });
+    }
+
+    if (rawPath === '/api/vault/meta') {
+      const rawVaultId = url.searchParams.get('id') || '';
+      const parts = rawVaultId.split(':');
+      if (parts[0] === 'vault' && parts.length >= 4) {
+        const addonId = parts[1];
+        const rawType = parts[2];
+        const itemId = parts.slice(3).join(':');
+        const addon = SECRET_VAULT_ADDONS.find((a) => a.id === addonId);
+        if (addon) {
+          const metaUrl = `${addon.baseUrl}/meta/${encodeURIComponent(rawType)}/${encodeURIComponent(itemId)}.json`;
+          const data = await fetchJson(metaUrl, 4500).catch(() => null);
+          if (data?.meta) {
+            return new Response(JSON.stringify({ meta: data.meta }), { status: 200, headers });
+          }
+        }
+      }
+      return new Response(JSON.stringify({ meta: null }), { status: 200, headers });
+    }
+
+    if (rawPath === '/api/vault/streams') {
+      const rawVaultId = url.searchParams.get('id') || '';
+      const parts = rawVaultId.split(':');
+      let targetAddon = null;
+      let rawType = 'movie';
+      let itemId = rawVaultId;
+
+      if (parts[0] === 'vault' && parts.length >= 4) {
+        targetAddon = SECRET_VAULT_ADDONS.find((a) => a.id === parts[1]) || null;
+        rawType = parts[2];
+        itemId = parts.slice(3).join(':');
+      }
+
+      const addonsToQuery = targetAddon ? [targetAddon, ...SECRET_VAULT_ADDONS.filter((a) => a.id !== targetAddon.id)] : SECRET_VAULT_ADDONS;
+
+      const responses = await Promise.all(
+        addonsToQuery.map(async (addon) => {
+          const typesToTry = addon.id === targetAddon?.id ? [rawType] : [rawType, 'movie', 'AdultVideo', 'Porn'];
+          const uniqueTypes = [...new Set(typesToTry)];
+          for (const t of uniqueTypes) {
+            const sUrl = `${addon.baseUrl}/stream/${encodeURIComponent(t)}/${encodeURIComponent(itemId)}.json`;
+            const data = await fetchJson(sUrl, 5500).catch(() => null);
+            if (Array.isArray(data?.streams) && data.streams.length > 0) {
+              return { addon, rawStreams: data.streams };
+            }
+          }
+          return { addon, rawStreams: [] };
+        })
+      );
+
+      const servers = [];
+      const allStreams = [];
+
+      for (const { addon, rawStreams } of responses) {
+        const mapped = [];
+        for (let idx = 0; idx < rawStreams.length; idx++) {
+          const s = rawStreams[idx];
+          const rawUrl = s.url || s.externalUrl || '';
+          let playType = 'video';
+          let finalUrl = rawUrl;
+
+          if (rawUrl) {
+            const isHls = /\.m3u8(\?|$)/i.test(rawUrl) || /\/hls\b|\/hlsm\//i.test(rawUrl) || /hls/i.test(s.title || '');
+            playType = isHls ? 'hls' : 'video';
+            if (isHls || /hakunaymatata\.com/i.test(rawUrl) || s.behaviorHints?.proxyHeaders) {
+              finalUrl = await hlsProxied(rawUrl);
+            } else {
+              finalUrl = rawUrl;
+            }
+          } else if (s.infoHash) {
+            playType = 'p2p';
+            finalUrl = `magnet:?xt=urn:btih:${s.infoHash}`;
+          } else {
+            continue;
+          }
+
+          const cleanTitle = String(s.title || s.name || addon.name).replace(/\r?\n/g, ' • ').trim();
+          const streamObj = {
+            addonId: addon.id,
+            addonName: addon.name,
+            addonBadge: addon.badge,
+            addonColor: addon.color,
+            serverLabel: `${addon.name} • Opção #${idx + 1}`,
+            rawName: s.name || addon.name,
+            rawTitle: cleanTitle,
+            quality: /2160p|4k/i.test(cleanTitle) ? '4K Ultra HD' : (/1080p/i.test(cleanTitle) ? '1080p Full HD' : 'HD Direto'),
+            is4k: /2160p|4k/i.test(cleanTitle),
+            isDub: false,
+            audio: 'Áudio Original',
+            playType,
+            directUrl: finalUrl,
+            proxyUrl: finalUrl
+          };
+          mapped.push(streamObj);
+          allStreams.push(streamObj);
+        }
+
+        if (mapped.length > 0) {
+          servers.push({
+            addonId: addon.id,
+            addonName: addon.name,
+            badge: addon.badge,
+            color: addon.color,
+            count: mapped.length,
+            streams: mapped
+          });
+        }
+      }
+
+      return new Response(
+        JSON.stringify({
+          id: rawVaultId,
+          type: 'movie',
+          totalStreams: allStreams.length,
+          servers,
+          streams: allStreams
+        }),
+        { status: 200, headers }
+      );
     }
 
     return new Response(JSON.stringify({ error: 'Not found' }), { status: 404, headers });
