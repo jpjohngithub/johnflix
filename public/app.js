@@ -362,22 +362,12 @@
     }
     if (el.heroFocusBtn) {
       el.heroFocusBtn.addEventListener('click', () => {
-        state.heroFocusPinned = !state.heroFocusPinned;
-        el.heroBanner.classList.toggle('trailer-focus', state.heroFocusPinned);
-        el.heroFocusBtn.classList.toggle('active', state.heroFocusPinned);
+        state.heroMoreOpen = !state.heroMoreOpen;
+        el.heroBanner.classList.toggle('trailer-focus', !state.heroMoreOpen);
+        el.heroFocusBtn.classList.toggle('active', state.heroMoreOpen);
+        const span = el.heroFocusBtn.querySelector('span');
+        if (span) span.textContent = state.heroMoreOpen ? 'Ocultar informações' : 'Informações a mais';
       });
-    }
-    if (el.heroBanner) {
-      el.heroBanner.addEventListener('mousemove', () => {
-        if (!el.heroBanner.classList.contains('trailer-on') || state.heroFocusPinned) return;
-        el.heroBanner.classList.remove('trailer-focus');
-        clearTimeout(state.heroFocusIdleTimer);
-        state.heroFocusIdleTimer = setTimeout(() => {
-          if (el.heroBanner.classList.contains('trailer-on')) {
-            el.heroBanner.classList.add('trailer-focus');
-          }
-        }, 4200);
-      }, { passive: true });
     }
 
     // Home Quick Category Bar
@@ -682,16 +672,12 @@
       el.heroTrailerWrap.innerHTML = '';
     }
     if (el.heroBanner) {
-      el.heroBanner.classList.remove('trailer-on', 'trailer-focus');
+      el.heroBanner.classList.remove('trailer-on');
+      el.heroBanner.classList.toggle('trailer-focus', !state.heroMoreOpen);
     }
     if (el.heroTrailerLivePill) el.heroTrailerLivePill.classList.add('hidden');
     if (el.heroTrailerPill) el.heroTrailerPill.classList.add('hidden');
     if (el.heroMuteBtn) el.heroMuteBtn.classList.add('hidden');
-    if (el.heroFocusBtn) {
-      el.heroFocusBtn.classList.add('hidden');
-      el.heroFocusBtn.classList.remove('active');
-    }
-    state.heroFocusPinned = false;
   }
 
   async function resolveTrailerCandidates(item) {
@@ -803,13 +789,6 @@
                     el.heroBanner.classList.add('trailer-on');
                     if (el.heroTrailerLivePill) el.heroTrailerLivePill.classList.remove('hidden');
                     if (el.heroMuteBtn) el.heroMuteBtn.classList.remove('hidden');
-                    if (el.heroFocusBtn) el.heroFocusBtn.classList.remove('hidden');
-                    clearTimeout(state.heroFocusIdleTimer);
-                    state.heroFocusIdleTimer = setTimeout(() => {
-                      if (!stale() && el.heroBanner.classList.contains('trailer-on')) {
-                        el.heroBanner.classList.add('trailer-focus');
-                      }
-                    }, 4500);
                   }, 420);
                 } else if (ev.data === 0) { // ENDED
                   if (!heroBlocked()) {

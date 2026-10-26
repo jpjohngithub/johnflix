@@ -13,7 +13,7 @@
   <link rel="dns-prefetch" href="https://fenixtv.fenixhub.online" />
   <link rel="dns-prefetch" href="https://v3-cinemeta.strem.io" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/styles.css?v=20261026b" />
+  <link rel="stylesheet" href="/styles.css?v=20261026c" />
 </head>
 <body>
   <!-- Ambient Background Glows -->
@@ -78,22 +78,13 @@
   <!-- Main Content Container -->
   <main id="mainContent">
     <!-- Hero Billboard Banner -->
-    <section class="hero" id="heroBanner">
+    <section class="hero trailer-focus" id="heroBanner">
       <div class="hero-backdrop" id="heroBackdrop"></div>
       <div class="hero-trailer-wrap" id="heroTrailerWrap"></div>
       <div class="hero-vignette"></div>
 
       <div class="hero-main-layout">
         <div class="hero-content" id="heroContentBox">
-          <div class="hero-top-badges">
-            <span class="hero-rank-badge" id="heroRankBadge">#1 EM RECOMENDAÇÃO</span>
-            <span class="hero-featured-tag" id="heroFeaturedTag">EM ALTA HOJE</span>
-            <span class="hero-trailer-live-pill hidden" id="heroTrailerLivePill">
-              <span class="live-dot-pulse"></span>
-              <span>TRAILER EM REPRODUÇÃO</span>
-            </span>
-          </div>
-
           <div class="hero-brand-wrap">
             <img class="hero-logo hidden" id="heroLogo" alt="" crossorigin="anonymous" />
             <h1 class="hero-title hidden" id="heroTitle"></h1>
@@ -128,12 +119,11 @@
               <span class="hero-recs-counter" id="heroSlideCounter">01 / 10</span>
             </div>
             <div class="hero-recs-controls">
-              <button class="hero-focus-btn hidden" id="heroFocusBtn" title="Focar no Trailer (Ocultar Textos)" aria-label="Focar no trailer">
+              <button class="hero-focus-btn" id="heroFocusBtn" title="Exibir mais informações e recomendações" aria-label="Informações a mais">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
-                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
                 </svg>
-                <span>Foco no Trailer</span>
+                <span>Informações a mais</span>
               </button>
               <button class="hero-mute-btn hidden" id="heroMuteBtn" title="Ativar/Desativar som do trailer" aria-label="Som do trailer">
                 <svg id="heroMuteIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -401,8 +391,8 @@
     </div>
   </div>
   <script defer src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
-  <script defer src="/config.js?v=20261026b"></script>
-  <script defer src="/auth.js?v=20261026b"></script>
-  <script defer src="/app.js?v=20261026b"></script>
+  <script defer src="/config.js?v=20261026c"></script>
+  <script defer src="/auth.js?v=20261026c"></script>
+  <script defer src="/app.js?v=20261026c"></script>
 </body>
 </html>

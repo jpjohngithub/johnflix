@@ -4097,22 +4097,22 @@ html, body {
   transition: opacity .5s ease, transform .5s cubic-bezier(.22,1,.36,1);
 }
 
-/* Cinema Trailer Focus Mode: gently compacts text so the trailer has center stage */
-.hero.trailer-on.trailer-focus .hero-desc {
+/* Cinema Minimal Default Mode (`trailer-focus`): starts clean; expands on "Informações a mais" */
+.hero.trailer-focus .hero-desc {
   opacity: 0;
   max-height: 0;
   margin-bottom: 0;
   pointer-events: none;
 }
-.hero.trailer-on.trailer-focus .hero-logo {
-  transform: scale(0.78);
+.hero.trailer-focus .hero-logo {
+  transform: scale(0.84);
   transform-origin: left bottom;
 }
-.hero.trailer-on.trailer-focus .hero-title {
-  font-size: clamp(1.7rem, 2.8vw, 2.5rem);
+.hero.trailer-focus .hero-title {
+  font-size: clamp(1.85rem, 3vw, 2.7rem);
 }
-.hero.trailer-on.trailer-focus .hero-content {
-  opacity: 0.88;
+.hero.trailer-focus .hero-content {
+  opacity: 0.92;
 }
 .hero-desc {
   max-height: 110px;
@@ -4133,11 +4133,30 @@ html, body {
   border-radius: 18px;
   padding: 14px 16px 16px;
   box-shadow: 0 22px 55px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  transition: opacity .45s ease, transform .45s ease;
+  transition: all .45s cubic-bezier(.22,1,.36,1);
 }
-.hero.trailer-on.trailer-focus .hero-recs-dock {
-  background: rgba(11, 7, 22, 0.48);
-  border-color: rgba(255, 255, 255, 0.12);
+.hero.trailer-focus .hero-recs-dock {
+  flex: 0 0 auto;
+  background: rgba(11, 7, 22, 0.56);
+  border-color: rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  padding: 8px 14px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+}
+.hero.trailer-focus .hero-recs-head {
+  margin-bottom: 0;
+  gap: 14px;
+}
+.hero.trailer-focus .hero-recs-kicker {
+  display: none;
+}
+.hero.trailer-focus .hero-indicators {
+  max-height: 0 !important;
+  opacity: 0;
+  padding: 0 !important;
+  margin: 0 !important;
+  pointer-events: none;
+  overflow: hidden;
 }
 
 .hero-recs-head {
@@ -4246,6 +4265,8 @@ html, body {
   scroll-behavior: smooth;
   scrollbar-width: none;
   padding: 2px 2px 4px;
+  max-height: 150px;
+  transition: max-height .45s cubic-bezier(.22,1,.36,1), opacity .35s ease, padding .35s ease;
 }
 .hero-indicators::-webkit-scrollbar {
   display: none;
@@ -4406,8 +4427,8 @@ html, body {
   .hero-recs-head {
     margin-bottom: 8px;
   }
-  .hero-focus-btn {
-    display: none !important;
+  .hero-focus-btn span {
+    display: none;
   }
   .hero-dot.hero-rec-card,
   .hero-dot.hero-rec-card.active {
