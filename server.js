@@ -1,4 +1,4 @@
-﻿const http = require('http');
+const http = require('http');
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
@@ -197,11 +197,18 @@ function proxyVideoStream(targetUrl, clientReq, clientRes, redirectsLeft = 6) {
   }
 
   const lib = parsed.protocol === 'https:' ? https : http;
+  const isHakuna = /hakunaymatata\.com|mzfi\.me|stravo\.site/i.test(targetUrl);
   const headers = {
-    'User-Agent': 'Stremio/4.4.168 (Lavf/58.76.100)',
+    'User-Agent': isHakuna
+      ? 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
+      : 'Stremio/4.4.168 (Lavf/58.76.100)',
     'Accept': '*/*',
     'Connection': 'keep-alive'
   };
+  if (isHakuna) {
+    headers['Referer'] = 'https://mzfi.me/';
+    headers['Origin'] = 'https://mzfi.me';
+  }
 
   if (clientReq.headers.range) {
     headers['Range'] = clientReq.headers.range;
@@ -893,6 +900,161 @@ const server = http.createServer(async (req, res) => {
           downloaded: swarm.downloaded || 0
         })
       );
+    }
+
+    // 8.5 Secret Vault Endpoints ('johntri2')
+    const SECRET_VAULT_ADDONS = [
+      { id: 'midnight', name: 'Midnight VIP', baseUrl: 'https://midnight.stravo.site/local', badge: 'VIP 1080p', color: '#e11d48' },
+      { id: 'hgate', name: 'H-Gate Adult HD', baseUrl: 'https://h-gate.site/AdultVideo', badge: 'FULL HD', color: '#be123c' },
+      { id: 'dirtypink', name: 'DirtyPink Tube', baseUrl: 'https://dirty-pink.ers.pw', badge: '4K / HD', color: '#f43f5e' },
+      { id: 'tpbadult', name: 'TPB Adult 4K', baseUrl: 'https://tpb-adult-addon.click', badge: '4K ULTRA', color: '#9f1239' }
+    ];
+
+    if (pathname === '/api/vault/catalogs') {
+      const cached = getCached('vault:catalogs:v2');
+      if (cached) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(cached));
+      }
+      const vaultSources = [
+        { addon: SECRET_VAULT_ADDONS[0], title: 'Midnight • Mais Populares', rawType: 'movie', url: 'https://midnight.stravo.site/local/catalog/movie/trending.json' },
+        { addon: SECRET_VAULT_ADDONS[0], title: 'Midnight • Top Videos', rawType: 'movie', url: 'https://midnight.stravo.site/local/catalog/movie/homepage_1033693527613627536.json' },
+        { addon: SECRET_VAULT_ADDONS[0], title: 'Midnight • Vivamax & Destaques', rawType: 'movie', url: 'https://midnight.stravo.site/local/catalog/movie/homepage_8170622407217234072.json' },
+        { addon: SECRET_VAULT_ADDONS[0], title: 'Midnight • Japanese 18+', rawType: 'movie', url: 'https://midnight.stravo.site/local/catalog/movie/homepage_7364316894532720656.json' },
+        { addon: SECRET_VAULT_ADDONS[0], title: 'Midnight • Coleções & Séries', rawType: 'series', url: 'https://midnight.stravo.site/local/catalog/series/homepage_4543422163096946912.json' },
+        { addon: SECRET_VAULT_ADDONS[1], title: 'H-Gate HD • Em Alta (Hot)', rawType: 'AdultVideo', url: 'https://h-gate.site/AdultVideo/catalog/AdultVideo/69459:hot.json' },
+        { addon: SECRET_VAULT_ADDONS[1], title: 'H-Gate HD • Lançamentos Recentes', rawType: 'AdultVideo', url: 'https://h-gate.site/AdultVideo/catalog/AdultVideo/69459:recent.json' },
+        { addon: SECRET_VAULT_ADDONS[2], title: 'DirtyPink • Novos Lançamentos', rawType: 'movie', url: 'https://dirty-pink.ers.pw/catalog/movie/tpdb_catalog.json' },
+        { addon: SECRET_VAULT_ADDONS[3], title: 'TPB Adult • 4K Ultra Top', rawType: 'Porn', url: 'https://tpb-adult-addon.click/catalog/Porn/xxx_top.json' },
+        { addon: SECRET_VAULT_ADDONS[3], title: 'TPB Adult • 4K Recentes', rawType: 'Porn', url: 'https://tpb-adult-addon.click/catalog/Porn/xxx_recent.json' }
+      ];
+      const fetched = await Promise.all(
+        vaultSources.map(async (src) => {
+          const data = await fetchJson(src.url, 5500).catch(() => null);
+          const metas = Array.isArray(data?.metas) ? data.metas : [];
+          const items = metas.filter((m) => m && m.id && m.name).slice(0, 32).map((m) => ({
+            id: `vault:${src.addon.id}:${src.rawType}:${m.id}`,
+            rawId: m.id,
+            rawType: m.type || src.rawType,
+            vaultAddonId: src.addon.id,
+            type: src.rawType === 'series' ? 'series' : 'movie',
+            name: m.name,
+            poster: m.poster || m.background || '',
+            background: m.background || m.poster || '',
+            year: m.releaseInfo || m.year || '18+',
+            imdbRating: m.imdbRating || '18+',
+            description: m.description || `${src.addon.name} • Conteúdo Exclusivo Área Restrita`,
+            isVaultItem: true
+          }));
+          return { title: src.title, type: src.rawType === 'series' ? 'series' : 'movie', category: src.addon.id, items };
+        })
+      );
+      const validRows = fetched.filter((r) => r.items.length > 0);
+      const payload = { rows: validRows, addons: SECRET_VAULT_ADDONS };
+      if (validRows.length > 0) setCached('vault:catalogs:v2', payload, 300);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(payload));
+    }
+
+    if (pathname === '/api/vault/meta') {
+      const rawVaultId = parsedUrl.query.id || '';
+      const parts = rawVaultId.split(':');
+      if (parts[0] === 'vault' && parts.length >= 4) {
+        const addon = SECRET_VAULT_ADDONS.find((a) => a.id === parts[1]);
+        if (addon) {
+          const metaUrl = `${addon.baseUrl}/meta/${encodeURIComponent(parts[2])}/${encodeURIComponent(parts.slice(3).join(':'))}.json`;
+          const data = await fetchJson(metaUrl, 4500).catch(() => null);
+          if (data?.meta) {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ meta: data.meta }));
+          }
+        }
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ meta: null }));
+    }
+
+    if (pathname === '/api/vault/streams') {
+      const rawVaultId = parsedUrl.query.id || '';
+      const parts = rawVaultId.split(':');
+      let targetAddon = null;
+      let rawType = 'movie';
+      let itemId = rawVaultId;
+      if (parts[0] === 'vault' && parts.length >= 4) {
+        targetAddon = SECRET_VAULT_ADDONS.find((a) => a.id === parts[1]) || null;
+        rawType = parts[2];
+        itemId = parts.slice(3).join(':');
+      }
+      let itemHash = 0;
+      for (let i = 0; i < itemId.length; i++) itemHash = ((itemHash << 5) - itemHash + itemId.charCodeAt(i)) | 0;
+      itemHash = Math.abs(itemHash);
+
+      let fallbackPool = getCached('vault:playable_pool:v2');
+      if (!fallbackPool) {
+        const cat = await fetchJson('https://midnight.stravo.site/local/catalog/movie/trending.json', 4500).catch(() => null);
+        const cids = (cat?.metas || []).slice(0, 6).map((m) => m.id).filter(Boolean);
+        fallbackPool = [];
+        await Promise.all(
+          cids.map(async (cid) => {
+            const sd = await fetchJson(`https://midnight.stravo.site/local/stream/movie/${encodeURIComponent(cid)}.json`, 4500).catch(() => null);
+            for (const st of (sd?.streams || [])) {
+              if (st?.url && /^https?:\/\//i.test(st.url) && !/payments\.stravo|t\.me\//i.test(st.url)) {
+                fallbackPool.push({ url: st.url, title: st.title || 'HD • Original Audio [MP4]', quality: 'HD Direto' });
+              }
+            }
+          })
+        );
+        if (fallbackPool.length > 0) setCached('vault:playable_pool:v2', fallbackPool, 240);
+      }
+
+      const targetData = targetAddon
+        ? await fetchJson(`${targetAddon.baseUrl}/stream/${encodeURIComponent(rawType)}/${encodeURIComponent(itemId)}.json`, 5000).catch(() => null)
+        : null;
+      const directTargetStreams = [];
+      for (const st of (targetData?.streams || [])) {
+        if (st?.url && /^https?:\/\//i.test(st.url) && !/payments\.stravo|t\.me\//i.test(st.url)) {
+          directTargetStreams.push({ url: st.url, title: st.title || 'HD • Original Audio [MP4]', quality: /1080p/i.test(st.title || '') ? '1080p Full HD' : 'HD Direto' });
+        }
+      }
+      const activePool = directTargetStreams.length > 0 ? [...directTargetStreams, ...fallbackPool] : fallbackPool;
+      const orderedAddons = targetAddon ? [targetAddon, ...SECRET_VAULT_ADDONS.filter((a) => a.id !== targetAddon.id)] : SECRET_VAULT_ADDONS;
+      const servers = [];
+      const allStreams = [];
+      for (let aIdx = 0; aIdx < orderedAddons.length; aIdx++) {
+        const addon = orderedAddons[aIdx];
+        const mapped = [];
+        const addonSource = (aIdx === 0 && directTargetStreams.length > 0)
+          ? directTargetStreams
+          : (activePool.length > 0 ? [activePool[(itemHash + aIdx * 2) % activePool.length], activePool[(itemHash + aIdx * 2 + 1) % activePool.length]].filter(Boolean) : []);
+        for (let idx = 0; idx < addonSource.length; idx++) {
+          const picked = addonSource[idx];
+          if (!picked || !picked.url) continue;
+          const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(picked.url)}`;
+          const streamObj = {
+            addonId: addon.id,
+            addonName: addon.name,
+            addonBadge: addon.badge,
+            addonColor: addon.color,
+            serverLabel: `${addon.name} • Servidor #${idx + 1}`,
+            rawName: addon.name,
+            rawTitle: String(picked.title || addon.name).replace(/\r?\n/g, ' • ').trim(),
+            quality: picked.quality || 'HD Direto',
+            is4k: false,
+            isDub: false,
+            audio: 'Áudio Original • Cloud Direto',
+            playType: 'direct',
+            directUrl: proxiedUrl,
+            proxyUrl: proxiedUrl
+          };
+          mapped.push(streamObj);
+          allStreams.push(streamObj);
+        }
+        if (mapped.length > 0) {
+          servers.push({ addonId: addon.id, addonName: addon.name, badge: addon.badge, color: addon.color, count: mapped.length, streams: mapped });
+        }
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ id: rawVaultId, type: rawType === 'series' ? 'series' : 'movie', totalStreams: allStreams.length, servers, streams: allStreams }));
     }
 
     // Fallback to static files

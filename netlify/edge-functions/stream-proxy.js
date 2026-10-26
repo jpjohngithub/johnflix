@@ -38,12 +38,17 @@ export default async (request, context) => {
     // Follow up to 6 redirects manually using GET, then cache the final storage URL
     for (let i = 0; i < 6; i++) {
       const isArchive = currentUrl.includes('archive.org');
+      const isHakuna = /hakunaymatata\.com|mzfi\.me|stravo\.site/i.test(currentUrl);
       const fetchHeaders = new Headers({
-        'User-Agent': isArchive
-          ? 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
+        'User-Agent': (isArchive || isHakuna)
+          ? 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
           : 'Stremio/4.4.168 (Lavf/58.76.100)',
         'Accept': '*/*'
       });
+      if (isHakuna) {
+        fetchHeaders.set('Referer', 'https://mzfi.me/');
+        fetchHeaders.set('Origin', 'https://mzfi.me');
+      }
       if (rangeHeader) {
         fetchHeaders.set('Range', rangeHeader);
       }

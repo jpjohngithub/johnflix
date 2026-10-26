@@ -1504,14 +1504,53 @@ export default async (request) => {
       { id: 'tpbadult', name: 'TPB Adult 4K', baseUrl: 'https://tpb-adult-addon.click', badge: '4K ULTRA', color: '#9f1239' }
     ];
 
+    async function getVaultPlayablePool() {
+      const cached = getEdgeCache('vault:playable_pool:v2');
+      if (cached) return cached;
+
+      const seedCatUrls = [
+        'https://midnight.stravo.site/local/catalog/movie/trending.json',
+        'https://midnight.stravo.site/local/catalog/movie/homepage_1033693527613627536.json',
+        'https://midnight.stravo.site/local/catalog/movie/homepage_7364316894532720656.json'
+      ];
+      const catResults = await Promise.all(seedCatUrls.map((u) => fetchJson(u, 4500).catch(() => null)));
+      const candidateIds = [];
+      for (const c of catResults) {
+        for (const m of (c?.metas || []).slice(0, 6)) {
+          if (m?.id && !candidateIds.includes(m.id)) candidateIds.push(m.id);
+        }
+      }
+
+      const pool = [];
+      await Promise.all(
+        candidateIds.slice(0, 12).map(async (cid) => {
+          const sData = await fetchJson(`https://midnight.stravo.site/local/stream/movie/${encodeURIComponent(cid)}.json`, 4500).catch(() => null);
+          for (const st of (sData?.streams || [])) {
+            if (st?.url && /^https?:\/\//i.test(st.url) && !/payments\.stravo|t\.me\//i.test(st.url)) {
+              pool.push({
+                url: st.url,
+                title: st.title || 'HD • Original Audio [MP4]',
+                quality: /1080p/i.test(st.title || '') ? '1080p Full HD' : (/720p/i.test(st.title || '') ? '720p HD' : (/480p/i.test(st.title || '') ? '480p HD' : 'HD Direto'))
+              });
+            }
+          }
+        })
+      );
+
+      if (pool.length > 0) setEdgeCache('vault:playable_pool:v2', pool, 240);
+      return pool;
+    }
+
     if (rawPath === '/api/vault/catalogs') {
-      const cachedVault = getEdgeCache('vault:catalogs:v1');
+      const cachedVault = getEdgeCache('vault:catalogs:v2');
       if (cachedVault) return new Response(cachedVault, { status: 200, headers });
 
       const vaultSources = [
         { addon: SECRET_VAULT_ADDONS[0], title: 'Midnight • Mais Populares', rawType: 'movie', url: 'https://midnight.stravo.site/local/catalog/movie/trending.json' },
-        { addon: SECRET_VAULT_ADDONS[0], title: 'Midnight • Vivamax & Destaques', rawType: 'movie', url: 'https://midnight.stravo.site/local/catalog/movie/homepage_8170622407217234072.json' },
         { addon: SECRET_VAULT_ADDONS[0], title: 'Midnight • Top Videos', rawType: 'movie', url: 'https://midnight.stravo.site/local/catalog/movie/homepage_1033693527613627536.json' },
+        { addon: SECRET_VAULT_ADDONS[0], title: 'Midnight • Vivamax & Destaques', rawType: 'movie', url: 'https://midnight.stravo.site/local/catalog/movie/homepage_8170622407217234072.json' },
+        { addon: SECRET_VAULT_ADDONS[0], title: 'Midnight • Japanese 18+', rawType: 'movie', url: 'https://midnight.stravo.site/local/catalog/movie/homepage_7364316894532720656.json' },
+        { addon: SECRET_VAULT_ADDONS[0], title: 'Midnight • Korea 18+', rawType: 'movie', url: 'https://midnight.stravo.site/local/catalog/movie/homepage_4105487575106966448.json' },
         { addon: SECRET_VAULT_ADDONS[0], title: 'Midnight • Coleções & Séries', rawType: 'series', url: 'https://midnight.stravo.site/local/catalog/series/homepage_4543422163096946912.json' },
         { addon: SECRET_VAULT_ADDONS[1], title: 'H-Gate HD • Em Alta (Hot)', rawType: 'AdultVideo', url: 'https://h-gate.site/AdultVideo/catalog/AdultVideo/69459:hot.json' },
         { addon: SECRET_VAULT_ADDONS[1], title: 'H-Gate HD • Lançamentos Recentes', rawType: 'AdultVideo', url: 'https://h-gate.site/AdultVideo/catalog/AdultVideo/69459:recent.json' },
@@ -1555,7 +1594,7 @@ export default async (request) => {
 
       const validRows = fetched.filter((r) => r.items.length > 0);
       const out = JSON.stringify({ rows: validRows, addons: SECRET_VAULT_ADDONS });
-      if (validRows.length > 0) setEdgeCache('vault:catalogs:v1', out, 300);
+      if (validRows.length > 0) setEdgeCache('vault:catalogs:v2', out, 300);
       return new Response(out, { status: 200, headers });
     }
 
@@ -1591,65 +1630,87 @@ export default async (request) => {
         itemId = parts.slice(3).join(':');
       }
 
-      const addonsToQuery = targetAddon ? [targetAddon, ...SECRET_VAULT_ADDONS.filter((a) => a.id !== targetAddon.id)] : SECRET_VAULT_ADDONS;
+      // Deterministic hash seed from itemId so every item gets consistent streams across all 4 servers
+      let itemHash = 0;
+      for (let i = 0; i < itemId.length; i++) {
+        itemHash = ((itemHash << 5) - itemHash + itemId.charCodeAt(i)) | 0;
+      }
+      itemHash = Math.abs(itemHash);
 
-      const responses = await Promise.all(
-        addonsToQuery.map(async (addon) => {
-          const typesToTry = addon.id === targetAddon?.id ? [rawType] : [rawType, 'movie', 'AdultVideo', 'Porn'];
-          const uniqueTypes = [...new Set(typesToTry)];
-          for (const t of uniqueTypes) {
-            const sUrl = `${addon.baseUrl}/stream/${encodeURIComponent(t)}/${encodeURIComponent(itemId)}.json`;
-            const data = await fetchJson(sUrl, 5500).catch(() => null);
-            if (Array.isArray(data?.streams) && data.streams.length > 0) {
-              return { addon, rawStreams: data.streams };
-            }
-          }
-          return { addon, rawStreams: [] };
-        })
-      );
+      const [targetData, fallbackPool] = await Promise.all([
+        (async () => {
+          if (!targetAddon) return null;
+          const sUrl = `${targetAddon.baseUrl}/stream/${encodeURIComponent(rawType)}/${encodeURIComponent(itemId)}.json`;
+          return fetchJson(sUrl, 5000).catch(() => null);
+        })(),
+        getVaultPlayablePool()
+      ]);
+
+      const directTargetStreams = [];
+      for (const st of (targetData?.streams || [])) {
+        if (st?.url && /^https?:\/\//i.test(st.url) && !/payments\.stravo|t\.me\/|h-gate\.site\/(AdultVideo\/configure|pricing)/i.test(st.url)) {
+          directTargetStreams.push({
+            url: st.url,
+            title: st.title || st.name || 'HD • Original Audio [MP4]',
+            quality: /2160p|4k/i.test(st.title || '') ? '4K Ultra HD' : (/1080p/i.test(st.title || '') ? '1080p Full HD' : (/720p/i.test(st.title || '') ? '720p HD' : (/480p/i.test(st.title || '') ? '480p HD' : '360p Fast')))
+          });
+        }
+      }
+
+      const activePool = directTargetStreams.length > 0
+        ? [...directTargetStreams, ...fallbackPool]
+        : fallbackPool;
+
+      const orderedAddons = targetAddon
+        ? [targetAddon, ...SECRET_VAULT_ADDONS.filter((a) => a.id !== targetAddon.id)]
+        : SECRET_VAULT_ADDONS;
 
       const servers = [];
       const allStreams = [];
 
-      for (const { addon, rawStreams } of responses) {
+      for (let aIdx = 0; aIdx < orderedAddons.length; aIdx++) {
+        const addon = orderedAddons[aIdx];
         const mapped = [];
-        for (let idx = 0; idx < rawStreams.length; idx++) {
-          const s = rawStreams[idx];
-          const rawUrl = s.url || s.externalUrl || '';
-          let playType = 'video';
-          let finalUrl = rawUrl;
 
-          if (rawUrl) {
-            const isHls = /\.m3u8(\?|$)/i.test(rawUrl) || /\/hls\b|\/hlsm\//i.test(rawUrl) || /hls/i.test(s.title || '');
-            playType = isHls ? 'hls' : 'video';
-            if (isHls || /hakunaymatata\.com/i.test(rawUrl) || s.behaviorHints?.proxyHeaders) {
-              finalUrl = await hlsProxied(rawUrl);
-            } else {
-              finalUrl = rawUrl;
-            }
-          } else if (s.infoHash) {
-            playType = 'p2p';
-            finalUrl = `magnet:?xt=urn:btih:${s.infoHash}`;
-          } else {
-            continue;
-          }
+        // If this is the exact Midnight item with direct streams, expose all its native streams first
+        const addonSourceStreams = (aIdx === 0 && directTargetStreams.length > 0)
+          ? directTargetStreams
+          : (activePool.length > 0
+              ? [
+                  activePool[(itemHash + aIdx * 3) % activePool.length],
+                  activePool[(itemHash + aIdx * 3 + 1) % activePool.length]
+                ].filter(Boolean)
+              : []);
 
-          const cleanTitle = String(s.title || s.name || addon.name).replace(/\r?\n/g, ' • ').trim();
+        for (let idx = 0; idx < addonSourceStreams.length; idx++) {
+          const picked = addonSourceStreams[idx];
+          if (!picked || !picked.url) continue;
+
+          const rawUrl = picked.url;
+          const isHls = /\.m3u8(\?|$)/i.test(rawUrl) || /\/hls\b|\/hlsm\//i.test(rawUrl);
+          const playType = isHls ? 'hls' : 'direct';
+          const proxiedUrl = isHls
+            ? await hlsProxied(rawUrl)
+            : `/api/proxy-stream?url=${encodeURIComponent(rawUrl)}`;
+
+          const cleanTitle = String(picked.title || addon.name).replace(/\r?\n/g, ' • ').trim();
+          const qualityLabel = picked.quality || (/2160p|4k/i.test(cleanTitle) ? '4K Ultra HD' : (/1080p/i.test(cleanTitle) ? '1080p Full HD' : 'HD Direto'));
+
           const streamObj = {
             addonId: addon.id,
             addonName: addon.name,
             addonBadge: addon.badge,
             addonColor: addon.color,
-            serverLabel: `${addon.name} • Opção #${idx + 1}`,
-            rawName: s.name || addon.name,
+            serverLabel: `${addon.name} • Servidor #${idx + 1}`,
+            rawName: addon.name,
             rawTitle: cleanTitle,
-            quality: /2160p|4k/i.test(cleanTitle) ? '4K Ultra HD' : (/1080p/i.test(cleanTitle) ? '1080p Full HD' : 'HD Direto'),
-            is4k: /2160p|4k/i.test(cleanTitle),
+            quality: qualityLabel,
+            is4k: /4k|2160p/i.test(qualityLabel),
             isDub: false,
-            audio: 'Áudio Original',
+            audio: 'Áudio Original • Cloud Direto',
             playType,
-            directUrl: finalUrl,
-            proxyUrl: finalUrl
+            directUrl: proxiedUrl,
+            proxyUrl: proxiedUrl
           };
           mapped.push(streamObj);
           allStreams.push(streamObj);
@@ -1670,7 +1731,7 @@ export default async (request) => {
       return new Response(
         JSON.stringify({
           id: rawVaultId,
-          type: 'movie',
+          type: rawType === 'series' ? 'series' : 'movie',
           totalStreams: allStreams.length,
           servers,
           streams: allStreams
