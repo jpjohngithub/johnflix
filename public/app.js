@@ -953,12 +953,9 @@
 
     const ratingHtml = item.imdbRating ? `<span class="meta-rating">★ ${item.imdbRating}</span>` : '';
     const yearHtml = item.year ? `<span>${item.year}</span>` : '';
-    const runtimeHtml = item.runtime ? `<span>${escapeHtml(item.runtime)}</span>` : '';
-    const hdHtml = `<span class="hero-quality-chip">4K HDR</span>`;
-    const genresList = Array.isArray(item.genres) && item.genres.length ? item.genres.slice(0, 2).join(' · ') : '';
-    const genresHtml = genresList ? `<span>${escapeHtml(genresList)}</span>` : '';
+    const hdHtml = `<span class="hero-quality-chip">4K</span>`;
 
-    el.heroMeta.innerHTML = [ratingHtml, yearHtml, runtimeHtml, hdHtml, genresHtml].filter(Boolean).join('<span class="hero-meta-dot">•</span>');
+    el.heroMeta.innerHTML = [ratingHtml, yearHtml, hdHtml].filter(Boolean).join('<span class="hero-meta-dot">•</span>');
 
     updateHeroBookmarkIcon();
     el.heroIndicators.querySelectorAll('.hero-dot').forEach((d, i) => {
