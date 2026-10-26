@@ -1056,6 +1056,11 @@
       stopHeroTrailer();
     }
 
+    const mainContentEl = document.getElementById('mainContent');
+    if (mainContentEl) {
+      mainContentEl.classList.toggle('no-hero-offset', isMovieOrSeriesTab);
+    }
+
     if (el.homeCategoryBar) {
       el.homeCategoryBar.classList.toggle('hidden', !isHomeView);
       el.homeCategoryBar.classList.toggle('cat-bar-top-offset', isMovieOrSeriesTab);
@@ -1234,22 +1239,15 @@
     hub.className = 'mylist-hub-section';
     hub.innerHTML = `
       <div class="mylist-hub-header">
-        <div class="mylist-hub-title-wrap">
-          <span class="mylist-hub-kicker">DESCOBERTA INTELIGENTE &amp; COLEÇÃO</span>
-          <h2>Minha Lista &amp; TinderFlix</h2>
-        </div>
         <div class="mylist-subtabs" role="tablist">
           <button type="button" class="mylist-subtab ${state.myListSubTab === 'swipe' ? 'active' : ''}" data-subtab="swipe">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="4" y="2" width="16" height="20" rx="3"/><path d="M9 10l3-3 3 3M9 14l3 3 3-3"/></svg>
-            <span>TinderFlix</span>
+            <span>🔥 TinderFlix</span>
           </button>
           <button type="button" class="mylist-subtab ${state.myListSubTab === 'watchlist' ? 'active' : ''}" data-subtab="watchlist">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-            <span>Watchlist (<span id="hubWatchlistCount">${state.myList.length}</span>)</span>
+            <span>♥ Minha Lista (${state.myList.length})</span>
           </button>
           <button type="button" class="mylist-subtab ${state.myListSubTab === 'playlists' ? 'active' : ''}" data-subtab="playlists">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
-            <span>Playlists (${state.playlists.length})</span>
+            <span>📂 Playlists (${state.playlists.length})</span>
           </button>
         </div>
       </div>
@@ -1278,23 +1276,16 @@
     const wrap = document.createElement('div');
     wrap.className = 'watchlist-subview';
     wrap.innerHTML = `
-      <div class="section-header" style="margin-bottom:18px;">
-        <div>
-          <h3 style="font-size:1.25rem;margin-bottom:4px;">Meus Favoritos Salvos (${state.myList.length})</h3>
-          <p style="font-size:0.84rem;color:var(--text-muted);margin:0;">Armazenados localmente no seu dispositivo sem necessidade de login.</p>
-        </div>
-        <button type="button" class="btn btn-sm btn-primary" id="goToSwipeFromWatchlistBtn">🔥 Abrir TinderFlix</button>
-      </div>
       <div class="media-grid" id="myListGrid"></div>
     `;
     container.appendChild(wrap);
-    wrap.querySelector('#goToSwipeFromWatchlistBtn')?.addEventListener('click', () => {
-      state.myListSubTab = 'swipe';
-      renderCatalogRows();
-    });
     const grid = wrap.querySelector('#myListGrid');
     if (!state.myList.length) {
-      grid.innerHTML = `<p style="color:var(--text-muted);grid-column:1/-1;padding:28px 0;">Nenhum filme ou série marcado com "Gostei" ainda. Use o <strong>TinderFlix</strong> e pressione a seta para a Direita (→) para guardar seus favoritos!</p>`;
+      grid.innerHTML = `<div class="swipe-empty-card" style="grid-column:1/-1;"><p style="color:var(--text-muted);margin:0 0 14px;">Sua lista ainda está vazia. Deslize para a direita no <strong>TinderFlix</strong> para salvar seus favoritos!</p><button type="button" class="btn btn-sm btn-primary" id="goToSwipeFromWatchlistBtn">🔥 Ir para o TinderFlix</button></div>`;
+      grid.querySelector('#goToSwipeFromWatchlistBtn')?.addEventListener('click', () => {
+        state.myListSubTab = 'swipe';
+        renderCatalogRows();
+      });
     } else {
       state.myList.forEach((item) => grid.appendChild(createMediaCard(item, { allowRemoveMyList: true })));
     }
@@ -1317,7 +1308,7 @@
       stage.innerHTML = `
         <div class="swipe-empty-card">
           <h3>Você viu todas as sugestões!</h3>
-          <p>Reinicie as sugestões ignoradas para continuar descobrindo no TinderFlix.</p>
+          <p>Reinicie para ver mais filmes e séries no TinderFlix.</p>
           <button type="button" class="btn btn-primary" id="resetSwipePoolBtn">Reiniciar TinderFlix</button>
         </div>
       `;
@@ -1331,25 +1322,23 @@
 
     const bgUrl = getCleanHeroBackdrop(current);
     const posterUrl = current.poster || `https://images.metahub.space/poster/medium/${current.id}/img`;
-    const typeLabel = current.type === 'series' ? 'Série de TV' : 'Filme';
+    const typeLabel = current.type === 'series' ? 'Série' : 'Filme';
     const genresList = Array.isArray(current.genres) && current.genres.length
-      ? current.genres.slice(0, 4).join(' • ')
-      : (current._rowCategory ? current._rowCategory.toUpperCase() : 'Destaque');
+      ? current.genres.slice(0, 3).join(' • ')
+      : '';
     const cachedMeta = state.swipeMetaCache[`${current.type}:${current.id}`] || {};
-    const runtimeText = cachedMeta.runtime || current.runtime || (current.type === 'series' ? 'Múltiplas Temporadas' : 'Longa-metragem');
-    const hasPersonalization = (state.continueWatching.length + state.myList.length) > 0;
+    const runtimeText = cachedMeta.runtime || current.runtime || '';
 
     stage.innerHTML = `
       <div class="swipe-deck-row">
-        <button type="button" class="swipe-side-arrow swipe-skip-arrow" id="swipeLeftBtn" title="Esquerda no comando: Ignorar (Skip)">
-          <span class="swipe-key-hint">← Esquerda</span>
+        <button type="button" class="swipe-side-arrow swipe-skip-arrow" id="swipeLeftBtn" title="Esquerda: Ignorar">
           <span class="swipe-arrow-circle skip">✕</span>
-          <span class="swipe-arrow-label">Ignorar</span>
+          <span class="swipe-arrow-label">Pular</span>
         </button>
 
         <article class="swipe-card" id="activeSwipeCard">
           <div class="swipe-card-backdrop" style="background-image:url('${bgUrl}')"></div>
-          <div class="swipe-card-stamp skip-stamp" id="swipeStampSkip">IGNORAR</div>
+          <div class="swipe-card-stamp skip-stamp" id="swipeStampSkip">PULAR</div>
           <div class="swipe-card-stamp like-stamp" id="swipeStampLike">GOSTEI ♥</div>
 
           <div class="swipe-card-inner">
@@ -1359,35 +1348,31 @@
             <div class="swipe-card-info-col">
               <div class="swipe-card-badges">
                 <span class="swipe-badge-type">${typeLabel}</span>
-                ${hasPersonalization ? `<span class="swipe-badge-meta" style="border:1px solid rgba(168,85,247,0.45);color:#e9d5ff;">✨ Recomendado para você</span>` : ''}
                 ${current.year ? `<span class="swipe-badge-meta">${escapeHtml(current.year)}</span>` : ''}
-                <span class="swipe-badge-meta" id="swipeRuntimePill">${escapeHtml(runtimeText)}</span>
-                ${current.imdbRating ? `<span class="swipe-badge-imdb">★ IMDb ${escapeHtml(current.imdbRating)}</span>` : ''}
+                ${runtimeText ? `<span class="swipe-badge-meta" id="swipeRuntimePill">${escapeHtml(runtimeText)}</span>` : `<span class="swipe-badge-meta hidden" id="swipeRuntimePill"></span>`}
+                ${current.imdbRating ? `<span class="swipe-badge-imdb">★ ${escapeHtml(current.imdbRating)}</span>` : ''}
               </div>
               <h2 class="swipe-card-title">${escapeHtml(current.name)}</h2>
-              <div class="swipe-card-genres">${escapeHtml(genresList)}</div>
-              <p class="swipe-card-synopsis">${escapeHtml(current.description || 'Clique em Ficha Técnica (ou seta para baixo ↓) para carregar a sinopse completa, elenco e prémios.')}</p>
+              ${genresList ? `<div class="swipe-card-genres">${escapeHtml(genresList)}</div>` : ''}
+              <p class="swipe-card-synopsis">${escapeHtml(current.description || '')}</p>
 
-              <div class="swipe-streaming-bar">
-                <div class="swipe-stream-buttons">
-                  <button type="button" class="swipe-platform-btn johnflix-direct" id="swipePlayInstantBtn" style="padding:11px 22px;font-size:0.9rem;">▶ Assistir no JohnFlix</button>
-                </div>
+              <div class="swipe-main-cta-row">
+                <button type="button" class="swipe-mobile-decision skip" id="swipeMobileSkipBtn" aria-label="Pular">✕</button>
+                <button type="button" class="swipe-platform-btn johnflix-direct" id="swipePlayInstantBtn">▶ Assistir no JohnFlix</button>
+                <button type="button" class="swipe-mobile-decision like" id="swipeMobileLikeBtn" aria-label="Gostei">♥</button>
               </div>
             </div>
           </div>
 
           <div class="swipe-quick-bar">
-            <button type="button" class="swipe-qbtn" id="swipeUndoBtn" ${state.swipeHistory.length === 0 ? 'disabled' : ''} title="Desfazer última ação">
-              ↶ Desfazer (Undo)
+            <button type="button" class="swipe-qbtn" id="swipeUndoBtn" ${state.swipeHistory.length === 0 ? 'disabled' : ''}>
+              ↶ Desfazer
             </button>
             <button type="button" class="swipe-qbtn" id="swipeTrailerBtn">
-              🎬 Ver Trailer
+              🎬 Trailer
             </button>
             <button type="button" class="swipe-qbtn" id="swipeDetailsSheetBtn">
-              ↓ Ficha Técnica Completa
-            </button>
-            <button type="button" class="swipe-qbtn" id="swipeOpenModalBtn">
-              ℹ Mais Detalhes
+              ↓ Ficha Técnica
             </button>
             <button type="button" class="swipe-qbtn" id="swipeAddPlaylistBtn">
               + Playlist
@@ -1395,12 +1380,11 @@
           </div>
 
           <div class="swipe-tech-sheet ${state.swipeExpandedMeta ? '' : 'hidden'}" id="swipeTechSheet">
-            <div class="swipe-tech-loading">Carregando ficha técnica aprofundada...</div>
+            <div class="swipe-tech-loading">Carregando ficha técnica...</div>
           </div>
         </article>
 
-        <button type="button" class="swipe-side-arrow swipe-like-arrow" id="swipeRightBtn" title="Direita no comando: Guardar nos Favoritos (Like)">
-          <span class="swipe-key-hint">Direita →</span>
+        <button type="button" class="swipe-side-arrow swipe-like-arrow" id="swipeRightBtn" title="Direita: Gostei">
           <span class="swipe-arrow-circle like">♥</span>
           <span class="swipe-arrow-label">Gostei</span>
         </button>
@@ -1409,9 +1393,10 @@
 
     stage.querySelector('#swipeLeftBtn')?.addEventListener('click', () => triggerSwipeDecision('skip'));
     stage.querySelector('#swipeRightBtn')?.addEventListener('click', () => triggerSwipeDecision('like'));
+    stage.querySelector('#swipeMobileSkipBtn')?.addEventListener('click', () => triggerSwipeDecision('skip'));
+    stage.querySelector('#swipeMobileLikeBtn')?.addEventListener('click', () => triggerSwipeDecision('like'));
     stage.querySelector('#swipeUndoBtn')?.addEventListener('click', () => undoLastSwipeDecision());
     stage.querySelector('#swipePlayInstantBtn')?.addEventListener('click', () => openItemDetails(current, true));
-    stage.querySelector('#swipeOpenModalBtn')?.addEventListener('click', () => openItemDetails(current, false));
     stage.querySelector('#swipeAddPlaylistBtn')?.addEventListener('click', () => openPlaylistModal(current));
     stage.querySelector('#swipeTrailerBtn')?.addEventListener('click', () => openSwipeTrailerPreview(current));
     stage.querySelector('#swipeDetailsSheetBtn')?.addEventListener('click', () => toggleSwipeTechSheet());
@@ -1455,7 +1440,10 @@
       const meta = data.meta || {};
       state.swipeMetaCache[key] = meta;
       const rtEl = document.getElementById('swipeRuntimePill');
-      if (rtEl && meta.runtime) rtEl.textContent = meta.runtime;
+      if (rtEl && meta.runtime) {
+        rtEl.textContent = meta.runtime;
+        rtEl.classList.remove('hidden');
+      }
       return meta;
     } catch (e) {
       return null;

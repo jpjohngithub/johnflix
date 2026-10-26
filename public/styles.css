@@ -4653,57 +4653,54 @@ html, body {
   transition: padding-top 0.48s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* ===== MINHA LISTA HUB & TINDER PARA FILMES NA TV (SWIPE TV) ===== */
+/* Reasonable top spacing when Hero recommendations are collapsed on Filmes / Séries */
+#mainContent.no-hero-offset > #continueWatchingRow:not(.hidden) {
+  padding-top: 96px !important;
+}
+#mainContent.no-hero-offset > #continueWatchingRow.hidden + #catalogContainer {
+  padding-top: 96px !important;
+}
+@media (max-width: 768px) {
+  #mainContent.no-hero-offset > #continueWatchingRow:not(.hidden) {
+    padding-top: 78px !important;
+  }
+  #mainContent.no-hero-offset > #continueWatchingRow.hidden + #catalogContainer {
+    padding-top: 78px !important;
+  }
+}
+
+/* ===== MINHA LISTA HUB & TINDERFLIX (CLEAN & INTUITIVE PC + MOBILE) ===== */
 .mylist-hub-section {
-  padding: 96px 4.5% 48px;
-  max-width: 1560px;
+  padding: 92px 4.5% 48px;
+  max-width: 1180px;
   margin: 0 auto;
 }
 
 .mylist-hub-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin-bottom: 22px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.mylist-hub-kicker {
-  display: block;
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  color: var(--purple-light, #c084fc);
-  margin-bottom: 4px;
-}
-
-.mylist-hub-title-wrap h2 {
-  font-family: 'Outfit', sans-serif;
-  font-size: 1.65rem;
-  font-weight: 800;
-  margin: 0;
-  color: #fff;
+  justify-content: center;
+  margin-bottom: 24px;
 }
 
 .mylist-subtabs {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  background: rgba(15, 10, 28, 0.78);
-  padding: 6px;
-  border-radius: 14px;
+  gap: 6px;
+  background: rgba(15, 10, 28, 0.85);
+  padding: 5px;
+  border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
 }
 
 .mylist-subtab {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 9px 16px;
-  border-radius: 10px;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 20px;
+  border-radius: 999px;
   border: none;
   background: transparent;
   color: #cbd5e1;
@@ -4711,6 +4708,7 @@ html, body {
   font-weight: 700;
   cursor: pointer;
   transition: all 0.22s ease;
+  white-space: nowrap;
 }
 
 .mylist-subtab:hover {
@@ -4721,94 +4719,14 @@ html, body {
 .mylist-subtab.active {
   background: var(--purple-primary, #a855f7);
   color: #fff;
-  box-shadow: 0 6px 20px rgba(168, 85, 247, 0.38);
-}
-
-/* Swipe Filters Bar */
-.swipe-filters-bar {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 22px;
-  padding: 14px 18px;
-  border-radius: 16px;
-  background: rgba(14, 10, 26, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(16px);
-}
-
-.swipe-genres-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-  scrollbar-width: none;
-}
-.swipe-genres-row::-webkit-scrollbar {
-  display: none;
-}
-
-.swipe-genre-chip {
-  flex: 0 0 auto;
-  padding: 7px 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.04);
-  color: #cbd5e1;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-.swipe-genre-chip:hover {
-  border-color: rgba(255, 255, 255, 0.28);
-  color: #fff;
-}
-.swipe-genre-chip.active {
-  background: var(--purple-primary, #a855f7);
-  border-color: var(--purple-light, #c084fc);
-  color: #fff;
-  box-shadow: 0 4px 14px rgba(168, 85, 247, 0.35);
-}
-
-.swipe-sort-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.swipe-sort-group {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(255, 255, 255, 0.04);
-  padding: 4px;
-  border-radius: 10px;
-}
-
-.swipe-sort-pill {
-  padding: 5px 12px;
-  border-radius: 7px;
-  border: none;
-  background: transparent;
-  color: #94a3b8;
-  font-size: 0.76rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-.swipe-sort-pill.active {
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
+  box-shadow: 0 4px 16px rgba(168, 85, 247, 0.4);
 }
 
 /* Swipe Deck Stage */
 .swipe-deck-row {
   display: grid;
-  grid-template-columns: 110px minmax(0, 1fr) 110px;
+  grid-template-columns: 88px minmax(0, 780px) 88px;
+  justify-content: center;
   align-items: center;
   gap: 18px;
 }
@@ -4818,14 +4736,14 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 18px 10px;
+  gap: 6px;
+  padding: 16px 8px;
   border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(14, 10, 26, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(14, 10, 26, 0.65);
   color: #e2e8f0;
   cursor: pointer;
-  transition: all 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: all 0.22s ease;
 }
 .swipe-side-arrow:hover {
   transform: scale(1.05);
@@ -4839,22 +4757,14 @@ html, body {
   background: rgba(16, 185, 129, 0.12);
 }
 
-.swipe-key-hint {
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #94a3b8;
-}
-
 .swipe-arrow-circle {
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.35rem;
+  font-size: 1.25rem;
   font-weight: 800;
 }
 .swipe-arrow-circle.skip {
@@ -4868,8 +4778,9 @@ html, body {
   border: 1px solid rgba(16, 185, 129, 0.4);
 }
 .swipe-arrow-label {
-  font-size: 0.82rem;
+  font-size: 0.76rem;
   font-weight: 700;
+  color: #cbd5e1;
 }
 
 /* Main Interactive Spotlight Card */
@@ -4878,41 +4789,41 @@ html, body {
   border-radius: 22px;
   overflow: hidden;
   background: #0d0918;
-  border: 1px solid rgba(255, 255, 255, 0.13);
-  box-shadow: 0 28px 75px rgba(0, 0, 0, 0.78);
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.28s ease;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.75);
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.26s ease;
 }
 
 .swipe-card.swiping-left {
-  transform: translateX(-140px) rotate(-6deg) scale(0.95);
+  transform: translateX(-130px) rotate(-5deg) scale(0.95);
   opacity: 0;
 }
 .swipe-card.swiping-right {
-  transform: translateX(140px) rotate(6deg) scale(0.95);
+  transform: translateX(130px) rotate(5deg) scale(0.95);
   opacity: 0;
 }
 
 .swipe-card-stamp {
   position: absolute;
-  top: 24px;
+  top: 20px;
   z-index: 6;
-  padding: 6px 16px;
+  padding: 5px 14px;
   border-radius: 8px;
-  font-size: 1rem;
+  font-size: 0.92rem;
   font-weight: 900;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.18s ease;
 }
 .swipe-card-stamp.skip-stamp {
-  left: 24px;
+  left: 20px;
   border: 2px solid #f87171;
   color: #f87171;
   background: rgba(239, 68, 68, 0.18);
 }
 .swipe-card-stamp.like-stamp {
-  right: 24px;
+  right: 20px;
   border: 2px solid #34d399;
   color: #34d399;
   background: rgba(16, 185, 129, 0.18);
@@ -4927,8 +4838,8 @@ html, body {
   inset: 0;
   background-size: cover;
   background-position: center;
-  opacity: 0.24;
-  filter: blur(8px) saturate(125%);
+  opacity: 0.22;
+  filter: blur(10px) saturate(120%);
   transform: scale(1.06);
   pointer-events: none;
 }
@@ -4937,9 +4848,9 @@ html, body {
   position: relative;
   z-index: 2;
   display: grid;
-  grid-template-columns: 230px minmax(0, 1fr);
-  gap: 28px;
-  padding: 28px;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 24px;
+  padding: 24px;
   align-items: center;
 }
 
@@ -4948,7 +4859,7 @@ html, body {
   aspect-ratio: 2 / 3;
   object-fit: cover;
   border-radius: 14px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.72);
   border: 1px solid rgba(255, 255, 255, 0.14);
 }
 
@@ -4956,42 +4867,42 @@ html, body {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: 7px;
+  margin-bottom: 8px;
 }
 
 .swipe-badge-type {
-  padding: 4px 10px;
+  padding: 3px 9px;
   border-radius: 6px;
   background: var(--purple-primary, #a855f7);
   color: #fff;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 800;
   text-transform: uppercase;
 }
 
 .swipe-badge-meta {
-  padding: 4px 10px;
+  padding: 3px 9px;
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.1);
   color: #e2e8f0;
-  font-size: 0.75rem;
+  font-size: 0.74rem;
   font-weight: 700;
 }
 
 .swipe-badge-imdb {
-  padding: 4px 10px;
+  padding: 3px 9px;
   border-radius: 6px;
-  background: rgba(245, 158, 11, 0.2);
-  border: 1px solid rgba(245, 158, 11, 0.45);
+  background: rgba(245, 158, 11, 0.18);
+  border: 1px solid rgba(245, 158, 11, 0.4);
   color: #fbbf24;
-  font-size: 0.76rem;
+  font-size: 0.75rem;
   font-weight: 800;
 }
 
 .swipe-card-title {
   font-family: 'Outfit', sans-serif;
-  font-size: clamp(1.5rem, 2.5vw, 2.2rem);
+  font-size: clamp(1.35rem, 2.2vw, 1.9rem);
   font-weight: 800;
   color: #fff;
   margin: 0 0 6px;
@@ -4999,83 +4910,76 @@ html, body {
 }
 
 .swipe-card-genres {
-  font-size: 0.84rem;
+  font-size: 0.8rem;
   font-weight: 700;
   color: var(--purple-light, #c084fc);
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .swipe-card-synopsis {
-  font-size: 0.92rem;
-  line-height: 1.55;
+  font-size: 0.88rem;
+  line-height: 1.5;
   color: #cbd5e1;
   margin: 0 0 18px;
   display: -webkit-box;
-  -webkit-line-clamp: 4;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-/* Streaming Availability Shortcuts */
-.swipe-streaming-bar {
-  padding-top: 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.swipe-stream-label {
-  display: block;
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  color: #94a3b8;
-  margin-bottom: 8px;
-}
-
-.swipe-stream-buttons {
+.swipe-main-cta-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  align-items: center;
+  gap: 10px;
+}
+
+.swipe-mobile-decision {
+  display: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  font-size: 1.15rem;
+  font-weight: 900;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.18s ease;
+}
+.swipe-mobile-decision:active {
+  transform: scale(0.92);
+}
+.swipe-mobile-decision.skip {
+  background: rgba(239, 68, 68, 0.18);
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  color: #f87171;
+}
+.swipe-mobile-decision.like {
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid rgba(16, 185, 129, 0.45);
+  color: #34d399;
 }
 
 .swipe-platform-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 13px;
-  border-radius: 9px;
-  font-size: 0.76rem;
-  font-weight: 700;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 22px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 800;
   text-decoration: none;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.06);
-  color: #f8fafc;
+  border: 1px solid var(--purple-light, #c084fc);
+  background: var(--purple-primary, #a855f7);
+  color: #fff;
   cursor: pointer;
+  box-shadow: 0 8px 22px rgba(168, 85, 247, 0.35);
   transition: all 0.2s ease;
 }
 .swipe-platform-btn:hover {
   transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.32);
-  background: rgba(255, 255, 255, 0.13);
-}
-.swipe-platform-btn.johnflix-direct {
-  background: var(--purple-primary, #a855f7);
-  border-color: var(--purple-light, #c084fc);
-  color: #fff;
-}
-.swipe-platform-btn.netflix {
-  background: rgba(229, 9, 20, 0.2);
-  border-color: rgba(229, 9, 20, 0.5);
-  color: #fca5a5;
-}
-.swipe-platform-btn.prime {
-  background: rgba(0, 168, 225, 0.18);
-  border-color: rgba(0, 168, 225, 0.45);
-  color: #7dd3fc;
-}
-.swipe-platform-btn.justwatch {
-  background: rgba(234, 179, 8, 0.16);
-  border-color: rgba(234, 179, 8, 0.45);
-  color: #fde047;
+  filter: brightness(1.08);
 }
 
 /* Bottom Quick Options Bar */
@@ -5086,19 +4990,19 @@ html, body {
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 14px 20px;
-  background: rgba(6, 4, 14, 0.78);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 8px;
+  padding: 12px 16px;
+  background: rgba(6, 4, 14, 0.72);
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
 }
 
 .swipe-qbtn {
-  padding: 8px 15px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.05);
-  color: #e2e8f0;
-  font-size: 0.8rem;
+  padding: 7px 13px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: #cbd5e1;
+  font-size: 0.76rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -5108,83 +5012,83 @@ html, body {
   color: #fff;
 }
 .swipe-qbtn:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
-/* Deep Technical Sheet (Down Arrow / Ficha Técnica Completa) */
+/* Deep Technical Sheet */
 .swipe-tech-sheet {
   position: relative;
   z-index: 2;
-  padding: 24px 28px;
-  background: rgba(8, 5, 18, 0.94);
-  border-top: 1px solid rgba(168, 85, 247, 0.25);
-  animation: tabContentEnter 0.35s ease both;
+  padding: 20px 24px;
+  background: rgba(8, 5, 18, 0.95);
+  border-top: 1px solid rgba(168, 85, 247, 0.22);
+  animation: tabContentEnter 0.32s ease both;
 }
 
 .swipe-tech-grid {
   display: grid;
-  grid-template-columns: 1.5fr 1fr;
-  gap: 24px;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 20px;
 }
 
 .swipe-tech-main h4,
 .swipe-tech-reviews h4 {
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   font-weight: 800;
   color: #fff;
-  margin: 0 0 8px;
+  margin: 0 0 6px;
 }
 .swipe-tech-main h4 small {
   font-weight: 500;
   color: #94a3b8;
-  font-size: 0.76rem;
+  font-size: 0.74rem;
 }
 
 .swipe-tech-main p {
-  font-size: 0.88rem;
-  line-height: 1.6;
+  font-size: 0.84rem;
+  line-height: 1.55;
   color: #cbd5e1;
-  margin: 0 0 16px;
+  margin: 0 0 14px;
 }
 
 .swipe-awards-box {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border-radius: 12px;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
   background: rgba(245, 158, 11, 0.1);
-  border: 1px solid rgba(245, 158, 11, 0.3);
-  margin-bottom: 16px;
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  margin-bottom: 14px;
 }
 .swipe-awards-icon {
-  font-size: 1.4rem;
+  font-size: 1.25rem;
 }
 .swipe-awards-box strong {
   display: block;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: #fbbf24;
 }
 .swipe-awards-box p {
   margin: 2px 0 0;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   color: #fde68a;
 }
 
 .swipe-cast-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 7px;
 }
 
 .swipe-person-chip {
-  padding: 6px 12px;
+  padding: 5px 11px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
   color: #e2e8f0;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.18s ease;
@@ -5196,18 +5100,18 @@ html, body {
 }
 
 .swipe-review-card {
-  padding: 12px 14px;
-  border-radius: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  margin-bottom: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  margin-bottom: 8px;
 }
 .swipe-review-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 6px;
-  font-size: 0.8rem;
+  margin-bottom: 4px;
+  font-size: 0.76rem;
 }
 .swipe-review-score {
   color: #fbbf24;
@@ -5215,20 +5119,37 @@ html, body {
 }
 .swipe-review-card p {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.76rem;
   color: #94a3b8;
   font-style: italic;
 }
 
 .swipe-empty-card {
   text-align: center;
-  padding: 48px 24px;
+  padding: 40px 20px;
   border-radius: 18px;
-  background: rgba(14, 10, 26, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(14, 10, 26, 0.68);
+  border: 1px solid rgba(255, 255, 255, 0.09);
 }
 
-@media (max-width: 900px) {
+/* Mobile Responsive & Intuitive Details Modal + TinderFlix */
+@media (max-width: 820px) {
+  .mylist-hub-section {
+    padding: 78px 14px 36px;
+  }
+  .mylist-hub-header {
+    margin-bottom: 16px;
+  }
+  .mylist-subtabs {
+    width: 100%;
+    justify-content: space-between;
+    padding: 4px;
+  }
+  .mylist-subtab {
+    flex: 1;
+    padding: 8px 10px;
+    font-size: 0.76rem;
+  }
   .swipe-deck-row {
     grid-template-columns: 1fr;
   }
@@ -5238,17 +5159,176 @@ html, body {
   .swipe-card-inner {
     grid-template-columns: 1fr;
     text-align: center;
-    padding: 20px;
+    padding: 18px 16px 14px;
+    gap: 14px;
   }
   .swipe-card-poster {
-    max-width: 190px;
+    max-width: 145px;
     margin: 0 auto;
   }
-  .swipe-card-badges,
-  .swipe-stream-buttons {
+  .swipe-card-badges {
     justify-content: center;
+  }
+  .swipe-card-title {
+    font-size: 1.35rem;
+  }
+  .swipe-card-synopsis {
+    font-size: 0.82rem;
+    -webkit-line-clamp: 3;
+    margin-bottom: 14px;
+  }
+  .swipe-main-cta-row {
+    justify-content: center;
+    width: 100%;
+  }
+  .swipe-mobile-decision {
+    display: inline-flex;
+  }
+  .swipe-platform-btn {
+    flex: 1;
+    max-width: 220px;
+    padding: 11px 14px;
+    font-size: 0.84rem;
+  }
+  .swipe-quick-bar {
+    gap: 6px;
+    padding: 10px 12px;
+  }
+  .swipe-qbtn {
+    padding: 6px 10px;
+    font-size: 0.72rem;
+  }
+  .swipe-tech-sheet {
+    padding: 16px;
   }
   .swipe-tech-grid {
     grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  /* Intuitive Mobile Details Modal (when clicking a movie/series) */
+  #detailsModal.modal-backdrop {
+    padding: 0 !important;
+    align-items: flex-end !important;
+  }
+  #detailsModal .modal-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 92dvh !important;
+    margin: 0 !important;
+    border-radius: 22px 22px 0 0 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  #detailsModal .modal-close {
+    position: sticky !important;
+    top: 12px !important;
+    left: calc(100% - 52px) !important;
+    width: 40px !important;
+    height: 40px !important;
+    font-size: 1.4rem !important;
+    background: rgba(10, 6, 20, 0.85) !important;
+    border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    z-index: 30 !important;
+    margin-bottom: -40px !important;
+  }
+  #detailsModal .modal-hero {
+    min-height: 250px !important;
+    height: auto !important;
+    padding: 56px 16px 18px !important;
+    margin-top: 0 !important;
+    align-items: flex-end !important;
+  }
+  #detailsModal .modal-hero-content {
+    width: 100% !important;
+  }
+  #detailsModal .modal-title {
+    font-size: 1.45rem !important;
+    line-height: 1.15 !important;
+    margin-bottom: 8px !important;
+  }
+  #detailsModal .modal-meta {
+    gap: 8px !important;
+    font-size: 0.78rem !important;
+    margin-bottom: 10px !important;
+  }
+  #detailsModal .modal-desc {
+    font-size: 0.84rem !important;
+    line-height: 1.48 !important;
+    -webkit-line-clamp: 4 !important;
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    margin-bottom: 14px !important;
+  }
+  #detailsModal .modal-actions-bar {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+  #detailsModal #modalPlayBtn {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    height: 46px !important;
+    font-size: 0.95rem !important;
+    justify-content: center !important;
+    border-radius: 12px !important;
+  }
+  #detailsModal .modal-ghost-btn {
+    width: 100% !important;
+    height: 40px !important;
+    font-size: 0.8rem !important;
+    justify-content: center !important;
+    border-radius: 10px !important;
+    padding: 0 10px !important;
+  }
+  #detailsModal .modal-body {
+    padding: 16px 16px 32px !important;
+  }
+  #detailsModal .series-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+  #detailsModal .season-select {
+    width: 100% !important;
+    height: 44px !important;
+    font-size: 0.9rem !important;
+  }
+  #detailsModal .episodes-grid {
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    gap: 10px !important;
+    max-height: none !important;
+    padding-bottom: 8px !important;
+    scroll-snap-type: x proximity !important;
+  }
+  #detailsModal .ep-card {
+    flex: 0 0 165px !important;
+    scroll-snap-align: start !important;
+    padding: 12px !important;
+  }
+  #detailsModal .streams-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+  #detailsModal .stream-filters {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    padding-bottom: 6px !important;
+    scrollbar-width: none !important;
+  }
+  #detailsModal .stream-filters::-webkit-scrollbar {
+    display: none !important;
+  }
+  #detailsModal .addon-tab {
+    flex: 0 0 auto !important;
+    padding: 7px 13px !important;
+    font-size: 0.78rem !important;
   }
 }
