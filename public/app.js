@@ -1158,37 +1158,74 @@
   function getSwipePool() {
     const seen = new Set();
     const allItems = [];
-    state.catalogRows.forEach((row) => {
+    state.catalogRows.forEach((row, rIdx) => {
       if (row.type === 'tv') return;
-      (row.items || []).forEach((item) => {
+      (row.items || []).forEach((item, iIdx) => {
         if (!item || !item.id || seen.has(item.id)) return;
         seen.add(item.id);
-        allItems.push({ ...item, _rowCategory: row.category || '' });
+        allItems.push({ ...item, _rowCategory: row.category || '', _baseRank: rIdx * 100 + iIdx });
       });
     });
 
-    const filtered = allItems.filter((item) => {
-      if (state.swipeSkippedIds.has(item.id) || isInMyList(item.id)) return false;
-      if (state.swipeTypeFilter !== 'all' && item.type !== state.swipeTypeFilter) return false;
-      if (state.swipeGenres.length > 0) {
-        const gText = [...(Array.isArray(item.genres) ? item.genres : []), item._rowCategory || '', item.description || '']
-          .join(' ')
-          .toLowerCase();
-        const matchesAny = state.swipeGenres.some((gid) => {
-          const def = SWIPE_GENRE_MAP.find((g) => g.id === gid);
-          return def && def.match.some((kw) => gText.includes(kw));
-        });
-        if (!matchesAny) return false;
+    // Build personalized affinity profile from Watchlist (myList) + Continue Watching (continueWatching) + playlists
+    const playlistItems = state.playlists.flatMap((p) => p.items || []);
+    const historySignals = [...state.continueWatching, ...state.myList, ...playlistItems];
+    const genreWeights = {};
+    const typeCounts = { movie: 0, series: 0 };
+    const keywordBag = new Set();
+
+    historySignals.forEach((sig, idx) => {
+      if (!sig) return;
+      const recencyBoost = idx < 5 ? 2.5 : 1.2;
+      if (sig.type === 'series') typeCounts.series += recencyBoost;
+      else if (sig.type === 'movie') typeCounts.movie += recencyBoost;
+
+      const sigGenres = Array.isArray(sig.genres) ? sig.genres : [];
+      sigGenres.forEach((g) => {
+        const key = String(g || '').toLowerCase().trim();
+        if (key) genreWeights[key] = (genreWeights[key] || 0) + 3 * recencyBoost;
+      });
+      if (sig._rowCategory) {
+        const cat = String(sig._rowCategory).toLowerCase().trim();
+        genreWeights[cat] = (genreWeights[cat] || 0) + 2 * recencyBoost;
       }
-      return true;
+      String(sig.name || '')
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((w) => w.length > 4)
+        .forEach((w) => keywordBag.add(w));
     });
 
-    const yearOf = (i) => parseInt(String(i.year || '').slice(0, 4), 10) || 0;
-    if (state.swipeSort === 'rating') {
-      filtered.sort((a, b) => (Number(b.imdbRating) || 0) - (Number(a.imdbRating) || 0));
-    } else if (state.swipeSort === 'newest') {
-      filtered.sort((a, b) => yearOf(b) - yearOf(a));
+    const filtered = allItems.filter((item) => {
+      return !state.swipeSkippedIds.has(item.id) && !isInMyList(item.id);
+    });
+
+    if (historySignals.length > 0) {
+      filtered.forEach((item) => {
+        let affinity = 0;
+        const itemGenres = Array.isArray(item.genres) ? item.genres : [];
+        itemGenres.forEach((g) => {
+          const key = String(g || '').toLowerCase().trim();
+          if (genreWeights[key]) affinity += genreWeights[key];
+        });
+        const catKey = String(item._rowCategory || '').toLowerCase().trim();
+        if (catKey && genreWeights[catKey]) affinity += genreWeights[catKey];
+
+        if (item.type === 'series' && typeCounts.series > typeCounts.movie) affinity += 2.2;
+        if (item.type === 'movie' && typeCounts.movie > typeCounts.series) affinity += 2.2;
+
+        const descLower = String(item.description || '').toLowerCase();
+        keywordBag.forEach((kw) => {
+          if (descLower.includes(kw)) affinity += 1.5;
+        });
+
+        affinity += (Number(item.imdbRating) || 7.0) * 0.35;
+        item._affinityScore = affinity;
+      });
+
+      filtered.sort((a, b) => (b._affinityScore - a._affinityScore) || (a._baseRank - b._baseRank));
     }
+
     return filtered;
   }
 
@@ -1198,13 +1235,13 @@
     hub.innerHTML = `
       <div class="mylist-hub-header">
         <div class="mylist-hub-title-wrap">
-          <span class="mylist-hub-kicker">DESCOBERTA INTERATIVA &amp; COLEÇÃO</span>
-          <h2>Minha Lista &amp; Swipe TV</h2>
+          <span class="mylist-hub-kicker">DESCOBERTA INTELIGENTE &amp; COLEÇÃO</span>
+          <h2>Minha Lista &amp; TinderFlix</h2>
         </div>
         <div class="mylist-subtabs" role="tablist">
           <button type="button" class="mylist-subtab ${state.myListSubTab === 'swipe' ? 'active' : ''}" data-subtab="swipe">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="4" y="2" width="16" height="20" rx="3"/><path d="M9 10l3-3 3 3M9 14l3 3 3-3"/></svg>
-            <span>Tinder de Filmes (Swipe TV)</span>
+            <span>TinderFlix</span>
           </button>
           <button type="button" class="mylist-subtab ${state.myListSubTab === 'watchlist' ? 'active' : ''}" data-subtab="watchlist">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
@@ -1246,7 +1283,7 @@
           <h3 style="font-size:1.25rem;margin-bottom:4px;">Meus Favoritos Salvos (${state.myList.length})</h3>
           <p style="font-size:0.84rem;color:var(--text-muted);margin:0;">Armazenados localmente no seu dispositivo sem necessidade de login.</p>
         </div>
-        <button type="button" class="btn btn-sm btn-primary" id="goToSwipeFromWatchlistBtn">🔥 Descobrir Novos Filmes</button>
+        <button type="button" class="btn btn-sm btn-primary" id="goToSwipeFromWatchlistBtn">🔥 Abrir TinderFlix</button>
       </div>
       <div class="media-grid" id="myListGrid"></div>
     `;
@@ -1257,7 +1294,7 @@
     });
     const grid = wrap.querySelector('#myListGrid');
     if (!state.myList.length) {
-      grid.innerHTML = `<p style="color:var(--text-muted);grid-column:1/-1;padding:28px 0;">Nenhum filme ou série marcado com "Gostei" ainda. Use o modo <strong>Tinder de Filmes (Swipe TV)</strong> e pressione a seta para a Direita (→) para guardar seus favoritos!</p>`;
+      grid.innerHTML = `<p style="color:var(--text-muted);grid-column:1/-1;padding:28px 0;">Nenhum filme ou série marcado com "Gostei" ainda. Use o <strong>TinderFlix</strong> e pressione a seta para a Direita (→) para guardar seus favoritos!</p>`;
     } else {
       state.myList.forEach((item) => grid.appendChild(createMediaCard(item, { allowRemoveMyList: true })));
     }
@@ -1271,77 +1308,21 @@
     const deckWrap = document.createElement('div');
     deckWrap.className = 'swipe-tv-wrap';
     deckWrap.innerHTML = `
-      <div class="swipe-filters-bar">
-        <div class="swipe-genres-row">
-          <button type="button" class="swipe-genre-chip ${state.swipeGenres.length === 0 ? 'active' : ''}" data-genre="all">✨ Todos os Géneros</button>
-          ${SWIPE_GENRE_MAP.map((g) => `
-            <button type="button" class="swipe-genre-chip ${state.swipeGenres.includes(g.id) ? 'active' : ''}" data-genre="${g.id}">${g.label}</button>
-          `).join('')}
-        </div>
-        <div class="swipe-sort-row">
-          <div class="swipe-sort-group">
-            <button type="button" class="swipe-sort-pill ${state.swipeTypeFilter === 'all' ? 'active' : ''}" data-type="all">Todos</button>
-            <button type="button" class="swipe-sort-pill ${state.swipeTypeFilter === 'movie' ? 'active' : ''}" data-type="movie">Filmes</button>
-            <button type="button" class="swipe-sort-pill ${state.swipeTypeFilter === 'series' ? 'active' : ''}" data-type="series">Séries</button>
-          </div>
-          <div class="swipe-sort-group">
-            <button type="button" class="swipe-sort-pill ${state.swipeSort === 'popular' ? 'active' : ''}" data-sort="popular">🔥 Populares</button>
-            <button type="button" class="swipe-sort-pill ${state.swipeSort === 'rating' ? 'active' : ''}" data-sort="rating">⭐ Mais Bem Classificados</button>
-            <button type="button" class="swipe-sort-pill ${state.swipeSort === 'newest' ? 'active' : ''}" data-sort="newest">🆕 Novidades</button>
-          </div>
-        </div>
-      </div>
-
       <div class="swipe-stage" id="swipeStage"></div>
     `;
     container.appendChild(deckWrap);
-
-    deckWrap.querySelectorAll('.swipe-genre-chip').forEach((chip) => {
-      chip.addEventListener('click', () => {
-        const g = chip.dataset.genre;
-        if (g === 'all') {
-          state.swipeGenres = [];
-        } else {
-          const idx = state.swipeGenres.indexOf(g);
-          if (idx >= 0) state.swipeGenres.splice(idx, 1);
-          else state.swipeGenres.push(g);
-        }
-        state.swipeIndex = 0;
-        state.swipeExpandedMeta = false;
-        renderCatalogRows();
-      });
-    });
-
-    deckWrap.querySelectorAll('.swipe-sort-pill[data-type]').forEach((pill) => {
-      pill.addEventListener('click', () => {
-        state.swipeTypeFilter = pill.dataset.type;
-        state.swipeIndex = 0;
-        state.swipeExpandedMeta = false;
-        renderCatalogRows();
-      });
-    });
-
-    deckWrap.querySelectorAll('.swipe-sort-pill[data-sort]').forEach((pill) => {
-      pill.addEventListener('click', () => {
-        state.swipeSort = pill.dataset.sort;
-        state.swipeIndex = 0;
-        state.swipeExpandedMeta = false;
-        renderCatalogRows();
-      });
-    });
 
     const stage = deckWrap.querySelector('#swipeStage');
     if (!current) {
       stage.innerHTML = `
         <div class="swipe-empty-card">
-          <h3>Você viu todas as sugestões deste filtro!</h3>
-          <p>Limpe os filtros de género ou reinicie as sugestões ignoradas para continuar descobrindo.</p>
-          <button type="button" class="btn btn-primary" id="resetSwipePoolBtn">Reiniciar Sugestões</button>
+          <h3>Você viu todas as sugestões!</h3>
+          <p>Reinicie as sugestões ignoradas para continuar descobrindo no TinderFlix.</p>
+          <button type="button" class="btn btn-primary" id="resetSwipePoolBtn">Reiniciar TinderFlix</button>
         </div>
       `;
       stage.querySelector('#resetSwipePoolBtn')?.addEventListener('click', () => {
         state.swipeSkippedIds.clear();
-        state.swipeGenres = [];
         state.swipeIndex = 0;
         renderCatalogRows();
       });
@@ -1356,6 +1337,7 @@
       : (current._rowCategory ? current._rowCategory.toUpperCase() : 'Destaque');
     const cachedMeta = state.swipeMetaCache[`${current.type}:${current.id}`] || {};
     const runtimeText = cachedMeta.runtime || current.runtime || (current.type === 'series' ? 'Múltiplas Temporadas' : 'Longa-metragem');
+    const hasPersonalization = (state.continueWatching.length + state.myList.length) > 0;
 
     stage.innerHTML = `
       <div class="swipe-deck-row">
@@ -1377,23 +1359,18 @@
             <div class="swipe-card-info-col">
               <div class="swipe-card-badges">
                 <span class="swipe-badge-type">${typeLabel}</span>
+                ${hasPersonalization ? `<span class="swipe-badge-meta" style="border:1px solid rgba(168,85,247,0.45);color:#e9d5ff;">✨ Recomendado para você</span>` : ''}
                 ${current.year ? `<span class="swipe-badge-meta">${escapeHtml(current.year)}</span>` : ''}
                 <span class="swipe-badge-meta" id="swipeRuntimePill">${escapeHtml(runtimeText)}</span>
                 ${current.imdbRating ? `<span class="swipe-badge-imdb">★ IMDb ${escapeHtml(current.imdbRating)}</span>` : ''}
               </div>
               <h2 class="swipe-card-title">${escapeHtml(current.name)}</h2>
               <div class="swipe-card-genres">${escapeHtml(genresList)}</div>
-              <p class="swipe-card-synopsis">${escapeHtml(current.description || 'Clique em Ficha Técnica (ou seta para baixo ↓) para carregar a sinopse completa, elenco, prémios e plataformas.')}</p>
+              <p class="swipe-card-synopsis">${escapeHtml(current.description || 'Clique em Ficha Técnica (ou seta para baixo ↓) para carregar a sinopse completa, elenco e prémios.')}</p>
 
               <div class="swipe-streaming-bar">
-                <span class="swipe-stream-label">ONDE ASSISTIR AGORA (JUSTWATCH / DIRETO):</span>
                 <div class="swipe-stream-buttons">
-                  <button type="button" class="swipe-platform-btn johnflix-direct" id="swipePlayInstantBtn">▶ Assistir no JohnFlix</button>
-                  <a href="https://www.netflix.com/search?q=${encodeURIComponent(current.name)}" target="_blank" rel="noopener" class="swipe-platform-btn netflix">Watch on Netflix</a>
-                  <a href="https://www.primevideo.com/search/ref=atv_nb_sr?phrase=${encodeURIComponent(current.name)}" target="_blank" rel="noopener" class="swipe-platform-btn prime">Prime Video</a>
-                  <a href="https://tv.apple.com/search?term=${encodeURIComponent(current.name)}" target="_blank" rel="noopener" class="swipe-platform-btn appletv">Apple TV</a>
-                  <a href="https://www.youtube.com/results?search_query=${encodeURIComponent(current.name + ' filme completo trailer')}" target="_blank" rel="noopener" class="swipe-platform-btn youtube">YouTube</a>
-                  <a href="https://www.justwatch.com/br/busca?q=${encodeURIComponent(current.name)}" target="_blank" rel="noopener" class="swipe-platform-btn justwatch">JustWatch Brasil ↗</a>
+                  <button type="button" class="swipe-platform-btn johnflix-direct" id="swipePlayInstantBtn" style="padding:11px 22px;font-size:0.9rem;">▶ Assistir no JohnFlix</button>
                 </div>
               </div>
             </div>
@@ -1508,7 +1485,9 @@
             background: current.background,
             year: current.year,
             imdbRating: current.imdbRating,
-            description: current.description
+            description: current.description,
+            genres: current.genres || [],
+            _rowCategory: current._rowCategory || ''
           });
           localStorage.setItem('johnflix_mylist', JSON.stringify(state.myList));
           updateBadges();
@@ -3159,7 +3138,9 @@
         background: item.background,
         year: item.year,
         imdbRating: item.imdbRating,
-        description: item.description
+        description: item.description,
+        genres: item.genres || [],
+        _rowCategory: item._rowCategory || ''
       });
       showToast(`Adicionado à Minha Lista`);
     }
