@@ -55,17 +55,6 @@ const MOVIE_ADDONS = [
     color: '#38bdf8'
   },
   {
-    id: 'magneto',
-    name: 'Magneto',
-    badge: 'CLOUD + P2P',
-    type: 'p2p',
-    category: 'movie_series',
-    manifestUrl: 'https://magneto-jnv5.onrender.com/v1/manifest.json',
-    baseUrl: 'https://magneto-jnv5.onrender.com/v1',
-    logo: 'https://images.metahub.space/logo/medium/tt0133093/img',
-    color: '#ec4899'
-  },
-  {
     id: 'micoleao',
     name: 'Mico-Leão Dublado',
     badge: 'DUBLADO BR',
@@ -76,29 +65,6 @@ const MOVIE_ADDONS = [
     fallbackUrl: 'https://torrentio.strem.fun/providers=micoleaodublado,comando,bludv',
     logo: 'https://i.ibb.co/YyPbHVT/icon.png',
     color: '#eab308'
-  },
-  {
-    id: 'brazuca',
-    name: 'Brazuca',
-    badge: 'BRASIL',
-    type: 'p2p',
-    category: 'movie_series',
-    manifestUrl: 'https://94c8cb9f702d-brazuca-torrents.baby-beamup.club/manifest.json',
-    baseUrl: 'https://94c8cb9f702d-brazuca-torrents.baby-beamup.club',
-    fallbackUrl: 'https://torrentio.strem.fun/providers=comando,bludv,lapumia,ondebaixa',
-    logo: 'https://i.imgur.com/KVpfrAk.png',
-    color: '#22c55e'
-  },
-  {
-    id: 'guindex',
-    name: 'GuIndex BR',
-    badge: 'NACIONAL',
-    type: 'p2p',
-    category: 'movie_series',
-    manifestUrl: 'https://guindex-stremio.vercel.app/manifest.json',
-    baseUrl: 'https://guindex-stremio.vercel.app',
-    logo: 'https://raw.githubusercontent.com/GuickerZ/guindex/main/public/logo.png',
-    color: '#10b981'
   },
   {
     id: 'ehtudo',
@@ -192,17 +158,6 @@ const MOVIE_ADDONS = [
     color: '#a855f7'
   },
   {
-    id: 'mycine',
-    name: 'MyCine BR',
-    badge: 'CINEMA BR',
-    type: 'direct',
-    category: 'movie_series',
-    manifestUrl: 'https://mycine.alwaysdata.net/manifest.json',
-    baseUrl: 'https://mycine.alwaysdata.net',
-    logo: 'https://images.metahub.space/logo/medium/tt0133093/img',
-    color: '#f59e0b'
-  },
-  {
     id: 'pleiades',
     name: 'PleiadesStream',
     badge: 'ANIMES & FILMES',
@@ -212,28 +167,6 @@ const MOVIE_ADDONS = [
     baseUrl: 'https://pleiadesstream.duckdns.org/addon/pleiades',
     logo: 'https://pleiadesstream.duckdns.org/addon/pleiades/logo.png',
     color: '#8b5cf6'
-  },
-  {
-    id: 'animesbr',
-    name: 'Animes BR',
-    badge: 'ANIMES PT-BR',
-    type: 'direct',
-    category: 'movie_series',
-    manifestUrl: 'https://animes-br-self.vercel.app/manifest.json',
-    baseUrl: 'https://animes-br-self.vercel.app',
-    logo: 'https://images.metahub.space/logo/medium/tt0409591/img',
-    color: '#ec4899'
-  },
-  {
-    id: 'animesdigital',
-    name: 'Animes Digital',
-    badge: 'ANIMES HD',
-    type: 'direct',
-    category: 'movie_series',
-    manifestUrl: 'https://animesdigital-vercel.vercel.app/manifest.json',
-    baseUrl: 'https://animesdigital-vercel.vercel.app',
-    logo: 'https://images.metahub.space/logo/medium/tt0988824/img',
-    color: '#14b8a6'
   },
   {
     id: 'nightknight',
@@ -256,17 +189,6 @@ const MOVIE_ADDONS = [
     baseUrl: 'https://hyper.stravo.site/local',
     logo: 'https://hyper.stravo.site/favicon.ico',
     color: '#0ea5e9'
-  },
-  {
-    id: 'funqpef',
-    name: 'FunStream Cloud',
-    badge: 'DIRECT HD',
-    type: 'direct',
-    category: 'movie_series',
-    manifestUrl: 'https://fun.qpef.workers.dev/manifest.json',
-    baseUrl: 'https://fun.qpef.workers.dev',
-    logo: 'https://fun.qpef.workers.dev/favicon.ico',
-    color: '#10b981'
   }
 ];
 
@@ -404,8 +326,8 @@ function isBadSubServer(rawStream) {
   if (rawStream.ytId && !u && !rawStream.embedUrl && !rawStream.infoHash) return true;
   if (/\[official trailer\]|play trailer in stremio/i.test(t)) return true;
   if (/moviebox/i.test(t) || /moviebox/i.test(u)) return true;
-  if (u.includes('koyeb.app') || u.includes('squareweb.app')) return true;
-  if (/badger|hypex|atlas|\bastra\b|\bneon\b/i.test(t)) return true;
+  if ((u.includes('koyeb.app') && !u.includes('fenixflix')) || u.includes('squareweb.app')) return true;
+  if (/hypex|atlas|\bastra\b|\bneon\b/i.test(t)) return true;
   return false;
 }
 
@@ -561,6 +483,12 @@ async function getIptvBr() {
 const GROUP_PT = { News: 'Notícias', Sports: 'Esportes', Movies: 'Filmes', Kids: 'Infantil', Music: 'Música', Entertainment: 'Entretenimento', General: 'Geral', Culture: 'Cultura', Documentary: 'Documentários', Religious: 'Religiosos', Series: 'Séries', Animation: 'Animação', Education: 'Educação', Lifestyle: 'Estilo de Vida', Comedy: 'Comédia', Undefined: 'Variedades', Public: 'TV Pública', Legislative: 'Legislativo', Weather: 'Clima', Business: 'Negócios' };
 
 const STATIC_NATIONAL_CHANNELS = [
+  {
+    name: 'SBT Nacional (Ao Vivo)',
+    url: 'https://d1jvs4svzaqp8n.cloudfront.net/indexMobile.m3u8',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Sistema_Brasileiro_de_Televis%C3%A3o_logo.svg/512px-Sistema_Brasileiro_de_Televis%C3%A3o_logo.svg.png',
+    group: 'General'
+  },
   {
     name: 'TV Globo (Ao Vivo)',
     url: 'http://hls1.sua.tv/live/globotvbahiafhdbr2/s.m3u8',
@@ -1383,9 +1311,8 @@ export default async (request) => {
           }
         }
 
-        // Filter out [OFFLINE] streams if online streams exist
-        const onlineOnly = rawTvStreams.filter((s) => !/\[OFFLINE\]/i.test(`${s.name || ''} ${s.title || ''}`));
-        const activeTvRaw = onlineOnly.length > 0 ? onlineOnly : rawTvStreams;
+        // Filter out [OFFLINE] streams so users are never sent dead channels
+        const activeTvRaw = rawTvStreams.filter((s) => !/\[OFFLINE\]/i.test(`${s.name || ''} ${s.title || ''}`));
 
         // Upgrade and sanitize live streams:
         // Exclude broken direct.m3u8 (which point to non-proxied relative /hls/*.ts segments returning 404)
@@ -1448,12 +1375,17 @@ export default async (request) => {
       // Fallback para canais nacionais conhecidos se os addons do FenixTV estiverem sem stream
       if (allTvStreams.length === 0) {
         const lowerId = decodedId.toLowerCase();
-        const matchStatic = STATIC_NATIONAL_CHANNELS.find((c) => {
-          const n = c.name.toLowerCase();
-          return (lowerId.includes('globo') && n.includes('globo')) ||
+        const rawSlug = decodedId.split(':').pop().replace(/[^a-z0-9]/gi, '').toLowerCase();
+        const dynamicList = await getIptvBr().catch(() => []);
+        const fullList = [...STATIC_NATIONAL_CHANNELS, ...dynamicList];
+        const matchStatic = fullList.find((c) => {
+          const n = c.name.toLowerCase().replace(/[^a-z0-9]/gi, '');
+          return (rawSlug && (n === rawSlug || n.includes(rawSlug) || rawSlug.includes(n))) ||
                  (lowerId.includes('sbt') && n.includes('sbt')) ||
+                 (lowerId.includes('globo') && n.includes('globo')) ||
                  (lowerId.includes('cultura') && n.includes('cultura')) ||
-                 (lowerId.includes('record') && n.includes('record'));
+                 (lowerId.includes('record') && n.includes('record')) ||
+                 (lowerId.includes('band') && n.includes('band'));
         }) || STATIC_NATIONAL_CHANNELS[0];
         if (matchStatic) {
           const direct = await hlsProxied(matchStatic.url);
@@ -1476,16 +1408,26 @@ export default async (request) => {
             proxyUrl: direct
           };
           allTvStreams = [fallbackStream];
-          tvAddonResults[0].streams = [fallbackStream];
-          tvAddonResults[0].count = 1;
         }
+      }
+
+      const activeTvServers = tvAddonResults.filter((r) => r.count > 0);
+      if (activeTvServers.length === 0 && allTvStreams.length > 0) {
+        activeTvServers.push({
+          addonId: 'iptvorg',
+          addonName: 'TV Brasil Ao Vivo',
+          badge: 'TV AO VIVO',
+          color: '#a855f7',
+          count: allTvStreams.length,
+          streams: allTvStreams
+        });
       }
 
         const tvBody = JSON.stringify({
           id: decodedId,
           type: 'tv',
           totalStreams: allTvStreams.length,
-          servers: tvAddonResults,
+          servers: activeTvServers.length > 0 ? activeTvServers : tvAddonResults,
           streams: allTvStreams
         });
         if (allTvStreams.length > 0) setEdgeCache(streamCacheKey, tvBody, 120);
