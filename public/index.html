@@ -13,7 +13,7 @@
   <link rel="dns-prefetch" href="https://fenixtv.fenixhub.online" />
   <link rel="dns-prefetch" href="https://v3-cinemeta.strem.io" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/styles.css?v=20261026a" />
+  <link rel="stylesheet" href="/styles.css?v=20261026b" />
 </head>
 <body>
   <!-- Ambient Background Glows -->
@@ -86,11 +86,11 @@
       <div class="hero-main-layout">
         <div class="hero-content" id="heroContentBox">
           <div class="hero-top-badges">
-            <span class="hero-rank-badge" id="heroRankBadge">#1</span>
+            <span class="hero-rank-badge" id="heroRankBadge">#1 EM RECOMENDAÇÃO</span>
             <span class="hero-featured-tag" id="heroFeaturedTag">EM ALTA HOJE</span>
             <span class="hero-trailer-live-pill hidden" id="heroTrailerLivePill">
               <span class="live-dot-pulse"></span>
-              <span>TRAILER AO VIVO</span>
+              <span>TRAILER EM REPRODUÇÃO</span>
             </span>
           </div>
 
@@ -104,13 +104,13 @@
           <div class="hero-actions">
             <button class="btn btn-primary btn-hero-play" id="heroPlayBtn">
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 9-14 9V3z"/></svg>
-              <span>Assistir</span>
+              <span>Assistir Agora</span>
             </button>
             <button class="btn btn-glass btn-hero-info" id="heroInfoBtn">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
               </svg>
-              <span>Detalhes</span>
+              <span>Mais Informações</span>
             </button>
             <button class="btn btn-icon-only" id="heroBookmarkBtn" title="Minha Lista">
               <svg id="heroBookmarkIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
@@ -121,20 +121,35 @@
           </div>
         </div>
 
-        <div class="hero-bottom-bar">
-          <button class="hero-mute-btn hidden" id="heroMuteBtn" title="Ativar/Desativar som do trailer" aria-label="Som do trailer">
-            <svg id="heroMuteIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-              <line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>
-            </svg>
-          </button>
-          <span class="hero-age-chip" id="heroAgeChip">16</span>
-          <div class="hero-indicators" id="heroIndicators"></div>
-          <div class="hero-recs-nav">
-            <button class="hero-step-btn" id="heroPrevBtn" aria-label="Anterior">&#10094;</button>
-            <button class="hero-step-btn" id="heroNextBtn" aria-label="Próximo">&#10095;</button>
+        <aside class="hero-recs-dock" aria-label="Destaques Recomendados">
+          <div class="hero-recs-head">
+            <div class="hero-recs-title-group">
+              <span class="hero-recs-kicker">SELEÇÃO DO DIA</span>
+              <span class="hero-recs-counter" id="heroSlideCounter">01 / 10</span>
+            </div>
+            <div class="hero-recs-controls">
+              <button class="hero-focus-btn hidden" id="heroFocusBtn" title="Focar no Trailer (Ocultar Textos)" aria-label="Focar no trailer">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+                <span>Foco no Trailer</span>
+              </button>
+              <button class="hero-mute-btn hidden" id="heroMuteBtn" title="Ativar/Desativar som do trailer" aria-label="Som do trailer">
+                <svg id="heroMuteIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                  <line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>
+                </svg>
+              </button>
+              <span class="hero-age-chip" id="heroAgeChip">16</span>
+              <div class="hero-recs-nav">
+                <button class="hero-step-btn" id="heroPrevBtn" aria-label="Anterior">&#10094;</button>
+                <button class="hero-step-btn" id="heroNextBtn" aria-label="Próximo">&#10095;</button>
+              </div>
+            </div>
           </div>
-        </div>
+          <div class="hero-indicators" id="heroIndicators"></div>
+        </aside>
       </div>
     </section>
 
@@ -386,8 +401,8 @@
     </div>
   </div>
   <script defer src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
-  <script defer src="/config.js?v=20261026a"></script>
-  <script defer src="/auth.js?v=20261026a"></script>
-  <script defer src="/app.js?v=20261026a"></script>
+  <script defer src="/config.js?v=20261026b"></script>
+  <script defer src="/auth.js?v=20261026b"></script>
+  <script defer src="/app.js?v=20261026b"></script>
 </body>
 </html>

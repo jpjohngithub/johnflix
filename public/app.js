@@ -45,6 +45,8 @@
     heroTrailerPill: document.getElementById('heroTrailerPill'),
     heroMuteBtn: document.getElementById('heroMuteBtn'),
     heroMuteIcon: document.getElementById('heroMuteIcon'),
+    heroFocusBtn: document.getElementById('heroFocusBtn'),
+    heroSlideCounter: document.getElementById('heroSlideCounter'),
     heroAgeChip: document.getElementById('heroAgeChip'),
     heroLogo: document.getElementById('heroLogo'),
     heroTitle: document.getElementById('heroTitle'),
@@ -348,7 +350,7 @@
         try {
           if (state.heroPlayer) {
             if (state.heroMuted) state.heroPlayer.mute();
-            else { state.heroPlayer.unMute(); state.heroPlayer.setVolume(60); }
+            else { state.heroPlayer.unMute(); state.heroPlayer.setVolume(65); }
           }
         } catch (e) {}
         if (el.heroMuteIcon) {
@@ -357,6 +359,25 @@
             : '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>';
         }
       });
+    }
+    if (el.heroFocusBtn) {
+      el.heroFocusBtn.addEventListener('click', () => {
+        state.heroFocusPinned = !state.heroFocusPinned;
+        el.heroBanner.classList.toggle('trailer-focus', state.heroFocusPinned);
+        el.heroFocusBtn.classList.toggle('active', state.heroFocusPinned);
+      });
+    }
+    if (el.heroBanner) {
+      el.heroBanner.addEventListener('mousemove', () => {
+        if (!el.heroBanner.classList.contains('trailer-on') || state.heroFocusPinned) return;
+        el.heroBanner.classList.remove('trailer-focus');
+        clearTimeout(state.heroFocusIdleTimer);
+        state.heroFocusIdleTimer = setTimeout(() => {
+          if (el.heroBanner.classList.contains('trailer-on')) {
+            el.heroBanner.classList.add('trailer-focus');
+          }
+        }, 4200);
+      }, { passive: true });
     }
 
     // Home Quick Category Bar
@@ -530,6 +551,16 @@
     });
   }
 
+  function getCleanHeroBackdrop(item) {
+    if (!item) return '';
+    const isImdb = item.id && String(item.id).startsWith('tt');
+    const rawBg = String(item.background || '');
+    const isValidWide = rawBg && (rawBg.includes('images.metahub.space') || rawBg.includes('image.tmdb.org')) && !rawBg.includes('poster');
+    if (isValidWide) return rawBg;
+    if (isImdb) return `https://images.metahub.space/background/large/${item.id}/img`;
+    return rawBg || item.poster || '';
+  }
+
   async function loadHomeCatalog() {
     try {
       const res = await fetch('/api/catalogs');
@@ -542,27 +573,27 @@
       const series = [];
       state.catalogRows.forEach((r) => {
         if (r.type === 'tv' || r.isTop10) return;
-        (r.items || []).slice(0, 8).forEach((item) => {
-          if (!item || !item.id || seenHero.has(item.id)) return;
-          if (!item.background && !item.poster) return;
+        (r.items || []).slice(0, 10).forEach((item) => {
+          if (!item || !item.id || !String(item.id).startsWith('tt') || seenHero.has(item.id)) return;
           if (!item.description || String(item.description).length < 40) return;
           seenHero.add(item.id);
+          item.background = getCleanHeroBackdrop(item);
           (item.type === 'series' ? series : movies).push(item);
         });
       });
       const daySeed = Math.floor(Date.now() / 86400000);
       const rnd = (() => { let x = daySeed * 9301 + 49297; return () => { x = (x * 9301 + 49297) % 233280; return x / 233280; }; })();
       const shuffle = (arr) => arr.map((v) => [rnd(), v]).sort((p, q) => p[0] - q[0]).map((p) => p[1]);
-      const score = (it) => (it.ytId ? 2 : 0) + (Number(it.imdbRating) >= 7.5 ? 1 : 0);
+      const score = (it) => (it.ytId ? 3 : 0) + (Number(it.imdbRating) >= 7.4 ? 1 : 0);
       const pick = (arr, n) => shuffle(arr).sort((p, q) => score(q) - score(p)).slice(0, n);
-      const mv = pick(movies, 6);
-      const sr = pick(series, 6);
+      const mv = pick(movies, 5);
+      const sr = pick(series, 5);
       const mixed = [];
       for (let i = 0; i < Math.max(mv.length, sr.length); i++) {
         if (mv[i]) mixed.push(mv[i]);
         if (sr[i]) mixed.push(sr[i]);
       }
-      state.heroItems = mixed.slice(0, 10);
+      state.heroItems = mixed.slice(0, 8);
       setupHeroCarousel();
       renderCatalogRows();
     } catch (err) {
@@ -644,15 +675,23 @@
     state.heroMountSeq = (state.heroMountSeq || 0) + 1;
     clearTimeout(state.heroTrailerTimer);
     clearTimeout(state.heroLoopTimer);
+    clearTimeout(state.heroFocusIdleTimer);
     destroyHeroPlayer();
     if (el.heroTrailerWrap) {
       el.heroTrailerWrap.classList.remove('playing');
       el.heroTrailerWrap.innerHTML = '';
     }
-    if (el.heroBanner) el.heroBanner.classList.remove('trailer-on');
+    if (el.heroBanner) {
+      el.heroBanner.classList.remove('trailer-on', 'trailer-focus');
+    }
     if (el.heroTrailerLivePill) el.heroTrailerLivePill.classList.add('hidden');
     if (el.heroTrailerPill) el.heroTrailerPill.classList.add('hidden');
     if (el.heroMuteBtn) el.heroMuteBtn.classList.add('hidden');
+    if (el.heroFocusBtn) {
+      el.heroFocusBtn.classList.add('hidden');
+      el.heroFocusBtn.classList.remove('active');
+    }
+    state.heroFocusPinned = false;
   }
 
   async function resolveTrailerCandidates(item) {
@@ -660,7 +699,7 @@
     const push = (id) => { if (id && /^[\w-]{6,15}$/.test(id) && !out.includes(id) && !badTrailers.has(id)) out.push(id); };
     push(item.ytId);
     if (item.ytCandidates) item.ytCandidates.forEach(push);
-    if (!out.length && item.id && String(item.id).startsWith('tt')) {
+    if (out.length < 2 && item.id && String(item.id).startsWith('tt')) {
       try {
         const r = await fetch(`/api/meta/${item.type}/${encodeURIComponent(item.id)}`);
         const d = await r.json();
@@ -687,7 +726,7 @@
     }
 
     // Default: if no trailer shows up fast, keep rotating anyway
-    scheduleHeroAdvance(HERO_DWELL_NO_TRAILER + 1500);
+    scheduleHeroAdvance(HERO_DWELL_NO_TRAILER + 2000);
 
     state.heroTrailerTimer = setTimeout(async () => {
       if (stale() || heroBlocked()) return;
@@ -701,7 +740,6 @@
       const tryCandidate = (idx) => {
         if (stale()) return;
         if (idx >= candidates.length) {
-          // No playable trailer: stay on the artwork and keep rotating
           stopHeroTrailerKeepSeq();
           scheduleHeroAdvance(HERO_DWELL_NO_TRAILER);
           return;
@@ -713,45 +751,72 @@
         let revealed = false;
         const failTimer = setTimeout(() => {
           if (!revealed && !stale()) { markBadTrailer(ytId); tryCandidate(idx + 1); }
-        }, 7000);
+        }, 5500);
 
         try {
           state.heroPlayer = new YT.Player('heroYtMount', {
             videoId: ytId,
-            host: 'https://www.youtube-nocookie.com',
             playerVars: {
               autoplay: 1, mute: 1, controls: 0, rel: 0, modestbranding: 1, playsinline: 1,
-              iv_load_policy: 3, disablekb: 1, fs: 0, cc_load_policy: 0, start: 8, enablejsapi: 1,
+              iv_load_policy: 3, disablekb: 1, fs: 0, cc_load_policy: 0, start: 6, enablejsapi: 1,
               origin: location.origin
             },
             events: {
               onReady: (ev) => {
                 if (stale()) return;
-                try { ev.target.mute(); ev.target.playVideo(); } catch (e) {}
-                state.heroMuted = true;
+                try {
+                  if (state.heroMuted === false) { ev.target.unMute(); ev.target.setVolume(65); }
+                  else { ev.target.mute(); state.heroMuted = true; }
+                  ev.target.playVideo();
+                } catch (e) {}
               },
               onStateChange: (ev) => {
                 if (stale()) return;
                 if (ev.data === 1 && !revealed) { // PLAYING
+                  let dur = 0;
+                  let vTitle = '';
+                  try {
+                    dur = ev.target.getDuration() || 0;
+                    vTitle = (ev.target.getVideoData && ev.target.getVideoData()?.title) || '';
+                  } catch (e) {}
+                  if (dur > 0 && dur < 12) {
+                    clearTimeout(failTimer);
+                    markBadTrailer(ytId);
+                    tryCandidate(idx + 1);
+                    return;
+                  }
                   revealed = true;
                   clearTimeout(failTimer);
-                  let dur = 0;
-                  try { dur = ev.target.getDuration() || 0; } catch (e) {}
-                  const remaining = dur > 20 ? Math.max(14000, (dur - 8) * 1000 - 2500) : HERO_DWELL_MAX_TRAILER;
+                  const remaining = dur > 20 ? Math.max(15000, (dur - 6) * 1000 - 2500) : HERO_DWELL_MAX_TRAILER;
                   scheduleHeroAdvance(Math.min(HERO_DWELL_MAX_TRAILER, remaining));
                   setTimeout(() => {
                     if (stale()) return;
+                    // Double check player is still playing (state === 1) and didn't error out into geo-block screen
+                    try {
+                      if (ev.target.getPlayerState && ev.target.getPlayerState() !== 1) {
+                        markBadTrailer(ytId);
+                        tryCandidate(idx + 1);
+                        return;
+                      }
+                    } catch (e) {}
                     el.heroTrailerWrap.classList.add('playing');
                     el.heroBanner.classList.add('trailer-on');
                     if (el.heroTrailerLivePill) el.heroTrailerLivePill.classList.remove('hidden');
                     if (el.heroMuteBtn) el.heroMuteBtn.classList.remove('hidden');
-                  }, 350);
+                    if (el.heroFocusBtn) el.heroFocusBtn.classList.remove('hidden');
+                    clearTimeout(state.heroFocusIdleTimer);
+                    state.heroFocusIdleTimer = setTimeout(() => {
+                      if (!stale() && el.heroBanner.classList.contains('trailer-on')) {
+                        el.heroBanner.classList.add('trailer-focus');
+                      }
+                    }, 4500);
+                  }, 420);
                 } else if (ev.data === 0) { // ENDED
                   if (!heroBlocked()) {
                     state.heroIndex = (state.heroIndex + 1) % state.heroItems.length;
                     updateHeroSlide();
                   }
-                } else if (ev.data === 2 && revealed && !heroBlocked()) { // paused externally
+                } else if (ev.data === 2 && revealed && !heroBlocked()) {
                   try { ev.target.playVideo(); } catch (e) {}
                 }
               },
@@ -770,7 +835,7 @@
         }
       };
       tryCandidate(0);
-    }, 500);
+    }, 380);
   }
 
   function stopHeroTrailerKeepSeq() {
@@ -783,15 +848,30 @@
     if (!state.heroItems.length) return;
     el.heroIndicators.innerHTML = '';
     state.heroItems.forEach((item, idx) => {
-      const dot = document.createElement('button');
-      dot.className = `hero-dot ${idx === 0 ? 'active' : ''}`;
-      dot.setAttribute('aria-label', item.name);
-      dot.title = item.name;
-      dot.addEventListener('click', () => {
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = `hero-dot hero-rec-card ${idx === 0 ? 'active' : ''}`;
+      card.setAttribute('aria-label', item.name);
+      const thumb = getCleanHeroBackdrop(item) || item.poster || '';
+      const fallbackPoster = item.poster || '';
+      const typeLabel = item.type === 'series' ? 'SÉRIE' : 'FILME';
+      const ratingLabel = item.imdbRating ? `★ ${item.imdbRating}` : (item.year || '');
+      card.innerHTML = `
+        <div class="hero-rec-thumb" style="background-image:url('${thumb}'), url('${fallbackPoster}')">
+          <span class="hero-rec-rank">#${idx + 1}</span>
+          <span class="hero-rec-play-badge">▶</span>
+        </div>
+        <div class="hero-rec-meta">
+          <span class="hero-rec-kicker">${typeLabel} ${ratingLabel ? '• ' + ratingLabel : ''}</span>
+          <strong class="hero-rec-name">${escapeHtml(item.name)}</strong>
+        </div>
+        <span class="hero-rec-progress"></span>
+      `;
+      card.addEventListener('click', () => {
         state.heroIndex = idx;
         updateHeroSlide();
       });
-      el.heroIndicators.appendChild(dot);
+      el.heroIndicators.appendChild(card);
     });
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
@@ -838,15 +918,27 @@
     if (!item) return;
     const seq = ++state.heroSeq;
 
-    const bgUrl = item.background || `https://images.metahub.space/background/large/${item.id}/img`;
-    el.heroBackdrop.style.backgroundImage = `url('${bgUrl}'), url('${item.poster || ''}')`;
+    const bgUrl = getCleanHeroBackdrop(item);
+    el.heroBackdrop.style.backgroundImage = `url('${bgUrl}')`;
+    const bgProbe = new Image();
+    bgProbe.onerror = () => {
+      if (seq !== state.heroSeq) return;
+      if (item.poster) el.heroBackdrop.style.backgroundImage = `url('${item.poster}')`;
+    };
+    bgProbe.src = bgUrl;
+
     el.heroDesc.textContent = item.description || '';
 
     if (el.heroRankBadge) {
-      el.heroRankBadge.textContent = `#${state.heroIndex + 1}`;
+      el.heroRankBadge.textContent = `#${state.heroIndex + 1} EM DESTAQUE`;
+    }
+    if (el.heroSlideCounter) {
+      const cur = String(state.heroIndex + 1).padStart(2, '0');
+      const tot = String(state.heroItems.length).padStart(2, '0');
+      el.heroSlideCounter.textContent = `${cur} / ${tot}`;
     }
     if (el.heroFeaturedTag) {
-      el.heroFeaturedTag.textContent = item.type === 'series' ? 'SÉRIE EM ALTA HOJE' : 'FILME EM ALTA HOJE';
+      el.heroFeaturedTag.textContent = item.type === 'series' ? 'SÉRIE RECOMENDADA' : 'FILME RECOMENDADO';
     }
     if (el.heroAgeChip) {
       const g = (item.genres || []).join(' ').toLowerCase();
@@ -891,7 +983,16 @@
 
     updateHeroBookmarkIcon();
     el.heroIndicators.querySelectorAll('.hero-dot').forEach((d, i) => {
-      d.classList.toggle('active', i === state.heroIndex);
+      const isAct = i === state.heroIndex;
+      d.classList.toggle('active', isAct);
+      if (isAct && d.scrollIntoView) {
+        try {
+          el.heroIndicators.scrollTo({
+            left: Math.max(0, d.offsetLeft - el.heroIndicators.clientWidth / 2 + d.clientWidth / 2),
+            behavior: 'smooth'
+          });
+        } catch (e) {}
+      }
     });
 
     mountHeroTrailer(item);

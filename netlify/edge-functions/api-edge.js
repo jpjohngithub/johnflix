@@ -616,13 +616,16 @@ export default async (request) => {
               const itemId = m.id || m.imdb_id || '';
               const isImdb = itemId.startsWith('tt');
               const ytId = m.trailers?.[0]?.source || m.trailerStreams?.[0]?.ytId || '';
+              const rawBg = String(m.background || '');
+              const validWideBg = rawBg && (rawBg.includes('images.metahub.space') || rawBg.includes('image.tmdb.org')) && !rawBg.includes('poster');
+              const cleanBg = validWideBg ? rawBg : (isImdb ? `https://images.metahub.space/background/large/${itemId}/img` : (rawBg || m.poster || m.logo || ''));
               const item = {
                 id: itemId,
                 type: src.type === 'tv' ? 'tv' : (m.type || src.type),
                 name: m.name,
                 logo: m.logo || (isImdb ? `https://images.metahub.space/logo/medium/${itemId}/img` : ''),
                 poster: m.poster || m.logo || (isImdb ? `https://images.metahub.space/poster/medium/${itemId}/img` : ''),
-                background: m.background || (isImdb ? `https://images.metahub.space/background/large/${itemId}/img` : (m.poster || m.logo || '')),
+                background: cleanBg,
                 year: String(m.releaseInfo || m.year || (src.type === 'tv' ? 'AO VIVO' : '')).split('–')[0],
                 runtime: m.runtime || '',
                 imdbRating: m.imdbRating || '',
@@ -773,7 +776,7 @@ export default async (request) => {
       rows.push(...topFirst, ...interleaved, ...tvRows);
       const validRows = rows.filter((r) => r.items.length > 0);
       const bodyStr = JSON.stringify({ rows: validRows, catalogs: validRows, addons: ADDONS, tvAddons: TV_ADDONS, movieAddons: MOVIE_ADDONS });
-      if (validRows.length > 0) setEdgeCache('catalogs:v9', bodyStr, 300);
+      if (validRows.length > 0) setEdgeCache('catalogs:v10', bodyStr, 300);
       return new Response(bodyStr, { status: 200, headers });
     }
 
