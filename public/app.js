@@ -280,6 +280,11 @@
       });
     }
 
+    document.getElementById('brandLogo')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      window.location.href = '/';
+    });
+
     document.querySelectorAll('.nav-link').forEach((btn) => {
       btn.addEventListener('click', () => {
         const targetFilter = btn.dataset.filter;
@@ -3473,28 +3478,23 @@
     };
   }
 
-  function renderPlayerDrawer(activeStream) {
+  function renderPlayerDrawer() {
     el.playerDrawerList.innerHTML = '';
-    const activeKey = getStreamKey(activeStream);
     state.currentStreams.forEach((s) => {
-      const isAct = getStreamKey(s) === activeKey;
       const item = document.createElement('div');
-      item.className = `drawer-stream-row ${isAct ? 'active' : ''}`;
+      item.className = 'drawer-stream-row';
       item.innerHTML = `
         <span class="stream-dot" style="background:${s.addonColor || 'var(--purple-bright)'}"></span>
         <div class="drawer-stream-info">
           <strong>${escapeHtml(s.serverLabel)}</strong>
           <span>${escapeHtml(s.audio || 'Dublado / Legendado')} • ${escapeHtml(s.quality || 'HD')}</span>
         </div>
-        <span class="drawer-stream-status">${isAct ? 'Ativo ✓' : 'Assistir'}</span>
+        <span class="drawer-stream-status">Assistir</span>
       `;
       item.addEventListener('click', (e) => {
         e.stopPropagation();
         showToast(`Conectando: ${s.serverLabel}`);
-        renderPlayerDrawer(s);
-        setTimeout(() => {
-          el.playerServerDrawer.classList.add('hidden');
-        }, 180);
+        el.playerServerDrawer.classList.add('hidden');
         launchCloudPlayer(s, false);
       });
       el.playerDrawerList.appendChild(item);

@@ -3958,10 +3958,6 @@ html, body {
 .drawer-stream-row:hover {
   background: rgba(255, 255, 255, 0.09);
 }
-.drawer-stream-row.active {
-  background: rgba(var(--accent-rgb), 0.16);
-  border-color: var(--purple-bright);
-}
 .drawer-stream-info {
   flex: 1;
   min-width: 0;

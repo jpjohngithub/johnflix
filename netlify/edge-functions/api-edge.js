@@ -1515,16 +1515,32 @@ export default async (request) => {
             const vidsrcPt = isSeries
               ? 'https://vidsrc.sh/embed/tv?tmdb=' + tmdbId + '&season=' + epSeason + '&episode=' + epNumber + '&ds_lang=pt'
               : 'https://vidsrc.sh/embed/movie?tmdb=' + tmdbId + '&ds_lang=pt';
+            const autoEmbed = isSeries
+              ? 'https://player.autoembed.cc/embed/tv/' + tmdbId + '/' + epSeason + '/' + epNumber
+              : 'https://player.autoembed.cc/embed/movie/' + tmdbId;
+            const videasyEmbed = isSeries
+              ? 'https://player.videasy.to/tv/' + baseImdb + '/' + epSeason + '/' + epNumber
+              : 'https://player.videasy.to/movie/' + baseImdb;
             const raw = [
               {
-                name: 'SuperFlix • Dublado BR',
-                title: '🇧🇷 Servidor Dublado Cloud (SuperFlix)\n🇧🇷 Áudio Dublado PT-BR',
+                name: 'SuperFlix • Dublado Principal',
+                title: '🇧🇷 Servidor Dublado Oficial (SuperFlix)',
                 embedUrl: sEmbed
               },
               {
-                name: 'VidSrc BR • Dublado/Dual',
-                title: '🇧🇷 Servidor Brasil Multiserver (VidSrc)\n🇧🇷 Áudio Dublado / PT-BR',
+                name: 'VidSrc BR • Multiserver Alternativo',
+                title: '🇧🇷 Servidor Brasil Multiserver (VidSrc)',
                 embedUrl: vidsrcPt
+              },
+              {
+                name: 'AutoEmbed • Player Rápido #3',
+                title: '⚡ Servidor Rápido Cloud (AutoEmbed)',
+                embedUrl: autoEmbed
+              },
+              {
+                name: 'Videasy • Player Universal #4',
+                title: '🎬 Player Universal Multilingue (Videasy)',
+                embedUrl: videasyEmbed
               }
             ];
             return { addon, rawStreams: raw };
@@ -1609,42 +1625,29 @@ export default async (request) => {
         return (b.seeds || 0) - (a.seeds || 0);
       };
 
-      const addonResults = rawAddonResponses.map(({ addon, rawStreams }) => {
-        let filteredRaw = rawStreams.filter((s) => !isBadSubServer(s));
-        const poolToUse = addon.isEnglishOnly && englishPool.length > 0 ? englishPool : directPool;
+      const addonResults = rawAddonResponses
+        .map(({ addon, rawStreams }) => {
+          const filteredRaw = rawStreams.filter((s) => !isBadSubServer(s));
+          if (filteredRaw.length === 0) return null;
 
-        if (filteredRaw.length === 0) {
-          if (poolToUse.length > 0) {
-            filteredRaw = poolToUse.slice(0, 3).map((d, idx) => ({
-              name: `${addon.name} • Cloud #${idx + 1}`,
-              title: `${d.isDub ? '🇧🇷 Dublado PT-BR' : '🇺🇸 Legendado / Original'} (1080p)`,
-              url: d.directUrl
-            }));
-          } else {
-            filteredRaw = [{
-              name: `${addon.name} • Player Universal`,
-              title: `${addon.isEnglishOnly ? '🇺🇸 Inglês / Multi-Áudio' : '🇧🇷 Dublado / Legendado'} (Cloud)`,
-              embedUrl: universalEmbedUrl
-            }];
-          }
-        }
+          const streams = filteredRaw
+            .map((s, idx) => normalizeStream(s, addon, directPool, idx, englishPool, universalEmbedUrl))
+            .filter((s) => s.proxyUrl);
 
-        const streams = filteredRaw
-          .map((s, idx) => normalizeStream(s, addon, directPool, idx, englishPool, universalEmbedUrl))
-          .filter((s) => s.proxyUrl);
+          if (streams.length === 0) return null;
+          streams.sort(sortStreamsUniversal);
 
-        streams.sort(sortStreamsUniversal);
-
-        return {
-          addonId: addon.id,
-          addonName: addon.name,
-          badge: addon.badge,
-          color: addon.color,
-          isEnglishOnly: Boolean(addon.isEnglishOnly),
-          count: streams.length,
-          streams
-        };
-      });
+          return {
+            addonId: addon.id,
+            addonName: addon.name,
+            badge: addon.badge,
+            color: addon.color,
+            isEnglishOnly: Boolean(addon.isEnglishOnly),
+            count: streams.length,
+            streams
+          };
+        })
+        .filter(Boolean);
 
       const allStreams = addonResults.flatMap((r) => r.streams);
       allStreams.sort(sortStreamsUniversal);
