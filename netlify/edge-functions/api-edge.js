@@ -1,16 +1,5 @@
 const MOVIE_ADDONS = [
   {
-    id: 'hdhub',
-    name: 'HdHub 4K/FHD',
-    badge: '4K ULTRA',
-    type: 'direct',
-    category: 'movie_series',
-    manifestUrl: 'https://hdhub.thevolecitor.qzz.io/eyJ0b3Jib3giOiJ1bnNldCIsInF1YWxpdGllcyI6IjIxNjBwLDEwODBwLDcyMHAiLCJzb3J0IjoiZGVzYyJ9/manifest.json',
-    baseUrl: 'https://hdhub.thevolecitor.qzz.io/eyJ0b3Jib3giOiJ1bnNldCIsInF1YWxpdGllcyI6IjIxNjBwLDEwODBwLDcyMHAiLCJzb3J0IjoiZGVzYyJ9',
-    logo: 'https://hdhub.thevolecitor.qzz.io/logo.png',
-    color: '#38bdf8'
-  },
-  {
     id: 'orangebyte',
     name: 'Curated Trending',
     badge: 'TMDB TOP',
@@ -1321,7 +1310,7 @@ export default async (request) => {
       const decodedId = decodeURIComponent(rawId);
       const encodedId = encodeURIComponent(decodedId);
 
-      const streamCacheKey = `streams:v6:${type}:${decodedId}`;
+      const streamCacheKey = `streams:v20:${type}:${decodedId}`;
       const cachedStreams = getEdgeCache(streamCacheKey);
       if (cachedStreams) return new Response(cachedStreams, { status: 200, headers });
 
@@ -1551,13 +1540,13 @@ export default async (request) => {
             return { addon, rawStreams: fxStreams };
           }
 
-          const primaryPromise = fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 2700)
+          const primaryPromise = fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 4800)
             .then((d) => (Array.isArray(d?.streams) && d.streams.length > 0 ? d.streams : Promise.reject(new Error('empty'))));
 
           const tasks = [primaryPromise];
           if (addon.fallbackUrl) {
             tasks.push(
-              fetchJson(`${addon.fallbackUrl}/stream/${type}/${encodedId}.json`, 2700)
+              fetchJson(`${addon.fallbackUrl}/stream/${type}/${encodedId}.json`, 4800)
                 .then((d) => (Array.isArray(d?.streams) && d.streams.length > 0 ? d.streams : Promise.reject(new Error('empty'))))
             );
           }
