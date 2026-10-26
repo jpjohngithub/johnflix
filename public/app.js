@@ -30,7 +30,10 @@
     swipeTypeFilter: 'all',
     swipeIndex: 0,
     swipeHistory: [],
-    swipeSkippedIds: new Set(),
+    swipeSkippedIds: new Set(JSON.parse(localStorage.getItem('johnflix_swipe_seen') || '[]')),
+    swipeDiscoveryItems: [],
+    swipeDiscoveryLoading: false,
+    swipeRandomOrder: {},
     swipeExpandedMeta: false,
     swipeMetaCache: {}
   };
@@ -1171,15 +1174,109 @@
     { id: 'doc', label: 'Documentário', match: ['documentary', 'documentário', 'documentario'] }
   ];
 
+  function saveSwipeSeenIds() {
+    try {
+      const arr = Array.from(state.swipeSkippedIds).slice(-600);
+      localStorage.setItem('johnflix_swipe_seen', JSON.stringify(arr));
+    } catch (e) {}
+  }
+
+  async function ensureSwipeDeepDiscovery() {
+    if (state.swipeDiscoveryLoading || state.swipeDiscoveryItems.length >= 160) return;
+    state.swipeDiscoveryLoading = true;
+    try {
+      const genres = ['Action', 'Sci-Fi', 'Thriller', 'Comedy', 'Horror', 'Drama', 'Animation', 'Mystery', 'Romance', 'Adventure'];
+      const picked = genres.sort(() => Math.random() - 0.5).slice(0, 4);
+      const tasks = [];
+      for (const g of picked) {
+        const skip = Math.floor(Math.random() * 3) * 50;
+        tasks.push(
+          fetch(`https://v3-cinemeta.strem.io/catalog/movie/top/genre=${encodeURIComponent(g)}&skip=${skip}.json`)
+            .then((r) => r.json())
+            .then((d) => (d?.metas || []).map((m) => ({
+              id: m.id,
+              type: 'movie',
+              name: m.name,
+              poster: m.poster || `https://images.metahub.space/poster/medium/${m.id}/img`,
+              background: m.background || `https://images.metahub.space/background/large/${m.id}/img`,
+              year: m.releaseInfo || m.year || '',
+              imdbRating: m.imdbRating || '',
+              description: m.description || '',
+              genres: Array.isArray(m.genres) ? m.genres : [g],
+              _rowCategory: g.toLowerCase(),
+              _isDeepDiscovery: true
+            })))
+            .catch(() => [])
+        );
+        tasks.push(
+          fetch(`https://v3-cinemeta.strem.io/catalog/series/top/genre=${encodeURIComponent(g)}&skip=${skip}.json`)
+            .then((r) => r.json())
+            .then((d) => (d?.metas || []).map((m) => ({
+              id: m.id,
+              type: 'series',
+              name: m.name,
+              poster: m.poster || `https://images.metahub.space/poster/medium/${m.id}/img`,
+              background: m.background || `https://images.metahub.space/background/large/${m.id}/img`,
+              year: m.releaseInfo || m.year || '',
+              imdbRating: m.imdbRating || '',
+              description: m.description || '',
+              genres: Array.isArray(m.genres) ? m.genres : [g],
+              _rowCategory: g.toLowerCase(),
+              _isDeepDiscovery: true
+            })))
+            .catch(() => [])
+        );
+      }
+      const batches = await Promise.all(tasks);
+      const seen = new Set(state.swipeDiscoveryItems.map((i) => i.id));
+      batches.flat().forEach((it) => {
+        if (it && it.id && String(it.id).startsWith('tt') && !seen.has(it.id)) {
+          seen.add(it.id);
+          state.swipeDiscoveryItems.push(it);
+        }
+      });
+    } catch (e) {
+    } finally {
+      state.swipeDiscoveryLoading = false;
+    }
+  }
+
   function getSwipePool() {
+    ensureSwipeDeepDiscovery();
+
+    // Exclude items already visible on the first screen of Home (Hero + Top 10 + Continue Watching) so TinderFlix shows fresh discoveries!
+    const homeFeaturedIds = new Set([
+      ...state.heroItems.map((i) => i.id),
+      ...state.continueWatching.map((i) => i.id),
+      ...state.myList.map((i) => i.id)
+    ]);
+    state.catalogRows.forEach((row) => {
+      if (row.isTop10) {
+        (row.items || []).forEach((it) => { if (it && it.id) homeFeaturedIds.add(it.id); });
+      }
+    });
+
     const seen = new Set();
     const allItems = [];
-    state.catalogRows.forEach((row, rIdx) => {
-      if (row.type === 'tv') return;
-      (row.items || []).forEach((item, iIdx) => {
+
+    // 1. Add deep discovery titles first (fresh titles not on home shelves)
+    state.swipeDiscoveryItems.forEach((item) => {
+      if (!item || !item.id || seen.has(item.id)) return;
+      seen.add(item.id);
+      allItems.push({ ...item, _isDeepDiscovery: true });
+    });
+
+    // 2. Add deeper items from catalog rows (skipping the first few obvious titles of each row unless needed)
+    state.catalogRows.forEach((row) => {
+      if (row.type === 'tv' || row.isTop10) return;
+      (row.items || []).forEach((item, idx) => {
         if (!item || !item.id || seen.has(item.id)) return;
         seen.add(item.id);
-        allItems.push({ ...item, _rowCategory: row.category || '', _baseRank: rIdx * 100 + iIdx });
+        allItems.push({
+          ...item,
+          _rowCategory: row.category || '',
+          _isDeepDiscovery: idx >= 5
+        });
       });
     });
 
@@ -1213,35 +1310,38 @@
     });
 
     const filtered = allItems.filter((item) => {
-      return !state.swipeSkippedIds.has(item.id) && !isInMyList(item.id);
+      return !state.swipeSkippedIds.has(item.id) && !homeFeaturedIds.has(item.id);
     });
 
-    if (historySignals.length > 0) {
-      filtered.forEach((item) => {
-        let affinity = 0;
+    filtered.forEach((item) => {
+      if (state.swipeRandomOrder[item.id] === undefined) {
+        state.swipeRandomOrder[item.id] = Math.random() * 14;
+      }
+      let score = state.swipeRandomOrder[item.id] + (item._isDeepDiscovery ? 6 : 0);
+
+      if (historySignals.length > 0) {
         const itemGenres = Array.isArray(item.genres) ? item.genres : [];
         itemGenres.forEach((g) => {
           const key = String(g || '').toLowerCase().trim();
-          if (genreWeights[key]) affinity += genreWeights[key];
+          if (genreWeights[key]) score += Math.min(8, genreWeights[key]);
         });
         const catKey = String(item._rowCategory || '').toLowerCase().trim();
-        if (catKey && genreWeights[catKey]) affinity += genreWeights[catKey];
+        if (catKey && genreWeights[catKey]) score += Math.min(5, genreWeights[catKey]);
 
-        if (item.type === 'series' && typeCounts.series > typeCounts.movie) affinity += 2.2;
-        if (item.type === 'movie' && typeCounts.movie > typeCounts.series) affinity += 2.2;
+        if (item.type === 'series' && typeCounts.series > typeCounts.movie) score += 2;
+        if (item.type === 'movie' && typeCounts.movie > typeCounts.series) score += 2;
 
         const descLower = String(item.description || '').toLowerCase();
         keywordBag.forEach((kw) => {
-          if (descLower.includes(kw)) affinity += 1.5;
+          if (descLower.includes(kw)) score += 1.5;
         });
+      }
 
-        affinity += (Number(item.imdbRating) || 7.0) * 0.35;
-        item._affinityScore = affinity;
-      });
+      score += (Number(item.imdbRating) || 7.0) * 0.25;
+      item._affinityScore = score;
+    });
 
-      filtered.sort((a, b) => (b._affinityScore - a._affinityScore) || (a._baseRank - b._baseRank));
-    }
-
+    filtered.sort((a, b) => b._affinityScore - a._affinityScore);
     return filtered;
   }
 
@@ -1325,6 +1425,8 @@
       `;
       stage.querySelector('#resetSwipePoolBtn')?.addEventListener('click', () => {
         state.swipeSkippedIds.clear();
+        saveSwipeSeenIds();
+        state.swipeRandomOrder = {};
         state.swipeIndex = 0;
         renderCatalogRows();
       });
@@ -1491,9 +1593,16 @@
           localStorage.setItem('johnflix_mylist', JSON.stringify(state.myList));
           updateBadges();
         }
-        showToast(`♥ "${current.name}" salvo na Minha Lista!`);
+        state.swipeSkippedIds.add(current.id);
+        saveSwipeSeenIds();
+        showToast(`"${current.name}" salvo na Minha Lista!`);
       } else {
         state.swipeSkippedIds.add(current.id);
+        saveSwipeSeenIds();
+      }
+      if (getSwipePool().length < 20) {
+        state.swipeDiscoveryItems = [];
+        ensureSwipeDeepDiscovery();
       }
       state.swipeExpandedMeta = false;
       renderCatalogRows();
@@ -1508,12 +1617,13 @@
       state.myList = state.myList.filter((i) => i.id !== last.item.id);
       localStorage.setItem('johnflix_mylist', JSON.stringify(state.myList));
       updateBadges();
-    } else {
-      state.swipeSkippedIds.delete(last.item.id);
     }
+    state.swipeSkippedIds.delete(last.item.id);
+    saveSwipeSeenIds();
+    state.swipeRandomOrder[last.item.id] = 9999;
     state.swipeIndex = 0;
     state.swipeExpandedMeta = false;
-    showToast(`↶ Ação desfeita: ${last.item.name}`);
+    showToast(`Ação desfeita: ${last.item.name}`);
     renderCatalogRows();
   }
 
