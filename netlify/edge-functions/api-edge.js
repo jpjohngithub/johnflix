@@ -403,6 +403,7 @@ function isBadSubServer(rawStream) {
   const t = `${rawStream.name || ''} ${rawStream.title || ''}`;
   if (rawStream.ytId && !u && !rawStream.embedUrl && !rawStream.infoHash) return true;
   if (/\[official trailer\]|play trailer in stremio/i.test(t)) return true;
+  if (/moviebox/i.test(t) || /moviebox/i.test(u)) return true;
   if (u.includes('koyeb.app') || u.includes('squareweb.app')) return true;
   if (/badger|hypex|atlas|\bastra\b|\bneon\b/i.test(t)) return true;
   return false;
@@ -1339,6 +1340,21 @@ export default async (request) => {
           if (Array.isArray(d?.streams)) rawTvStreams.push(...d.streams);
         }
 
+        // Check for direct high-availability feeds for major channels (SBT, Globo, Discovery)
+        if (/sbt/i.test(decodedId)) {
+          rawTvStreams.unshift(
+            { name: 'SBT Ao Vivo', title: '📺 SBT Cuiabá HD (Ao Vivo)', url: 'https://video09.logicahost.com.br/sbtcuiaba/sbtcuiaba/playlist.m3u8' },
+            { name: 'SBT Nacional', title: '📺 SBT Nacional (Full HD)', url: `https://fenixtv.fenixhub.online/proxy?url=${encodeURIComponent('https://d1jvs4svzaqp8n.cloudfront.net/indexMobile.m3u8')}` }
+          );
+        }
+        if (/discovery/i.test(decodedId)) {
+          rawTvStreams.unshift({
+            name: 'Discovery Channel',
+            title: '📺 Discovery Channel [FULL HD]',
+            url: `https://fenixtv.fenixhub.online/proxy?url=${encodeURIComponent('https://tiktokcdn.live/live/secure/C3uEBwDRmCBd2odYLQkmWSnQlvJDTkWmhKYMtAtAsBQ/1793050614/e0d384e8639071c3/discoverychannel/index.m3u8')}&ref=https%3A%2F%2Fdadinhodetapioca.fun%2Fplay%2Fdiscoverychannel.html`
+          });
+        }
+
         // If this specific channel ID returned 0 streams, search sister FenixTV catalogs by channel slug/name
         if (rawTvStreams.length === 0) {
           const rawSlug = decodedId.split(':').pop().replace(/[^a-z0-9]/gi, '').toLowerCase();
@@ -1658,7 +1674,8 @@ export default async (request) => {
       { id: 'midnight', name: 'Midnight VIP', baseUrl: 'https://midnight.stravo.site/local', badge: 'VIP 1080p', color: '#e11d48' },
       { id: 'hgate', name: 'H-Gate Adult HD', baseUrl: 'https://h-gate.site/AdultVideo', badge: 'FULL HD', color: '#be123c' },
       { id: 'dirtypink', name: 'DirtyPink Tube', baseUrl: 'https://dirty-pink.ers.pw', badge: '4K / HD', color: '#f43f5e' },
-      { id: 'tpbadult', name: 'TPB Adult 4K', baseUrl: 'https://tpb-adult-addon.click', badge: '4K ULTRA', color: '#9f1239' }
+      { id: 'tpbadult', name: 'TPB Adult 4K', baseUrl: 'https://tpb-adult-addon.click', badge: '4K ULTRA', color: '#9f1239' },
+      { id: 'jaxxx', name: 'JAXXX Adult V2', baseUrl: 'https://07b88951aaab-jaxxx-v2.baby-beamup.club', badge: 'JAXXX VIP', color: '#dc2626' }
     ];
 
     async function getVaultPlayablePool() {
@@ -1699,7 +1716,7 @@ export default async (request) => {
     }
 
     if (rawPath === '/api/vault/catalogs') {
-      const cachedVault = getEdgeCache('vault:catalogs:v2');
+      const cachedVault = getEdgeCache('vault:catalogs:v3');
       if (cachedVault) return new Response(cachedVault, { status: 200, headers });
 
       const vaultSources = [
@@ -1716,7 +1733,10 @@ export default async (request) => {
         { addon: SECRET_VAULT_ADDONS[2], title: 'DirtyPink • Novos Lançamentos', rawType: 'movie', url: 'https://dirty-pink.ers.pw/catalog/movie/tpdb_catalog.json' },
         { addon: SECRET_VAULT_ADDONS[3], title: 'TPB Adult • 4K Ultra Top', rawType: 'Porn', url: 'https://tpb-adult-addon.click/catalog/Porn/xxx_top.json' },
         { addon: SECRET_VAULT_ADDONS[3], title: 'TPB Adult • 4K Recentes', rawType: 'Porn', url: 'https://tpb-adult-addon.click/catalog/Porn/xxx_recent.json' },
-        { addon: SECRET_VAULT_ADDONS[3], title: 'TPB Adult • Curated 4K', rawType: 'Porn', url: 'https://tpb-adult-addon.click/catalog/Porn/curated_top.json' }
+        { addon: SECRET_VAULT_ADDONS[3], title: 'TPB Adult • Curated 4K', rawType: 'Porn', url: 'https://tpb-adult-addon.click/catalog/Porn/curated_top.json' },
+        { addon: SECRET_VAULT_ADDONS[4], title: 'JAXXX • Eporner Top', rawType: 'movie', url: 'https://07b88951aaab-jaxxx-v2.baby-beamup.club/catalog/movie/eporner.json' },
+        { addon: SECRET_VAULT_ADDONS[4], title: 'JAXXX • SpankBang HD', rawType: 'movie', url: 'https://07b88951aaab-jaxxx-v2.baby-beamup.club/catalog/movie/spankbang.json' },
+        { addon: SECRET_VAULT_ADDONS[4], title: 'JAXXX • Xhamster 4K', rawType: 'movie', url: 'https://07b88951aaab-jaxxx-v2.baby-beamup.club/catalog/movie/xhamster.4k.json' }
       ];
 
       const fetched = await Promise.all(
@@ -1751,7 +1771,7 @@ export default async (request) => {
 
       const validRows = fetched.filter((r) => r.items.length > 0);
       const out = JSON.stringify({ rows: validRows, addons: SECRET_VAULT_ADDONS });
-      if (validRows.length > 0) setEdgeCache('vault:catalogs:v2', out, 300);
+      if (validRows.length > 0) setEdgeCache('vault:catalogs:v3', out, 300);
       return new Response(out, { status: 200, headers });
     }
 

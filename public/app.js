@@ -3328,12 +3328,13 @@
     el.cloudVideo.oncanplay = verifyVideoTrack;
     el.cloudVideo.onplaying = verifyVideoTrack;
 
-    // Stall watchdog: if a server takes >6.5s without delivering metadata/frames, automatically switch to the next server
+    // Stall watchdog: if a server takes too long without delivering frames, automatically switch to the next server
+    const stallLimit = state.currentItem?.type === 'tv' ? 12000 : 6500;
     playerStallTimer = setTimeout(() => {
       if (!playbackStarted && !el.playerOverlay.classList.contains('hidden')) {
         tryNextWorkingStream(stream);
       }
-    }, 6500);
+    }, stallLimit);
 
     // Subtitles auto-fetch via LegendasBR
     Array.from(el.cloudVideo.querySelectorAll('track')).forEach((t) => t.remove());
