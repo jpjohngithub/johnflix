@@ -39,7 +39,11 @@
     activeLoopPlaylistId: null,
     activeLoopIndex: 0,
     isVaultMode: false,
-    normalCatalogBackup: null
+    normalCatalogBackup: null,
+    youtubeChannels: [],
+    youtubeVideos: [],
+    selectedYtChannel: null,
+    selectedYtCategory: 'all'
   };
 
   // DOM Elements
@@ -1143,6 +1147,11 @@
       return;
     }
 
+    if (state.activeFilter === 'youtube') {
+      renderYouTubeEcosystem();
+      return;
+    }
+
     const savedTvHidden = new Set(JSON.parse(localStorage.getItem('johnflix_hidden_tv_channels') || '[]'));
     if (state.activeFilter === 'tv') {
       const allTvItems = state.catalogRows.filter((r) => r.type === 'tv').flatMap((r) => r.items || []);
@@ -1222,7 +1231,7 @@
     });
   }
 
-  function openRowMoreGrid(row) {
+  async function openRowMoreGrid(row) {
     el.searchSection.classList.remove('hidden');
     el.heroBanner.classList.add('hidden');
     if (el.homeCategoryBar) el.homeCategoryBar.classList.add('hidden');
@@ -1230,15 +1239,42 @@
     el.continueWatchingRow.classList.add('hidden');
     el.catalogContainer.classList.add('hidden');
 
-    el.searchTitle.innerHTML = `${escapeHtml(row.title)} <span class="search-count-pill">${(row.items || []).length} títulos</span>`;
+    let currentItems = [...(row.items || [])];
+    el.searchTitle.innerHTML = `${escapeHtml(row.title)} <span class="search-count-pill" id="rowMoreCount">${currentItems.length} títulos</span>`;
     const filterBar = document.getElementById('searchFilterBar');
-    if (filterBar) filterBar.innerHTML = '';
+    if (filterBar) {
+      filterBar.innerHTML = `<span style="font-size:0.75rem;color:var(--text-muted);display:flex;align-items:center;gap:6px;"><span class="spinner-inline" id="rowMoreSpinner"></span> Carregando catálogo expandido...</span>`;
+    }
 
     el.searchGrid.innerHTML = '';
-    (row.items || []).forEach((item) => {
+    currentItems.forEach((item) => {
       el.searchGrid.appendChild(createMediaCard(item));
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    try {
+      const qParams = new URLSearchParams({
+        id: row.id || '',
+        type: row.type || 'movie',
+        genre: row.genre || ''
+      });
+      const res = await fetch(`/api/catalog/more?${qParams.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.items) && data.items.length > 0) {
+          const seen = new Set(currentItems.map((i) => i.id));
+          const newItems = data.items.filter((i) => !seen.has(i.id));
+          newItems.forEach((item) => {
+            currentItems.push(item);
+            el.searchGrid.appendChild(createMediaCard(item));
+          });
+          const countEl = document.getElementById('rowMoreCount');
+          if (countEl) countEl.textContent = `${currentItems.length} títulos`;
+        }
+      }
+    } catch (e) {}
+
+    if (filterBar) filterBar.innerHTML = '';
   }
 
   function openTvChannelPickerModal() {
@@ -1954,6 +1990,290 @@
       }
       wrap.appendChild(block);
     });
+  }
+
+  /* ===== YOUTUBE ECOSYSTEM ===== */
+  async function renderYouTubeEcosystem() {
+    el.catalogContainer.innerHTML = '';
+    el.heroBanner.classList.add('hidden');
+    stopHeroTrailer();
+    if (el.homeCategoryBar) el.homeCategoryBar.classList.add('hidden');
+    el.continueWatchingRow.classList.add('hidden');
+
+    const container = document.createElement('div');
+    container.className = 'yt-ecosystem-container';
+
+    const topBar = document.createElement('div');
+    topBar.className = 'yt-topbar';
+    const categories = [
+      { id: 'all', label: 'Tudo' },
+      { id: 'Gaming', label: 'Jogos & Gameplays' },
+      { id: 'Ciência & Curiosidades', label: 'Ciência & Curiosidades' },
+      { id: 'História & Documentários', label: 'História & Docs' },
+      { id: 'Entretenimento', label: 'Desafios & Entretenimento' },
+      { id: 'Podcasts', label: 'Podcasts' },
+      { id: 'Esportes & Reações', label: 'Esportes & Reações' },
+      { id: 'Geek & Cinema', label: 'Geek & Cinema' }
+    ];
+
+    topBar.innerHTML = `
+      <div class="yt-header-title">
+        <svg class="yt-header-icon" viewBox="0 0 24 24" fill="#ff0000" width="28" height="28">
+          <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+        </svg>
+        <span class="yt-brand-text">YouTube <span class="yt-badge">JOHNFLIX</span></span>
+      </div>
+      <div class="yt-chips-scroll" id="ytChipsScroll">
+        ${categories.map((c) => `
+          <button type="button" class="yt-chip ${state.selectedYtCategory === c.id ? 'active' : ''}" data-category="${c.id}">
+            ${escapeHtml(c.label)}
+          </button>
+        `).join('')}
+      </div>
+    `;
+    container.appendChild(topBar);
+
+    const channelsBar = document.createElement('div');
+    channelsBar.className = 'yt-channels-bar';
+    channelsBar.id = 'ytChannelsBar';
+    channelsBar.innerHTML = `<div class="yt-channels-loading" style="color:var(--text-muted);font-size:0.85rem;padding:8px;">Carregando canais em destaque...</div>`;
+    container.appendChild(channelsBar);
+
+    const channelHeaderEl = document.createElement('div');
+    channelHeaderEl.id = 'ytActiveChannelHeader';
+    container.appendChild(channelHeaderEl);
+
+    const videosSection = document.createElement('div');
+    videosSection.className = 'yt-videos-section';
+    videosSection.innerHTML = `
+      <div class="yt-section-heading">
+        <h3 id="ytFeedHeading">${state.selectedYtChannel ? 'Vídeos do Canal' : 'Vídeos Recentes'}</h3>
+        <span class="yt-live-tag">● Direto do YouTube</span>
+      </div>
+      <div class="yt-videos-grid" id="ytVideosGrid">
+        <div class="yt-videos-loading" style="color:var(--text-muted);font-size:0.85rem;padding:20px;">Carregando vídeos...</div>
+      </div>
+    `;
+    container.appendChild(videosSection);
+
+    el.catalogContainer.appendChild(container);
+
+    if (!state.youtubeChannels.length) {
+      try {
+        const cRes = await fetch('/api/youtube/channels');
+        if (cRes.ok) {
+          const cData = await cRes.json();
+          state.youtubeChannels = cData.channels || [];
+        }
+      } catch (e) {}
+    }
+
+    renderYouTubeChannelsBar(channelsBar, channelHeaderEl);
+    setupYouTubeChips(topBar, channelHeaderEl);
+    loadYouTubeVideos(channelHeaderEl);
+  }
+
+  function renderYouTubeChannelsBar(barEl, headerEl) {
+    if (!barEl) return;
+    let list = state.youtubeChannels;
+    if (state.selectedYtCategory && state.selectedYtCategory !== 'all') {
+      list = list.filter((c) => c.category === state.selectedYtCategory);
+    }
+    barEl.innerHTML = `
+      <button type="button" class="yt-channel-bubble ${!state.selectedYtChannel ? 'active' : ''}" id="ytAllChannelsBubble">
+        <div class="yt-avatar-circle yt-all-circle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
+            <rect x="2" y="2" width="20" height="20" rx="5" />
+            <path d="M12 8v8M8 12h8" />
+          </svg>
+        </div>
+        <span class="yt-channel-bubble-name">Todos</span>
+      </button>
+      ${list.map((ch) => `
+        <button type="button" class="yt-channel-bubble ${state.selectedYtChannel === ch.id ? 'active' : ''}" data-channel="${ch.id}">
+          <img class="yt-avatar-circle" src="${escapeHtml(ch.avatar)}" alt="${escapeHtml(ch.name)}" loading="lazy" />
+          <span class="yt-channel-bubble-name">${escapeHtml(ch.name)}</span>
+        </button>
+      `).join('')}
+    `;
+
+    barEl.querySelector('#ytAllChannelsBubble')?.addEventListener('click', () => {
+      state.selectedYtChannel = null;
+      renderYouTubeChannelsBar(barEl, headerEl);
+      renderActiveChannelHeader(headerEl);
+      loadYouTubeVideos(headerEl);
+    });
+
+    barEl.querySelectorAll('.yt-channel-bubble[data-channel]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        state.selectedYtChannel = btn.dataset.channel;
+        renderYouTubeChannelsBar(barEl, headerEl);
+        renderActiveChannelHeader(headerEl);
+        loadYouTubeVideos(headerEl);
+      });
+    });
+  }
+
+  function renderActiveChannelHeader(headerEl) {
+    if (!headerEl) return;
+    if (!state.selectedYtChannel) {
+      headerEl.innerHTML = '';
+      return;
+    }
+    const ch = state.youtubeChannels.find((c) => c.id === state.selectedYtChannel);
+    if (!ch) {
+      headerEl.innerHTML = '';
+      return;
+    }
+    headerEl.innerHTML = `
+      <div class="yt-channel-banner-card">
+        ${ch.banner ? `<img class="yt-banner-img" src="${escapeHtml(ch.banner)}" alt="Banner ${escapeHtml(ch.name)}" />` : '<div class="yt-banner-fallback"></div>'}
+        <div class="yt-channel-profile">
+          <img class="yt-profile-avatar" src="${escapeHtml(ch.avatar)}" alt="${escapeHtml(ch.name)}" />
+          <div class="yt-profile-details">
+            <div class="yt-profile-name-row">
+              <h2 class="yt-profile-name">${escapeHtml(ch.name)}</h2>
+              <span class="yt-verified-badge" title="Canal Verificado">✓</span>
+            </div>
+            <div class="yt-profile-stats">
+              <span>${escapeHtml(ch.handle)}</span> • <span>${escapeHtml(ch.subscribers)}</span> • <span>${escapeHtml(ch.category)}</span>
+            </div>
+            <p class="yt-profile-desc">${escapeHtml(ch.description)}</p>
+          </div>
+          <div class="yt-profile-actions">
+            <button type="button" class="yt-subscribe-btn">Inscrito ✓</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function setupYouTubeChips(topBar, headerEl) {
+    topBar.querySelectorAll('.yt-chip').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        topBar.querySelectorAll('.yt-chip').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.selectedYtCategory = btn.dataset.category;
+        state.selectedYtChannel = null;
+        renderYouTubeChannelsBar(document.getElementById('ytChannelsBar'), headerEl);
+        renderActiveChannelHeader(headerEl);
+        loadYouTubeVideos(headerEl);
+      });
+    });
+  }
+
+  async function loadYouTubeVideos(headerEl) {
+    const grid = document.getElementById('ytVideosGrid');
+    const heading = document.getElementById('ytFeedHeading');
+    if (!grid) return;
+    grid.innerHTML = `<div class="yt-videos-loading" style="color:var(--text-muted);font-size:0.85rem;padding:20px;">Buscando vídeos diretamente do YouTube...</div>`;
+
+    let url = '/api/youtube/feed';
+    if (state.selectedYtChannel) {
+      url += `?channelId=${encodeURIComponent(state.selectedYtChannel)}`;
+      const ch = state.youtubeChannels.find((c) => c.id === state.selectedYtChannel);
+      if (heading) heading.textContent = ch ? `Vídeos de ${ch.name}` : 'Vídeos do Canal';
+    } else {
+      if (heading) heading.textContent = 'Em Alta no YouTube';
+    }
+
+    try {
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        let videos = data.videos || [];
+        if (!state.selectedYtChannel && state.selectedYtCategory && state.selectedYtCategory !== 'all') {
+          const validChannels = new Set(state.youtubeChannels.filter((c) => c.category === state.selectedYtCategory).map((c) => c.id));
+          videos = videos.filter((v) => validChannels.has(v.channelId));
+        }
+
+        if (videos.length === 0) {
+          grid.innerHTML = `<div class="yt-empty-feed" style="color:var(--text-muted);font-size:0.85rem;padding:24px;">Nenhum vídeo recente encontrado para esta seleção.</div>`;
+          return;
+        }
+
+        grid.innerHTML = '';
+        videos.forEach((v) => {
+          const card = createYouTubeVideoCard(v);
+          grid.appendChild(card);
+        });
+      } else {
+        grid.innerHTML = `<div class="yt-empty-feed" style="color:var(--text-muted);font-size:0.85rem;padding:24px;">Não foi possível carregar os vídeos no momento.</div>`;
+      }
+    } catch (e) {
+      grid.innerHTML = `<div class="yt-empty-feed" style="color:var(--text-muted);font-size:0.85rem;padding:24px;">Erro ao conectar ao YouTube.</div>`;
+    }
+  }
+
+  function createYouTubeVideoCard(video) {
+    const card = document.createElement('article');
+    card.className = 'yt-video-card';
+    const ch = state.youtubeChannels.find((c) => c.id === video.channelId);
+    const avatar = ch?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80';
+
+    card.innerHTML = `
+      <div class="yt-thumb-wrap">
+        <img class="yt-thumbnail" src="${escapeHtml(video.thumbnail)}" alt="${escapeHtml(video.title)}" loading="lazy" />
+        <span class="yt-duration-badge">HD</span>
+        <div class="yt-play-hover-overlay">
+          <div class="yt-hover-play-btn">
+            <svg viewBox="0 0 24 24" fill="#fff" width="22" height="22"><path d="M8 5v14l11-7z"/></svg>
+          </div>
+        </div>
+      </div>
+      <div class="yt-card-info">
+        <img class="yt-card-avatar" src="${escapeHtml(avatar)}" alt="${escapeHtml(video.channelName)}" />
+        <div class="yt-card-meta">
+          <h4 class="yt-card-title" title="${escapeHtml(video.title)}">${escapeHtml(video.title)}</h4>
+          <div class="yt-card-author">
+            <span>${escapeHtml(video.channelName)}</span>
+            <span class="yt-author-check">✓</span>
+          </div>
+          <div class="yt-card-date">Disponível no YouTube • Assistir Agora</div>
+        </div>
+      </div>
+    `;
+
+    card.addEventListener('click', () => {
+      launchYouTubePlayer(video);
+    });
+
+    return card;
+  }
+
+  function launchYouTubePlayer(video) {
+    if (!video || !video.ytId) return;
+    stopHeroTrailer();
+    stopModalTrailer();
+    el.playerOverlay.classList.remove('hidden', 'hud-idle');
+    el.playerServerDrawer.classList.add('hidden');
+    document.body.style.overflow = 'hidden';
+    showPlayerHud();
+
+    clearVideoHandlers();
+    destroyHls();
+    stopTorrentTelemetry();
+    hideNextEpisodePrompt();
+
+    el.playerTitle.textContent = `${video.title} • ${video.channelName}`;
+    el.playerLoader.classList.remove('hidden');
+    el.playerLoaderTitle.textContent = 'Iniciando vídeo do YouTube...';
+    el.playerLoaderSub.textContent = video.channelName;
+    if (el.playerLoaderSwitchBtn) el.playerLoaderSwitchBtn.classList.add('hidden');
+    if (el.switchServerBtn) el.switchServerBtn.classList.add('hidden');
+
+    el.cloudVideo.pause();
+    el.cloudVideo.removeAttribute('src');
+    el.cloudVideo.classList.add('hidden');
+
+    if (el.cloudEmbed) {
+      el.cloudEmbed.classList.remove('hidden');
+      el.cloudEmbed.src = `https://www.youtube-nocookie.com/embed/${video.ytId}?autoplay=1&rel=0&modestbranding=1`;
+      el.cloudEmbed.onload = () => {
+        el.playerLoader.classList.add('hidden');
+      };
+      setTimeout(() => el.playerLoader.classList.add('hidden'), 1200);
+    }
   }
 
   function renderCustomizeSection() {
@@ -3458,10 +3778,15 @@
           <strong>${escapeHtml(s.serverLabel)}</strong>
           <span>${escapeHtml(s.audio || 'Dublado / Legendado')} • ${escapeHtml(s.quality || 'HD')}</span>
         </div>
-        <span class="drawer-stream-status">${isAct ? 'Ativo' : 'Assistir'}</span>
+        <span class="drawer-stream-status">${isAct ? 'Ativo ✓' : 'Assistir'}</span>
       `;
-      item.addEventListener('click', () => {
-        if (isAct) return;
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showToast(`Conectando: ${s.serverLabel}`);
+        renderPlayerDrawer(s);
+        setTimeout(() => {
+          el.playerServerDrawer.classList.add('hidden');
+        }, 180);
         launchCloudPlayer(s, false);
       });
       el.playerDrawerList.appendChild(item);
@@ -3497,6 +3822,7 @@
     stopTorrentTelemetry();
     hideNextEpisodePrompt();
     state.nextEpisodeDismissed = false;
+    if (el.switchServerBtn) el.switchServerBtn.classList.remove('hidden');
     try {
       if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
       screen.orientation?.unlock?.();
