@@ -345,10 +345,12 @@
     if (el.heroMuteBtn) {
       el.heroMuteBtn.addEventListener('click', () => {
         state.heroMuted = state.heroMuted === false;
-        const iframe = el.heroTrailerWrap && el.heroTrailerWrap.querySelector('iframe');
-        if (iframe && iframe.contentWindow) {
-          iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: state.heroMuted ? 'mute' : 'unMute', args: [] }), '*');
-        }
+        try {
+          if (state.heroPlayer) {
+            if (state.heroMuted) state.heroPlayer.mute();
+            else { state.heroPlayer.unMute(); state.heroPlayer.setVolume(60); }
+          }
+        } catch (e) {}
         if (el.heroMuteIcon) {
           el.heroMuteIcon.innerHTML = state.heroMuted
             ? '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>'
@@ -535,17 +537,32 @@
       state.catalogRows = data.rows || data.catalogs || [];
       state.addons = data.addons || [];
 
-      const withTrailers = [];
-      const fallbackPool = [];
+      const seenHero = new Set();
+      const movies = [];
+      const series = [];
       state.catalogRows.forEach((r) => {
         if (r.type === 'tv' || r.isTop10) return;
-        r.items.slice(0, 6).forEach((item) => {
-          if (withTrailers.some((p) => p.id === item.id) || fallbackPool.some((p) => p.id === item.id)) return;
-          if (item.ytId) withTrailers.push(item);
-          else fallbackPool.push(item);
+        (r.items || []).slice(0, 8).forEach((item) => {
+          if (!item || !item.id || seenHero.has(item.id)) return;
+          if (!item.background && !item.poster) return;
+          if (!item.description || String(item.description).length < 40) return;
+          seenHero.add(item.id);
+          (item.type === 'series' ? series : movies).push(item);
         });
       });
-      state.heroItems = [...withTrailers, ...fallbackPool].slice(0, 12);
+      const daySeed = Math.floor(Date.now() / 86400000);
+      const rnd = (() => { let x = daySeed * 9301 + 49297; return () => { x = (x * 9301 + 49297) % 233280; return x / 233280; }; })();
+      const shuffle = (arr) => arr.map((v) => [rnd(), v]).sort((p, q) => p[0] - q[0]).map((p) => p[1]);
+      const score = (it) => (it.ytId ? 2 : 0) + (Number(it.imdbRating) >= 7.5 ? 1 : 0);
+      const pick = (arr, n) => shuffle(arr).sort((p, q) => score(q) - score(p)).slice(0, n);
+      const mv = pick(movies, 6);
+      const sr = pick(series, 6);
+      const mixed = [];
+      for (let i = 0; i < Math.max(mv.length, sr.length); i++) {
+        if (mv[i]) mixed.push(mv[i]);
+        if (sr[i]) mixed.push(sr[i]);
+      }
+      state.heroItems = mixed.slice(0, 10);
       setupHeroCarousel();
       renderCatalogRows();
     } catch (err) {
@@ -553,81 +570,213 @@
     }
   }
 
+  // ===== Hero: YouTube IFrame API trailer engine + smart rotation =====
+  let ytApiPromise = null;
+  function loadYouTubeApi() {
+    if (window.YT && window.YT.Player) return Promise.resolve(window.YT);
+    if (ytApiPromise) return ytApiPromise;
+    ytApiPromise = new Promise((resolve, reject) => {
+      const prev = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => {
+        if (typeof prev === 'function') { try { prev(); } catch (e) {} }
+        resolve(window.YT);
+      };
+      const tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      tag.async = true;
+      tag.onerror = () => { ytApiPromise = null; reject(new Error('yt-api')); };
+      document.head.appendChild(tag);
+      setTimeout(() => { if (!(window.YT && window.YT.Player)) { ytApiPromise = null; reject(new Error('yt-timeout')); } }, 9000);
+    });
+    return ytApiPromise;
+  }
+
+  const badTrailers = (() => {
+    try { return new Set(JSON.parse(sessionStorage.getItem('jf_bad_trailers') || '[]')); } catch (e) { return new Set(); }
+  })();
+  function markBadTrailer(id) {
+    if (!id) return;
+    badTrailers.add(id);
+    try { sessionStorage.setItem('jf_bad_trailers', JSON.stringify([...badTrailers].slice(-80))); } catch (e) {}
+  }
+
+  const HERO_DWELL_NO_TRAILER = 9000;
+  const HERO_DWELL_MAX_TRAILER = 48000;
+
+  function heroBlocked() {
+    return document.hidden
+      || !el.detailsModal.classList.contains('hidden')
+      || !el.playerOverlay.classList.contains('hidden')
+      || el.heroBanner.classList.contains('hidden');
+  }
+
+  function scheduleHeroAdvance(ms) {
+    clearTimeout(state.heroAdvanceTimer);
+    if (!state.heroItems.length || state.heroItems.length < 2) return;
+    if (el.heroIndicators) {
+      el.heroIndicators.style.setProperty('--dwell', `${ms}ms`);
+      const act = el.heroIndicators.querySelector('.hero-dot.active');
+      if (act) {
+        act.classList.remove('run');
+        void act.offsetWidth;
+        act.classList.add('run');
+      }
+    }
+    const tick = () => {
+      if (heroBlocked()) {
+        state.heroAdvanceTimer = setTimeout(tick, 2500);
+        return;
+      }
+      state.heroIndex = (state.heroIndex + 1) % state.heroItems.length;
+      updateHeroSlide();
+    };
+    state.heroAdvanceTimer = setTimeout(tick, ms);
+  }
+
+  function destroyHeroPlayer() {
+    if (state.heroPlayer) {
+      try { state.heroPlayer.destroy(); } catch (e) {}
+      state.heroPlayer = null;
+    }
+  }
+
   function stopHeroTrailer() {
+    state.heroMountSeq = (state.heroMountSeq || 0) + 1;
     clearTimeout(state.heroTrailerTimer);
     clearTimeout(state.heroLoopTimer);
+    destroyHeroPlayer();
     if (el.heroTrailerWrap) {
       el.heroTrailerWrap.classList.remove('playing');
       el.heroTrailerWrap.innerHTML = '';
     }
-    if (el.heroTrailerLivePill) {
-      el.heroTrailerLivePill.classList.add('hidden');
+    if (el.heroBanner) el.heroBanner.classList.remove('trailer-on');
+    if (el.heroTrailerLivePill) el.heroTrailerLivePill.classList.add('hidden');
+    if (el.heroTrailerPill) el.heroTrailerPill.classList.add('hidden');
+    if (el.heroMuteBtn) el.heroMuteBtn.classList.add('hidden');
+  }
+
+  async function resolveTrailerCandidates(item) {
+    const out = [];
+    const push = (id) => { if (id && /^[\w-]{6,15}$/.test(id) && !out.includes(id) && !badTrailers.has(id)) out.push(id); };
+    push(item.ytId);
+    if (item.ytCandidates) item.ytCandidates.forEach(push);
+    if (!out.length && item.id && String(item.id).startsWith('tt')) {
+      try {
+        const r = await fetch(`/api/meta/${item.type}/${encodeURIComponent(item.id)}`);
+        const d = await r.json();
+        const m = d && d.meta;
+        const list = [];
+        (m && m.trailers || []).forEach((t) => list.push(t && t.source));
+        (m && m.trailerStreams || []).forEach((t) => list.push(t && t.ytId));
+        item.ytCandidates = list.filter(Boolean);
+        item.ytCandidates.forEach(push);
+      } catch (e) {}
     }
-    if (el.heroTrailerPill) {
-      el.heroTrailerPill.classList.add('hidden');
-    }
-    if (el.heroMuteBtn) {
-      el.heroMuteBtn.classList.add('hidden');
-    }
+    return out;
   }
 
   function mountHeroTrailer(item) {
     stopHeroTrailer();
     if (!item || !el.heroTrailerWrap) return;
-    if (window.matchMedia('(hover: none), (pointer: coarse), (max-width: 900px)').matches) return;
+    const seq = state.heroMountSeq;
+    const stale = () => seq !== state.heroMountSeq || state.heroItems[state.heroIndex]?.id !== item.id;
 
-    const injectIframe = (ytId) => {
-      if (!ytId || state.heroItems[state.heroIndex]?.id !== item.id) return;
-      if (!el.detailsModal.classList.contains('hidden') || !el.playerOverlay.classList.contains('hidden')) return;
-      state.heroMuted = true;
-      if (el.heroMuteIcon) {
-        el.heroMuteIcon.innerHTML = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>';
-      }
-      const iframe = document.createElement('iframe');
-      iframe.src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(ytId)}?autoplay=1&mute=1&controls=0&showinfo=0&rel=0&enablejsapi=1&playsinline=1&cc_load_policy=0&modestbranding=1&iv_load_policy=3&disablekb=1&fs=0&playsinline=1&start=10&end=62`;
-      iframe.allow = 'autoplay; encrypted-media';
-      iframe.tabIndex = -1;
-      iframe.setAttribute('aria-hidden', 'true');
-      iframe.onload = () => {
-        if (state.heroItems[state.heroIndex]?.id === item.id) {
-          setTimeout(() => {
-            if (state.heroItems[state.heroIndex]?.id === item.id) {
-              el.heroTrailerWrap.classList.add('playing');
-              if (el.heroTrailerLivePill) el.heroTrailerLivePill.classList.remove('hidden');
-              if (el.heroTrailerPill) el.heroTrailerPill.classList.remove('hidden');
-              if (el.heroMuteBtn) el.heroMuteBtn.classList.remove('hidden');
-            }
-          }, 450);
-        }
-      };
-      el.heroTrailerWrap.innerHTML = '';
-      el.heroTrailerWrap.appendChild(iframe);
-      state.heroLoopTimer = setTimeout(() => {
-        if (state.heroItems[state.heroIndex]?.id === item.id && !el.heroBanner.classList.contains('hidden')) {
-          el.heroTrailerWrap.classList.remove('playing');
-          setTimeout(() => mountHeroTrailer(item), 400);
-        }
-      }, 50000);
-    };
+    if (window.matchMedia('(hover: none), (pointer: coarse), (max-width: 900px)').matches) {
+      scheduleHeroAdvance(HERO_DWELL_NO_TRAILER);
+      return;
+    }
+
+    // Default: if no trailer shows up fast, keep rotating anyway
+    scheduleHeroAdvance(HERO_DWELL_NO_TRAILER + 1500);
 
     state.heroTrailerTimer = setTimeout(async () => {
-      if (item.ytId) {
-        injectIframe(item.ytId);
-        return;
-      }
-      if (item.id && item.id.startsWith('tt')) {
+      if (stale() || heroBlocked()) return;
+      const candidates = await resolveTrailerCandidates(item);
+      if (stale()) return;
+      if (!candidates.length) return;
+      let YT;
+      try { YT = await loadYouTubeApi(); } catch (e) { return; }
+      if (stale()) return;
+
+      const tryCandidate = (idx) => {
+        if (stale()) return;
+        if (idx >= candidates.length) {
+          // No playable trailer: stay on the artwork and keep rotating
+          stopHeroTrailerKeepSeq();
+          scheduleHeroAdvance(HERO_DWELL_NO_TRAILER);
+          return;
+        }
+        const ytId = candidates[idx];
+        destroyHeroPlayer();
+        el.heroTrailerWrap.classList.remove('playing');
+        el.heroTrailerWrap.innerHTML = '<div id="heroYtMount"></div>';
+        let revealed = false;
+        const failTimer = setTimeout(() => {
+          if (!revealed && !stale()) { markBadTrailer(ytId); tryCandidate(idx + 1); }
+        }, 7000);
+
         try {
-          const r = await fetch(`/api/meta/${item.type}/${encodeURIComponent(item.id)}`);
-          const d = await r.json();
-          const m = d?.meta;
-          const ytId = m?.trailers?.[0]?.source || m?.trailerStreams?.[0]?.ytId || '';
-          if (ytId) {
-            item.ytId = ytId;
-            injectIframe(ytId);
-          }
-        } catch (e) {}
-      }
-    }, 450);
+          state.heroPlayer = new YT.Player('heroYtMount', {
+            videoId: ytId,
+            host: 'https://www.youtube-nocookie.com',
+            playerVars: {
+              autoplay: 1, mute: 1, controls: 0, rel: 0, modestbranding: 1, playsinline: 1,
+              iv_load_policy: 3, disablekb: 1, fs: 0, cc_load_policy: 0, start: 8, enablejsapi: 1,
+              origin: location.origin
+            },
+            events: {
+              onReady: (ev) => {
+                if (stale()) return;
+                try { ev.target.mute(); ev.target.playVideo(); } catch (e) {}
+                state.heroMuted = true;
+              },
+              onStateChange: (ev) => {
+                if (stale()) return;
+                if (ev.data === 1 && !revealed) { // PLAYING
+                  revealed = true;
+                  clearTimeout(failTimer);
+                  let dur = 0;
+                  try { dur = ev.target.getDuration() || 0; } catch (e) {}
+                  const remaining = dur > 20 ? Math.max(14000, (dur - 8) * 1000 - 2500) : HERO_DWELL_MAX_TRAILER;
+                  scheduleHeroAdvance(Math.min(HERO_DWELL_MAX_TRAILER, remaining));
+                  setTimeout(() => {
+                    if (stale()) return;
+                    el.heroTrailerWrap.classList.add('playing');
+                    el.heroBanner.classList.add('trailer-on');
+                    if (el.heroTrailerLivePill) el.heroTrailerLivePill.classList.remove('hidden');
+                    if (el.heroMuteBtn) el.heroMuteBtn.classList.remove('hidden');
+                  }, 350);
+                } else if (ev.data === 0) { // ENDED
+                  if (!heroBlocked()) {
+                    state.heroIndex = (state.heroIndex + 1) % state.heroItems.length;
+                    updateHeroSlide();
+                  }
+                } else if (ev.data === 2 && revealed && !heroBlocked()) { // paused externally
+                  try { ev.target.playVideo(); } catch (e) {}
+                }
+              },
+              onError: () => {
+                clearTimeout(failTimer);
+                if (stale()) return;
+                markBadTrailer(ytId);
+                el.heroTrailerWrap.classList.remove('playing');
+                tryCandidate(idx + 1);
+              }
+            }
+          });
+        } catch (e) {
+          clearTimeout(failTimer);
+          tryCandidate(idx + 1);
+        }
+      };
+      tryCandidate(0);
+    }, 500);
+  }
+
+  function stopHeroTrailerKeepSeq() {
+    const keep = state.heroMountSeq;
+    stopHeroTrailer();
+    state.heroMountSeq = keep;
   }
 
   function setupHeroCarousel() {
@@ -637,25 +786,26 @@
       const dot = document.createElement('button');
       dot.className = `hero-dot ${idx === 0 ? 'active' : ''}`;
       dot.setAttribute('aria-label', item.name);
+      dot.title = item.name;
       dot.addEventListener('click', () => {
         state.heroIndex = idx;
         updateHeroSlide();
-        restartHeroTimer();
       });
       el.heroIndicators.appendChild(dot);
     });
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        clearTimeout(state.heroAdvanceTimer);
+        stopHeroTrailer();
+      } else if (!el.heroBanner.classList.contains('hidden') && state.heroItems[state.heroIndex]) {
+        mountHeroTrailer(state.heroItems[state.heroIndex]);
+      }
+    });
     updateHeroSlide();
-    restartHeroTimer();
   }
 
-  function restartHeroTimer() {
-    clearInterval(state.heroTimer);
-    state.heroTimer = setInterval(() => {
-      if (!el.detailsModal.classList.contains('hidden') || !el.playerOverlay.classList.contains('hidden')) return;
-      state.heroIndex = (state.heroIndex + 1) % state.heroItems.length;
-      updateHeroSlide();
-    }, 16000);
-  }
+  // Rotation is now driven by the trailer/dwell logic (see scheduleHeroAdvance)
+  function restartHeroTimer() {}
 
   const logoDarkCache = new Map();
 
