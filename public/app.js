@@ -243,10 +243,10 @@
     const splashEl = document.getElementById('siteIntroSplash');
     setTimeout(() => {
       if (splashEl) splashEl.classList.add('splash-hide');
-    }, 1150);
+    }, 450);
     setTimeout(() => {
       if (splashEl) splashEl.remove();
-    }, 1750);
+    }, 900);
     await loadHomeCatalog();
     if (splashEl) splashEl.classList.add('splash-hide');
   }
@@ -643,58 +643,81 @@
     return rawBg || item.poster || '';
   }
 
+  function applyCatalogData(data) {
+    if (!data || !Array.isArray(data.rows || data.catalogs)) return;
+    state.catalogRows = data.rows || data.catalogs || [];
+    state.addons = data.addons || [];
+
+    const seenHero = new Set();
+    const movies = [];
+    const series = [];
+    state.catalogRows.forEach((r) => {
+      if (r.type === 'tv' || r.isTop10) return;
+      (r.items || []).slice(0, 18).forEach((item) => {
+        if (!item || !item.id || !String(item.id).startsWith('tt') || seenHero.has(item.id)) return;
+        if (!item.description || String(item.description).length < 40) return;
+        seenHero.add(item.id);
+        item.background = getCleanHeroBackdrop(item);
+        (item.type === 'series' ? series : movies).push(item);
+      });
+    });
+    const shuffle = (arr) => {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    };
+    const pick = (arr, n) => {
+      const qualityPool = arr.filter((it) => it.ytId || Number(it.imdbRating) >= 7.0);
+      const source = qualityPool.length >= n ? qualityPool : arr;
+      return shuffle(source).slice(0, n);
+    };
+    const mv = pick(movies, 5);
+    const sr = pick(series, 5);
+    const mixed = [];
+    const startWithSeries = Math.random() > 0.5;
+    for (let i = 0; i < Math.max(mv.length, sr.length); i++) {
+      if (startWithSeries) {
+        if (sr[i]) mixed.push(sr[i]);
+        if (mv[i]) mixed.push(mv[i]);
+      } else {
+        if (mv[i]) mixed.push(mv[i]);
+        if (sr[i]) mixed.push(sr[i]);
+      }
+    }
+    state.heroItems = mixed.slice(0, 8);
+    setupHeroCarousel();
+    renderCatalogRows();
+  }
+
   async function loadHomeCatalog() {
+    let hasLoadedFromCache = false;
+    try {
+      const cached = sessionStorage.getItem('johnflix_catalog_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed?.rows?.length) {
+          applyCatalogData(parsed);
+          hasLoadedFromCache = true;
+        }
+      }
+    } catch (e) {}
+
     try {
       const res = await fetch('/api/catalogs');
       const data = await res.json();
-      state.catalogRows = data.rows || data.catalogs || [];
-      state.addons = data.addons || [];
-
-      const seenHero = new Set();
-      const movies = [];
-      const series = [];
-      state.catalogRows.forEach((r) => {
-        if (r.type === 'tv' || r.isTop10) return;
-        (r.items || []).slice(0, 18).forEach((item) => {
-          if (!item || !item.id || !String(item.id).startsWith('tt') || seenHero.has(item.id)) return;
-          if (!item.description || String(item.description).length < 40) return;
-          seenHero.add(item.id);
-          item.background = getCleanHeroBackdrop(item);
-          (item.type === 'series' ? series : movies).push(item);
-        });
-      });
-      // Fresh random shuffle on every page reload so recommendations are never repetitive
-      const shuffle = (arr) => {
-        const copy = [...arr];
-        for (let i = copy.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [copy[i], copy[j]] = [copy[j], copy[i]];
-        }
-        return copy;
-      };
-      const pick = (arr, n) => {
-        const qualityPool = arr.filter((it) => it.ytId || Number(it.imdbRating) >= 7.0);
-        const source = qualityPool.length >= n ? qualityPool : arr;
-        return shuffle(source).slice(0, n);
-      };
-      const mv = pick(movies, 5);
-      const sr = pick(series, 5);
-      const mixed = [];
-      const startWithSeries = Math.random() > 0.5;
-      for (let i = 0; i < Math.max(mv.length, sr.length); i++) {
-        if (startWithSeries) {
-          if (sr[i]) mixed.push(sr[i]);
-          if (mv[i]) mixed.push(mv[i]);
-        } else {
-          if (mv[i]) mixed.push(mv[i]);
-          if (sr[i]) mixed.push(sr[i]);
+      if (data?.rows?.length) {
+        try { sessionStorage.setItem('johnflix_catalog_cache', JSON.stringify(data)); } catch (e) {}
+        if (!hasLoadedFromCache || state.catalogRows.length === 0) {
+          applyCatalogData(data);
         }
       }
-      state.heroItems = mixed.slice(0, 8);
-      setupHeroCarousel();
-      renderCatalogRows();
     } catch (err) {
-      el.heroTitle.textContent = 'Indisponível no momento';
+      if (!state.catalogRows.length) {
+        el.heroTitle.textContent = 'Indisponível no momento';
+      }
     }
   }
 

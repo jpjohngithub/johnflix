@@ -929,7 +929,8 @@ export default async (request) => {
 
       const bodyStr = JSON.stringify({ rows: validRows, catalogs: validRows, addons: ADDONS, tvAddons: TV_ADDONS, movieAddons: MOVIE_ADDONS });
       if (validRows.length > 0) setEdgeCache('catalogs:v13', bodyStr, 300);
-      return new Response(bodyStr, { status: 200, headers });
+      const catHeaders = { ...headers, 'Cache-Control': 'public, max-age=180, s-maxage=600, stale-while-revalidate=1200' };
+      return new Response(bodyStr, { status: 200, headers: catHeaders });
     }
 
     if (rawPath === '/api/catalog/more') {
