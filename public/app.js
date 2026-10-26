@@ -2947,9 +2947,9 @@
   let playerStallTimer = null;
   const failedStreamKeys = new Set();
 
-  function getStreamKey(s) {
-    return s ? (s.proxyUrl || s.directUrl || s.embedUrl || s.serverLabel || '') : '';
-  }
+    function getStreamKey(s) {
+      return s ? (s.directUrl || s.proxyUrl || s.embedUrl || s.serverLabel || '') : '';
+    }
 
   function tryNextWorkingStream(failedStream) {
     const key = getStreamKey(failedStream);
@@ -2972,13 +2972,13 @@
     if (state.currentItem && state.currentItem.id && String(state.currentItem.id).startsWith('tt') && el.cloudEmbed) {
       const baseImdb = String(state.currentItem.id).split(':')[0];
       const fallbackEmbedUrl = state.currentItem.type === 'series'
-        ? `https://vidsrc.cc/v2/embed/tv/${baseImdb}/${state.currentSeason || 1}/${state.currentEpisode || 1}`
-        : `https://vidsrc.cc/v2/embed/movie/${baseImdb}`;
+        ? `https://player.videasy.to/tv/${baseImdb}/${state.currentSeason || 1}/${state.currentEpisode || 1}`
+        : `https://player.videasy.to/movie/${baseImdb}`;
       if (!failedStreamKeys.has(fallbackEmbedUrl)) {
         failedStreamKeys.add(fallbackEmbedUrl);
         launchCloudPlayer({
-          serverLabel: 'Cloud Universal Player',
-          quality: '1080p Full HD',
+          serverLabel: 'Cloud Universal 4K/FHD',
+          quality: '1080p / 4K UHD',
           audio: 'Multi-Áudio / Legendado',
           playType: 'embed',
           proxyUrl: fallbackEmbedUrl
@@ -3257,8 +3257,9 @@
 
   function renderPlayerDrawer(activeStream) {
     el.playerDrawerList.innerHTML = '';
+    const activeKey = getStreamKey(activeStream);
     state.currentStreams.forEach((s) => {
-      const isAct = s.proxyUrl === activeStream.proxyUrl;
+      const isAct = getStreamKey(s) === activeKey;
       const item = document.createElement('div');
       item.className = `drawer-stream-row ${isAct ? 'active' : ''}`;
       item.innerHTML = `
@@ -3269,7 +3270,10 @@
         </div>
         <span class="drawer-stream-status">${isAct ? 'Ativo' : 'Assistir'}</span>
       `;
-      item.addEventListener('click', () => launchCloudPlayer(s));
+      item.addEventListener('click', () => {
+        if (isAct) return;
+        launchCloudPlayer(s, false);
+      });
       el.playerDrawerList.appendChild(item);
     });
   }

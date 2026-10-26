@@ -1275,41 +1275,41 @@ export default async (request) => {
 
         let allTvStreams = tvAddonResults.flatMap((r) => r.streams);
 
-        // Fallback para canais nacionais conhecidos se os addons do FenixTV estiverem sem stream
-        if (allTvStreams.length === 0) {
-          const lowerId = decodedId.toLowerCase();
-          const matchStatic = STATIC_NATIONAL_CHANNELS.find((c) => {
-            const n = c.name.toLowerCase();
-            return (lowerId.includes('globo') && n.includes('globo')) ||
-                   (lowerId.includes('sbt') && n.includes('sbt')) ||
-                   (lowerId.includes('cultura') && n.includes('cultura')) ||
-                   (lowerId.includes('record') && n.includes('record'));
-          });
-          if (matchStatic) {
-            const direct = await hlsProxied(matchStatic.url);
-            const fallbackStream = {
-              addonId: 'iptvorg',
-              addonName: 'TV Brasil Ao Vivo',
-              addonLogo: matchStatic.logo,
-              addonBadge: 'TV AO VIVO',
-              addonColor: '#a855f7',
-              serverLabel: `${matchStatic.name} • Transmissão Direta`,
-              rawName: 'TV Brasil',
-              rawTitle: matchStatic.name,
-              quality: '1080p HD Ao Vivo',
-              is4k: false,
-              isDub: true,
-              audio: 'Ao Vivo PT-BR',
-              seeds: null,
-              playType: 'hls',
-              directUrl: direct,
-              proxyUrl: direct
-            };
-            allTvStreams = [fallbackStream];
-            tvAddonResults[0].streams = [fallbackStream];
-            tvAddonResults[0].count = 1;
-          }
+      // Fallback para canais nacionais conhecidos se os addons do FenixTV estiverem sem stream
+      if (allTvStreams.length === 0) {
+        const lowerId = decodedId.toLowerCase();
+        const matchStatic = STATIC_NATIONAL_CHANNELS.find((c) => {
+          const n = c.name.toLowerCase();
+          return (lowerId.includes('globo') && n.includes('globo')) ||
+                 (lowerId.includes('sbt') && n.includes('sbt')) ||
+                 (lowerId.includes('cultura') && n.includes('cultura')) ||
+                 (lowerId.includes('record') && n.includes('record'));
+        }) || STATIC_NATIONAL_CHANNELS[0];
+        if (matchStatic) {
+          const direct = await hlsProxied(matchStatic.url);
+          const fallbackStream = {
+            addonId: 'iptvorg',
+            addonName: 'TV Brasil Ao Vivo',
+            addonLogo: matchStatic.logo,
+            addonBadge: 'TV AO VIVO',
+            addonColor: '#a855f7',
+            serverLabel: `${matchStatic.name} • Transmissão Direta`,
+            rawName: 'TV Brasil',
+            rawTitle: matchStatic.name,
+            quality: '1080p HD Ao Vivo',
+            is4k: false,
+            isDub: true,
+            audio: 'Ao Vivo PT-BR',
+            seeds: null,
+            playType: 'hls',
+            directUrl: direct,
+            proxyUrl: direct
+          };
+          allTvStreams = [fallbackStream];
+          tvAddonResults[0].streams = [fallbackStream];
+          tvAddonResults[0].count = 1;
         }
+      }
 
         const tvBody = JSON.stringify({
           id: decodedId,
@@ -1432,8 +1432,8 @@ export default async (request) => {
       });
 
       const universalEmbedUrl = type === 'series'
-        ? `https://vidsrc.cc/v2/embed/tv/${baseImdb}/${epSeason}/${epNumber}`
-        : `https://vidsrc.cc/v2/embed/movie/${baseImdb}`;
+        ? `https://player.videasy.to/tv/${baseImdb}/${epSeason}/${epNumber}`
+        : `https://player.videasy.to/movie/${baseImdb}`;
 
       const sortStreamsUniversal = (a, b) => {
         const rank = (p) => (p === 'direct' ? 0 : p === 'hls' ? 1 : p === 'embed' ? 2 : 3);

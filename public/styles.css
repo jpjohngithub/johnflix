@@ -782,6 +782,14 @@ html, body {
   flex: none;
   width: 100%;
 }
+.media-card {
+  contain: content;
+  content-visibility: auto;
+  contain-intrinsic-size: 190px 285px;
+}
+.catalog-slider {
+  contain: layout style;
+}
 
 /* Details & Server Modal */
 .modal-backdrop {
