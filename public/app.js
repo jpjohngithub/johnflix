@@ -2853,7 +2853,7 @@
     el.serversModalList.innerHTML = `
       <div class="streams-loading">
         <div class="spinner-purple"></div>
-        <span>Verificando os 21 servidores...</span>
+        <span>Verificando os 23 servidores...</span>
       </div>
     `;
 

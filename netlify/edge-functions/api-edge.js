@@ -223,6 +223,28 @@ const MOVIE_ADDONS = [
     baseUrl: 'https://nightknight-cinema.onrender.com',
     logo: 'https://nightknight-cinema.onrender.com/icon.png',
     color: '#6366f1'
+  },
+  {
+    id: 'hyperstravo',
+    name: 'Hyper Stravo',
+    badge: 'CLOUD FAST',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://hyper.stravo.site/local/manifest.json',
+    baseUrl: 'https://hyper.stravo.site/local',
+    logo: 'https://hyper.stravo.site/favicon.ico',
+    color: '#0ea5e9'
+  },
+  {
+    id: 'funqpef',
+    name: 'FunStream Cloud',
+    badge: 'DIRECT HD',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://fun.qpef.workers.dev/manifest.json',
+    baseUrl: 'https://fun.qpef.workers.dev',
+    logo: 'https://fun.qpef.workers.dev/favicon.ico',
+    color: '#10b981'
   }
 ];
 
