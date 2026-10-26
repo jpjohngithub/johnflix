@@ -1143,6 +1143,25 @@
       return;
     }
 
+    const savedTvHidden = new Set(JSON.parse(localStorage.getItem('johnflix_hidden_tv_channels') || '[]'));
+    if (state.activeFilter === 'tv') {
+      const allTvItems = state.catalogRows.filter((r) => r.type === 'tv').flatMap((r) => r.items || []);
+      const totalCount = allTvItems.length;
+      const activeCount = allTvItems.filter((it) => !savedTvHidden.has(it.id)).length;
+
+      const tvBar = document.createElement('div');
+      tvBar.className = 'tv-manage-bar';
+      tvBar.innerHTML = `
+        <div class="tv-manage-title">
+          <span>Canais de TV Ativos:</span>
+          <span class="tv-manage-badge">${activeCount} de ${totalCount} disponíveis</span>
+        </div>
+        <button type="button" class="btn btn-sm btn-glass" id="tvSelectChannelsBtn">Selecionar Canais</button>
+      `;
+      tvBar.querySelector('#tvSelectChannelsBtn').addEventListener('click', openTvChannelPickerModal);
+      el.catalogContainer.appendChild(tvBar);
+    }
+
     let rows = state.catalogRows;
     if (state.activeFilter === 'all') {
       rows = rows.filter((r) => r.type !== 'tv');
@@ -1150,8 +1169,13 @@
       rows = rows.filter((r) => r.type === 'movie');
     } else if (state.activeFilter === 'series') {
       rows = rows.filter((r) => r.type === 'series');
+    } else if (state.activeFilter === 'youtube') {
+      rows = rows.filter((r) => r.type === 'channel' || r.category === 'youtube');
     } else if (state.activeFilter === 'tv') {
-      rows = rows.filter((r) => r.type === 'tv');
+      rows = rows.filter((r) => r.type === 'tv').map((r) => ({
+        ...r,
+        items: (r.items || []).filter((item) => !savedTvHidden.has(item.id))
+      })).filter((r) => r.items.length > 0);
     }
 
     if (isHomeView && state.activeHomeCategory && state.activeHomeCategory !== 'all') {
@@ -1168,6 +1192,7 @@
         <div class="row-header">
           <h2 class="row-title">${escapeHtml(row.title)}</h2>
           <div class="row-nav">
+            <button class="row-more-btn" data-rowid="${escapeHtml(row.id)}">Ver mais</button>
             <button class="row-nav-btn prev-btn" aria-label="Anterior">&#10094;</button>
             <button class="row-nav-btn next-btn" aria-label="Próximo">&#10095;</button>
           </div>
@@ -1176,6 +1201,10 @@
           <div class="row-slider"></div>
         </div>
       `;
+
+      rowEl.querySelector('.row-more-btn').addEventListener('click', () => {
+        openRowMoreGrid(row);
+      });
 
       const slider = rowEl.querySelector('.row-slider');
       row.items.forEach((item, idx) => {
@@ -1191,6 +1220,108 @@
 
       el.catalogContainer.appendChild(rowEl);
     });
+  }
+
+  function openRowMoreGrid(row) {
+    el.searchSection.classList.remove('hidden');
+    el.heroBanner.classList.add('hidden');
+    if (el.homeCategoryBar) el.homeCategoryBar.classList.add('hidden');
+    stopHeroTrailer();
+    el.continueWatchingRow.classList.add('hidden');
+    el.catalogContainer.classList.add('hidden');
+
+    el.searchTitle.innerHTML = `${escapeHtml(row.title)} <span class="search-count-pill">${(row.items || []).length} títulos</span>`;
+    const filterBar = document.getElementById('searchFilterBar');
+    if (filterBar) filterBar.innerHTML = '';
+
+    el.searchGrid.innerHTML = '';
+    (row.items || []).forEach((item) => {
+      el.searchGrid.appendChild(createMediaCard(item));
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function openTvChannelPickerModal() {
+    let picker = document.getElementById('tvChannelPickerModal');
+    if (!picker) {
+      picker = document.createElement('div');
+      picker.id = 'tvChannelPickerModal';
+      picker.className = 'modal-backdrop';
+      picker.innerHTML = `
+        <div class="modal-card" style="max-width: 600px; max-height: 85vh; display: flex; flex-direction: column;">
+          <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.08);">
+            <h3 style="font-size: 1.1rem; font-weight: 800; color: #fff;">Selecionar Canais de TV</h3>
+            <button id="closeTvPickerBtn" style="background:none;border:none;color:#fff;font-size:1.4rem;cursor:pointer;">&times;</button>
+          </div>
+          <div style="padding: 12px 20px; display: flex; gap: 8px;">
+            <input type="text" id="tvPickerSearch" placeholder="Buscar canal..." style="flex:1; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color:#fff; font-size:0.85rem;" />
+            <button id="tvPickerSelectAll" class="btn btn-sm btn-glass" style="font-size:0.75rem;">Todos</button>
+            <button id="tvPickerDeselectAll" class="btn btn-sm btn-glass" style="font-size:0.75rem;">Limpar</button>
+          </div>
+          <div id="tvPickerList" style="flex: 1; overflow-y: auto; padding: 10px 20px; display: flex; flex-direction: column; gap: 6px;"></div>
+          <div style="padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: flex-end; gap: 10px;">
+            <button id="tvPickerSaveBtn" class="btn btn-primary btn-sm">Salvar Preferências</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(picker);
+    }
+
+    const savedHidden = new Set(JSON.parse(localStorage.getItem('johnflix_hidden_tv_channels') || '[]'));
+    const allChannels = state.catalogRows.filter((r) => r.type === 'tv').flatMap((r) => r.items || []);
+    const uniqueChannels = [];
+    const seen = new Set();
+    allChannels.forEach((c) => {
+      if (!seen.has(c.id)) {
+        seen.add(c.id);
+        uniqueChannels.push(c);
+      }
+    });
+
+    const listEl = picker.querySelector('#tvPickerList');
+    const searchInput = picker.querySelector('#tvPickerSearch');
+
+    const renderList = (filter = '') => {
+      listEl.innerHTML = '';
+      const filtered = uniqueChannels.filter((c) => !filter || c.name.toLowerCase().includes(filter.toLowerCase()));
+      filtered.forEach((ch) => {
+        const isSelected = !savedHidden.has(ch.id);
+        const row = document.createElement('label');
+        row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.03);cursor:pointer;';
+        row.innerHTML = `
+          <input type="checkbox" data-cid="${escapeHtml(ch.id)}" ${isSelected ? 'checked' : ''} style="width:16px;height:16px;accent-color:var(--purple-bright);" />
+          <span style="font-size:0.86rem;color:#f1f5f9;flex:1;">${escapeHtml(ch.name)}</span>
+          <span style="font-size:0.7rem;color:#a855f7;font-weight:700;">${isSelected ? 'Ativo' : 'Oculto'}</span>
+        `;
+        row.querySelector('input').addEventListener('change', (e) => {
+          if (e.target.checked) savedHidden.delete(ch.id);
+          else savedHidden.add(ch.id);
+          row.querySelector('span:last-child').textContent = e.target.checked ? 'Ativo' : 'Oculto';
+        });
+        listEl.appendChild(row);
+      });
+    };
+
+    searchInput.oninput = (e) => renderList(e.target.value.trim());
+    picker.querySelector('#tvPickerSelectAll').onclick = () => {
+      savedHidden.clear();
+      renderList(searchInput.value.trim());
+    };
+    picker.querySelector('#tvPickerDeselectAll').onclick = () => {
+      uniqueChannels.forEach((c) => savedHidden.add(c.id));
+      renderList(searchInput.value.trim());
+    };
+    picker.querySelector('#closeTvPickerBtn').onclick = () => picker.classList.add('hidden');
+    picker.onclick = (e) => { if (e.target === picker) picker.classList.add('hidden'); };
+    picker.querySelector('#tvPickerSaveBtn').onclick = () => {
+      localStorage.setItem('johnflix_hidden_tv_channels', JSON.stringify(Array.from(savedHidden)));
+      picker.classList.add('hidden');
+      renderCatalogRows();
+      showToast('Lista de canais atualizada!');
+    };
+
+    renderList();
+    picker.classList.remove('hidden');
   }
 
   const SWIPE_GENRE_MAP = [
@@ -2367,10 +2498,11 @@
       all: allResults.length,
       movie: allResults.filter((i) => i.type === 'movie').length,
       series: allResults.filter((i) => i.type === 'series').length,
-      tv: allResults.filter((i) => i.type === 'tv').length
+      tv: allResults.filter((i) => i.type === 'tv').length,
+      channel: allResults.filter((i) => i.type === 'channel' || i.category === 'youtube').length
     };
 
-    const sFilter = state.searchTypeFilter || (['movie', 'series', 'tv'].includes(state.activeFilter) ? state.activeFilter : 'all');
+    const sFilter = state.searchTypeFilter || (['movie', 'series', 'tv', 'channel'].includes(state.activeFilter) ? state.activeFilter : 'all');
     let filtered = allResults;
     let tabLabel = 'Todos os resultados';
 
@@ -2383,30 +2515,63 @@
     } else if (sFilter === 'tv') {
       filtered = allResults.filter((i) => i.type === 'tv');
       tabLabel = 'Canais de TV';
+    } else if (sFilter === 'channel') {
+      filtered = allResults.filter((i) => i.type === 'channel' || i.category === 'youtube');
+      tabLabel = 'YouTube';
+    }
+
+    if (state.searchGenreFilter && state.searchGenreFilter !== 'all') {
+      filtered = filtered.filter((i) => {
+        const glist = (i.genres || []).map((g) => String(g).toLowerCase());
+        return glist.some((g) => g.includes(state.searchGenreFilter.toLowerCase()));
+      });
     }
 
     el.searchTitle.innerHTML = `${tabLabel} para <span class="search-query-highlight">"${escapeHtml(query)}"</span> <span class="search-count-pill">${filtered.length}</span>`;
 
     const filterBar = document.getElementById('searchFilterBar');
     if (filterBar) {
-      const pills = [
+      const typePills = [
         { id: 'all', label: 'Todos', count: counts.all },
         { id: 'movie', label: 'Filmes', count: counts.movie },
         { id: 'series', label: 'Séries', count: counts.series },
-        { id: 'tv', label: 'Canais de TV', count: counts.tv }
+        { id: 'tv', label: 'TV', count: counts.tv },
+        { id: 'channel', label: 'YouTube', count: counts.channel }
       ];
-      filterBar.innerHTML = pills
-        .map(
-          (p) =>
-            `<button type="button" class="search-filter-pill ${sFilter === p.id ? 'active' : ''}" data-sfilter="${p.id}">
-              <span>${p.label}</span>
-              <span class="sfilter-badge">${p.count}</span>
-            </button>`
-        )
-        .join('');
-      filterBar.querySelectorAll('.search-filter-pill').forEach((btn) => {
+      const genresList = ['Ação', 'Comédia', 'Drama', 'Ficção', 'Terror', 'Animação'];
+      const activeGenre = state.searchGenreFilter || 'all';
+
+      filterBar.innerHTML = `
+        <div style="display:flex;align-items:center;gap:6px;overflow-x:auto;scrollbar-width:none;width:100%;flex-wrap:wrap;">
+          ${typePills
+            .map(
+              (p) =>
+                `<button type="button" class="search-filter-pill ${sFilter === p.id ? 'active' : ''}" data-sfilter="${p.id}">
+                  <span>${p.label}</span>
+                  <span class="sfilter-badge">${p.count}</span>
+                </button>`
+            )
+            .join('')}
+          <div style="height:20px;width:1px;background:rgba(255,255,255,0.15);margin:0 4px;"></div>
+          ${genresList
+            .map(
+              (g) =>
+                `<button type="button" class="search-filter-pill ${activeGenre === g ? 'active' : ''}" data-sgenre="${g}" style="font-size:0.75rem;padding:5px 10px;">
+                  <span>${g}</span>
+                </button>`
+            )
+            .join('')}
+        </div>
+      `;
+      filterBar.querySelectorAll('[data-sfilter]').forEach((btn) => {
         btn.addEventListener('click', () => {
           state.searchTypeFilter = btn.dataset.sfilter;
+          renderFilteredSearchResults(query);
+        });
+      });
+      filterBar.querySelectorAll('[data-sgenre]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          state.searchGenreFilter = state.searchGenreFilter === btn.dataset.sgenre ? 'all' : btn.dataset.sgenre;
           renderFilteredSearchResults(query);
         });
       });
@@ -3136,6 +3301,31 @@
         tryNextWorkingStream(stream);
       }
     }, 6500);
+
+    // Subtitles auto-fetch via LegendasBR
+    Array.from(el.cloudVideo.querySelectorAll('track')).forEach((t) => t.remove());
+    if (state.currentItem && state.currentItem.id && String(state.currentItem.id).startsWith('tt') && stream.playType !== 'embed') {
+      const baseImdb = String(state.currentItem.id).split(':')[0];
+      const subTarget = state.currentItem.type === 'series'
+        ? `${baseImdb}:${state.currentSeason || 1}:${state.currentEpisode || 1}`
+        : baseImdb;
+      fetch(`/api/subtitles/${state.currentItem.type || 'movie'}/${encodeURIComponent(subTarget)}`)
+        .then((r) => r.json())
+        .then((d) => {
+          const subs = Array.isArray(d?.subtitles) ? d.subtitles : [];
+          subs.forEach((sub, sIdx) => {
+            if (!sub.url) return;
+            const track = document.createElement('track');
+            track.kind = 'subtitles';
+            track.label = sub.lang === 'pob' ? 'Português (BR)' : sub.lang === 'por' ? 'Português' : `Legenda ${sIdx + 1}`;
+            track.srclang = sub.lang || 'pt';
+            track.src = sub.url;
+            if (sIdx === 0) track.default = true;
+            el.cloudVideo.appendChild(track);
+          });
+        })
+        .catch(() => {});
+    }
 
     const startVideoPlayback = () => {
       el.cloudVideo.muted = false;

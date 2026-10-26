@@ -1,5 +1,38 @@
 const MOVIE_ADDONS = [
   {
+    id: 'hdhub',
+    name: 'HdHub 4K/FHD',
+    badge: '4K ULTRA',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://hdhub.thevolecitor.qzz.io/eyJ0b3Jib3giOiJ1bnNldCIsInF1YWxpdGllcyI6IjIxNjBwLDEwODBwLDcyMHAiLCJzb3J0IjoiZGVzYyJ9/manifest.json',
+    baseUrl: 'https://hdhub.thevolecitor.qzz.io/eyJ0b3Jib3giOiJ1bnNldCIsInF1YWxpdGllcyI6IjIxNjBwLDEwODBwLDcyMHAiLCJzb3J0IjoiZGVzYyJ9',
+    logo: 'https://hdhub.thevolecitor.qzz.io/logo.png',
+    color: '#38bdf8'
+  },
+  {
+    id: 'orangebyte',
+    name: 'Curated Trending',
+    badge: 'TMDB TOP',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://trending.orangebyte.io/manifest.json',
+    baseUrl: 'https://trending.orangebyte.io',
+    logo: 'https://trending.orangebyte.io/apple-touch-icon.png',
+    color: '#f97316'
+  },
+  {
+    id: 'cinetorrent',
+    name: 'CineTorrent BR',
+    badge: 'TORRENT BR',
+    type: 'p2p',
+    category: 'movie_series',
+    manifestUrl: 'https://150203dd784e-cinetorrent-addon.baby-beamup.club/manifest.json',
+    baseUrl: 'https://150203dd784e-cinetorrent-addon.baby-beamup.club',
+    logo: 'https://i.ibb.co/RDtR0q0/Logo.jpg',
+    color: '#eab308'
+  },
+  {
     id: 'bestcine',
     name: 'BestCine',
     badge: '4K & FHD',
@@ -713,6 +746,8 @@ export default async (request) => {
       if (cachedCat) return new Response(cachedCat, { status: 200, headers });
 
       const sources = [
+        { id: 'orangebyte_movies', title: 'Filmes Mais Assistidos do Dia', type: 'movie', category: 'trending', url: 'https://trending.orangebyte.io/catalog/movie/daily-trending-movies.json', limit: 40 },
+        { id: 'orangebyte_series', title: 'Séries Mais Assistidas do Dia', type: 'series', category: 'trending', url: 'https://trending.orangebyte.io/catalog/series/daily-trending-series.json', limit: 40 },
         { id: 'fenix_movies_pop', title: 'Em Alta Hoje', type: 'movie', category: 'trending', url: 'https://fenixflix.fenixhub.online/catalog/movie/populares_fenix.json', limit: 36 },
         { id: 'magnet_movies_pop', title: 'Destaques Magnetflix Dublado', type: 'movie', category: 'trending', url: 'https://magnetflix.flixbr.online/qualities%3D4k%2C1080p%2C720p%2Csd%7Caudio%3Ddublado%2Clegendado%7Ccatalogs%3Dpopulares_movie%2Cpopulares_series%2Crecentes_servidor_movie%2Crecentes_servidor_series%2Cemalta_movie%2Cemalta_series/catalog/movie/populares_magnetbr.json', limit: 36 },
         { id: 'cinemeta_top_movies', title: 'Sucessos de Bilheteria', type: 'movie', category: 'trending', url: 'https://v3-cinemeta.strem.io/catalog/movie/top.json', limit: 36 },
@@ -955,8 +990,27 @@ export default async (request) => {
       rows.length = 0;
       rows.push(...topFirst, ...interleaved, ...tvRows);
       const validRows = rows.filter((r) => r.items.length > 0);
+
+      // YouTube Row for Home View
+      const ytItems = [
+        { id: 'yt:mrbeast', name: 'MrBeast', type: 'channel', ytId: 'UCX6OQ3DkcsbYNE6H8uQQuVA', poster: 'https://yt3.googleusercontent.com/fxGKYucJAVme-YzgnKiYGasPuvYXcmqOIXriGdgHPku0o_pnW0JaW ведущий?f=1', year: 'YouTube', imdbRating: '300M+', description: 'Desafios épicos e vídeos virais milionários.', category: 'youtube' },
+        { id: 'yt:nostalgia', name: 'Canal Nostalgia', type: 'channel', ytId: 'UCbba9T4Dcxk_8Zl7aQxM3iA', poster: 'https://yt3.googleusercontent.com/ytc/AIdro_k6_U2VqF7w0B7B9k9m0', year: 'YouTube', imdbRating: '13M+', description: 'História, cinema, ciência e documentários por Felipe Castanhari.', category: 'youtube' },
+        { id: 'yt:alanzoka', name: 'Alanzoka', type: 'channel', ytId: 'UCg4Hq42-QY32w92a7oT_07w', poster: 'https://yt3.googleusercontent.com/ytc/AIdro_k_alanzoka', year: 'YouTube', imdbRating: 'Gaming', description: 'Gameplays, sustos e melhores momentos de jogos.', category: 'youtube' },
+        { id: 'yt:casimito', name: 'Cortes do Casimito', type: 'channel', ytId: 'UCpjyfPq0xPzK2_G80M', year: 'YouTube', imdbRating: 'React', poster: 'https://yt3.googleusercontent.com/ytc/AIdro_casimito', description: 'Reacts, futebol e muito entretenimento.', category: 'youtube' },
+        { id: 'yt:flow', name: 'Flow Podcast', type: 'channel', ytId: 'UC4ncvgh5hFr5O83MH7-jRJg', poster: 'https://yt3.googleusercontent.com/ytc/AIdro_flow', year: 'YouTube', imdbRating: 'Podcast', description: 'Entrevistas e conversas sem filtro.', category: 'youtube' },
+        { id: 'yt:pewdiepie', name: 'PewDiePie', type: 'channel', ytId: 'UC-lHJZR3Gqxm24_Vd_AJ5Yw', poster: 'https://yt3.googleusercontent.com/ytc/AIdro_pewdiepie', year: 'YouTube', imdbRating: '111M+', description: 'O criador mais emblemático do YouTube global.', category: 'youtube' },
+        { id: 'yt:markiplier', name: 'Markiplier', type: 'channel', ytId: 'UC7_YxT-hzdPBtcWhtG5CE-Q', poster: 'https://yt3.googleusercontent.com/ytc/AIdro_markiplier', year: 'YouTube', imdbRating: 'Gaming', description: 'Jogos de terror e produções cinematográficas.', category: 'youtube' }
+      ];
+      validRows.push({
+        id: 'youtube_featured',
+        title: 'Canais em Destaque do YouTube',
+        type: 'channel',
+        category: 'youtube',
+        items: ytItems
+      });
+
       const bodyStr = JSON.stringify({ rows: validRows, catalogs: validRows, addons: ADDONS, tvAddons: TV_ADDONS, movieAddons: MOVIE_ADDONS });
-      if (validRows.length > 0) setEdgeCache('catalogs:v12', bodyStr, 300);
+      if (validRows.length > 0) setEdgeCache('catalogs:v13', bodyStr, 300);
       return new Response(bodyStr, { status: 200, headers });
     }
 
@@ -1117,6 +1171,20 @@ export default async (request) => {
 
       const sorted = Array.from(byKey.values()).sort((a, b) => scoreItem(b) - scoreItem(a));
       return new Response(JSON.stringify({ query, results: sorted.slice(0, 48) }), { status: 200, headers });
+    }
+
+    // === SUBTITLES ENDPOINT (LegendasBR) ===
+    if (rawPath.startsWith('/api/subtitles/')) {
+      const parts = rawPath.replace('/api/subtitles/', '').split('/');
+      const subType = parts[0] || 'movie';
+      const subId = parts[1] || '';
+      try {
+        const legRes = await fetchJson(`https://legendas.legendasbr.site/subtitles/${encodeURIComponent(subType)}/${encodeURIComponent(subId)}.json`, 3000);
+        const list = Array.isArray(legRes?.subtitles) ? legRes.subtitles : [];
+        return new Response(JSON.stringify({ subtitles: list }), { status: 200, headers });
+      } catch (e) {
+        return new Response(JSON.stringify({ subtitles: [] }), { status: 200, headers });
+      }
     }
 
     const metaMatch = rawPath.match(/^\/api\/meta\/(movie|series|tv)\/([^/]+)$/);
