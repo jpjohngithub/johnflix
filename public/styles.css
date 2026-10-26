@@ -4097,76 +4097,90 @@ html, body {
   transition: opacity .5s ease, transform .5s cubic-bezier(.22,1,.36,1);
 }
 
-/* Cinema Minimal Default Mode (`trailer-focus`): starts clean; expands on "Informações a mais" */
-.hero.trailer-focus .hero-desc {
-  opacity: 0;
-  max-height: 0;
-  margin-bottom: 0;
-  pointer-events: none;
+/* Cinema Minimal Default Mode (`trailer-focus`): starts ultra-clean; expands on "Informações a mais" */
+.hero.trailer-focus .hero-meta,
+.hero.trailer-focus .hero-desc,
+.hero.trailer-focus #heroBookmarkBtn,
+.hero.trailer-focus #heroPlaylistBtn {
+  opacity: 0 !important;
+  max-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 0 !important;
+  border: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+.hero.trailer-focus .hero-brand-wrap {
+  min-height: 44px;
+  margin-bottom: 10px;
 }
 .hero.trailer-focus .hero-logo {
-  transform: scale(0.84);
-  transform-origin: left bottom;
+  max-width: 240px;
+  max-height: 76px;
 }
 .hero.trailer-focus .hero-title {
-  font-size: clamp(1.85rem, 3vw, 2.7rem);
+  font-size: clamp(1.55rem, 2.5vw, 2.2rem);
 }
-.hero.trailer-focus .hero-content {
-  opacity: 0.92;
+.hero.trailer-focus .btn-hero-play,
+.hero.trailer-focus .btn-hero-info {
+  height: 40px;
+  padding: 0 18px;
+  font-size: .85rem;
+  border-radius: 8px;
 }
+.hero.trailer-focus .hero-actions {
+  gap: 8px;
+}
+.hero-meta,
 .hero-desc {
   max-height: 110px;
-  transition: opacity .45s ease, max-height .45s ease, margin .45s ease;
+  transition: opacity .35s ease, max-height .35s ease, margin .35s ease;
 }
-.hero-logo, .hero-title {
-  transition: transform .45s cubic-bezier(.22,1,.36,1), font-size .45s ease;
+.hero-logo, .hero-title, .btn-hero-play, .btn-hero-info {
+  transition: all .35s cubic-bezier(.22,1,.36,1);
 }
 
 /* Interactive Recommendations Dock on the right of Hero */
 .hero-recs-dock {
-  flex: 0 1 auto;
-  background: rgba(11, 7, 22, 0.72);
+  flex: 0 0 auto;
+  width: 540px;
+  max-width: 50vw;
+  background: rgba(11, 7, 22, 0.76);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(168, 85, 247, 0.24);
-  border-radius: 18px;
-  padding: 14px 16px 16px;
-  box-shadow: 0 22px 55px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  transition: all .35s cubic-bezier(.22,1,.36,1);
+  border-radius: 16px;
+  padding: 12px 14px 14px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition: width .3s ease, padding .3s ease, background .3s ease, border-radius .3s ease;
 }
 .hero.trailer-focus .hero-recs-dock {
-  flex: 0 0 auto;
-  width: auto;
-  max-width: 100%;
-  background: rgba(11, 7, 22, 0.65);
-  border-color: rgba(255, 255, 255, 0.12);
+  width: max-content !important;
+  max-width: 100% !important;
+  background: rgba(11, 7, 22, 0.62);
+  border-color: rgba(255, 255, 255, 0.14);
   border-radius: 999px;
-  padding: 5px 10px;
+  padding: 5px 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 .hero.trailer-focus .hero-recs-head {
   margin-bottom: 0;
-  gap: 8px;
+  gap: 6px;
+  justify-content: center;
 }
-.hero.trailer-focus .hero-recs-title-group {
-  margin-right: 2px;
-}
-.hero.trailer-focus .hero-recs-kicker {
-  display: none;
+.hero.trailer-focus .hero-recs-title-group,
+.hero.trailer-focus .hero-age-chip {
+  display: none !important;
 }
 .hero.trailer-focus .hero-indicators {
-  max-height: 0 !important;
-  opacity: 0;
-  padding: 0 !important;
-  margin: 0 !important;
-  pointer-events: none;
-  overflow: hidden;
+  display: none !important;
 }
 
 .hero-recs-head {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 10px;
   margin-bottom: 12px;
 }
