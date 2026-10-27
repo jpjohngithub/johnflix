@@ -3027,6 +3027,11 @@
       state.currentStreams = data.streams || [];
       el.streamCounter.textContent = state.currentStreams.length;
 
+      if (state.activeAddonFilter !== 'all') {
+        const hasMatching = state.currentStreams.some((s) => s.addonId === state.activeAddonFilter);
+        if (!hasMatching) state.activeAddonFilter = 'all';
+      }
+
       renderAddonFilterTabs(data.servers || []);
       renderStreamsList();
 
@@ -3041,6 +3046,58 @@
     } catch (err) {
       if (currentLoadTargetId !== targetId) return;
       el.streamsLoading.classList.add('hidden');
+      const baseImdb = String(targetId).split(':')[0];
+      if (baseImdb.startsWith('tt')) {
+        const isSeries = type === 'series';
+        const parts = String(targetId).split(':');
+        const s = parts[1] || '1';
+        const e = parts[2] || '1';
+        const emergencyStreams = [
+          {
+            addonId: 'universal_cloud',
+            addonName: 'Cloud Universal',
+            addonBadge: 'CLOUD VIP',
+            addonColor: '#a855f7',
+            serverLabel: 'Videasy • Universal Cloud #1',
+            quality: '1080p Full HD',
+            audio: 'Multi-Áudio / Dublado',
+            playType: 'embed',
+            proxyUrl: isSeries ? `https://player.videasy.to/tv/${baseImdb}/${s}/${e}` : `https://player.videasy.to/movie/${baseImdb}`
+          },
+          {
+            addonId: 'universal_cloud',
+            addonName: 'Cloud Universal',
+            addonBadge: 'CLOUD VIP',
+            addonColor: '#a855f7',
+            serverLabel: 'AutoEmbed • Fast Cloud #2',
+            quality: '1080p Full HD',
+            audio: 'Multi-Áudio / Dublado',
+            playType: 'embed',
+            proxyUrl: isSeries ? `https://player.autoembed.cc/embed/tv/${baseImdb}/${s}/${e}` : `https://player.autoembed.cc/embed/movie/${baseImdb}`
+          },
+          {
+            addonId: 'universal_cloud',
+            addonName: 'Cloud Universal',
+            addonBadge: 'CLOUD VIP',
+            addonColor: '#a855f7',
+            serverLabel: 'VidSrc BR • Multiserver #3',
+            quality: '1080p Full HD',
+            audio: 'Multi-Áudio / Dublado',
+            playType: 'embed',
+            proxyUrl: isSeries ? `https://vidsrc.sh/embed/tv?imdb=${baseImdb}&season=${s}&episode=${e}&ds_lang=pt` : `https://vidsrc.sh/embed/movie?imdb=${baseImdb}&ds_lang=pt`
+          }
+        ];
+        state.currentStreams = emergencyStreams;
+        state.activeAddonFilter = 'all';
+        el.streamCounter.textContent = emergencyStreams.length;
+        renderAddonFilterTabs([{ addonId: 'universal_cloud', addonName: 'Cloud Universal', count: emergencyStreams.length }]);
+        renderStreamsList();
+        if (autoPlayFirst || state.pendingAutoPlay) {
+          state.pendingAutoPlay = false;
+          launchCloudPlayer(emergencyStreams[0]);
+        }
+        return;
+      }
       el.streamsList.innerHTML = `<p style="color:#f87171;">Erro ao carregar fontes.</p>`;
       if (autoPlayFirst || state.pendingAutoPlay) {
         state.pendingAutoPlay = false;

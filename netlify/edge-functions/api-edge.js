@@ -136,17 +136,6 @@ const MOVIE_ADDONS = [
     color: '#e11d48'
   },
   {
-    id: 'plaviohd',
-    name: 'PlavioHD 4K',
-    badge: '4K HDR',
-    type: 'direct',
-    category: 'movie_series',
-    manifestUrl: 'https://hd.plavio.site/manifest.json',
-    baseUrl: 'https://hd.plavio.site',
-    logo: 'https://hd.plavio.site/logo.png',
-    color: '#3b82f6'
-  },
-  {
     id: 'debridbr',
     name: 'DebridBR',
     badge: 'CLOUD BR',
@@ -167,17 +156,6 @@ const MOVIE_ADDONS = [
     baseUrl: 'https://pleiadesstream.duckdns.org/addon/pleiades',
     logo: 'https://pleiadesstream.duckdns.org/addon/pleiades/logo.png',
     color: '#8b5cf6'
-  },
-  {
-    id: 'nightknight',
-    name: 'NightKnight Cinema',
-    badge: 'HUB GLOBAL',
-    type: 'direct',
-    category: 'movie_series',
-    manifestUrl: 'https://nightknight-cinema.onrender.com/manifest.json',
-    baseUrl: 'https://nightknight-cinema.onrender.com',
-    logo: 'https://nightknight-cinema.onrender.com/icon.png',
-    color: '#6366f1'
   },
   {
     id: 'hyperstravo',
@@ -225,17 +203,6 @@ const TV_ADDONS = [
     baseUrl: 'https://stremio-addon.ehtudo.app',
     logo: 'https://stremio-addon.ehtudo.app/logo-small-256x256.png',
     color: '#22c55e'
-  },
-  {
-    id: 'plaviotv',
-    name: 'PlavioHD Live TV',
-    badge: 'ESPORTES HD',
-    type: 'tv',
-    category: 'tv',
-    manifestUrl: 'https://hd.plavio.site/manifest.json',
-    baseUrl: 'https://hd.plavio.site',
-    logo: 'https://hd.plavio.site/logo.png',
-    color: '#3b82f6'
   }
 ];
 
@@ -1261,13 +1228,10 @@ export default async (request) => {
       }
       if (type === 'tv') {
         let rawTvStreams = [];
-        const tvStreamResponses = await Promise.all([
-          fetchJson(`https://fenixtv.fenixhub.online/stream/tv/${encodedId}.json`, 3200).catch(() => null),
-          fetchJson(`https://hd.plavio.site/stream/tv/${encodedId}.json`, 3200).catch(() => null)
-        ]);
-        for (const d of tvStreamResponses) {
-          if (Array.isArray(d?.streams)) rawTvStreams.push(...d.streams);
-        }
+        try {
+          const fenixTvData = await fetchJson(`https://fenixtv.fenixhub.online/stream/tv/${encodedId}.json`, 2500);
+          if (Array.isArray(fenixTvData?.streams)) rawTvStreams.push(...fenixTvData.streams);
+        } catch (e) {}
 
         // Check for direct high-availability feeds for major channels (SBT, Globo, Discovery)
         if (/sbt/i.test(decodedId)) {
@@ -1455,26 +1419,33 @@ export default async (request) => {
         MOVIE_ADDONS.map(async (addon) => {
           if (addon.id === 'superflix') {
             const tmdbId = await tmdbPromise;
-            if (!tmdbId) return { addon, rawStreams: [] };
             const isSeries = type === 'series';
-            const sEmbed = isSeries
-              ? 'https://superflixapi.fun/serie/' + tmdbId + '/' + epSeason + '/' + epNumber + '#noBackground#noEpList#noLink'
-              : 'https://superflixapi.fun/filme/' + tmdbId + '#noBackground#noLink';
-            const vidsrcPt = isSeries
-              ? 'https://vidsrc.sh/embed/tv?tmdb=' + tmdbId + '&season=' + epSeason + '&episode=' + epNumber + '&ds_lang=pt'
-              : 'https://vidsrc.sh/embed/movie?tmdb=' + tmdbId + '&ds_lang=pt';
-            const autoEmbed = isSeries
-              ? 'https://player.autoembed.cc/embed/tv/' + tmdbId + '/' + epSeason + '/' + epNumber
-              : 'https://player.autoembed.cc/embed/movie/' + tmdbId;
-            const videasyEmbed = isSeries
-              ? 'https://player.videasy.to/tv/' + baseImdb + '/' + epSeason + '/' + epNumber
-              : 'https://player.videasy.to/movie/' + baseImdb;
-            const raw = [
-              {
+            const raw = [];
+            if (tmdbId) {
+              const sEmbed = isSeries
+                ? 'https://superflixapi.fun/serie/' + tmdbId + '/' + epSeason + '/' + epNumber + '#noBackground#noEpList#noLink'
+                : 'https://superflixapi.fun/filme/' + tmdbId + '#noBackground#noLink';
+              raw.push({
                 name: 'SuperFlix • Dublado Principal',
                 title: '🇧🇷 Servidor Dublado Oficial (SuperFlix)',
                 embedUrl: sEmbed
-              },
+              });
+            }
+            const vidsrcPt = isSeries
+              ? (tmdbId
+                  ? 'https://vidsrc.sh/embed/tv?tmdb=' + tmdbId + '&season=' + epSeason + '&episode=' + epNumber + '&ds_lang=pt'
+                  : 'https://vidsrc.sh/embed/tv?imdb=' + baseImdb + '&season=' + epSeason + '&episode=' + epNumber + '&ds_lang=pt')
+              : (tmdbId
+                  ? 'https://vidsrc.sh/embed/movie?tmdb=' + tmdbId + '&ds_lang=pt'
+                  : 'https://vidsrc.sh/embed/movie?imdb=' + baseImdb + '&ds_lang=pt');
+            const autoEmbed = isSeries
+              ? 'https://player.autoembed.cc/embed/tv/' + (tmdbId || baseImdb) + '/' + epSeason + '/' + epNumber
+              : 'https://player.autoembed.cc/embed/movie/' + (tmdbId || baseImdb);
+            const videasyEmbed = isSeries
+              ? 'https://player.videasy.to/tv/' + baseImdb + '/' + epSeason + '/' + epNumber
+              : 'https://player.videasy.to/movie/' + baseImdb;
+
+            raw.push(
               {
                 name: 'VidSrc BR • Multiserver Alternativo',
                 title: '🇧🇷 Servidor Brasil Multiserver (VidSrc)',
@@ -1490,7 +1461,7 @@ export default async (request) => {
                 title: '🎬 Player Universal Multilingue (Videasy)',
                 embedUrl: videasyEmbed
               }
-            ];
+            );
             return { addon, rawStreams: raw };
           }
           if (addon.id === 'framextv') {
@@ -1499,13 +1470,13 @@ export default async (request) => {
             return { addon, rawStreams: fxStreams };
           }
 
-          const primaryPromise = fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 4800)
+          const primaryPromise = fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 3200)
             .then((d) => (Array.isArray(d?.streams) && d.streams.length > 0 ? d.streams : Promise.reject(new Error('empty'))));
 
           const tasks = [primaryPromise];
           if (addon.fallbackUrl) {
             tasks.push(
-              fetchJson(`${addon.fallbackUrl}/stream/${type}/${encodedId}.json`, 4800)
+              fetchJson(`${addon.fallbackUrl}/stream/${type}/${encodedId}.json`, 3200)
                 .then((d) => (Array.isArray(d?.streams) && d.streams.length > 0 ? d.streams : Promise.reject(new Error('empty'))))
             );
           }
@@ -1597,8 +1568,59 @@ export default async (request) => {
         })
         .filter(Boolean);
 
-      const allStreams = addonResults.flatMap((r) => r.streams);
+      let allStreams = addonResults.flatMap((r) => r.streams);
       allStreams.sort(sortStreamsUniversal);
+
+      if (allStreams.length === 0 && baseImdb) {
+        const isSeries = type === 'series';
+        const fallbackList = [
+          {
+            serverLabel: 'Videasy • Universal Cloud #1',
+            quality: '1080p Full HD',
+            audio: 'Multi-Áudio / Dublado',
+            playType: 'embed',
+            proxyUrl: isSeries ? `https://player.videasy.to/tv/${baseImdb}/${epSeason}/${epNumber}` : `https://player.videasy.to/movie/${baseImdb}`
+          },
+          {
+            serverLabel: 'AutoEmbed • Fast Cloud #2',
+            quality: '1080p Full HD',
+            audio: 'Multi-Áudio / Dublado',
+            playType: 'embed',
+            proxyUrl: isSeries ? `https://player.autoembed.cc/embed/tv/${baseImdb}/${epSeason}/${epNumber}` : `https://player.autoembed.cc/embed/movie/${baseImdb}`
+          },
+          {
+            serverLabel: 'VidSrc BR • Multiserver #3',
+            quality: '1080p Full HD',
+            audio: 'Multi-Áudio / Dublado',
+            playType: 'embed',
+            proxyUrl: isSeries ? `https://vidsrc.sh/embed/tv?imdb=${baseImdb}&season=${epSeason}&episode=${epNumber}&ds_lang=pt` : `https://vidsrc.sh/embed/movie?imdb=${baseImdb}&ds_lang=pt`
+          }
+        ].map((s) => ({
+          addonId: 'universal_cloud',
+          addonName: 'Cloud Universal',
+          addonBadge: 'CLOUD VIP',
+          addonColor: '#a855f7',
+          rawName: 'Cloud Universal',
+          rawTitle: s.serverLabel,
+          is4k: false,
+          isDub: true,
+          seeds: null,
+          directUrl: null,
+          embedUrl: s.proxyUrl,
+          ...s
+        }));
+
+        allStreams = fallbackList;
+        addonResults.push({
+          addonId: 'universal_cloud',
+          addonName: 'Cloud Universal',
+          badge: 'CLOUD VIP',
+          color: '#a855f7',
+          isEnglishOnly: false,
+          count: fallbackList.length,
+          streams: fallbackList
+        });
+      }
 
       const bodyStr = JSON.stringify({
         id: decodedId,
