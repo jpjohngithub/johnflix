@@ -538,6 +538,17 @@ function normalizeStream(rawStream, addon, fallbackDirectUrls = [], idx = 0, eng
 }
 
 const edgeCache = new Map();
+const COMMUNITY_SUGGESTIONS = [
+  {
+    id: 'sug_init_1',
+    author: 'Equipe JohnFlix',
+    text: 'Seja bem-vindo ao Mural de Sugestões! Digite qualquer filme, série, canal ou melhoria que gostaria de ver no site.',
+    category: 'geral',
+    createdAt: Date.now() - 3600000,
+    likes: 12
+  }
+];
+const NTFY_TOPIC = 'https://ntfy.sh/johnflix_sugestoes_publicas_2026';
 function getEdgeCache(key) {
   const entry = edgeCache.get(key);
   if (entry && entry.exp > Date.now()) return entry.val;
@@ -753,6 +764,101 @@ export default async (request) => {
   const rawPath = url.pathname;
 
   try {
+    if (rawPath === '/api/suggestions') {
+      const sugHeaders = {
+        ...headers,
+        'Cache-Control': 'no-cache, no-store, must-revalidate'
+      };
+
+      if (request.method === 'POST') {
+        try {
+          const body = await request.json();
+          const cleanText = String(body.text || '').trim().replace(/[<>]/g, '');
+          if (!cleanText || cleanText.length < 2) {
+            return new Response(JSON.stringify({ error: 'Texto muito curto' }), { status: 400, headers: sugHeaders });
+          }
+          const cleanAuthor = String(body.author || 'Anônimo').trim().replace(/[<>]/g, '').slice(0, 30) || 'Anônimo';
+          const cleanCategory = String(body.category || 'geral').trim().toLowerCase().slice(0, 20);
+
+          const newItem = {
+            id: 'sug_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+            author: cleanAuthor,
+            text: cleanText.slice(0, 300),
+            category: cleanCategory,
+            createdAt: Date.now(),
+            likes: 0
+          };
+
+          COMMUNITY_SUGGESTIONS.unshift(newItem);
+          if (COMMUNITY_SUGGESTIONS.length > 100) COMMUNITY_SUGGESTIONS.pop();
+
+          fetch(NTFY_TOPIC, {
+            method: 'POST',
+            headers: { 'Title': 'Sugestão JohnFlix' },
+            body: JSON.stringify(newItem)
+          }).catch(() => {});
+
+          return new Response(JSON.stringify({ success: true, item: newItem, suggestions: COMMUNITY_SUGGESTIONS }), {
+            status: 201,
+            headers: sugHeaders
+          });
+        } catch (e) {
+          return new Response(JSON.stringify({ error: 'Erro ao processar sugestão' }), { status: 400, headers: sugHeaders });
+        }
+      }
+
+      let fetchedRemote = [];
+      try {
+        const ctrl = new AbortController();
+        const tm = setTimeout(() => ctrl.abort(), 2000);
+        const res = await fetch(`${NTFY_TOPIC}/json?poll=1`, { signal: ctrl.signal });
+        clearTimeout(tm);
+        if (res.ok) {
+          const rawText = await res.text();
+          const lines = rawText.trim().split(/\r?\n/);
+          for (const line of lines) {
+            try {
+              const msgObj = JSON.parse(line);
+              if (msgObj.message) {
+                const parsed = JSON.parse(msgObj.message);
+                if (parsed && parsed.id && parsed.text) {
+                  fetchedRemote.push(parsed);
+                }
+              }
+            } catch (_) {}
+          }
+        }
+      } catch (_) {}
+
+      const map = new Map();
+      COMMUNITY_SUGGESTIONS.forEach((s) => map.set(s.id, s));
+      fetchedRemote.forEach((s) => {
+        if (!map.has(s.id)) {
+          map.set(s.id, s);
+          COMMUNITY_SUGGESTIONS.push(s);
+        }
+      });
+
+      const all = Array.from(map.values()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 100);
+      return new Response(JSON.stringify({ suggestions: all }), { status: 200, headers: sugHeaders });
+    }
+
+    if (rawPath === '/api/suggestions/like' && request.method === 'POST') {
+      const sugHeaders = { ...headers, 'Cache-Control': 'no-cache, no-store, must-revalidate' };
+      try {
+        const body = await request.json();
+        const targetId = body.id;
+        const target = COMMUNITY_SUGGESTIONS.find((s) => s.id === targetId);
+        if (target) {
+          target.likes = (target.likes || 0) + 1;
+          return new Response(JSON.stringify({ success: true, id: targetId, likes: target.likes }), { status: 200, headers: sugHeaders });
+        }
+        return new Response(JSON.stringify({ success: true, id: targetId, likes: 1 }), { status: 200, headers: sugHeaders });
+      } catch (e) {
+        return new Response(JSON.stringify({ error: 'Erro ao votar' }), { status: 400, headers: sugHeaders });
+      }
+    }
+
     if (rawPath === '/api/addons') {
       if (url.searchParams.get('ping') === '1') {
         const statuses = await Promise.all(

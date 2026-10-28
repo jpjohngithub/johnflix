@@ -39,7 +39,10 @@
     activeLoopPlaylistId: null,
     activeLoopIndex: 0,
     isVaultMode: false,
-    normalCatalogBackup: null
+    normalCatalogBackup: null,
+    suggestions: [],
+    suggestionsFilter: 'all',
+    likedSuggestions: new Set(JSON.parse(localStorage.getItem('johnflix_liked_sug') || '[]'))
   };
 
   // DOM Elements
@@ -139,6 +142,22 @@
     serversModal: document.getElementById('serversModal'),
     closeServersModalBtn: document.getElementById('closeServersModalBtn'),
     serversModalList: document.getElementById('serversModalList'),
+    openSuggestionsBtn: document.getElementById('openSuggestionsBtn'),
+    heroSuggestBtn: document.getElementById('heroSuggestBtn'),
+    bannerSuggestionsBtn: document.getElementById('bannerSuggestionsBtn'),
+    footerSuggestionsBtn: document.getElementById('footerSuggestionsBtn'),
+    suggestionsModal: document.getElementById('suggestionsModal'),
+    closeSuggestionsModalBtn: document.getElementById('closeSuggestionsModalBtn'),
+    suggestionForm: document.getElementById('suggestionForm'),
+    suggestionAuthorInput: document.getElementById('suggestionAuthorInput'),
+    suggestionCategorySelect: document.getElementById('suggestionCategorySelect'),
+    suggestionTextInput: document.getElementById('suggestionTextInput'),
+    suggestionCharCount: document.getElementById('suggestionCharCount'),
+    submitSuggestionBtn: document.getElementById('submitSuggestionBtn'),
+    suggestionsFilterPills: document.getElementById('suggestionsFilterPills'),
+    refreshSuggestionsBtn: document.getElementById('refreshSuggestionsBtn'),
+    suggestionsList: document.getElementById('suggestionsList'),
+    homeSuggestionsBar: document.getElementById('homeSuggestionsBar'),
     toast: document.getElementById('toastNotification')
   };
 
@@ -494,6 +513,41 @@
       });
     }
 
+    // Community Suggestions
+    if (el.openSuggestionsBtn) el.openSuggestionsBtn.addEventListener('click', openSuggestionsModal);
+    if (el.heroSuggestBtn) el.heroSuggestBtn.addEventListener('click', openSuggestionsModal);
+    if (el.bannerSuggestionsBtn) el.bannerSuggestionsBtn.addEventListener('click', openSuggestionsModal);
+    if (el.footerSuggestionsBtn) el.footerSuggestionsBtn.addEventListener('click', openSuggestionsModal);
+    if (el.closeSuggestionsModalBtn) el.closeSuggestionsModalBtn.addEventListener('click', closeSuggestionsModal);
+    if (el.suggestionsModal) {
+      el.suggestionsModal.addEventListener('click', (e) => {
+        if (e.target === el.suggestionsModal) closeSuggestionsModal();
+      });
+    }
+    if (el.suggestionForm) el.suggestionForm.addEventListener('submit', handleSuggestionSubmit);
+    if (el.suggestionTextInput && el.suggestionCharCount) {
+      el.suggestionTextInput.addEventListener('input', () => {
+        const len = el.suggestionTextInput.value.length;
+        el.suggestionCharCount.textContent = `${len} / 300`;
+      });
+    }
+    if (el.suggestionsFilterPills) {
+      el.suggestionsFilterPills.addEventListener('click', (e) => {
+        const btn = e.target.closest('.sug-pill');
+        if (!btn) return;
+        el.suggestionsFilterPills.querySelectorAll('.sug-pill').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.suggestionsFilter = btn.dataset.sugFilter || 'all';
+        renderSuggestionsFeed();
+      });
+    }
+    if (el.refreshSuggestionsBtn) {
+      el.refreshSuggestionsBtn.addEventListener('click', () => {
+        loadSuggestions();
+        showToast('Atualizando mural de sugestões...');
+      });
+    }
+
     // Player controls
     el.closePlayerBtn.addEventListener('click', stopAndClosePlayer);
     el.switchServerBtn.addEventListener('click', (e) => {
@@ -600,6 +654,8 @@
           stopAndClosePlayer();
         } else if (el.serversModal && !el.serversModal.classList.contains('hidden')) {
           el.serversModal.classList.add('hidden');
+        } else if (el.suggestionsModal && !el.suggestionsModal.classList.contains('hidden')) {
+          closeSuggestionsModal();
         } else if (!el.playlistModal.classList.contains('hidden')) {
           el.playlistModal.classList.add('hidden');
         } else if (!el.detailsModal.classList.contains('hidden')) {
@@ -1139,6 +1195,10 @@
       el.heroBanner.classList.remove('hero-expanding', 'hero-collapsing');
       el.heroBanner.classList.add('hidden');
       stopHeroTrailer();
+    }
+
+    if (el.homeSuggestionsBar) {
+      el.homeSuggestionsBar.classList.toggle('hidden', !isAllTab);
     }
 
     const mainContentEl = document.getElementById('mainContent');
@@ -3205,6 +3265,192 @@
       });
     } catch (e) {
       el.serversModalList.innerHTML = `<p style="color:var(--text-muted)">Erro ao listar servidores.</p>`;
+    }
+  }
+
+  let suggestionsPollTimer = null;
+
+  function timeAgo(timestamp) {
+    if (!timestamp) return 'recentemente';
+    const diff = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
+    if (diff < 60) return 'agora mesmo';
+    if (diff < 3600) return `há ${Math.floor(diff / 60)} min`;
+    if (diff < 86400) return `há ${Math.floor(diff / 3600)}h`;
+    return `há ${Math.floor(diff / 86400)}d`;
+  }
+
+  async function openSuggestionsModal() {
+    if (!el.suggestionsModal) return;
+    el.suggestionsModal.classList.remove('hidden');
+    const savedAuthor = localStorage.getItem('johnflix_sug_author');
+    if (savedAuthor && el.suggestionAuthorInput && !el.suggestionAuthorInput.value) {
+      el.suggestionAuthorInput.value = savedAuthor;
+    }
+    await loadSuggestions();
+    clearInterval(suggestionsPollTimer);
+    suggestionsPollTimer = setInterval(() => loadSuggestions(true), 12000);
+  }
+
+  function closeSuggestionsModal() {
+    if (!el.suggestionsModal) return;
+    el.suggestionsModal.classList.add('hidden');
+    clearInterval(suggestionsPollTimer);
+  }
+
+  async function loadSuggestions(silent = false) {
+    if (!el.suggestionsList) return;
+    if (!silent) {
+      el.suggestionsList.innerHTML = `
+        <div class="streams-loading">
+          <div class="spinner-purple"></div>
+          <span>Carregando sugestões em tempo real...</span>
+        </div>
+      `;
+    }
+    try {
+      const res = await fetch('/api/suggestions');
+      const data = await res.json();
+      state.suggestions = data.suggestions || [];
+      renderSuggestionsFeed();
+    } catch (e) {
+      if (!silent) {
+        el.suggestionsList.innerHTML = `<p style="color:var(--text-muted);text-align:center;padding:20px;">Não foi possível carregar as sugestões no momento.</p>`;
+      }
+    }
+  }
+
+  function renderSuggestionsFeed() {
+    if (!el.suggestionsList) return;
+    const filter = state.suggestionsFilter || 'all';
+    const items = (state.suggestions || []).filter((s) => {
+      if (filter === 'all') return true;
+      return (s.category || 'geral') === filter;
+    });
+
+    if (items.length === 0) {
+      el.suggestionsList.innerHTML = `
+        <div style="text-align:center;padding:30px 10px;color:var(--text-muted);">
+          <p style="font-size:1.05rem;margin-bottom:6px;color:#f1f5f9;">Nenhuma sugestão enviada nesta categoria ainda.</p>
+          <span style="font-size:0.84rem;">Seja o primeiro a enviar uma ideia acima!</span>
+        </div>
+      `;
+      return;
+    }
+
+    el.suggestionsList.innerHTML = '';
+    const catLabels = {
+      filme: '🎬 Filme/Série',
+      tv: '📺 Canal de TV',
+      melhoria: '⚡ Melhoria',
+      bug: '🐛 Erro',
+      geral: '💡 Geral'
+    };
+
+    items.forEach((s) => {
+      const card = document.createElement('div');
+      card.className = 'suggestion-card';
+      const author = s.author || 'Anônimo';
+      const initial = author.charAt(0).toUpperCase() || 'J';
+      const cat = s.category || 'geral';
+      const isLiked = state.likedSuggestions.has(s.id);
+
+      card.innerHTML = `
+        <div class="suggestion-card-head">
+          <div class="suggestion-author-wrap">
+            <div class="suggestion-avatar">${escapeHtml(initial)}</div>
+            <span class="suggestion-author-name">${escapeHtml(author)}</span>
+            <span class="suggestion-tag tag-${escapeHtml(cat)}">${escapeHtml(catLabels[cat] || '💡 Geral')}</span>
+          </div>
+          <span class="suggestion-time">${escapeHtml(timeAgo(s.createdAt))}</span>
+        </div>
+        <div class="suggestion-card-body">${escapeHtml(s.text)}</div>
+        <div class="suggestion-card-footer">
+          <button type="button" class="btn-sug-like ${isLiked ? 'liked' : ''}" data-sug-id="${escapeHtml(s.id)}">
+            <span>👍</span>
+            <span class="sug-like-count">${s.likes || 0}</span>
+            <span>${isLiked ? 'Apoiado' : 'Apoiar'}</span>
+          </button>
+        </div>
+      `;
+
+      const likeBtn = card.querySelector('.btn-sug-like');
+      if (likeBtn) {
+        likeBtn.addEventListener('click', () => likeSuggestion(s.id, likeBtn, s));
+      }
+
+      el.suggestionsList.appendChild(card);
+    });
+  }
+
+  async function likeSuggestion(id, btn, item) {
+    if (state.likedSuggestions.has(id)) {
+      showToast('Você já apoiou esta sugestão!');
+      return;
+    }
+    state.likedSuggestions.add(id);
+    localStorage.setItem('johnflix_liked_sug', JSON.stringify(Array.from(state.likedSuggestions)));
+    item.likes = (item.likes || 0) + 1;
+    btn.classList.add('liked');
+    const countSpan = btn.querySelector('.sug-like-count');
+    if (countSpan) countSpan.textContent = item.likes;
+    const textSpan = btn.querySelectorAll('span')[2];
+    if (textSpan) textSpan.textContent = 'Apoiado';
+    showToast('Apoio registrado! 👍');
+
+    try {
+      await fetch('/api/suggestions/like', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+    } catch (_) {}
+  }
+
+  async function handleSuggestionSubmit(e) {
+    e.preventDefault();
+    if (!el.suggestionTextInput) return;
+    const text = el.suggestionTextInput.value.trim();
+    if (!text || text.length < 2) {
+      showToast('Por favor, digite sua sugestão!');
+      return;
+    }
+
+    const author = (el.suggestionAuthorInput?.value || '').trim() || 'Anônimo';
+    const category = el.suggestionCategorySelect?.value || 'geral';
+
+    if (author !== 'Anônimo') {
+      localStorage.setItem('johnflix_sug_author', author);
+    }
+
+    const submitBtn = el.submitSuggestionBtn;
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<span>Enviando...</span>`;
+    }
+
+    try {
+      const res = await fetch('/api/suggestions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ author, text, category })
+      });
+      const data = await res.json();
+      if (data.success && data.item) {
+        state.suggestions.unshift(data.item);
+        el.suggestionTextInput.value = '';
+        if (el.suggestionCharCount) el.suggestionCharCount.textContent = '0 / 300';
+        renderSuggestionsFeed();
+        showToast('Sugestão enviada com sucesso! Já está visível para todos 🚀');
+      } else {
+        showToast(data.error || 'Erro ao enviar sugestão.');
+      }
+    } catch (err) {
+      showToast('Erro de conexão ao enviar sugestão.');
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<span>Enviar Sugestão</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>`;
+      }
     }
   }
 

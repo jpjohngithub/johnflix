@@ -13,7 +13,7 @@
   <link rel="dns-prefetch" href="https://fenixtv.fenixhub.online" />
   <link rel="dns-prefetch" href="https://v3-cinemeta.strem.io" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/styles.css?v=20261028hh" />
+  <link rel="stylesheet" href="/styles.css?v=20261028ii" />
 </head>
 <body>
   <!-- Site Intro Splash Animation -->
@@ -56,6 +56,13 @@
         <input type="text" id="searchInput" placeholder="Títulos, gêneros..." autocomplete="off" />
         <button class="search-clear hidden" id="searchClear" title="Limpar">&times;</button>
       </div>
+
+      <button class="btn btn-sm btn-glass btn-suggestions-nav" id="openSuggestionsBtn" title="Mural de Sugestões">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
+          <path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/>
+        </svg>
+        <span>Sugestões</span>
+      </button>
 
       <button class="nav-subtle-icon" id="openServersBtn" title="Servidores Conectados">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -102,6 +109,12 @@
             <button class="btn btn-icon-only" id="heroPlaylistBtn" title="Salvar em Playlist">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
             </button>
+            <button class="btn btn-glass btn-hero-suggest" id="heroSuggestBtn" title="Mural de Sugestões">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                <path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/>
+              </svg>
+              <span>Sugerir</span>
+            </button>
           </div>
         </div>
 
@@ -135,6 +148,21 @@
         </aside>
       </div>
     </section>
+
+    <!-- Home Suggestions Banner Bar -->
+    <div class="home-suggestions-bar" id="homeSuggestionsBar">
+      <div class="suggestions-bar-left">
+        <span class="suggestions-pulse-dot"></span>
+        <div class="suggestions-bar-text">
+          <strong>Mural de Sugestões da Comunidade</strong>
+          <p>Peça novos filmes, séries, canais de TV ou sugira melhorias. Todas as ideias aparecem para todo mundo!</p>
+        </div>
+      </div>
+      <button type="button" class="btn btn-primary btn-sm btn-sug-open" id="bannerSuggestionsBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg>
+        <span>Mural de Sugestões</span>
+      </button>
+    </div>
 
     <!-- Search Results Grid (Hidden by default) -->
     <section class="search-section hidden" id="searchSection">
@@ -253,6 +281,66 @@
     </div>
   </div>
 
+  <!-- Community Suggestions Modal -->
+  <div class="modal-backdrop hidden" id="suggestionsModal">
+    <div class="modal-card modal-suggestions">
+      <button class="modal-close" id="closeSuggestionsModalBtn">&times;</button>
+      <div class="modal-body suggestions-modal-body">
+        <div class="suggestions-modal-header">
+          <div class="suggestions-header-badge">💡 MURAL PÚBLICO</div>
+          <h2 class="status-modal-title">Sugestões da Comunidade</h2>
+          <p class="status-modal-sub">Envie seu pedido ou melhoria. O que você mandar aparece aqui para todo mundo em tempo real!</p>
+        </div>
+
+        <!-- Suggestion Submission Form -->
+        <form class="suggestion-form" id="suggestionForm">
+          <div class="suggestion-form-row">
+            <input type="text" id="suggestionAuthorInput" class="suggestion-author-input" placeholder="Seu nome ou apelido (opcional)" maxlength="30" autocomplete="off" />
+            <select id="suggestionCategorySelect" class="suggestion-category-select">
+              <option value="filme">🎬 Filme / Série</option>
+              <option value="tv">📺 Canal de TV</option>
+              <option value="melhoria">⚡ Melhoria no Site / Player</option>
+              <option value="bug">🐛 Reportar Erro</option>
+              <option value="geral">💡 Outro</option>
+            </select>
+          </div>
+          <div class="suggestion-textarea-wrap">
+            <textarea id="suggestionTextInput" class="suggestion-textarea" placeholder="O que você gostaria de ver ou alterar no JohnFlix? Ex: Adicionar tal canal, arrumar capa, etc..." maxlength="300" required></textarea>
+            <div class="suggestion-form-footer">
+              <span class="suggestion-char-count" id="suggestionCharCount">0 / 300</span>
+              <button type="submit" class="btn btn-primary btn-sm btn-submit-suggestion" id="submitSuggestionBtn">
+                <span>Enviar Sugestão</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <!-- Suggestions Feed Tabs & Controls -->
+        <div class="suggestions-feed-top">
+          <div class="suggestions-filter-pills" id="suggestionsFilterPills">
+            <button type="button" class="sug-pill active" data-sug-filter="all">Todas</button>
+            <button type="button" class="sug-pill" data-sug-filter="filme">🎬 Filmes/Séries</button>
+            <button type="button" class="sug-pill" data-sug-filter="tv">📺 TV</button>
+            <button type="button" class="sug-pill" data-sug-filter="melhoria">⚡ Melhorias</button>
+          </div>
+          <button type="button" class="btn btn-glass btn-xs" id="refreshSuggestionsBtn" title="Atualizar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            <span>Atualizar</span>
+          </button>
+        </div>
+
+        <!-- Live Feed Container -->
+        <div class="suggestions-list" id="suggestionsList">
+          <div class="streams-loading">
+            <div class="spinner-purple"></div>
+            <span>Carregando sugestões em tempo real...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Fullscreen Cloud Video Player Overlay -->
   <div class="player-overlay hidden" id="playerOverlay">
     <div class="player-topbar" id="playerTopbar">
@@ -351,6 +439,7 @@
     <div class="footer-inner">
       <span class="brand-word">John<span class="brand-flix">Flix</span></span>
       <div class="footer-links">
+        <button class="footer-subtle-btn" id="footerSuggestionsBtn">💡 Sugestões da Comunidade</button>
         <button class="footer-subtle-btn" id="footerServersBtn">Servidores Conectados</button>
         <span id="footerCopyright">© 2026 JohnFlix</span>
       </div>
@@ -358,7 +447,7 @@
   </footer>
 
   <script defer src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
-  <script defer src="/config.js?v=20261028hh"></script>
-  <script defer src="/app.js?v=20261028hh"></script>
+  <script defer src="/config.js?v=20261028ii"></script>
+  <script defer src="/app.js?v=20261028ii"></script>
 </body>
 </html>
