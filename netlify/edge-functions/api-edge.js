@@ -11,6 +11,28 @@ const MOVIE_ADDONS = [
     color: '#f97316'
   },
   {
+    id: 'cinetorrent',
+    name: 'CineTorrent BR',
+    badge: 'TORRENT BR',
+    type: 'p2p',
+    category: 'movie_series',
+    manifestUrl: 'https://150203dd784e-cinetorrent-addon.baby-beamup.club/manifest.json',
+    baseUrl: 'https://150203dd784e-cinetorrent-addon.baby-beamup.club',
+    logo: 'https://i.ibb.co/RDtR0q0/Logo.jpg',
+    color: '#eab308'
+  },
+  {
+    id: 'bestcine',
+    name: 'BestCine',
+    badge: '4K & FHD',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://bestcine.dpdns.org/manifest.json',
+    baseUrl: 'https://bestcine.dpdns.org',
+    logo: 'https://i.imgur.com/fX5vY2s.png',
+    color: '#8b5cf6'
+  },
+  {
     id: 'fenixflix',
     name: 'FenixFlix',
     badge: 'ULTRA CLOUD',
@@ -22,17 +44,6 @@ const MOVIE_ADDONS = [
     color: '#a855f7'
   },
   {
-    id: 'magnetflix',
-    name: 'Magnetflix BR',
-    badge: 'DUBLADO 4K/HD',
-    type: 'direct',
-    category: 'movie_series',
-    manifestUrl: 'https://magnetflix.flixbr.online/qualities%3D4k%2C1080p%2C720p%2Csd%7Caudio%3Ddublado%2Clegendado%7Ccatalogs%3Dpopulares_movie%2Cpopulares_series%2Crecentes_servidor_movie%2Crecentes_servidor_series%2Cemalta_movie%2Cemalta_series/manifest.json',
-    baseUrl: 'https://magnetflix.flixbr.online/qualities%3D4k%2C1080p%2C720p%2Csd%7Caudio%3Ddublado%2Clegendado%7Ccatalogs%3Dpopulares_movie%2Cpopulares_series%2Crecentes_servidor_movie%2Crecentes_servidor_series%2Cemalta_movie%2Cemalta_series',
-    logo: 'https://magnetflix.flixbr.online/static/logo.jpg',
-    color: '#e11d48'
-  },
-  {
     id: 'froststream',
     name: 'FrostStream',
     badge: 'HDR 4K',
@@ -42,6 +53,87 @@ const MOVIE_ADDONS = [
     baseUrl: 'https://froststream.cloutteam.com',
     logo: 'https://froststream.cloutteam.com/public/logo.png',
     color: '#38bdf8'
+  },
+  {
+    id: 'magneto',
+    name: 'Magneto',
+    badge: 'CLOUD + P2P',
+    type: 'p2p',
+    category: 'movie_series',
+    manifestUrl: 'https://magneto-jnv5.onrender.com/v1/manifest.json',
+    baseUrl: 'https://magneto-jnv5.onrender.com/v1',
+    logo: 'https://images.metahub.space/logo/medium/tt0133093/img',
+    color: '#ec4899'
+  },
+  {
+    id: 'micoleao',
+    name: 'Mico-Leão Dublado',
+    badge: 'DUBLADO BR',
+    type: 'p2p',
+    category: 'movie_series',
+    manifestUrl: 'https://27a5b2bfe3c0-stremio-brazilian-addon.baby-beamup.club/manifest.json',
+    baseUrl: 'https://27a5b2bfe3c0-stremio-brazilian-addon.baby-beamup.club',
+    fallbackUrl: 'https://torrentio.strem.fun/providers=micoleaodublado,comando,bludv',
+    logo: 'https://i.ibb.co/YyPbHVT/icon.png',
+    color: '#eab308'
+  },
+  {
+    id: 'brazuca',
+    name: 'Brazuca',
+    badge: 'BRASIL',
+    type: 'p2p',
+    category: 'movie_series',
+    manifestUrl: 'https://94c8cb9f702d-brazuca-torrents.baby-beamup.club/manifest.json',
+    baseUrl: 'https://94c8cb9f702d-brazuca-torrents.baby-beamup.club',
+    fallbackUrl: 'https://torrentio.strem.fun/providers=comando,bludv,lapumia,ondebaixa',
+    logo: 'https://i.imgur.com/KVpfrAk.png',
+    color: '#22c55e'
+  },
+  {
+    id: 'guindex',
+    name: 'GuIndex BR',
+    badge: 'NACIONAL',
+    type: 'p2p',
+    category: 'movie_series',
+    manifestUrl: 'https://guindex-stremio.vercel.app/manifest.json',
+    baseUrl: 'https://guindex-stremio.vercel.app',
+    logo: 'https://raw.githubusercontent.com/GuickerZ/guindex/main/public/logo.png',
+    color: '#10b981'
+  },
+  {
+    id: 'ehtudo',
+    name: 'Eh! Tudo',
+    badge: 'PT-BR',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://stremio-addon.ehtudo.app/manifest.json',
+    baseUrl: 'https://stremio-addon.ehtudo.app',
+    logo: 'https://stremio-addon.ehtudo.app/logo-small-256x256.png',
+    color: '#f97316'
+  },
+  {
+    id: 'framextv',
+    name: 'FrameXTV (Inglês)',
+    badge: 'INGLÊS',
+    type: 'direct',
+    category: 'movie_series',
+    isEnglishOnly: true,
+    manifestUrl: 'https://framextv.xyz/',
+    baseUrl: 'https://api.framextv.tech',
+    logo: 'https://framextv.xyz/favicon.svg',
+    color: '#6366f1'
+  },
+  {
+    id: 'torrentio',
+    name: 'Torrentio (Inglês)',
+    badge: 'INGLÊS',
+    type: 'p2p',
+    category: 'movie_series',
+    isEnglishOnly: true,
+    manifestUrl: 'https://torrentio.strem.fun/manifest.json',
+    baseUrl: 'https://torrentio.strem.fun',
+    logo: 'https://torrentio.strem.fun/images/logo_v1.png',
+    color: '#ef4444'
   },
   {
     id: 'superflix',
@@ -88,18 +180,6 @@ const MOVIE_ADDONS = [
     color: '#8b5cf6'
   },
   {
-    id: 'framextv',
-    name: 'FrameXTV (Inglês)',
-    badge: 'INGLÊS',
-    type: 'direct',
-    category: 'movie_series',
-    isEnglishOnly: true,
-    manifestUrl: 'https://framextv.xyz/',
-    baseUrl: 'https://api.framextv.tech',
-    logo: 'https://framextv.xyz/favicon.svg',
-    color: '#6366f1'
-  },
-  {
     id: 'flixstreams',
     name: 'Flix-Streams (Inglês)',
     badge: 'INGLÊS',
@@ -110,10 +190,164 @@ const MOVIE_ADDONS = [
     baseUrl: 'https://flixnest.app/flix-streams',
     logo: 'https://flixnest.app/flix-streams/static/icon.png',
     color: '#06b6d4'
+  },
+  {
+    id: 'magnetflix',
+    name: 'Magnetflix BR',
+    badge: 'DUBLADO 4K/HD',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://magnetflix.flixbr.online/qualities%3D4k%2C1080p%2C720p%2Csd%7Caudio%3Ddublado%2Clegendado%7Ccatalogs%3Dpopulares_movie%2Cpopulares_series%2Crecentes_servidor_movie%2Crecentes_servidor_series%2Cemalta_movie%2Cemalta_series/manifest.json',
+    baseUrl: 'https://magnetflix.flixbr.online/qualities%3D4k%2C1080p%2C720p%2Csd%7Caudio%3Ddublado%2Clegendado%7Ccatalogs%3Dpopulares_movie%2Cpopulares_series%2Crecentes_servidor_movie%2Crecentes_servidor_series%2Cemalta_movie%2Cemalta_series',
+    logo: 'https://magnetflix.flixbr.online/static/logo.jpg',
+    color: '#e11d48'
+  },
+  {
+    id: 'plaviohd',
+    name: 'PlavioHD 4K',
+    badge: '4K HDR',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://hd.plavio.site/manifest.json',
+    baseUrl: 'https://hd.plavio.site',
+    logo: 'https://hd.plavio.site/logo.png',
+    color: '#3b82f6'
+  },
+  {
+    id: 'debridbr',
+    name: 'DebridBR',
+    badge: 'CLOUD BR',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://debridbr.vercel.app/manifest.json',
+    baseUrl: 'https://debridbr.vercel.app',
+    logo: 'https://img.icons8.com/?size=100&id=x22BXJ8IEoLJ&format=png&color=a855f7',
+    color: '#a855f7'
+  },
+  {
+    id: 'mycine',
+    name: 'MyCine BR',
+    badge: 'CINEMA BR',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://mycine.alwaysdata.net/manifest.json',
+    baseUrl: 'https://mycine.alwaysdata.net',
+    logo: 'https://images.metahub.space/logo/medium/tt0133093/img',
+    color: '#f59e0b'
+  },
+  {
+    id: 'pleiades',
+    name: 'PleiadesStream',
+    badge: 'ANIMES & FILMES',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://pleiadesstream.duckdns.org/addon/pleiades/manifest.json',
+    baseUrl: 'https://pleiadesstream.duckdns.org/addon/pleiades',
+    logo: 'https://pleiadesstream.duckdns.org/addon/pleiades/logo.png',
+    color: '#8b5cf6'
+  },
+  {
+    id: 'animesbr',
+    name: 'Animes BR',
+    badge: 'ANIMES PT-BR',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://animes-br-self.vercel.app/manifest.json',
+    baseUrl: 'https://animes-br-self.vercel.app',
+    logo: 'https://images.metahub.space/logo/medium/tt0409591/img',
+    color: '#ec4899'
+  },
+  {
+    id: 'animesdigital',
+    name: 'Animes Digital',
+    badge: 'ANIMES HD',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://animesdigital-vercel.vercel.app/manifest.json',
+    baseUrl: 'https://animesdigital-vercel.vercel.app',
+    logo: 'https://images.metahub.space/logo/medium/tt0988824/img',
+    color: '#14b8a6'
+  },
+  {
+    id: 'nightknight',
+    name: 'NightKnight Cinema',
+    badge: 'HUB GLOBAL',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://nightknight-cinema.onrender.com/manifest.json',
+    baseUrl: 'https://nightknight-cinema.onrender.com',
+    logo: 'https://nightknight-cinema.onrender.com/icon.png',
+    color: '#6366f1'
+  },
+  {
+    id: 'hyperstravo',
+    name: 'Hyper Stravo',
+    badge: 'CLOUD FAST',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://hyper.stravo.site/local/manifest.json',
+    baseUrl: 'https://hyper.stravo.site/local',
+    logo: 'https://hyper.stravo.site/favicon.ico',
+    color: '#0ea5e9'
+  },
+  {
+    id: 'funqpef',
+    name: 'FunStream Cloud',
+    badge: 'DIRECT HD',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://fun.qpef.workers.dev/manifest.json',
+    baseUrl: 'https://fun.qpef.workers.dev',
+    logo: 'https://fun.qpef.workers.dev/favicon.ico',
+    color: '#10b981'
   }
 ];
 
 const TV_ADDONS = [
+  {
+    id: 'fenixtv',
+    name: 'Fenix TV',
+    badge: 'TV AO VIVO',
+    type: 'tv',
+    category: 'tv',
+    manifestUrl: 'https://fenixtv.fenixhub.online/manifest.json',
+    baseUrl: 'https://fenixtv.fenixhub.online',
+    logo: 'https://fenixtv.fenixhub.online/logo.png',
+    color: '#a855f7'
+  },
+  {
+    id: 'nexotv',
+    name: 'NexoTV',
+    badge: 'CANAIS HD',
+    type: 'tv',
+    category: 'tv',
+    manifestUrl: 'https://263f84288ddb-nexotv.baby-beamup.club/manifest.json',
+    baseUrl: 'https://263f84288ddb-nexotv.baby-beamup.club',
+    logo: 'https://raw.githubusercontent.com/joaosavi/nexotv/refs/heads/main/packages/frontend/public/assets/logo.svg',
+    color: '#38bdf8'
+  },
+  {
+    id: 'ehtudotv',
+    name: 'Eh! IPTV',
+    badge: 'IPTV BR',
+    type: 'tv',
+    category: 'tv',
+    manifestUrl: 'https://stremio-addon.ehtudo.app/manifest.json',
+    baseUrl: 'https://stremio-addon.ehtudo.app',
+    logo: 'https://stremio-addon.ehtudo.app/logo-small-256x256.png',
+    color: '#22c55e'
+  },
+  {
+    id: 'plaviotv',
+    name: 'PlavioHD Live TV',
+    badge: 'ESPORTES HD',
+    type: 'tv',
+    category: 'tv',
+    manifestUrl: 'https://hd.plavio.site/manifest.json',
+    baseUrl: 'https://hd.plavio.site',
+    logo: 'https://hd.plavio.site/logo.png',
+    color: '#3b82f6'
+  },
   {
     id: 'iptvorg',
     name: 'TV Brasil Ao Vivo',
@@ -124,17 +358,6 @@ const TV_ADDONS = [
     baseUrl: 'https://iptv-org.github.io/iptv/countries/br.m3u',
     logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Sistema_Brasileiro_de_Televis%C3%A3o_logo.svg/512px-Sistema_Brasileiro_de_Televis%C3%A3o_logo.svg.png',
     color: '#a855f7'
-  },
-  {
-    id: 'fenixtv',
-    name: 'Fenix TV',
-    badge: 'CANAIS HD',
-    type: 'tv',
-    category: 'tv',
-    manifestUrl: 'https://fenixtv.fenixhub.online/manifest.json',
-    baseUrl: 'https://fenixtv.fenixhub.online',
-    logo: 'https://fenixtv.fenixhub.online/logo.png',
-    color: '#38bdf8'
   }
 ];
 
@@ -267,6 +490,19 @@ function normalizeStream(rawStream, addon, fallbackDirectUrls = [], idx = 0, eng
   } else if (embedUrl) {
     playType = 'embed';
     proxyUrl = embedUrl;
+  } else if (rawStream.infoHash) {
+    const pool = (forceEn && englishPool.length > 0) ? englishPool : fallbackDirectUrls;
+    if (pool.length > 0) {
+      const picked = pool[idx % pool.length];
+      playType = 'direct';
+      streamUrl = picked.directUrl;
+      proxyUrl = streamUrl.includes('workers.dev')
+        ? streamUrl
+        : `/api/proxy-stream?url=${encodeURIComponent(streamUrl)}`;
+    } else if (universalEmbedUrl) {
+      playType = 'embed';
+      proxyUrl = universalEmbedUrl;
+    }
   }
 
   let serverLabel = (rawStream.name || addon.name).replace(/\n/g, ' ');

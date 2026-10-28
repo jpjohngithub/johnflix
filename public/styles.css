@@ -2925,7 +2925,7 @@ body.auth-locked { overflow: hidden; }
 .modal-card .addon-tab { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); color: #cfcfd9; font-size: .8rem; font-weight: 600; padding: 7px 14px; border-radius: 999px; cursor: pointer; transition: background .18s, color .18s; }
 .modal-card .addon-tab:hover { background: rgba(255,255,255,.12); }
 .modal-card .addon-tab.active { background: #fff; color: #0c0c11; border-color: #fff; }
-.modal-card .addon-tab.empty { display: none; }
+.modal-card .addon-tab.empty { opacity: 0.55; }
 .modal-card .streams-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
 .modal-card .stream-item { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07); border-radius: 12px; padding: 14px 16px; transition: background .18s, border-color .18s, transform .15s; }
 .modal-card .stream-item:hover { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.2); transform: translateY(-1px); }

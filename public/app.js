@@ -3447,7 +3447,7 @@
     };
 
     // Anti-Black-Screen Watchdog: verifies video frames actually decode and advance
-    const stallLimit = state.currentItem?.type === 'tv' ? 10000 : 5000;
+    const stallLimit = state.currentItem?.type === 'tv' ? 12000 : 15000;
     blackScreenWatchdogTimer = setTimeout(() => {
       if (el.playerOverlay.classList.contains('hidden')) return;
       if (!el.cloudVideo.classList.contains('hidden')) {
