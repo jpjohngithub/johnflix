@@ -158,6 +158,13 @@
     refreshSuggestionsBtn: document.getElementById('refreshSuggestionsBtn'),
     suggestionsList: document.getElementById('suggestionsList'),
     homeSuggestionsBar: document.getElementById('homeSuggestionsBar'),
+    playerCastBtn: document.getElementById('playerCastBtn'),
+    modalCastBtn: document.getElementById('modalCastBtn'),
+    castModal: document.getElementById('castModal'),
+    closeCastModalBtn: document.getElementById('closeCastModalBtn'),
+    castStartNativeBtn: document.getElementById('castStartNativeBtn'),
+    castOpenDirectLinkBtn: document.getElementById('castOpenDirectLinkBtn'),
+    castModalSub: document.getElementById('castModalSub'),
     toast: document.getElementById('toastNotification')
   };
 
@@ -268,6 +275,17 @@
     }, 900);
     await loadHomeCatalog();
     if (splashEl) splashEl.classList.add('splash-hide');
+
+    // Smart TV Direct Link Deep-linking (e.g. ?open=tt0133093)
+    const urlParams = new URLSearchParams(window.location.search);
+    const openId = urlParams.get('open');
+    if (openId) {
+      setTimeout(() => {
+        const s = parseInt(urlParams.get('s'), 10) || 1;
+        const e = parseInt(urlParams.get('e'), 10) || 1;
+        openItemDetails({ id: openId, type: openId.startsWith('tt') ? 'movie' : 'series' }, true, null, s, e);
+      }, 600);
+    }
   }
 
   function bindEvents() {
@@ -548,6 +566,21 @@
       });
     }
 
+    // Cast & Smart TV
+    if (el.playerCastBtn) el.playerCastBtn.addEventListener('click', () => {
+      if (castSession) syncMediaToCastSession();
+      else triggerNativeCast();
+    });
+    if (el.modalCastBtn) el.modalCastBtn.addEventListener('click', openCastModal);
+    if (el.closeCastModalBtn) el.closeCastModalBtn.addEventListener('click', closeCastModal);
+    if (el.castModal) {
+      el.castModal.addEventListener('click', (e) => {
+        if (e.target === el.castModal) closeCastModal();
+      });
+    }
+    if (el.castStartNativeBtn) el.castStartNativeBtn.addEventListener('click', triggerNativeCast);
+    if (el.castOpenDirectLinkBtn) el.castOpenDirectLinkBtn.addEventListener('click', openDirectTvLink);
+
     // Player controls
     el.closePlayerBtn.addEventListener('click', stopAndClosePlayer);
     el.switchServerBtn.addEventListener('click', (e) => {
@@ -649,9 +682,12 @@
     }
 
     window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
+      const isBack = e.key === 'Escape' || e.key === 'Back' || e.keyCode === 10009 || e.keyCode === 461;
+      if (isBack) {
         if (!el.playerOverlay.classList.contains('hidden')) {
           stopAndClosePlayer();
+        } else if (el.castModal && !el.castModal.classList.contains('hidden')) {
+          closeCastModal();
         } else if (el.serversModal && !el.serversModal.classList.contains('hidden')) {
           el.serversModal.classList.add('hidden');
         } else if (el.suggestionsModal && !el.suggestionsModal.classList.contains('hidden')) {
@@ -663,8 +699,56 @@
         }
         return;
       }
+
+      // Smart TV remote control media playback keys
+      const isPlayPause = e.key === 'MediaPlayPause' || e.keyCode === 179 || e.keyCode === 415 || e.keyCode === 19;
+      if (isPlayPause && !el.playerOverlay.classList.contains('hidden')) {
+        e.preventDefault();
+        if (el.cloudVideo) {
+          if (el.cloudVideo.paused) el.cloudVideo.play();
+          else el.cloudVideo.pause();
+        }
+        return;
+      }
+
+      const isFastFwd = e.key === 'MediaFastForward' || e.keyCode === 417;
+      if (isFastFwd && !el.playerOverlay.classList.contains('hidden') && el.cloudVideo) {
+        e.preventDefault();
+        el.cloudVideo.currentTime += 15;
+        showToast('+15s');
+        return;
+      }
+
+      const isRewind = e.key === 'MediaRewind' || e.keyCode === 412;
+      if (isRewind && !el.playerOverlay.classList.contains('hidden') && el.cloudVideo) {
+        e.preventDefault();
+        el.cloudVideo.currentTime = Math.max(0, el.cloudVideo.currentTime - 15);
+        showToast('-15s');
+        return;
+      }
+
+      // In Player: arrow seeking
+      if (!el.playerOverlay.classList.contains('hidden')) {
+        if (e.key === 'ArrowLeft' && el.cloudVideo) {
+          e.preventDefault();
+          el.cloudVideo.currentTime = Math.max(0, el.cloudVideo.currentTime - 10);
+          showToast('-10s');
+        } else if (e.key === 'ArrowRight' && el.cloudVideo) {
+          e.preventDefault();
+          el.cloudVideo.currentTime += 10;
+          showToast('+10s');
+        } else if (e.key === ' ' && (e.target === el.cloudVideo || e.target === el.playerStage)) {
+          e.preventDefault();
+          if (el.cloudVideo.paused) el.cloudVideo.play();
+          else el.cloudVideo.pause();
+        }
+        return;
+      }
+
       const tag = (e.target && e.target.tagName) ? e.target.tagName.toUpperCase() : '';
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+      // Swipe mode keys
       if (
         state.activeFilter === 'mylist' &&
         state.myListSubTab === 'swipe' &&
@@ -685,6 +769,13 @@
           e.preventDefault();
           undoLastSwipeDecision();
         }
+        return;
+      }
+
+      // Smart TV Spatial D-Pad Navigation
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        e.preventDefault();
+        navigateSpatial(e.key);
       }
     });
   }
@@ -2346,6 +2437,8 @@
   function createMediaCard(item, opts = {}) {
     const card = document.createElement('article');
     card.className = opts.isTop10 ? 'media-card top10-card' : 'media-card';
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('role', 'button');
     const fallbackPoster = `https://images.metahub.space/poster/medium/${item.id}/img`;
     const inList = isInMyList(item.id);
 
@@ -3026,6 +3119,8 @@
 
         const card = document.createElement('div');
         card.className = `ep-card ${isCurrent ? 'active' : ''}`;
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('role', 'button');
         card.innerHTML = `
           <div class="ep-top-row">
             <span class="ep-num" data-n="${epNum}">EP ${epNum}</span>
@@ -3210,6 +3305,8 @@
     filtered.forEach((stream) => {
       const card = document.createElement('div');
       card.className = 'stream-item';
+      card.setAttribute('tabindex', '0');
+      card.setAttribute('role', 'button');
       const seedsTag = stream.seeds ? ` · ${stream.seeds}` : '';
       const audioText = `${stream.audio || ''}${seedsTag}`;
 
@@ -3451,6 +3548,207 @@
         submitBtn.disabled = false;
         submitBtn.innerHTML = `<span>Enviar Sugestão</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>`;
       }
+    }
+  }
+
+  // === GOOGLE CAST, APPLE AIRPLAY & SMART TV ENGINE ===
+  let castSession = null;
+  let isCastSdkAvailable = false;
+
+  window['__onGCastApiAvailable'] = function (isAvailable) {
+    if (isAvailable && window.cast && window.cast.framework) {
+      isCastSdkAvailable = true;
+      try {
+        const castContext = cast.framework.CastContext.getInstance();
+        castContext.setOptions({
+          receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
+          autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
+        });
+        castContext.addEventListener(cast.framework.CastContextEventType.SESSION_STATE_CHANGED, (event) => {
+          switch (event.sessionState) {
+            case cast.framework.SessionState.SESSION_STARTED:
+            case cast.framework.SessionState.SESSION_RESUMED:
+              castSession = castContext.getCurrentSession();
+              updateCastUi(true);
+              syncMediaToCastSession();
+              break;
+            case cast.framework.SessionState.SESSION_ENDED:
+              castSession = null;
+              updateCastUi(false);
+              break;
+          }
+        });
+      } catch (e) {}
+    }
+  };
+
+  function updateCastUi(isActive) {
+    if (el.playerCastBtn) {
+      el.playerCastBtn.classList.toggle('cast-active', isActive);
+      const span = el.playerCastBtn.querySelector('.cast-btn-text');
+      if (span) span.textContent = isActive ? 'Conectado TV' : 'Transmitir';
+    }
+    if (el.modalCastBtn) {
+      el.modalCastBtn.classList.toggle('cast-active', isActive);
+    }
+  }
+
+  function syncMediaToCastSession() {
+    if (!castSession) return;
+    const stream = state.currentStream;
+    const item = state.currentItem;
+    const mediaUrl = stream?.directUrl || stream?.proxyUrl;
+    if (!mediaUrl) return;
+
+    try {
+      const fullUrl = mediaUrl.startsWith('http') ? mediaUrl : `${window.location.origin}${mediaUrl}`;
+      const mediaInfo = new chrome.cast.media.MediaInfo(fullUrl, 'video/mp4');
+      mediaInfo.metadata = new chrome.cast.media.GenericMediaMetadata();
+      mediaInfo.metadata.title = item ? (item.name || item.title || 'JohnFlix') : 'JohnFlix Stream';
+      mediaInfo.metadata.subtitle = stream.serverLabel || 'HD';
+      const poster = item?.poster || item?.background || '';
+      if (poster) {
+        mediaInfo.metadata.images = [{ url: poster.startsWith('http') ? poster : `${window.location.origin}${poster}` }];
+      }
+
+      const request = new chrome.cast.media.LoadRequest(mediaInfo);
+      request.currentTime = el.cloudVideo ? (el.cloudVideo.currentTime || 0) : 0;
+      castSession.loadMedia(request).then(
+        () => {
+          showToast('Transmitindo na sua Smart TV! 📺');
+          if (el.cloudVideo) el.cloudVideo.pause();
+        },
+        () => showToast('Erro ao reproduzir no Chromecast')
+      );
+    } catch (e) {}
+  }
+
+  function openCastModal() {
+    if (!el.castModal) return;
+    el.castModal.classList.remove('hidden');
+    const item = state.currentItem;
+    if (item && el.castModalSub) {
+      el.castModalSub.textContent = `Transmitir "${item.name || item.title || 'Título'}" para sua Smart TV ou Chromecast.`;
+    }
+  }
+
+  function closeCastModal() {
+    if (!el.castModal) return;
+    el.castModal.classList.add('hidden');
+  }
+
+  async function triggerNativeCast() {
+    // 1. Try Apple AirPlay target picker (Safari on iOS / Mac / iPad)
+    if (el.cloudVideo && typeof el.cloudVideo.webkitShowPlaybackTargetPicker === 'function') {
+      try {
+        el.cloudVideo.webkitShowPlaybackTargetPicker();
+        closeCastModal();
+        return;
+      } catch (_) {}
+    }
+
+    // 2. Try HTML5 Remote Playback API (Android Chrome / Desktop Chrome)
+    if (el.cloudVideo && el.cloudVideo.remote && typeof el.cloudVideo.remote.prompt === 'function') {
+      try {
+        await el.cloudVideo.remote.prompt();
+        closeCastModal();
+        showToast('Buscando dispositivos na rede Wi-Fi...');
+        return;
+      } catch (_) {}
+    }
+
+    // 3. Try Google Cast Web SDK
+    if (isCastSdkAvailable && window.cast && window.cast.framework) {
+      try {
+        const castContext = cast.framework.CastContext.getInstance();
+        await castContext.requestSession();
+        closeCastModal();
+        return;
+      } catch (_) {}
+    }
+
+    // Fallback: open cast modal with Smart TV options
+    openCastModal();
+  }
+
+  function openDirectTvLink() {
+    const item = state.currentItem;
+    const url = new URL(window.location.origin);
+    if (item && item.id) {
+      url.searchParams.set('open', item.id);
+      if (state.currentSeason) url.searchParams.set('s', state.currentSeason);
+      if (state.currentEpisode) url.searchParams.set('e', state.currentEpisode);
+    }
+    const targetUrl = url.toString();
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(targetUrl).then(
+        () => showToast('Link copiado! Cole no navegador da sua TV 📺'),
+        () => showToast(`Link TV: ${targetUrl}`)
+      );
+    } else {
+      showToast(`Link TV: ${targetUrl}`);
+    }
+    closeCastModal();
+  }
+
+  // === SMART TV D-PAD SPATIAL NAVIGATION ===
+  const isSmartTv = /SmartTV|Tizen|webOS|NetCast|BRAVIA|Hisense|VIDAA|Viera|AppleTV|GoogleTV|Android TV|CrKey|Roku|AFTT|AFTM|InettvBrowser|TV Safari/i.test(navigator.userAgent);
+  if (isSmartTv) {
+    document.body.classList.add('smart-tv-mode');
+  }
+
+  function navigateSpatial(direction) {
+    document.body.classList.add('smart-tv-mode');
+    const focusable = Array.from(document.querySelectorAll(
+      'button:not([disabled]):not(.hidden), [tabindex="0"]:not(.hidden), a[href]:not(.hidden), input:not([disabled]):not(.hidden), select:not([disabled]):not(.hidden)'
+    )).filter((elem) => {
+      if (elem.closest('.hidden')) return false;
+      const rect = elem.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0 && rect.top < window.innerHeight && rect.bottom > 0;
+    });
+
+    if (focusable.length === 0) return;
+    const current = document.activeElement && focusable.includes(document.activeElement)
+      ? document.activeElement
+      : null;
+
+    if (!current) {
+      focusable[0].focus();
+      return;
+    }
+
+    const curRect = current.getBoundingClientRect();
+    const curCenter = { x: curRect.left + curRect.width / 2, y: curRect.top + curRect.height / 2 };
+
+    let bestElem = null;
+    let minDistance = Infinity;
+
+    for (const elem of focusable) {
+      if (elem === current) continue;
+      const r = elem.getBoundingClientRect();
+      const center = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      const dx = center.x - curCenter.x;
+      const dy = center.y - curCenter.y;
+
+      let isCandidate = false;
+      if (direction === 'ArrowUp' && dy < -5) isCandidate = true;
+      if (direction === 'ArrowDown' && dy > 5) isCandidate = true;
+      if (direction === 'ArrowLeft' && dx < -5) isCandidate = true;
+      if (direction === 'ArrowRight' && dx > 5) isCandidate = true;
+
+      if (isCandidate) {
+        const dist = Math.hypot(dx, dy);
+        if (dist < minDistance) {
+          minDistance = dist;
+          bestElem = elem;
+        }
+      }
+    }
+
+    if (bestElem) {
+      bestElem.focus();
+      bestElem.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
     }
   }
 

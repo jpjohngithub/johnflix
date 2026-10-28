@@ -6149,3 +6149,129 @@ body.vault-restricted-mode #footerServersBtn {
   border-color: #a855f7;
   color: #e9d5ff;
 }
+
+/* Cast to TV & Smart TV Styling */
+.cast-badge {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: rgba(168, 85, 247, 0.15);
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #c084fc;
+  margin: 0 auto 12px;
+}
+.cast-modal-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+.cast-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.cast-option-card {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+  color: #fff;
+  transition: all 0.2s ease;
+}
+.cast-option-card:hover {
+  background: rgba(168, 85, 247, 0.15);
+  border-color: rgba(168, 85, 247, 0.5);
+  transform: translateY(-1px);
+}
+.cast-opt-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(168, 85, 247, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #e9d5ff;
+  flex-shrink: 0;
+}
+.cast-opt-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cast-opt-info strong {
+  font-size: 0.92rem;
+  color: #fff;
+}
+.cast-opt-info span {
+  font-size: 0.78rem;
+  color: var(--text-muted, #94a3b8);
+}
+.cast-opt-action {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #c084fc;
+  white-space: nowrap;
+}
+.cast-tv-guide {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 14px;
+}
+.cast-tv-guide h4 {
+  font-size: 0.84rem;
+  color: #f1f5f9;
+  margin-bottom: 8px;
+}
+.cast-tv-guide ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cast-tv-guide li {
+  font-size: 0.78rem;
+  color: #cbd5e1;
+  line-height: 1.4;
+}
+.cast-tv-guide strong {
+  color: #e9d5ff;
+}
+
+/* Cast Active State in Player */
+#playerCastBtn.cast-active,
+#modalCastBtn.cast-active {
+  background: rgba(168, 85, 247, 0.35);
+  border-color: #a855f7;
+  color: #f3e8ff;
+  box-shadow: 0 0 14px rgba(168, 85, 247, 0.5);
+}
+
+/* Smart TV Navigation & High-Contrast Focus Ring */
+:focus-visible,
+.tv-focused {
+  outline: 3px solid #a855f7 !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.8) !important;
+  z-index: 10 !important;
+}
+
+body.smart-tv-mode .media-card:focus,
+body.smart-tv-mode .media-card.tv-focused {
+  transform: scale(1.05) translateY(-4px);
+  border-color: #a855f7;
+  box-shadow: 0 8px 30px rgba(168, 85, 247, 0.6) !important;
+}

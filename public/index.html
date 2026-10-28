@@ -13,7 +13,7 @@
   <link rel="dns-prefetch" href="https://fenixtv.fenixhub.online" />
   <link rel="dns-prefetch" href="https://v3-cinemeta.strem.io" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/styles.css?v=20261028jj" />
+  <link rel="stylesheet" href="/styles.css?v=20261028kk" />
 </head>
 <body>
   <!-- Site Intro Splash Animation -->
@@ -205,6 +205,13 @@
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 9-14 9V3z"/></svg>
               <span>Assistir</span>
             </button>
+            <button class="btn btn-glass modal-ghost-btn" id="modalCastBtn" title="Transmitir para TV">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                <path d="M2 16.1A5 5 0 0 1 5.9 20M2 12.05A9 9 0 0 1 9.95 20M2 8V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6"/>
+                <line x1="2" y1="20" x2="2.01" y2="20"/>
+              </svg>
+              <span>Transmitir</span>
+            </button>
             <button class="btn btn-glass modal-ghost-btn" id="modalMyListBtn">+ Minha Lista</button>
             <button class="btn btn-glass modal-ghost-btn" id="modalPlaylistBtn">Playlist</button>
           </div>
@@ -335,6 +342,64 @@
     </div>
   </div>
 
+  <!-- Cast & Smart TV Modal -->
+  <div class="modal-backdrop hidden" id="castModal">
+    <div class="modal-card modal-sm modal-cast">
+      <button class="modal-close" id="closeCastModalBtn">&times;</button>
+      <div class="modal-body">
+        <div class="cast-modal-header">
+          <div class="cast-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+              <path d="M2 16.1A5 5 0 0 1 5.9 20M2 12.05A9 9 0 0 1 9.95 20M2 8V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6"/>
+              <line x1="2" y1="20" x2="2.01" y2="20"/>
+            </svg>
+          </div>
+          <h2 class="status-modal-title">Transmitir para TV</h2>
+          <p class="status-modal-sub" id="castModalSub">Escolha como deseja conectar o vídeo à sua Smart TV ou aparelho de streaming.</p>
+        </div>
+
+        <div class="cast-options-list">
+          <button type="button" class="cast-option-card" id="castStartNativeBtn">
+            <div class="cast-opt-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
+                <path d="M2 16.1A5 5 0 0 1 5.9 20M2 12.05A9 9 0 0 1 9.95 20M2 8V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6"/>
+                <line x1="2" y1="20" x2="2.01" y2="20"/>
+              </svg>
+            </div>
+            <div class="cast-opt-info">
+              <strong>Chromecast / Smart TV Wi-Fi</strong>
+              <span>Transmite diretamente via Google Cast ou AirPlay</span>
+            </div>
+            <span class="cast-opt-action">Conectar &rarr;</span>
+          </button>
+
+          <button type="button" class="cast-option-card" id="castOpenDirectLinkBtn">
+            <div class="cast-opt-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
+                <rect x="2" y="7" width="20" height="15" rx="2" ry="2"/>
+                <polyline points="17 2 12 7 7 2"/>
+              </svg>
+            </div>
+            <div class="cast-opt-info">
+              <strong>Abrir no Navegador da Smart TV</strong>
+              <span>Copiar link direto para abrir no app de Internet da TV</span>
+            </div>
+            <span class="cast-opt-action">Copiar Link</span>
+          </button>
+        </div>
+
+        <div class="cast-tv-guide">
+          <h4>💡 Como funciona na Smart TV:</h4>
+          <ul>
+            <li><strong>Samsung / LG / TCL / Philips / Sony:</strong> Conecte no mesmo Wi-Fi e clique em <em>Chromecast / Smart TV Wi-Fi</em>.</li>
+            <li><strong>Apple TV / AirPlay:</strong> No iPhone ou Mac, toque no botão para selecionar sua TV via AirPlay.</li>
+            <li><strong>Direto na TV:</strong> Você também pode abrir o site <em>johnflix.netlify.app</em> no navegador da TV (compatível com controle remoto D-Pad).</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Fullscreen Cloud Video Player Overlay -->
   <div class="player-overlay hidden" id="playerOverlay">
     <div class="player-topbar" id="playerTopbar">
@@ -351,6 +416,13 @@
         <div class="torrent-telemetry hidden" id="torrentTelemetry">
           <span id="telemetryPeers">0 peers</span> • <span id="telemetrySpeed">0 KB/s</span>
         </div>
+        <button class="btn btn-glass btn-sm player-ctrl-btn" id="playerCastBtn" title="Transmitir para TV" aria-label="Transmitir para TV">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+            <path d="M2 16.1A5 5 0 0 1 5.9 20M2 12.05A9 9 0 0 1 9.95 20M2 8V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6"/>
+            <line x1="2" y1="20" x2="2.01" y2="20"/>
+          </svg>
+          <span class="cast-btn-text">Transmitir</span>
+        </button>
         <button class="btn btn-glass btn-sm player-ctrl-btn" id="switchServerBtn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="2" y="3" width="20" height="7" rx="2"/><rect x="2" y="14" width="20" height="7" rx="2"/><circle cx="6" cy="6.5" r="1" fill="currentColor"/><circle cx="6" cy="17.5" r="1" fill="currentColor"/></svg>
           <span>Fontes</span>
@@ -441,7 +513,8 @@
   </footer>
 
   <script defer src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
-  <script defer src="/config.js?v=20261028jj"></script>
-  <script defer src="/app.js?v=20261028jj"></script>
+  <script defer src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
+  <script defer src="/config.js?v=20261028kk"></script>
+  <script defer src="/app.js?v=20261028kk"></script>
 </body>
 </html>
