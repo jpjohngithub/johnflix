@@ -700,6 +700,9 @@ async function hlsProxyHandler(request, url) {
   if (/hakunaymatata\.com|mzfi\.me/i.test(t.hostname)) {
     fh.Referer = 'https://mzfi.me/';
   }
+  if (/tiktokcdn\.live|dadinhodetapioca/i.test(t.hostname)) {
+    fh.Referer = 'https://dadinhodetapioca.fun/play/discoverychannel.html';
+  }
   const range = request.headers.get('range');
   if (range) fh.Range = range;
   let up;
@@ -1381,14 +1384,15 @@ export default async (request) => {
         if (/sbt/i.test(decodedId)) {
           rawTvStreams.unshift(
             { name: 'SBT Ao Vivo', title: '📺 SBT Cuiabá HD (Ao Vivo)', url: 'https://video09.logicahost.com.br/sbtcuiaba/sbtcuiaba/playlist.m3u8' },
-            { name: 'SBT Nacional', title: '📺 SBT Nacional (Full HD)', url: `https://fenixtv.fenixhub.online/proxy?url=${encodeURIComponent('https://d1jvs4svzaqp8n.cloudfront.net/indexMobile.m3u8')}` }
+            { name: 'SBT Nacional', title: '📺 SBT Nacional (Full HD)', url: 'https://d1jvs4svzaqp8n.cloudfront.net/indexMobile.m3u8' },
+            { name: 'SBT Mutum', title: '📺 SBT Mutum HD (Ao Vivo)', url: 'https://video09.logicahost.com.br/sbtmutum/sbtmutum/playlist.m3u8' }
           );
         }
         if (/discovery/i.test(decodedId)) {
           rawTvStreams.unshift({
             name: 'Discovery Channel',
             title: '📺 Discovery Channel [FULL HD]',
-            url: `https://fenixtv.fenixhub.online/proxy?url=${encodeURIComponent('https://tiktokcdn.live/live/secure/C3uEBwDRmCBd2odYLQkmWSnQlvJDTkWmhKYMtAtAsBQ/1793050614/e0d384e8639071c3/discoverychannel/index.m3u8')}&ref=https%3A%2F%2Fdadinhodetapioca.fun%2Fplay%2Fdiscoverychannel.html`
+            url: await hlsProxied('https://tiktokcdn.live/live/secure/C3uEBwDRmCBd2odYLQkmWSnQlvJDTkWmhKYMtAtAsBQ/1793050614/e0d384e8639071c3/discoverychannel/index.m3u8')
           });
         }
 
@@ -1424,20 +1428,20 @@ export default async (request) => {
         const activeTvRaw = rawTvStreams.filter((s) => !/\[OFFLINE\]/i.test(`${s.name || ''} ${s.title || ''}`));
 
         // Upgrade and sanitize live streams:
-        // Exclude broken direct.m3u8 (which point to non-proxied relative /hls/*.ts segments returning 404)
+        // Exclude broken direct.m3u8 and unwrap broken Square Cloud proxy wrappers
         const cleanTvRaw = activeTvRaw
           .filter((s) => s.url && !s.url.includes('fenixtv.fenixhub.online/direct.m3u8'))
           .map((s) => {
             let u = s.url || '';
-            if (u.startsWith('http://')) {
-              u = `https://fenixtv.fenixhub.online/proxy?url=${encodeURIComponent(u)}`;
+            if (u.includes('fenixtv.fenixhub.online/proxy?url=')) {
+              try {
+                const m = u.match(/proxy\?url=([^&]+)/);
+                if (m) u = decodeURIComponent(m[1]);
+              } catch (e) {}
             }
-            // Prefer FenixTV proxy streams which include Dadinho / Exploud CORS headers
-            const isProxy = u.includes('fenixtv.fenixhub.online/proxy');
             return {
               ...s,
-              url: u,
-              isProxyPreferred: isProxy
+              url: u
             };
           });
 
@@ -1445,10 +1449,11 @@ export default async (request) => {
 
         const tvAddonResults = [];
         if (cleanTvRaw.length > 0) {
-          const fenixStreams = cleanTvRaw.map((s, idx) => {
+          const fenixStreams = (await Promise.all(cleanTvRaw.map(async (s, idx) => {
             const cleanTitle = (s.title || 'Fenix TV').replace(/🔴\s*\[OFFLINE\]\s*/gi, '').replace(/\?\?\s*\[OFFLINE\]\s*/gi, '');
             const isFhd = /1080p|fhd|full\s*hd|4k/i.test(cleanTitle);
             const quality = isFhd ? '1080p Full HD' : 'HD Ao Vivo';
+            const finalUrl = (s.url && s.url.startsWith('http://')) ? await hlsProxied(s.url) : s.url;
             return {
               addonId: 'fenixtv',
               addonName: 'Fenix TV',
@@ -1464,10 +1469,10 @@ export default async (request) => {
               audio: 'Ao Vivo PT-BR',
               seeds: null,
               playType: 'hls',
-              directUrl: s.url,
-              proxyUrl: s.url
+              directUrl: finalUrl,
+              proxyUrl: finalUrl
             };
-          }).filter((s) => s.proxyUrl);
+          }))).filter((s) => s.proxyUrl);
 
           if (fenixStreams.length > 0) {
             tvAddonResults.push({
@@ -1595,13 +1600,13 @@ export default async (request) => {
             const tmdbId = await tmdbPromise;
             const isSeries = type === 'series';
             const autoEmbed = isSeries
-              ? 'https://player.autoembed.cc/embed/tv/' + (tmdbId || baseImdb) + '/' + epSeason + '/' + epNumber
-              : 'https://player.autoembed.cc/embed/movie/' + (tmdbId || baseImdb);
+              ? (tmdbId ? `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${epSeason}&e=${epNumber}` : `https://player.videasy.to/tv/${baseImdb}/${epSeason}/${epNumber}`)
+              : (tmdbId ? `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1` : `https://player.videasy.to/movie/${baseImdb}`);
             return {
               addon,
               rawStreams: [{
                 name: 'AutoEmbed Cloud',
-                title: '⚡ Servidor Rápido Cloud (AutoEmbed)',
+                title: '⚡ Servidor Rápido MultiEmbed (AutoEmbed)',
                 embedUrl: autoEmbed
               }]
             };
