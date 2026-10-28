@@ -5838,8 +5838,8 @@ body.vault-restricted-mode #footerServersBtn {
 /* Home Suggestions Banner */
 .home-suggestions-bar {
   max-width: var(--max-content-width, 1400px);
-  margin: 18px auto 8px;
-  padding: 14px 20px;
+  margin: 36px auto 30px;
+  padding: 16px 24px;
   background: linear-gradient(135deg, rgba(30, 27, 75, 0.6) 0%, rgba(20, 15, 45, 0.75) 100%);
   border: 1px solid rgba(168, 85, 247, 0.28);
   border-radius: 14px;

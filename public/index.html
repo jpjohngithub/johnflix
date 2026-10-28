@@ -13,7 +13,7 @@
   <link rel="dns-prefetch" href="https://fenixtv.fenixhub.online" />
   <link rel="dns-prefetch" href="https://v3-cinemeta.strem.io" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/styles.css?v=20261028ii" />
+  <link rel="stylesheet" href="/styles.css?v=20261028jj" />
 </head>
 <body>
   <!-- Site Intro Splash Animation -->
@@ -109,12 +109,6 @@
             <button class="btn btn-icon-only" id="heroPlaylistBtn" title="Salvar em Playlist">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
             </button>
-            <button class="btn btn-glass btn-hero-suggest" id="heroSuggestBtn" title="Mural de Sugestões">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                <path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/>
-              </svg>
-              <span>Sugerir</span>
-            </button>
           </div>
         </div>
 
@@ -149,21 +143,6 @@
       </div>
     </section>
 
-    <!-- Home Suggestions Banner Bar -->
-    <div class="home-suggestions-bar" id="homeSuggestionsBar">
-      <div class="suggestions-bar-left">
-        <span class="suggestions-pulse-dot"></span>
-        <div class="suggestions-bar-text">
-          <strong>Mural de Sugestões da Comunidade</strong>
-          <p>Peça novos filmes, séries, canais de TV ou sugira melhorias. Todas as ideias aparecem para todo mundo!</p>
-        </div>
-      </div>
-      <button type="button" class="btn btn-primary btn-sm btn-sug-open" id="bannerSuggestionsBtn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg>
-        <span>Mural de Sugestões</span>
-      </button>
-    </div>
-
     <!-- Search Results Grid (Hidden by default) -->
     <section class="search-section hidden" id="searchSection">
       <div class="search-header-card">
@@ -191,6 +170,21 @@
 
     <!-- Dynamic Catalog Rows -->
     <div id="catalogContainer" class="catalog-container"></div>
+
+    <!-- Home Suggestions Banner Bar (Bottom of Home Feed) -->
+    <div class="home-suggestions-bar" id="homeSuggestionsBar">
+      <div class="suggestions-bar-left">
+        <span class="suggestions-pulse-dot"></span>
+        <div class="suggestions-bar-text">
+          <strong>Mural de Sugestões da Comunidade</strong>
+          <p>Peça novos filmes, séries, canais de TV ou sugira melhorias. Todas as ideias aparecem para todo mundo!</p>
+        </div>
+      </div>
+      <button type="button" class="btn btn-primary btn-sm btn-sug-open" id="bannerSuggestionsBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg>
+        <span>Mural de Sugestões</span>
+      </button>
+    </div>
   </main>
 
   <!-- Details & Server Selector Modal -->
@@ -447,7 +441,7 @@
   </footer>
 
   <script defer src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
-  <script defer src="/config.js?v=20261028ii"></script>
-  <script defer src="/app.js?v=20261028ii"></script>
+  <script defer src="/config.js?v=20261028jj"></script>
+  <script defer src="/app.js?v=20261028jj"></script>
 </body>
 </html>
