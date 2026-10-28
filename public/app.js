@@ -2664,16 +2664,19 @@
 
   // Client-side Stream Cache & Prefetcher for Instant Opening
   const clientStreamsCache = new Map();
-  function prefetchStreams(type, targetId) {
+  function prefetchStreams(type, targetId, optItem = null) {
     if (!type || !targetId) return null;
     const isVault = String(targetId).startsWith('vault:') || state.isVaultMode;
     const key = `${isVault ? 'vault' : type}:${targetId}`;
     const existing = clientStreamsCache.get(key);
     if (existing && existing.exp > Date.now()) return existing.promise;
 
+    const channelName = optItem?.name || optItem?.title || state.currentItem?.name || '';
+    const nameParam = (type === 'tv' && channelName) ? `?name=${encodeURIComponent(channelName)}` : '';
+
     const url = isVault
       ? `/api/vault/streams?id=${encodeURIComponent(targetId)}`
-      : `/api/streams/${type}/${encodeURIComponent(targetId)}`;
+      : `/api/streams/${type}/${encodeURIComponent(targetId)}${nameParam}`;
 
     const promise = fetch(url)
       .then((r) => r.json())
@@ -3037,7 +3040,7 @@
 
     // Start prefetching streams immediately in parallel with metadata!
     const initialTargetId = customStreamId || (item.type === 'series' ? `${item.id}:${customSeason || 1}:${customEp || 1}` : item.id);
-    prefetchStreams(item.type, initialTargetId);
+    prefetchStreams(item.type, initialTargetId, item);
 
     // If user clicked "Assistir" directly, open the Player overlay immediately so they enter the movie in <50ms!
     if (autoPlayFirst) {
@@ -3209,7 +3212,7 @@
     el.streamCounter.textContent = '...';
 
     try {
-      const data = await prefetchStreams(type, targetId);
+      const data = await prefetchStreams(type, targetId, item);
       if (currentLoadTargetId !== targetId) return;
       el.streamsLoading.classList.add('hidden');
 

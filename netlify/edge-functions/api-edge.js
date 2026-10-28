@@ -695,7 +695,7 @@ const NTFY_TOPIC = 'https://ntfy.sh/johnflix_sugestoes_publicas_2026';
 
 const ACTIVE_CLIENTS = new Map();
 const TRAFFIC_HISTORY = [];
-let MAX_PEAK_TODAY = 32;
+let MAX_PEAK_TODAY = 1;
 
 function getOnlineStats(reqClientId = null) {
   const now = Date.now();
@@ -703,26 +703,14 @@ function getOnlineStats(reqClientId = null) {
     ACTIVE_CLIENTS.set(reqClientId, now);
   }
   for (const [id, lastSeen] of ACTIVE_CLIENTS.entries()) {
-    if (now - lastSeen > 45000) {
+    if (now - lastSeen > 40000) {
       ACTIVE_CLIENTS.delete(id);
     }
   }
 
-  const baseSimulated = Math.floor(26 + 9 * Math.sin(now / 150000) + 4 * Math.cos(now / 70000));
-  const currentCount = Math.max(1, ACTIVE_CLIENTS.size + baseSimulated);
+  // 100% real active user sessions only
+  const currentCount = Math.max(1, ACTIVE_CLIENTS.size);
   if (currentCount > MAX_PEAK_TODAY) MAX_PEAK_TODAY = currentCount;
-
-  if (TRAFFIC_HISTORY.length === 0) {
-    const t0 = now - 20 * 60 * 1000;
-    for (let i = 0; i < 20; i++) {
-      const ptTime = t0 + i * 60 * 1000;
-      const d = new Date(ptTime);
-      const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-      const simVal = Math.max(12, Math.floor(28 + 14 * Math.sin(ptTime / 180000) + (i === 15 ? 18 : 0)));
-      if (simVal > MAX_PEAK_TODAY) MAX_PEAK_TODAY = simVal;
-      TRAFFIC_HISTORY.push({ time: timeStr, count: simVal, timestamp: ptTime });
-    }
-  }
 
   const lastEntry = TRAFFIC_HISTORY[TRAFFIC_HISTORY.length - 1];
   if (!lastEntry || now - lastEntry.timestamp >= 30000) {
@@ -772,24 +760,32 @@ async function hlsProxied(u) {
 async function getIptvBr() {
   if (iptvCache.exp > Date.now() && iptvCache.list.length) return iptvCache.list;
   try {
-    const res = await fetch(IPTV_URL, { headers: { 'User-Agent': 'Mozilla/5.0' } });
-    if (!res.ok) throw new Error('iptv');
-    const lines = (await res.text()).split(/\r?\n/);
+    const urls = [
+      IPTV_URL,
+      'https://raw.githubusercontent.com/iptv-org/iptv/master/streams/br_pluto.m3u'
+    ];
+    const texts = await Promise.all(
+      urls.map((u) => fetch(u, { headers: { 'User-Agent': 'Mozilla/5.0' } }).then((r) => (r.ok ? r.text() : '')).catch(() => ''))
+    );
     const out = [];
     const seen = new Set();
-    for (let i = 0; i < lines.length; i++) {
-      if (!lines[i].startsWith('#EXTINF')) continue;
-      const info = lines[i];
-      let j = i + 1;
-      while (j < lines.length && (!lines[j].trim() || lines[j].startsWith('#'))) j++;
-      const url = (lines[j] || '').trim();
-      if (!/^https?:\/\//i.test(url)) continue;
-      const name = (info.split(',').slice(1).join(',') || '').replace(/\s*\[[^\]]*\]/g, '').replace(/\s*\(\d+p\)/gi, '').trim();
-      if (!name || /geo-?blocked/i.test(info) || seen.has(name.toLowerCase())) continue;
-      seen.add(name.toLowerCase());
-      const logo = (info.match(/tvg-logo="([^"]*)"/) || [])[1] || '';
-      const group = (info.match(/group-title="([^"]*)"/) || [])[1] || 'Canais';
-      out.push({ url, name, logo, group: group.split(';')[0] });
+    for (const text of texts) {
+      if (!text) continue;
+      const lines = text.split(/\r?\n/);
+      for (let i = 0; i < lines.length; i++) {
+        if (!lines[i].startsWith('#EXTINF')) continue;
+        const info = lines[i];
+        let j = i + 1;
+        while (j < lines.length && (!lines[j].trim() || lines[j].startsWith('#'))) j++;
+        const url = (lines[j] || '').trim();
+        if (!/^https?:\/\//i.test(url)) continue;
+        const name = (info.split(',').slice(1).join(',') || '').replace(/\s*\[[^\]]*\]/g, '').replace(/\s*\(\d+p\)/gi, '').trim();
+        if (!name || /geo-?blocked/i.test(info) || seen.has(name.toLowerCase())) continue;
+        seen.add(name.toLowerCase());
+        const logo = (info.match(/tvg-logo="([^"]*)"/) || [])[1] || '';
+        const group = (info.match(/group-title="([^"]*)"/) || [])[1] || 'Canais';
+        out.push({ url, name, logo, group: group.split(';')[0] });
+      }
     }
     if (out.length) { iptvCache.list = out; iptvCache.exp = Date.now() + 30 * 60 * 1000; }
   } catch (e) {}
@@ -800,26 +796,14 @@ const GROUP_PT = { News: 'Notícias', Sports: 'Esportes', Movies: 'Filmes', Kids
 
 const STATIC_NATIONAL_CHANNELS = [
   {
-    name: 'SBT Nacional (Ao Vivo)',
-    url: 'https://d1jvs4svzaqp8n.cloudfront.net/indexMobile.m3u8',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Sistema_Brasileiro_de_Televis%C3%A3o_logo.svg/512px-Sistema_Brasileiro_de_Televis%C3%A3o_logo.svg.png',
-    group: 'General'
-  },
-  {
     name: 'TV Globo (Ao Vivo)',
     url: 'http://hls1.sua.tv/live/globotvbahiafhdbr2/s.m3u8',
     logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/TV_Globo_2021.svg/512px-TV_Globo_2021.svg.png',
     group: 'General'
   },
   {
-    name: 'SBT (Ao Vivo)',
-    url: 'https://video09.logicahost.com.br/sbtcuiaba/sbtcuiaba/playlist.m3u8',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Sistema_Brasileiro_de_Televis%C3%A3o_logo.svg/512px-Sistema_Brasileiro_de_Televis%C3%A3o_logo.svg.png',
-    group: 'General'
-  },
-  {
-    name: 'SBT Interior (HD)',
-    url: 'https://video09.logicahost.com.br/sbtmutum/sbtmutum/playlist.m3u8',
+    name: 'SBT Nacional (Ao Vivo)',
+    url: 'https://d1jvs4svzaqp8n.cloudfront.net/indexMobile.m3u8',
     logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Sistema_Brasileiro_de_Televis%C3%A3o_logo.svg/512px-Sistema_Brasileiro_de_Televis%C3%A3o_logo.svg.png',
     group: 'General'
   },
@@ -830,9 +814,27 @@ const STATIC_NATIONAL_CHANNELS = [
     group: 'News'
   },
   {
+    name: 'CNN Brasil (Ao Vivo)',
+    url: 'https://d25usgadhphvwi.cloudfront.net/hls/main.m3u8',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/CNN_Brasil_logo.svg/512px-CNN_Brasil_logo.svg.png',
+    group: 'News'
+  },
+  {
     name: 'TV Cultura (Ao Vivo)',
     url: 'https://fpa-gateway.tvcultura.com.br:8181/memfs/606caef0-a290-413d-9f1f-8fcdb3a73831.m3u8',
     logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/TV_Cultura_logo.svg/512px-TV_Cultura_logo.svg.png',
+    group: 'General'
+  },
+  {
+    name: 'RedeTV! (Ao Vivo)',
+    url: 'https://tv01.zas.media:1936/redetvparana/redetvparana/playlist.m3u8',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/RedeTV%21_logo.svg/512px-RedeTV%21_logo.svg.png',
+    group: 'General'
+  },
+  {
+    name: 'SBT Cuiabá (Ao Vivo)',
+    url: 'https://video09.logicahost.com.br/sbtcuiaba/sbtcuiaba/playlist.m3u8',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Sistema_Brasileiro_de_Televis%C3%A3o_logo.svg/512px-Sistema_Brasileiro_de_Televis%C3%A3o_logo.svg.png',
     group: 'General'
   }
 ];
@@ -1740,20 +1742,84 @@ export default async (request) => {
       }
       if (type === 'tv') {
         let rawTvStreams = [];
+        const queryName = (url.searchParams.get('name') || '').toLowerCase().trim();
+        const querySlug = queryName.replace(/[^a-z0-9]/gi, '');
+        const lowerId = decodedId.toLowerCase();
+        const rawSlug = decodedId.split(':').pop().replace(/[^a-z0-9]/gi, '').toLowerCase();
+
+        // 1. Query Nuvio Live Sports if ID matches
+        if (decodedId.startsWith('nuvio_')) {
+          try {
+            const nuvioData = await fetchJson(`https://nuviosports.xyz/stream/tv/${encodedId}.json`, 2800);
+            if (Array.isArray(nuvioData?.streams)) rawTvStreams.push(...nuvioData.streams);
+          } catch (_) {}
+        }
+
+        // 2. Query Watchio if ID matches
+        if (decodedId.includes('.br') || decodedId.startsWith('watchio')) {
+          try {
+            const watchioData = await fetchJson(`https://watchio-addon.pages.dev/stream/tv/${encodedId}.json`, 2500);
+            if (Array.isArray(watchioData?.streams)) rawTvStreams.push(...watchioData.streams);
+          } catch (_) {}
+        }
+
+        // 3. Query Fenix TV
         try {
           const fenixTvData = await fetchJson(`https://fenixtv.fenixhub.online/stream/tv/${encodedId}.json`, 2500);
           if (Array.isArray(fenixTvData?.streams)) rawTvStreams.push(...fenixTvData.streams);
         } catch (e) {}
 
-        // Check for direct high-availability feeds for major channels (SBT, Globo, Discovery)
-        if (/sbt/i.test(decodedId)) {
+        // 4. Exact dedicated high-availability feeds ONLY when channel strictly matches
+        const isSbt = /\bsbt\b/.test(queryName) || (lowerId.includes('sbt') && !lowerId.includes('exploud'));
+        const isGlobo = /\bglobo\b/.test(queryName) || (lowerId.includes('globo') && !lowerId.includes('exploud'));
+        const isRecord = /\brecord\b/.test(queryName) || (lowerId.includes('record') && !lowerId.includes('exploud'));
+        const isCultura = /\bcultura\b/.test(queryName) || lowerId.includes('cultura');
+        const isCnn = /\bcnn\b/.test(queryName) || lowerId.includes('cnn');
+        const isRedeTv = /redetv/.test(queryName) || lowerId.includes('redetv');
+
+        if (isSbt) {
           rawTvStreams.unshift(
-            { name: 'SBT Ao Vivo', title: '📺 SBT Cuiabá HD (Ao Vivo)', url: 'https://video09.logicahost.com.br/sbtcuiaba/sbtcuiaba/playlist.m3u8' },
             { name: 'SBT Nacional', title: '📺 SBT Nacional (Full HD)', url: 'https://d1jvs4svzaqp8n.cloudfront.net/indexMobile.m3u8' },
+            { name: 'SBT Ao Vivo', title: '📺 SBT Cuiabá HD (Ao Vivo)', url: 'https://video09.logicahost.com.br/sbtcuiaba/sbtcuiaba/playlist.m3u8' },
             { name: 'SBT Mutum', title: '📺 SBT Mutum HD (Ao Vivo)', url: 'https://video09.logicahost.com.br/sbtmutum/sbtmutum/playlist.m3u8' }
           );
         }
-        if (/discovery/i.test(decodedId)) {
+        if (isGlobo) {
+          rawTvStreams.unshift({
+            name: 'TV Globo',
+            title: '📺 TV Globo (Ao Vivo HD)',
+            url: await hlsProxied('http://hls1.sua.tv/live/globotvbahiafhdbr2/s.m3u8')
+          });
+        }
+        if (isRecord) {
+          rawTvStreams.unshift({
+            name: 'Record News',
+            title: '📺 Record News (Full HD)',
+            url: 'https://jmp2.uk/plu-6102e04e9ab1db0007a980a1.m3u8'
+          });
+        }
+        if (isCultura) {
+          rawTvStreams.unshift({
+            name: 'TV Cultura',
+            title: '📺 TV Cultura (Ao Vivo)',
+            url: 'https://fpa-gateway.tvcultura.com.br:8181/memfs/606caef0-a290-413d-9f1f-8fcdb3a73831.m3u8'
+          });
+        }
+        if (isCnn) {
+          rawTvStreams.unshift({
+            name: 'CNN Brasil',
+            title: '📺 CNN Brasil (1080p Ao Vivo)',
+            url: 'https://d25usgadhphvwi.cloudfront.net/hls/main.m3u8'
+          });
+        }
+        if (isRedeTv) {
+          rawTvStreams.unshift({
+            name: 'RedeTV!',
+            title: '📺 RedeTV! (Ao Vivo HD)',
+            url: 'https://tv01.zas.media:1936/redetvparana/redetvparana/playlist.m3u8'
+          });
+        }
+        if (/discovery/i.test(queryName) || /discovery/i.test(decodedId)) {
           rawTvStreams.unshift({
             name: 'Discovery Channel',
             title: '📺 Discovery Channel [FULL HD]',
@@ -1763,8 +1829,8 @@ export default async (request) => {
 
         // If this specific channel ID returned 0 streams, search sister FenixTV catalogs by channel slug/name
         if (rawTvStreams.length === 0) {
-          const rawSlug = decodedId.split(':').pop().replace(/[^a-z0-9]/gi, '').toLowerCase();
-          if (rawSlug && rawSlug.length >= 3) {
+          const matchTarget = querySlug || rawSlug;
+          if (matchTarget && matchTarget.length >= 3) {
             const backupCatalogs = [
               'https://fenixtv.fenixhub.online/catalog/tv/tv_reidoscanais.json',
               'https://fenixtv.fenixhub.online/catalog/tv/tv_exploud.json',
@@ -1775,7 +1841,7 @@ export default async (request) => {
                 const catData = await fetchJson(catUrl, 2500);
                 const matchMeta = (catData?.metas || []).find((m) => {
                   const mSlug = String(m.name || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
-                  return mSlug === rawSlug || (mSlug.length >= 4 && rawSlug.includes(mSlug));
+                  return mSlug === matchTarget || (mSlug.length >= 4 && matchTarget.includes(mSlug));
                 });
                 if (matchMeta) {
                   const stData = await fetchJson(`https://fenixtv.fenixhub.online/stream/tv/${encodeURIComponent(matchMeta.id)}.json`, 2800);
@@ -1820,13 +1886,13 @@ export default async (request) => {
             const quality = isFhd ? '1080p Full HD' : 'HD Ao Vivo';
             const finalUrl = (s.url && s.url.startsWith('http://')) ? await hlsProxied(s.url) : s.url;
             return {
-              addonId: 'fenixtv',
-              addonName: 'Fenix TV',
+              addonId: s.addonId || 'fenixtv',
+              addonName: s.addonName || 'Fenix TV',
               addonLogo: 'https://fenixtv.fenixhub.online/logo.png',
               addonBadge: 'CANAIS HD',
               addonColor: '#38bdf8',
-              serverLabel: `Fenix TV • Ao Vivo #${idx + 1}`,
-              rawName: 'Fenix TV',
+              serverLabel: `${cleanTitle.split('\n')[0] || 'Ao Vivo'} • #${idx + 1}`,
+              rawName: s.name || 'Fenix TV',
               rawTitle: cleanTitle.replace(/\n/g, ' • '),
               quality,
               is4k: false,
@@ -1851,19 +1917,17 @@ export default async (request) => {
           }
         }
 
-        const lowerId = decodedId.toLowerCase();
-        const rawSlug = decodedId.split(':').pop().replace(/[^a-z0-9]/gi, '').toLowerCase();
+        // Match against IPTV-Org and Pluto TV by channel name or slug
         const dynamicList = await getIptvBr().catch(() => []);
         const fullList = [...STATIC_NATIONAL_CHANNELS, ...dynamicList];
+        const queryWords = queryName.split(/\s+/).filter((w) => w.length >= 3);
         const matchStatic = fullList.find((c) => {
           const n = c.name.toLowerCase().replace(/[^a-z0-9]/gi, '');
-          return (rawSlug && (n === rawSlug || n.includes(rawSlug) || rawSlug.includes(n))) ||
-                 (lowerId.includes('sbt') && n.includes('sbt')) ||
-                 (lowerId.includes('globo') && n.includes('globo')) ||
-                 (lowerId.includes('cultura') && n.includes('cultura')) ||
-                 (lowerId.includes('record') && n.includes('record')) ||
-                 (lowerId.includes('band') && n.includes('band'));
-        }) || (tvAddonResults.length === 0 ? STATIC_NATIONAL_CHANNELS[0] : null);
+          if (querySlug && (n === querySlug || n.includes(querySlug) || querySlug.includes(n))) return true;
+          if (queryWords.length && queryWords.every((w) => c.name.toLowerCase().includes(w))) return true;
+          if (rawSlug && rawSlug.length >= 4 && (n === rawSlug || n.includes(rawSlug) || rawSlug.includes(n))) return true;
+          return false;
+        });
 
         if (matchStatic) {
           const direct = await hlsProxied(matchStatic.url);
@@ -1891,6 +1955,9 @@ export default async (request) => {
             badge: 'TV AO VIVO',
             color: '#a855f7',
             count: 1,
+            streams: [brStream]
+          });
+        }
             streams: [brStream]
           });
         }
