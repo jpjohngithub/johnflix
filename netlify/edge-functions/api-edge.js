@@ -703,12 +703,12 @@ function getOnlineStats(reqClientId = null) {
     ACTIVE_CLIENTS.set(reqClientId, now);
   }
   for (const [id, lastSeen] of ACTIVE_CLIENTS.entries()) {
-    if (now - lastSeen > 40000) {
+    if (now - lastSeen > 25000) {
       ACTIVE_CLIENTS.delete(id);
     }
   }
 
-  // 100% real active user sessions only
+  // Purely distinct connected physical devices
   const currentCount = Math.max(1, ACTIVE_CLIENTS.size);
   if (currentCount > MAX_PEAK_TODAY) MAX_PEAK_TODAY = currentCount;
 
@@ -965,14 +965,21 @@ export default async (request) => {
         ...headers,
         'Cache-Control': 'no-cache, no-store, must-revalidate'
       };
-      let clientId = url.searchParams.get('cid');
+      const clientIp = request.headers.get('x-nf-client-connection-ip') ||
+                       request.headers.get('client-ip') ||
+                       (request.headers.get('x-forwarded-for') || '').split(',')[0].trim() ||
+                       'dev';
+      let deviceId = url.searchParams.get('did') || url.searchParams.get('cid');
       if (request.method === 'POST') {
         try {
           const body = await request.json();
-          if (body && body.clientId) clientId = body.clientId;
+          if (body && (body.deviceId || body.clientId)) {
+            deviceId = body.deviceId || body.clientId;
+          }
         } catch (_) {}
       }
-      const stats = getOnlineStats(clientId);
+      const uniqueDeviceKey = deviceId ? `${clientIp}:${deviceId}` : clientIp;
+      const stats = getOnlineStats(uniqueDeviceKey);
       return new Response(JSON.stringify(stats), { status: 200, headers: trafficHeaders });
     }
 

@@ -3848,17 +3848,17 @@
   // === REAL-TIME LIVE TRAFFIC MONITOR ===
   let trafficStatsCache = null;
   function startLiveTrafficHeartbeat() {
-    let cid = sessionStorage.getItem('johnflix_cid');
-    if (!cid) {
-      cid = 'c_' + Math.random().toString(36).substring(2, 10);
-      sessionStorage.setItem('johnflix_cid', cid);
+    let did = localStorage.getItem('johnflix_device_id');
+    if (!did) {
+      did = 'dev_' + Math.random().toString(36).substring(2, 12);
+      localStorage.setItem('johnflix_device_id', did);
     }
     const ping = async () => {
       try {
         const res = await fetch('/api/traffic', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ clientId: cid })
+          body: JSON.stringify({ deviceId: did })
         });
         const data = await res.json();
         if (data && typeof data.online === 'number') {
@@ -3872,7 +3872,7 @@
       } catch (_) {}
     };
     ping();
-    setInterval(ping, 16000);
+    setInterval(ping, 12000);
   }
 
   function openTrafficModal() {
@@ -3881,7 +3881,8 @@
     if (trafficStatsCache) {
       renderTrafficModal(trafficStatsCache);
     }
-    fetch('/api/traffic').then(r => r.json()).then(data => {
+    const did = localStorage.getItem('johnflix_device_id') || '';
+    fetch(`/api/traffic?did=${encodeURIComponent(did)}`).then(r => r.json()).then(data => {
       trafficStatsCache = data;
       renderTrafficModal(data);
     }).catch(() => {});
