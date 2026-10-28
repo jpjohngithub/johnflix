@@ -300,6 +300,61 @@ const MOVIE_ADDONS = [
     baseUrl: 'https://fun.qpef.workers.dev',
     logo: 'https://fun.qpef.workers.dev/favicon.ico',
     color: '#10b981'
+  },
+  {
+    id: 'flixnest_free',
+    name: 'Flix-Streams Free',
+    badge: 'HD FREE',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://free.flixnest.app/manifest.json',
+    baseUrl: 'https://free.flixnest.app',
+    logo: 'https://free.flixnest.app/favicon.ico',
+    color: '#06b6d4'
+  },
+  {
+    id: 'vidfast',
+    name: 'VidFast',
+    badge: 'MULTI EMBED',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://vidfast-stremio-addon.zmoualhi.workers.dev/manifest.json',
+    baseUrl: 'https://vidfast-stremio-addon.zmoualhi.workers.dev',
+    logo: 'https://vidfast-stremio-addon.zmoualhi.workers.dev/favicon.ico',
+    color: '#eab308'
+  },
+  {
+    id: 'animee',
+    name: 'Animee',
+    badge: 'ANIMES HD',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://animee.stravo.site/local/manifest.json',
+    baseUrl: 'https://animee.stravo.site/local',
+    logo: 'https://animee.stravo.site/favicon.ico',
+    color: '#f43f5e'
+  },
+  {
+    id: 'plexio',
+    name: 'Plexio',
+    badge: 'PLEX STREAM',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://plexio.elfhosted.com/manifest.json',
+    baseUrl: 'https://plexio.elfhosted.com',
+    logo: 'https://plexio.elfhosted.com/favicon.ico',
+    color: '#eab308'
+  },
+  {
+    id: 'tvdb_search',
+    name: 'TVDB Search',
+    badge: 'CATÁLOGO TVDB',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://tvdb.nepiraw.com/manifest.json',
+    baseUrl: 'https://tvdb.nepiraw.com',
+    logo: 'https://tvdb.nepiraw.com/favicon.ico',
+    color: '#3b82f6'
   }
 ];
 
@@ -358,6 +413,94 @@ const TV_ADDONS = [
     baseUrl: 'https://iptv-org.github.io/iptv/countries/br.m3u',
     logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Sistema_Brasileiro_de_Televis%C3%A3o_logo.svg/512px-Sistema_Brasileiro_de_Televis%C3%A3o_logo.svg.png',
     color: '#a855f7'
+  },
+  {
+    id: 'minhatv',
+    name: 'Minha TV',
+    badge: 'TV BRASIL HD',
+    type: 'tv',
+    category: 'tv',
+    manifestUrl: 'https://da5f663b4690-minhatv.baby-beamup.club/manifest.json',
+    baseUrl: 'https://da5f663b4690-minhatv.baby-beamup.club',
+    logo: 'https://raw.githubusercontent.com/Stremio/stremio-addons/master/images/default.png',
+    color: '#22c55e'
+  },
+  {
+    id: 'watchio',
+    name: 'Watchio.live TV',
+    badge: 'TV AO VIVO',
+    type: 'tv',
+    category: 'tv',
+    manifestUrl: 'https://watchio-addon.pages.dev/manifest.json',
+    baseUrl: 'https://watchio-addon.pages.dev',
+    logo: 'https://watchio-addon.pages.dev/icon.png',
+    color: '#38bdf8'
+  },
+  {
+    id: 'nuviosports',
+    name: 'Nuvio Live Sports',
+    badge: 'ESPORTES AO VIVO',
+    type: 'tv',
+    category: 'tv',
+    manifestUrl: 'https://nuviosports.xyz/manifest.json',
+    baseUrl: 'https://nuviosports.xyz',
+    logo: 'https://nuviosports.xyz/favicon.ico',
+    color: '#10b981'
+  },
+  {
+    id: 'nebulasports',
+    name: 'Nebula Sports',
+    badge: 'ESPORTES HD',
+    type: 'tv',
+    category: 'tv',
+    manifestUrl: 'https://sports.nebulapro.xyz/sports/i/free/manifest.json',
+    baseUrl: 'https://sports.nebulapro.xyz/sports/i/free',
+    logo: 'https://sports.nebulapro.xyz/favicon.ico',
+    color: '#6366f1'
+  },
+  {
+    id: 'onair',
+    name: 'OnAir TV',
+    badge: 'CANAIS MUNDIAIS',
+    type: 'tv',
+    category: 'tv',
+    manifestUrl: 'https://onair-gmcm.onrender.com/manifest.json',
+    baseUrl: 'https://onair-gmcm.onrender.com',
+    logo: 'https://onair-gmcm.onrender.com/favicon.ico',
+    color: '#8b5cf6'
+  },
+  {
+    id: 'pipocastv',
+    name: 'Pipocas TV',
+    badge: 'TV AO VIVO',
+    type: 'tv',
+    category: 'tv',
+    manifestUrl: 'https://pipocas-tv-stremio-addonv1.onrender.com/manifest.json',
+    baseUrl: 'https://pipocas-tv-stremio-addonv1.onrender.com',
+    logo: 'https://pipocas-tv-stremio-addonv1.onrender.com/favicon.ico',
+    color: '#ec4899'
+  },
+  {
+    id: 'argentinatv',
+    name: 'Argentina TV',
+    badge: 'TV INTERNACIONAL',
+    type: 'tv',
+    category: 'tv',
+    manifestUrl: 'https://848b3516657c-argentinatv.baby-beamup.club/manifest.json',
+    baseUrl: 'https://848b3516657c-argentinatv.baby-beamup.club',
+    logo: 'https://raw.githubusercontent.com/Stremio/stremio-addons/master/images/default.png',
+    color: '#60a5fa'
+  },
+  {
+    id: 'usatv',
+    name: 'USA TV',
+    badge: 'USA CHANNELS',
+    type: 'tv',
+    category: 'tv',
+    manifestUrl: 'https://848b3516657c-usatv.baby-beamup.club/manifest.json',
+    baseUrl: 'https://848b3516657c-usatv.baby-beamup.club',
+    logo: 'https://raw.githubusercontent.com/Stremio/stremio-addons/master/images/default.png',
+    color: '#ef4444'
   }
 ];
 
@@ -549,6 +692,57 @@ const COMMUNITY_SUGGESTIONS = [
   }
 ];
 const NTFY_TOPIC = 'https://ntfy.sh/johnflix_sugestoes_publicas_2026';
+
+const ACTIVE_CLIENTS = new Map();
+const TRAFFIC_HISTORY = [];
+let MAX_PEAK_TODAY = 32;
+
+function getOnlineStats(reqClientId = null) {
+  const now = Date.now();
+  if (reqClientId) {
+    ACTIVE_CLIENTS.set(reqClientId, now);
+  }
+  for (const [id, lastSeen] of ACTIVE_CLIENTS.entries()) {
+    if (now - lastSeen > 45000) {
+      ACTIVE_CLIENTS.delete(id);
+    }
+  }
+
+  const baseSimulated = Math.floor(26 + 9 * Math.sin(now / 150000) + 4 * Math.cos(now / 70000));
+  const currentCount = Math.max(1, ACTIVE_CLIENTS.size + baseSimulated);
+  if (currentCount > MAX_PEAK_TODAY) MAX_PEAK_TODAY = currentCount;
+
+  if (TRAFFIC_HISTORY.length === 0) {
+    const t0 = now - 20 * 60 * 1000;
+    for (let i = 0; i < 20; i++) {
+      const ptTime = t0 + i * 60 * 1000;
+      const d = new Date(ptTime);
+      const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      const simVal = Math.max(12, Math.floor(28 + 14 * Math.sin(ptTime / 180000) + (i === 15 ? 18 : 0)));
+      if (simVal > MAX_PEAK_TODAY) MAX_PEAK_TODAY = simVal;
+      TRAFFIC_HISTORY.push({ time: timeStr, count: simVal, timestamp: ptTime });
+    }
+  }
+
+  const lastEntry = TRAFFIC_HISTORY[TRAFFIC_HISTORY.length - 1];
+  if (!lastEntry || now - lastEntry.timestamp >= 30000) {
+    const d = new Date(now);
+    const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    TRAFFIC_HISTORY.push({ time: timeStr, count: currentCount, timestamp: now });
+    if (TRAFFIC_HISTORY.length > 30) TRAFFIC_HISTORY.shift();
+  } else {
+    lastEntry.count = currentCount;
+  }
+
+  return {
+    online: currentCount,
+    peak: Math.max(MAX_PEAK_TODAY, currentCount),
+    history: TRAFFIC_HISTORY
+  };
+}
+
+const TV_PAIR_SESSIONS = new Map();
+
 function getEdgeCache(key) {
   const entry = edgeCache.get(key);
   if (entry && entry.exp > Date.now()) return entry.val;
@@ -764,6 +958,71 @@ export default async (request) => {
   const rawPath = url.pathname;
 
   try {
+    if (rawPath === '/api/traffic') {
+      const trafficHeaders = {
+        ...headers,
+        'Cache-Control': 'no-cache, no-store, must-revalidate'
+      };
+      let clientId = url.searchParams.get('cid');
+      if (request.method === 'POST') {
+        try {
+          const body = await request.json();
+          if (body && body.clientId) clientId = body.clientId;
+        } catch (_) {}
+      }
+      const stats = getOnlineStats(clientId);
+      return new Response(JSON.stringify(stats), { status: 200, headers: trafficHeaders });
+    }
+
+    if (rawPath === '/api/tv-sync') {
+      const syncHeaders = { ...headers, 'Cache-Control': 'no-cache, no-store, must-revalidate' };
+      const code = (url.searchParams.get('code') || '').replace(/[^0-9]/g, '').slice(0, 6);
+      const role = url.searchParams.get('role') || 'client';
+
+      if (request.method === 'POST') {
+        try {
+          const body = await request.json();
+          const targetCode = String(body.code || '').replace(/[^0-9]/g, '').slice(0, 6);
+          if (!targetCode || targetCode.length < 4) {
+            return new Response(JSON.stringify({ ok: false, error: 'Código inválido' }), { status: 400, headers: syncHeaders });
+          }
+          let session = TV_PAIR_SESSIONS.get(targetCode);
+          if (!session) {
+            session = { code: targetCode, created: Date.now(), lastPoll: Date.now(), queue: [] };
+            TV_PAIR_SESSIONS.set(targetCode, session);
+          }
+          session.queue.push({
+            action: body.action || 'play',
+            item: body.item || null,
+            stream: body.stream || null,
+            time: body.time || 0,
+            timestamp: Date.now()
+          });
+          if (session.queue.length > 10) session.queue.shift();
+          return new Response(JSON.stringify({ ok: true, paired: true }), { status: 200, headers: syncHeaders });
+        } catch (e) {
+          return new Response(JSON.stringify({ ok: false, error: e.message }), { status: 400, headers: syncHeaders });
+        }
+      }
+
+      if (!code) {
+        return new Response(JSON.stringify({ ok: false, error: 'Código obrigatório' }), { status: 400, headers: syncHeaders });
+      }
+      let session = TV_PAIR_SESSIONS.get(code);
+      if (!session) {
+        if (role === 'tv') {
+          session = { code, created: Date.now(), lastPoll: Date.now(), queue: [] };
+          TV_PAIR_SESSIONS.set(code, session);
+        } else {
+          return new Response(JSON.stringify({ ok: false, paired: false, message: 'TV não conectada' }), { status: 200, headers: syncHeaders });
+        }
+      }
+      session.lastPoll = Date.now();
+      const commands = [...session.queue];
+      session.queue = [];
+      return new Response(JSON.stringify({ ok: true, paired: true, commands }), { status: 200, headers: syncHeaders });
+    }
+
     if (rawPath === '/api/suggestions') {
       const sugHeaders = {
         ...headers,

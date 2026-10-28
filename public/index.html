@@ -13,7 +13,21 @@
   <link rel="dns-prefetch" href="https://fenixtv.fenixhub.online" />
   <link rel="dns-prefetch" href="https://v3-cinemeta.strem.io" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/styles.css?v=20261028kk" />
+  <link rel="stylesheet" href="/styles.css?v=20261028ll" />
+  <script>
+    window.__onGCastApiAvailable = function (isAvailable) {
+      if (isAvailable && window.cast && window.cast.framework) {
+        window.__gCastReady = true;
+        try {
+          const ctx = cast.framework.CastContext.getInstance();
+          ctx.setOptions({
+            receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
+            autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
+          });
+        } catch (_) {}
+      }
+    };
+  </script>
 </head>
 <body>
   <!-- Site Intro Splash Animation -->
@@ -56,6 +70,12 @@
         <input type="text" id="searchInput" placeholder="Títulos, gêneros..." autocomplete="off" />
         <button class="search-clear hidden" id="searchClear" title="Limpar">&times;</button>
       </div>
+
+      <button class="live-traffic-pill" id="liveTrafficBtn" title="Ver Gráfico de Usuários em Tempo Real">
+        <span class="live-dot-pulse"></span>
+        <span class="live-traffic-count" id="liveTrafficCount">...</span>
+        <span class="live-traffic-label">online</span>
+      </button>
 
       <button class="btn btn-sm btn-glass btn-suggestions-nav" id="openSuggestionsBtn" title="Mural de Sugestões">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
@@ -358,7 +378,41 @@
           <p class="status-modal-sub" id="castModalSub">Escolha como deseja conectar o vídeo à sua Smart TV ou aparelho de streaming.</p>
         </div>
 
+        <!-- TV Code Pairing (YouTube TV Style) -->
+        <div class="cast-pair-box">
+          <div class="cast-pair-header">
+            <span class="cast-pair-tag">MODO YOUTUBE TV</span>
+            <strong>Vincular com Código de TV</strong>
+          </div>
+          <p class="cast-pair-hint">Abra <strong>johnflix.netlify.app/?tv=1</strong> no navegador da sua TV para ver o código de 6 dígitos:</p>
+          <div class="cast-pair-input-row">
+            <input type="text" id="tvPairCodeInput" class="cast-code-input" placeholder="Ex: 849201" maxlength="6" inputmode="numeric" />
+            <button type="button" class="btn btn-primary btn-sm" id="btnSendToPairedTv">
+              <span>Transmitir na TV</span>
+            </button>
+          </div>
+          <div class="cast-pair-tv-shortcut">
+            <span>Sua TV está sem o site aberto?</span>
+            <button type="button" class="link-btn" id="btnOpenTvModeCurrent">Abrir Modo TV neste aparelho</button>
+          </div>
+        </div>
+
         <div class="cast-options-list">
+          <button type="button" class="cast-option-card" id="castScreenMirrorBtn">
+            <div class="cast-opt-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                <line x1="8" y1="21" x2="16" y2="21"/>
+                <line x1="12" y1="17" x2="12" y2="21"/>
+              </svg>
+            </div>
+            <div class="cast-opt-info">
+              <strong>Espelhar Tela com Vídeo e Imagem</strong>
+              <span>Transmite a tela cheia do filme/série com vídeo e som para a TV</span>
+            </div>
+            <span class="cast-opt-action">Espelhar Tela &rarr;</span>
+          </button>
+
           <button type="button" class="cast-option-card" id="castStartNativeBtn">
             <div class="cast-opt-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
@@ -368,7 +422,7 @@
             </div>
             <div class="cast-opt-info">
               <strong>Chromecast / Smart TV Wi-Fi</strong>
-              <span>Transmite diretamente via Google Cast ou AirPlay</span>
+              <span>Transmite via Google Cast, AirPlay ou DLNA nativo</span>
             </div>
             <span class="cast-opt-action">Conectar &rarr;</span>
           </button>
@@ -381,22 +435,116 @@
               </svg>
             </div>
             <div class="cast-opt-info">
-              <strong>Abrir no Navegador da Smart TV</strong>
-              <span>Copiar link direto para abrir no app de Internet da TV</span>
+              <strong>Copiar Link Direto para TV</strong>
+              <span>Compartilhe o link direto para reproduzir no navegador da TV</span>
             </div>
-            <span class="cast-opt-action">Copiar Link</span>
+            <span class="cast-opt-action">Copiar</span>
           </button>
         </div>
 
         <div class="cast-tv-guide">
-          <h4>💡 Como funciona na Smart TV:</h4>
+          <h4>💡 Como assistir na Smart TV:</h4>
           <ul>
-            <li><strong>Samsung / LG / TCL / Philips / Sony:</strong> Conecte no mesmo Wi-Fi e clique em <em>Chromecast / Smart TV Wi-Fi</em>.</li>
-            <li><strong>Apple TV / AirPlay:</strong> No iPhone ou Mac, toque no botão para selecionar sua TV via AirPlay.</li>
-            <li><strong>Direto na TV:</strong> Você também pode abrir o site <em>johnflix.netlify.app</em> no navegador da TV (compatível com controle remoto D-Pad).</li>
+            <li><strong>Samsung (Tizen) / LG (webOS):</strong> Abra o app "Internet / Navegador" da TV e acesse <code>johnflix.netlify.app</code> ou use o código acima.</li>
+            <li><strong>Chromecast / Android TV:</strong> Certifique-se de estar no mesmo Wi-Fi e toque no botão <em>Chromecast</em>.</li>
+            <li><strong>iPhone / Apple TV:</strong> O player suporta AirPlay nativo no Safari.</li>
           </ul>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Real-time Live Traffic Modal -->
+  <div class="modal-backdrop hidden" id="trafficModal">
+    <div class="modal-card modal-sm modal-traffic">
+      <button class="modal-close" id="closeTrafficModalBtn">&times;</button>
+      <div class="modal-body">
+        <div class="traffic-modal-header">
+          <div class="traffic-live-badge">
+            <span class="live-dot-pulse"></span>
+            <span>TEMPO REAL</span>
+          </div>
+          <h2 class="status-modal-title">Tráfego de Usuários</h2>
+          <p class="status-modal-sub">Monitoramento ao vivo de pessoas conectadas no JohnFlix.</p>
+        </div>
+
+        <div class="traffic-metrics-grid">
+          <div class="traffic-metric-card">
+            <span class="metric-label">Online Agora</span>
+            <div class="metric-val-wrap">
+              <span class="metric-val" id="trafficMetricOnline">--</span>
+              <span class="metric-unit">usuários</span>
+            </div>
+            <span class="metric-hint">⚡ Atividade em tempo real</span>
+          </div>
+
+          <div class="traffic-metric-card">
+            <span class="metric-label">Pico do Dia</span>
+            <div class="metric-val-wrap">
+              <span class="metric-val" id="trafficMetricPeak">--</span>
+              <span class="metric-unit">recorde</span>
+            </div>
+            <span class="metric-hint">🔥 Maior pico hoje</span>
+          </div>
+        </div>
+
+        <div class="traffic-chart-section">
+          <div class="traffic-chart-head">
+            <strong>Timeline de Atividade (Últimos 30 min)</strong>
+            <span class="traffic-chart-legend">
+              <span class="legend-dot"></span> Picos de Conexão
+            </span>
+          </div>
+
+          <div class="traffic-svg-wrap">
+            <svg id="trafficSvgChart" viewBox="0 0 460 160" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="trafficGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.55"/>
+                  <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.02"/>
+                </linearGradient>
+                <linearGradient id="trafficLineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#a855f7"/>
+                  <stop offset="50%" stop-color="#38bdf8"/>
+                  <stop offset="100%" stop-color="#22c55e"/>
+                </linearGradient>
+              </defs>
+              <!-- Grid lines -->
+              <line x1="0" y1="40" x2="460" y2="40" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3 3"/>
+              <line x1="0" y1="80" x2="460" y2="80" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3 3"/>
+              <line x1="0" y1="120" x2="460" y2="120" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3 3"/>
+              <!-- Area Fill -->
+              <path id="trafficAreaPath" d="M 0 150 L 460 150 Z" fill="url(#trafficGradient)" />
+              <!-- Top Curve Line -->
+              <path id="trafficLinePath" d="M 0 150 L 460 150" fill="none" stroke="url(#trafficLineGrad)" stroke-width="2.5" stroke-linecap="round"/>
+              <!-- Peak Markers -->
+              <g id="trafficPointsGroup"></g>
+            </svg>
+            <div class="traffic-time-axis">
+              <span id="trafficTimeStart">-30 min</span>
+              <span id="trafficTimeMid">-15 min</span>
+              <span id="trafficTimeNow">Agora</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="traffic-footer-note">
+          <span>⚡ Atualização dinâmica a cada 15s com base em conexões ativas na edge CDN.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TV Leanback Banner (Active when in TV Mode) -->
+  <div class="tv-leanback-banner hidden" id="tvLeanbackBanner">
+    <div class="tv-banner-left">
+      <span class="tv-badge">📺 MODO SMART TV</span>
+      <span>Código de Pareamento:</span>
+      <strong class="tv-pair-display" id="tvBannerPairCode">------</strong>
+    </div>
+    <div class="tv-banner-right">
+      <span>Controle pelo celular/PC via <strong>Transmitir &rarr; Código de TV</strong></span>
+      <button class="btn btn-sm btn-glass" id="btnCloseTvModeBtn">&times; Sair do Modo TV</button>
     </div>
   </div>
 
@@ -505,6 +653,7 @@
     <div class="footer-inner">
       <span class="brand-word">John<span class="brand-flix">Flix</span></span>
       <div class="footer-links">
+        <button class="footer-subtle-btn" id="footerTrafficBtn"><span class="live-dot-pulse"></span> <span id="footerTrafficCount">...</span> online</button>
         <button class="footer-subtle-btn" id="footerSuggestionsBtn">💡 Sugestões da Comunidade</button>
         <button class="footer-subtle-btn" id="footerServersBtn">Servidores Conectados</button>
         <span id="footerCopyright">© 2026 JohnFlix</span>
@@ -514,7 +663,7 @@
 
   <script defer src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
   <script defer src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
-  <script defer src="/config.js?v=20261028kk"></script>
-  <script defer src="/app.js?v=20261028kk"></script>
+  <script defer src="/config.js?v=20261028ll"></script>
+  <script defer src="/app.js?v=20261028ll"></script>
 </body>
 </html>

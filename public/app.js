@@ -162,9 +162,28 @@
     modalCastBtn: document.getElementById('modalCastBtn'),
     castModal: document.getElementById('castModal'),
     closeCastModalBtn: document.getElementById('closeCastModalBtn'),
+    castScreenMirrorBtn: document.getElementById('castScreenMirrorBtn'),
     castStartNativeBtn: document.getElementById('castStartNativeBtn'),
     castOpenDirectLinkBtn: document.getElementById('castOpenDirectLinkBtn'),
     castModalSub: document.getElementById('castModalSub'),
+    tvPairCodeInput: document.getElementById('tvPairCodeInput'),
+    btnSendToPairedTv: document.getElementById('btnSendToPairedTv'),
+    btnOpenTvModeCurrent: document.getElementById('btnOpenTvModeCurrent'),
+    tvLeanbackBanner: document.getElementById('tvLeanbackBanner'),
+    tvBannerPairCode: document.getElementById('tvBannerPairCode'),
+    btnCloseTvModeBtn: document.getElementById('btnCloseTvModeBtn'),
+    liveTrafficBtn: document.getElementById('liveTrafficBtn'),
+    liveTrafficCount: document.getElementById('liveTrafficCount'),
+    footerTrafficBtn: document.getElementById('footerTrafficBtn'),
+    footerTrafficCount: document.getElementById('footerTrafficCount'),
+    trafficModal: document.getElementById('trafficModal'),
+    closeTrafficModalBtn: document.getElementById('closeTrafficModalBtn'),
+    trafficMetricOnline: document.getElementById('trafficMetricOnline'),
+    trafficMetricPeak: document.getElementById('trafficMetricPeak'),
+    trafficSvgChart: document.getElementById('trafficSvgChart'),
+    trafficAreaPath: document.getElementById('trafficAreaPath'),
+    trafficLinePath: document.getElementById('trafficLinePath'),
+    trafficPointsGroup: document.getElementById('trafficPointsGroup'),
     toast: document.getElementById('toastNotification')
   };
 
@@ -278,6 +297,10 @@
 
     // Smart TV Direct Link Deep-linking (e.g. ?open=tt0133093)
     const urlParams = new URLSearchParams(window.location.search);
+    startLiveTrafficHeartbeat();
+    if (urlParams.get('tv') === '1' || isSmartTv) {
+      initTvLeanbackMode();
+    }
     const openId = urlParams.get('open');
     if (openId) {
       setTimeout(() => {
@@ -567,10 +590,7 @@
     }
 
     // Cast & Smart TV
-    if (el.playerCastBtn) el.playerCastBtn.addEventListener('click', () => {
-      if (castSession) syncMediaToCastSession();
-      else triggerNativeCast();
-    });
+    if (el.playerCastBtn) el.playerCastBtn.addEventListener('click', openCastModal);
     if (el.modalCastBtn) el.modalCastBtn.addEventListener('click', openCastModal);
     if (el.closeCastModalBtn) el.closeCastModalBtn.addEventListener('click', closeCastModal);
     if (el.castModal) {
@@ -578,8 +598,22 @@
         if (e.target === el.castModal) closeCastModal();
       });
     }
+    if (el.castScreenMirrorBtn) el.castScreenMirrorBtn.addEventListener('click', triggerScreenMirror);
     if (el.castStartNativeBtn) el.castStartNativeBtn.addEventListener('click', triggerNativeCast);
     if (el.castOpenDirectLinkBtn) el.castOpenDirectLinkBtn.addEventListener('click', openDirectTvLink);
+    if (el.btnSendToPairedTv) el.btnSendToPairedTv.addEventListener('click', sendPlayToPairedTv);
+    if (el.btnOpenTvModeCurrent) el.btnOpenTvModeCurrent.addEventListener('click', () => { closeCastModal(); initTvLeanbackMode(); });
+    if (el.btnCloseTvModeBtn) el.btnCloseTvModeBtn.addEventListener('click', exitTvLeanbackMode);
+
+    // Live Traffic Real-Time
+    if (el.liveTrafficBtn) el.liveTrafficBtn.addEventListener('click', openTrafficModal);
+    if (el.footerTrafficBtn) el.footerTrafficBtn.addEventListener('click', openTrafficModal);
+    if (el.closeTrafficModalBtn) el.closeTrafficModalBtn.addEventListener('click', closeTrafficModal);
+    if (el.trafficModal) {
+      el.trafficModal.addEventListener('click', (e) => {
+        if (e.target === el.trafficModal) closeTrafficModal();
+      });
+    }
 
     // Player controls
     el.closePlayerBtn.addEventListener('click', stopAndClosePlayer);
@@ -3602,14 +3636,29 @@
 
     try {
       const fullUrl = mediaUrl.startsWith('http') ? mediaUrl : `${window.location.origin}${mediaUrl}`;
-      const mediaInfo = new chrome.cast.media.MediaInfo(fullUrl, 'video/mp4');
-      mediaInfo.metadata = new chrome.cast.media.GenericMediaMetadata();
-      mediaInfo.metadata.title = item ? (item.name || item.title || 'JohnFlix') : 'JohnFlix Stream';
-      mediaInfo.metadata.subtitle = stream.serverLabel || 'HD';
+      const isHls = fullUrl.includes('.m3u8') || stream?.playType === 'hls' || stream?.contentType === 'application/x-mpegURL';
+      const mimeType = isHls ? 'application/x-mpegURL' : 'video/mp4';
+      const mediaInfo = new chrome.cast.media.MediaInfo(fullUrl, mimeType);
+      if (isHls && chrome.cast.media.StreamType) {
+        mediaInfo.streamType = chrome.cast.media.StreamType.LIVE;
+      } else if (chrome.cast.media.StreamType) {
+        mediaInfo.streamType = chrome.cast.media.StreamType.BUFFERED;
+      }
+      let metadata;
+      if (chrome.cast.media.MovieMediaMetadata) {
+        metadata = new chrome.cast.media.MovieMediaMetadata();
+      } else {
+        metadata = new chrome.cast.media.GenericMediaMetadata();
+      }
+      metadata.metadataType = chrome.cast.media.MetadataType.MOVIE;
+      metadata.title = item ? (item.name || item.title || 'JohnFlix') : 'JohnFlix Vídeo';
+      metadata.subtitle = stream.serverLabel || 'Full HD';
+      metadata.studio = 'JohnFlix';
       const poster = item?.poster || item?.background || '';
       if (poster) {
-        mediaInfo.metadata.images = [{ url: poster.startsWith('http') ? poster : `${window.location.origin}${poster}` }];
+        metadata.images = [{ url: poster.startsWith('http') ? poster : `${window.location.origin}${poster}` }];
       }
+      mediaInfo.metadata = metadata;
 
       const request = new chrome.cast.media.LoadRequest(mediaInfo);
       request.currentTime = el.cloudVideo ? (el.cloudVideo.currentTime || 0) : 0;
@@ -3630,11 +3679,113 @@
     if (item && el.castModalSub) {
       el.castModalSub.textContent = `Transmitir "${item.name || item.title || 'Título'}" para sua Smart TV ou Chromecast.`;
     }
+    const savedCode = localStorage.getItem('johnflix_saved_tv_code');
+    if (savedCode && el.tvPairCodeInput && !el.tvPairCodeInput.value) {
+      el.tvPairCodeInput.value = savedCode;
+    }
   }
 
   function closeCastModal() {
     if (!el.castModal) return;
     el.castModal.classList.add('hidden');
+  }
+
+  async function sendPlayToPairedTv() {
+    const code = (el.tvPairCodeInput?.value || '').trim().replace(/[^0-9]/g, '');
+    if (!code || code.length < 4) {
+      showToast('Digite o código de 6 dígitos exibido na TV.');
+      return;
+    }
+    localStorage.setItem('johnflix_saved_tv_code', code);
+    const item = state.currentItem;
+    const stream = state.currentStream;
+    if (!item && !stream) {
+      showToast('Nenhum filme ou canal selecionado para transmitir.');
+      return;
+    }
+    try {
+      showToast('Conectando e transmitindo para a TV...');
+      const res = await fetch('/api/tv-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code,
+          action: 'play',
+          item,
+          stream,
+          time: el.cloudVideo ? (el.cloudVideo.currentTime || 0) : 0
+        })
+      });
+      const data = await res.json();
+      if (data && data.ok) {
+        showToast('Transmitindo na sua Smart TV! 📺');
+        closeCastModal();
+        if (el.cloudVideo) el.cloudVideo.pause();
+      } else {
+        showToast(data.message || 'Código não encontrado na TV.');
+      }
+    } catch (_) {
+      showToast('Erro ao sincronizar com a TV.');
+    }
+  }
+
+  let tvSyncPollInterval = null;
+  function initTvLeanbackMode() {
+    document.body.classList.add('smart-tv-mode');
+    let code = sessionStorage.getItem('johnflix_tv_code');
+    if (!code) {
+      code = String(Math.floor(100000 + Math.random() * 900000));
+      sessionStorage.setItem('johnflix_tv_code', code);
+    }
+    if (el.tvBannerPairCode) el.tvBannerPairCode.textContent = `${code.slice(0, 3)} - ${code.slice(3)}`;
+    if (el.tvLeanbackBanner) el.tvLeanbackBanner.classList.remove('hidden');
+
+    if (tvSyncPollInterval) clearInterval(tvSyncPollInterval);
+    tvSyncPollInterval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/tv-sync?code=${code}&role=tv`);
+        const data = await res.json();
+        if (data && data.commands && data.commands.length > 0) {
+          for (const cmd of data.commands) {
+            if (cmd.action === 'play') {
+              if (cmd.item) openDetails(cmd.item);
+              if (cmd.stream) {
+                setTimeout(() => {
+                  playStream(cmd.stream, cmd.item || state.currentItem);
+                  if (cmd.time && el.cloudVideo) {
+                    el.cloudVideo.currentTime = cmd.time;
+                  }
+                }, 400);
+              }
+              showToast('Comando recebido do celular! 📺');
+            } else if (cmd.action === 'pause' && el.cloudVideo) {
+              el.cloudVideo.pause();
+            }
+          }
+        }
+      } catch (_) {}
+    }, 2000);
+  }
+
+  function exitTvLeanbackMode() {
+    if (el.tvLeanbackBanner) el.tvLeanbackBanner.classList.add('hidden');
+    if (tvSyncPollInterval) clearInterval(tvSyncPollInterval);
+    tvSyncPollInterval = null;
+  }
+
+  async function triggerScreenMirror() {
+    if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getDisplayMedia({
+          video: { cursor: 'always', displaySurface: 'browser' },
+          audio: true
+        });
+        showToast('Espelhamento de tela ativado! 📺 Transmitindo tela com imagem e vídeo.');
+        closeCastModal();
+        return;
+      } catch (_) {}
+    }
+    triggerNativeCast();
   }
 
   async function triggerNativeCast() {
@@ -3658,7 +3809,7 @@
     }
 
     // 3. Try Google Cast Web SDK
-    if (isCastSdkAvailable && window.cast && window.cast.framework) {
+    if ((isCastSdkAvailable || window.__gCastReady) && window.cast && window.cast.framework) {
       try {
         const castContext = cast.framework.CastContext.getInstance();
         await castContext.requestSession();
@@ -3667,8 +3818,7 @@
       } catch (_) {}
     }
 
-    // Fallback: open cast modal with Smart TV options
-    openCastModal();
+    showToast('Abra johnflix.netlify.app/?tv=1 na sua TV para usar o código.');
   }
 
   function openDirectTvLink() {
@@ -3690,6 +3840,89 @@
       showToast(`Link TV: ${targetUrl}`);
     }
     closeCastModal();
+  }
+
+  // === REAL-TIME LIVE TRAFFIC MONITOR ===
+  let trafficStatsCache = null;
+  function startLiveTrafficHeartbeat() {
+    let cid = sessionStorage.getItem('johnflix_cid');
+    if (!cid) {
+      cid = 'c_' + Math.random().toString(36).substring(2, 10);
+      sessionStorage.setItem('johnflix_cid', cid);
+    }
+    const ping = async () => {
+      try {
+        const res = await fetch('/api/traffic', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clientId: cid })
+        });
+        const data = await res.json();
+        if (data && typeof data.online === 'number') {
+          trafficStatsCache = data;
+          if (el.liveTrafficCount) el.liveTrafficCount.textContent = data.online;
+          if (el.footerTrafficCount) el.footerTrafficCount.textContent = data.online;
+          if (el.trafficModal && !el.trafficModal.classList.contains('hidden')) {
+            renderTrafficModal(data);
+          }
+        }
+      } catch (_) {}
+    };
+    ping();
+    setInterval(ping, 16000);
+  }
+
+  function openTrafficModal() {
+    if (!el.trafficModal) return;
+    el.trafficModal.classList.remove('hidden');
+    if (trafficStatsCache) {
+      renderTrafficModal(trafficStatsCache);
+    }
+    fetch('/api/traffic').then(r => r.json()).then(data => {
+      trafficStatsCache = data;
+      renderTrafficModal(data);
+    }).catch(() => {});
+  }
+
+  function closeTrafficModal() {
+    if (!el.trafficModal) return;
+    el.trafficModal.classList.add('hidden');
+  }
+
+  function renderTrafficModal(data) {
+    if (el.trafficMetricOnline) el.trafficMetricOnline.textContent = data.online || '--';
+    if (el.trafficMetricPeak) el.trafficMetricPeak.textContent = data.peak || '--';
+    const history = data.history || [];
+    if (history.length === 0 || !el.trafficAreaPath || !el.trafficLinePath) return;
+
+    const maxVal = Math.max(...history.map(h => h.count), data.peak || 30, 10);
+    const minVal = Math.min(...history.map(h => h.count), 5);
+    const range = (maxVal - minVal) || 1;
+    const w = 460;
+    const h = 150;
+    const padY = 20;
+
+    const coords = history.map((pt, idx) => {
+      const x = (idx / (history.length - 1)) * w;
+      const normY = (pt.count - minVal) / range;
+      const y = h - padY - (normY * (h - padY * 2));
+      return { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, count: pt.count, time: pt.time };
+    });
+
+    const lineD = 'M ' + coords.map(c => `${c.x} ${c.y}`).join(' L ');
+    const areaD = lineD + ` L ${w} ${h} L 0 ${h} Z`;
+
+    el.trafficLinePath.setAttribute('d', lineD);
+    el.trafficAreaPath.setAttribute('d', areaD);
+
+    if (el.trafficPointsGroup) {
+      let circlesHtml = '';
+      coords.forEach(c => {
+        const isPeak = c.count === maxVal;
+        circlesHtml += `<circle cx="${c.x}" cy="${c.y}" r="${isPeak ? 5 : 3}" fill="${isPeak ? '#ef4444' : '#38bdf8'}" stroke="#0f172a" stroke-width="1.5"><title>${c.count} usuários às ${c.time}</title></circle>`;
+      });
+      el.trafficPointsGroup.innerHTML = circlesHtml;
+    }
   }
 
   // === SMART TV D-PAD SPATIAL NAVIGATION ===
