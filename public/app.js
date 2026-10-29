@@ -3202,6 +3202,7 @@
     el.streamCounter.textContent = '...';
 
     try {
+      const item = state.currentItem;
       const data = await prefetchStreams(type, targetId, item);
       if (currentLoadTargetId !== targetId) return;
       el.streamsLoading.classList.add('hidden');
