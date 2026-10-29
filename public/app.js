@@ -608,6 +608,7 @@
     el.closePlayerBtn.addEventListener('click', stopAndClosePlayer);
     el.switchServerBtn.addEventListener('click', (e) => {
       e.stopPropagation();
+      renderPlayerDrawer();
       el.playerServerDrawer.classList.toggle('hidden');
       showPlayerHud();
     });
@@ -3215,6 +3216,7 @@
 
       renderAddonFilterTabs(data.servers || []);
       renderStreamsList();
+      renderPlayerDrawer();
 
       if (autoPlayFirst || state.pendingAutoPlay) {
         state.pendingAutoPlay = false;
@@ -4323,6 +4325,15 @@
 
   function renderPlayerDrawer() {
     el.playerDrawerList.innerHTML = '';
+    if (!state.currentStreams || state.currentStreams.length === 0) {
+      el.playerDrawerList.innerHTML = `
+        <div style="padding: 24px; text-align: center; color: var(--text-muted); font-size: 0.9rem;">
+          <div class="spinner-purple" style="margin: 0 auto 12px;"></div>
+          <span>Buscando fontes disponíveis para este título...</span>
+        </div>
+      `;
+      return;
+    }
     state.currentStreams.forEach((s) => {
       const item = document.createElement('div');
       item.className = 'drawer-stream-row';

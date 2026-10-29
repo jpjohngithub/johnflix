@@ -1291,10 +1291,13 @@ export default async (request) => {
         });
       }
 
-      // Fallback de TV: se o FenixTV estiver fora do ar, usa canais abertos do Brasil (iptv-org)
-      if (!rows.some((r) => r.type === 'tv' && r.items.length > 0)) {
-        try { rows.push(...(await iptvRows())); } catch (e) {}
-      }
+      // Sempre adiciona canais abertos nacionais e iptv brasileiro
+      try {
+        const iptv = await iptvRows();
+        if (Array.isArray(iptv) && iptv.length) {
+          rows.push(...iptv);
+        }
+      } catch (e) {}
       // Variedade: remove lixo antigo/sem capa, evita repetir titulos entre prateleiras e alterna a ordem diariamente
       const daySeed = Math.floor(Date.now() / 86400000);
       const seededRand = (seed) => { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; };
@@ -1873,7 +1876,7 @@ export default async (request) => {
           const n = c.name.toLowerCase().replace(/[^a-z0-9]/gi, '');
           if (querySlug && (n === querySlug || n.includes(querySlug) || querySlug.includes(n))) return true;
           if (queryWords.length && queryWords.every((w) => c.name.toLowerCase().includes(w))) return true;
-          if (rawSlug && rawSlug.length >= 4 && (n === rawSlug || n.includes(rawSlug) || rawSlug.includes(n))) return true;
+          if (rawSlug && rawSlug.length >= 3 && (n === rawSlug || n.includes(rawSlug) || rawSlug.includes(n))) return true;
           return false;
         });
 
