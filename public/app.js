@@ -1,7 +1,9 @@
 (() => {
   // Purge any residual traffic elements if cached in DOM
   const purgeTrafficElements = () => {
-    document.querySelectorAll('#liveTrafficBtn, #footerTrafficBtn, #trafficModal, .live-traffic-pill, .live-dot-pulse, .modal-traffic').forEach(el => el.remove());
+    document.querySelectorAll(
+      '#liveTrafficBtn, #footerTrafficBtn, #trafficModal, .live-traffic-pill, .live-dot-pulse, .modal-traffic, [id*="traffic" i], [class*="traffic" i]'
+    ).forEach(el => el.remove());
   };
   purgeTrafficElements();
   if (document.readyState === 'loading') {
@@ -4021,6 +4023,7 @@
     el.playerOverlay.classList.remove('hidden', 'hud-idle');
     el.playerServerDrawer.classList.add('hidden');
     document.body.style.overflow = 'hidden';
+    document.body.classList.add('player-open');
     showPlayerHud();
 
     clearVideoHandlers();
@@ -4385,6 +4388,7 @@
       el.cloudEmbed.classList.add('hidden');
     }
     el.playerOverlay.classList.add('hidden');
+    document.body.classList.remove('player-open');
     if (el.detailsModal.classList.contains('hidden')) {
       document.body.style.overflow = '';
     }

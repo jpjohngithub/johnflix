@@ -1626,6 +1626,43 @@ html, body {
     height: 34px;
   }
 
+  @media (max-width: 600px) {
+    .navbar {
+      height: 56px;
+      padding: 0 10px;
+      gap: 6px;
+    }
+    .brand-word {
+      font-size: 1.22rem;
+    }
+    .nav-right {
+      gap: 6px;
+    }
+    .search-box {
+      width: 120px;
+      height: 34px;
+      padding: 0 8px;
+    }
+    .search-box:focus-within {
+      width: 165px;
+    }
+    .btn-suggestions-nav span {
+      display: none !important;
+    }
+    .btn-suggestions-nav {
+      padding: 0 !important;
+      width: 34px !important;
+      height: 34px !important;
+      min-width: 34px !important;
+      border-radius: 50% !important;
+      justify-content: center !important;
+    }
+    .btn-suggestions-nav svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+
   /* Hero Mobile */
   .hero {
     height: 64vh;
@@ -1811,21 +1848,27 @@ html, body {
   }
 
   /* Fixed Bottom Navigation Bar on Mobile */
-  .mobile-bottom-nav {
+  body.player-open .mobile-bottom-nav,
+  body.player-open .mobile-nav {
+    display: none !important;
+  }
+  .mobile-bottom-nav,
+  .mobile-nav {
     display: flex;
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
-    height: calc(62px + env(safe-area-inset-bottom, 0px));
+    height: calc(58px + env(safe-area-inset-bottom, 0px));
     padding-bottom: env(safe-area-inset-bottom, 0px);
-    background: rgba(9, 5, 20, 0.94);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
+    background: rgba(8, 4, 18, 0.94);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border-top: 1px solid rgba(168, 85, 247, 0.22);
     z-index: 250;
     align-items: center;
     justify-content: space-around;
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.55);
   }
   .mobile-nav-item {
     flex: 1;
@@ -1838,25 +1881,29 @@ html, body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    color: var(--text-muted);
+    gap: 3px;
+    color: var(--text-muted, #94a3b8);
     font-size: 0.68rem;
     font-weight: 600;
     cursor: pointer;
     box-shadow: none !important;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 0.15s ease;
   }
   .mobile-nav-item svg {
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     stroke-width: 2;
-    transition: transform 0.18s ease, color 0.18s ease;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.18s ease;
   }
   .mobile-nav-item.active {
     color: #c084fc !important;
   }
   .mobile-nav-item.active svg {
     color: #c084fc;
-    transform: translateY(-1px) scale(1.08);
+    transform: translateY(-2px) scale(1.12);
+    filter: drop-shadow(0 2px 8px rgba(192, 132, 252, 0.45));
   }
 
   .toast {
@@ -6285,7 +6332,12 @@ body.smart-tv-mode .media-card.tv-focused {
 #trafficModal,
 .live-traffic-pill,
 .live-dot-pulse,
-.modal-traffic {
+.modal-traffic,
+[id*="traffic" i],
+[id*="traffic-count" i],
+[class*="traffic" i],
+.traffic-metrics-grid,
+.traffic-metric-card {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
@@ -6295,6 +6347,7 @@ body.smart-tv-mode .media-card.tv-focused {
   overflow: hidden !important;
   position: absolute !important;
   left: -9999px !important;
+  transform: scale(0) !important;
 }
 
 /* ==========================================================================

@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>JOHNFLIX</title>
   <link rel="icon" type="image/png" href="https://i.postimg.cc/658mZkCk/Create-page-icon-from-typography-202608161616.png" />
   <link rel="apple-touch-icon" href="https://i.postimg.cc/658mZkCk/Create-page-icon-from-typography-202608161616.png" />
@@ -13,18 +16,33 @@
   <link rel="dns-prefetch" href="https://fenixtv.fenixhub.online" />
   <link rel="dns-prefetch" href="https://v3-cinemeta.strem.io" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/styles.css?v=20261028_cast_top" />
+  <link rel="stylesheet" href="/styles.css?v=20261029_mobile_v1" />
   <script>
     (function () {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function (regs) {
+          for (var r of regs) r.unregister();
+        }).catch(function () {});
+      }
+      if ('caches' in window) {
+        caches.keys().then(function (names) {
+          for (var n of names) caches.delete(n);
+        }).catch(function () {});
+      }
       function purge() {
-        document.querySelectorAll('#liveTrafficBtn, #footerTrafficBtn, #trafficModal, .live-traffic-pill, .live-dot-pulse, .modal-traffic').forEach(function (el) {
+        document.querySelectorAll(
+          '#liveTrafficBtn, #footerTrafficBtn, #trafficModal, .live-traffic-pill, .live-dot-pulse, .modal-traffic, [id*="traffic" i], [class*="traffic" i]'
+        ).forEach(function (el) {
           if (el && el.parentNode) el.parentNode.removeChild(el);
         });
       }
       purge();
       document.addEventListener('DOMContentLoaded', purge);
       window.addEventListener('load', purge);
-      setInterval(purge, 200);
+      try {
+        var obs = new MutationObserver(purge);
+        obs.observe(document.documentElement, { childList: true, subtree: true });
+      } catch (_) {}
     })();
   </script>
   <script>
@@ -545,7 +563,7 @@
   </div>
 
   <!-- Mobile Bottom Navigation Bar -->
-  <nav class="mobile-bottom-nav" id="mobileBottomNav">
+  <nav class="mobile-bottom-nav mobile-nav" id="mobileBottomNav">
     <button class="nav-link mobile-nav-item active" data-filter="all">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
       <span>Início</span>
@@ -588,7 +606,7 @@
 
   <script defer src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
   <script defer src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
-  <script defer src="/config.js?v=20261028_cast_top"></script>
-  <script defer src="/app.js?v=20261028_cast_top"></script>
+  <script defer src="/config.js?v=20261029_mobile_v1"></script>
+  <script defer src="/app.js?v=20261029_mobile_v1"></script>
 </body>
 </html>
