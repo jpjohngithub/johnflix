@@ -13,7 +13,7 @@
   <link rel="dns-prefetch" href="https://fenixtv.fenixhub.online" />
   <link rel="dns-prefetch" href="https://v3-cinemeta.strem.io" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/styles.css?v=20261028ll" />
+  <link rel="stylesheet" href="/styles.css?v=20261028mm" />
   <script>
     window.__onGCastApiAvailable = function (isAvailable) {
       if (isAvailable && window.cast && window.cast.framework) {
@@ -70,12 +70,6 @@
         <input type="text" id="searchInput" placeholder="Títulos, gêneros..." autocomplete="off" />
         <button class="search-clear hidden" id="searchClear" title="Limpar">&times;</button>
       </div>
-
-      <button class="live-traffic-pill" id="liveTrafficBtn" title="Ver Gráfico de Usuários em Tempo Real">
-        <span class="live-dot-pulse"></span>
-        <span class="live-traffic-count" id="liveTrafficCount">...</span>
-        <span class="live-traffic-label">online</span>
-      </button>
 
       <button class="btn btn-sm btn-glass btn-suggestions-nav" id="openSuggestionsBtn" title="Mural de Sugestões">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
@@ -454,87 +448,6 @@
     </div>
   </div>
 
-  <!-- Real-time Live Traffic Modal -->
-  <div class="modal-backdrop hidden" id="trafficModal">
-    <div class="modal-card modal-sm modal-traffic">
-      <button class="modal-close" id="closeTrafficModalBtn">&times;</button>
-      <div class="modal-body">
-        <div class="traffic-modal-header">
-          <div class="traffic-live-badge">
-            <span class="live-dot-pulse"></span>
-            <span>TEMPO REAL</span>
-          </div>
-          <h2 class="status-modal-title">Tráfego de Usuários</h2>
-          <p class="status-modal-sub">Monitoramento ao vivo de pessoas conectadas no JohnFlix.</p>
-        </div>
-
-        <div class="traffic-metrics-grid">
-          <div class="traffic-metric-card">
-            <span class="metric-label">Online Agora</span>
-            <div class="metric-val-wrap">
-              <span class="metric-val" id="trafficMetricOnline">--</span>
-              <span class="metric-unit">usuários</span>
-            </div>
-            <span class="metric-hint">⚡ Atividade em tempo real</span>
-          </div>
-
-          <div class="traffic-metric-card">
-            <span class="metric-label">Pico do Dia</span>
-            <div class="metric-val-wrap">
-              <span class="metric-val" id="trafficMetricPeak">--</span>
-              <span class="metric-unit">recorde</span>
-            </div>
-            <span class="metric-hint">🔥 Maior pico hoje</span>
-          </div>
-        </div>
-
-        <div class="traffic-chart-section">
-          <div class="traffic-chart-head">
-            <strong>Timeline de Atividade (Últimos 30 min)</strong>
-            <span class="traffic-chart-legend">
-              <span class="legend-dot"></span> Picos de Conexão
-            </span>
-          </div>
-
-          <div class="traffic-svg-wrap">
-            <svg id="trafficSvgChart" viewBox="0 0 460 160" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="trafficGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.55"/>
-                  <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.02"/>
-                </linearGradient>
-                <linearGradient id="trafficLineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stop-color="#a855f7"/>
-                  <stop offset="50%" stop-color="#38bdf8"/>
-                  <stop offset="100%" stop-color="#22c55e"/>
-                </linearGradient>
-              </defs>
-              <!-- Grid lines -->
-              <line x1="0" y1="40" x2="460" y2="40" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3 3"/>
-              <line x1="0" y1="80" x2="460" y2="80" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3 3"/>
-              <line x1="0" y1="120" x2="460" y2="120" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3 3"/>
-              <!-- Area Fill -->
-              <path id="trafficAreaPath" d="M 0 150 L 460 150 Z" fill="url(#trafficGradient)" />
-              <!-- Top Curve Line -->
-              <path id="trafficLinePath" d="M 0 150 L 460 150" fill="none" stroke="url(#trafficLineGrad)" stroke-width="2.5" stroke-linecap="round"/>
-              <!-- Peak Markers -->
-              <g id="trafficPointsGroup"></g>
-            </svg>
-            <div class="traffic-time-axis">
-              <span id="trafficTimeStart">-30 min</span>
-              <span id="trafficTimeMid">-15 min</span>
-              <span id="trafficTimeNow">Agora</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="traffic-footer-note">
-          <span>⚡ Atualização dinâmica a cada 15s com base em conexões ativas na edge CDN.</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- TV Leanback Banner (Active when in TV Mode) -->
   <div class="tv-leanback-banner hidden" id="tvLeanbackBanner">
     <div class="tv-banner-left">
@@ -653,7 +566,6 @@
     <div class="footer-inner">
       <span class="brand-word">John<span class="brand-flix">Flix</span></span>
       <div class="footer-links">
-        <button class="footer-subtle-btn" id="footerTrafficBtn"><span class="live-dot-pulse"></span> <span id="footerTrafficCount">...</span> online</button>
         <button class="footer-subtle-btn" id="footerSuggestionsBtn">💡 Sugestões da Comunidade</button>
         <button class="footer-subtle-btn" id="footerServersBtn">Servidores Conectados</button>
         <span id="footerCopyright">© 2026 JohnFlix</span>
@@ -663,7 +575,7 @@
 
   <script defer src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
   <script defer src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
-  <script defer src="/config.js?v=20261028ll"></script>
-  <script defer src="/app.js?v=20261028ll"></script>
+  <script defer src="/config.js?v=20261028mm"></script>
+  <script defer src="/app.js?v=20261028mm"></script>
 </body>
 </html>

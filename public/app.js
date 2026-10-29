@@ -172,18 +172,6 @@
     tvLeanbackBanner: document.getElementById('tvLeanbackBanner'),
     tvBannerPairCode: document.getElementById('tvBannerPairCode'),
     btnCloseTvModeBtn: document.getElementById('btnCloseTvModeBtn'),
-    liveTrafficBtn: document.getElementById('liveTrafficBtn'),
-    liveTrafficCount: document.getElementById('liveTrafficCount'),
-    footerTrafficBtn: document.getElementById('footerTrafficBtn'),
-    footerTrafficCount: document.getElementById('footerTrafficCount'),
-    trafficModal: document.getElementById('trafficModal'),
-    closeTrafficModalBtn: document.getElementById('closeTrafficModalBtn'),
-    trafficMetricOnline: document.getElementById('trafficMetricOnline'),
-    trafficMetricPeak: document.getElementById('trafficMetricPeak'),
-    trafficSvgChart: document.getElementById('trafficSvgChart'),
-    trafficAreaPath: document.getElementById('trafficAreaPath'),
-    trafficLinePath: document.getElementById('trafficLinePath'),
-    trafficPointsGroup: document.getElementById('trafficPointsGroup'),
     toast: document.getElementById('toastNotification')
   };
 
@@ -297,7 +285,6 @@
 
     // Smart TV Direct Link Deep-linking (e.g. ?open=tt0133093)
     const urlParams = new URLSearchParams(window.location.search);
-    startLiveTrafficHeartbeat();
     if (urlParams.get('tv') === '1' || isSmartTv) {
       initTvLeanbackMode();
     }
@@ -604,16 +591,6 @@
     if (el.btnSendToPairedTv) el.btnSendToPairedTv.addEventListener('click', sendPlayToPairedTv);
     if (el.btnOpenTvModeCurrent) el.btnOpenTvModeCurrent.addEventListener('click', () => { closeCastModal(); initTvLeanbackMode(); });
     if (el.btnCloseTvModeBtn) el.btnCloseTvModeBtn.addEventListener('click', exitTvLeanbackMode);
-
-    // Live Traffic Real-Time
-    if (el.liveTrafficBtn) el.liveTrafficBtn.addEventListener('click', openTrafficModal);
-    if (el.footerTrafficBtn) el.footerTrafficBtn.addEventListener('click', openTrafficModal);
-    if (el.closeTrafficModalBtn) el.closeTrafficModalBtn.addEventListener('click', closeTrafficModal);
-    if (el.trafficModal) {
-      el.trafficModal.addEventListener('click', (e) => {
-        if (e.target === el.trafficModal) closeTrafficModal();
-      });
-    }
 
     // Player controls
     el.closePlayerBtn.addEventListener('click', stopAndClosePlayer);
@@ -3843,116 +3820,6 @@
       showToast(`Link TV: ${targetUrl}`);
     }
     closeCastModal();
-  }
-
-  // === REAL-TIME LIVE TRAFFIC MONITOR ===
-  let trafficStatsCache = null;
-  function startLiveTrafficHeartbeat() {
-    let did = localStorage.getItem('johnflix_device_id');
-    if (!did) {
-      did = 'dev_' + Math.random().toString(36).substring(2, 12);
-      localStorage.setItem('johnflix_device_id', did);
-    }
-    const ping = async () => {
-      try {
-        const res = await fetch('/api/traffic', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ deviceId: did })
-        });
-        const data = await res.json();
-        if (data && typeof data.online === 'number') {
-          trafficStatsCache = data;
-          const displayOnline = Math.max(1, data.online);
-          if (el.liveTrafficCount) el.liveTrafficCount.textContent = displayOnline;
-          if (el.footerTrafficCount) el.footerTrafficCount.textContent = displayOnline;
-          if (el.trafficModal && !el.trafficModal.classList.contains('hidden')) {
-            renderTrafficModal({ ...data, online: displayOnline });
-          }
-        }
-      } catch (_) {}
-    };
-
-    const leave = () => {
-      const payload = JSON.stringify({ deviceId: did, action: 'leave' });
-      if (navigator.sendBeacon) {
-        navigator.sendBeacon('/api/traffic', new Blob([payload], { type: 'application/json' }));
-      } else {
-        fetch('/api/traffic', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: payload,
-          keepalive: true
-        }).catch(() => {});
-      }
-    };
-
-    window.addEventListener('pagehide', leave);
-    window.addEventListener('beforeunload', leave);
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden') {
-        leave();
-      } else if (document.visibilityState === 'visible') {
-        ping();
-      }
-    });
-
-    ping();
-    setInterval(ping, 4000);
-  }
-
-  function openTrafficModal() {
-    if (!el.trafficModal) return;
-    el.trafficModal.classList.remove('hidden');
-    if (trafficStatsCache) {
-      renderTrafficModal(trafficStatsCache);
-    }
-    const did = localStorage.getItem('johnflix_device_id') || '';
-    fetch(`/api/traffic?did=${encodeURIComponent(did)}`).then(r => r.json()).then(data => {
-      trafficStatsCache = data;
-      renderTrafficModal(data);
-    }).catch(() => {});
-  }
-
-  function closeTrafficModal() {
-    if (!el.trafficModal) return;
-    el.trafficModal.classList.add('hidden');
-  }
-
-  function renderTrafficModal(data) {
-    if (el.trafficMetricOnline) el.trafficMetricOnline.textContent = data.online || '--';
-    if (el.trafficMetricPeak) el.trafficMetricPeak.textContent = data.peak || '--';
-    const history = data.history || [];
-    if (history.length === 0 || !el.trafficAreaPath || !el.trafficLinePath) return;
-
-    const maxVal = Math.max(...history.map(h => h.count), data.peak || 30, 10);
-    const minVal = Math.min(...history.map(h => h.count), 5);
-    const range = (maxVal - minVal) || 1;
-    const w = 460;
-    const h = 150;
-    const padY = 20;
-
-    const coords = history.map((pt, idx) => {
-      const x = (idx / (history.length - 1)) * w;
-      const normY = (pt.count - minVal) / range;
-      const y = h - padY - (normY * (h - padY * 2));
-      return { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, count: pt.count, time: pt.time };
-    });
-
-    const lineD = 'M ' + coords.map(c => `${c.x} ${c.y}`).join(' L ');
-    const areaD = lineD + ` L ${w} ${h} L 0 ${h} Z`;
-
-    el.trafficLinePath.setAttribute('d', lineD);
-    el.trafficAreaPath.setAttribute('d', areaD);
-
-    if (el.trafficPointsGroup) {
-      let circlesHtml = '';
-      coords.forEach(c => {
-        const isPeak = c.count === maxVal;
-        circlesHtml += `<circle cx="${c.x}" cy="${c.y}" r="${isPeak ? 5 : 3}" fill="${isPeak ? '#ef4444' : '#38bdf8'}" stroke="#0f172a" stroke-width="1.5"><title>${c.count} usuários às ${c.time}</title></circle>`;
-      });
-      el.trafficPointsGroup.innerHTML = circlesHtml;
-    }
   }
 
   // === SMART TV D-PAD SPATIAL NAVIGATION ===

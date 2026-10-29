@@ -693,42 +693,6 @@ const COMMUNITY_SUGGESTIONS = [
 ];
 const NTFY_TOPIC = 'https://ntfy.sh/johnflix_sugestoes_publicas_2026';
 
-const ACTIVE_CLIENTS = new Map();
-const TRAFFIC_HISTORY = [];
-let MAX_PEAK_TODAY = 1;
-
-function getOnlineStats(reqClientId = null) {
-  const now = Date.now();
-  if (reqClientId) {
-    ACTIVE_CLIENTS.set(reqClientId, now);
-  }
-  for (const [id, lastSeen] of ACTIVE_CLIENTS.entries()) {
-    if (now - lastSeen > 10000) {
-      ACTIVE_CLIENTS.delete(id);
-    }
-  }
-
-  // Exact real-time connected devices count
-  const currentCount = ACTIVE_CLIENTS.size;
-  if (currentCount > MAX_PEAK_TODAY) MAX_PEAK_TODAY = currentCount;
-
-  const lastEntry = TRAFFIC_HISTORY[TRAFFIC_HISTORY.length - 1];
-  if (!lastEntry || now - lastEntry.timestamp >= 20000) {
-    const d = new Date(now);
-    const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-    TRAFFIC_HISTORY.push({ time: timeStr, count: currentCount, timestamp: now });
-    if (TRAFFIC_HISTORY.length > 30) TRAFFIC_HISTORY.shift();
-  } else {
-    lastEntry.count = currentCount;
-  }
-
-  return {
-    online: currentCount,
-    peak: Math.max(MAX_PEAK_TODAY, currentCount),
-    history: TRAFFIC_HISTORY
-  };
-}
-
 const TV_PAIR_SESSIONS = new Map();
 
 function getEdgeCache(key) {
@@ -960,38 +924,6 @@ export default async (request) => {
   const rawPath = url.pathname;
 
   try {
-    if (rawPath === '/api/traffic') {
-      const trafficHeaders = {
-        ...headers,
-        'Cache-Control': 'no-cache, no-store, must-revalidate'
-      };
-      const clientIp = request.headers.get('x-nf-client-connection-ip') ||
-                       request.headers.get('client-ip') ||
-                       (request.headers.get('x-forwarded-for') || '').split(',')[0].trim() ||
-                       'dev';
-      let deviceId = url.searchParams.get('did') || url.searchParams.get('cid');
-      let action = url.searchParams.get('action') || '';
-      if (request.method === 'POST') {
-        try {
-          const body = await request.json();
-          if (body && (body.deviceId || body.clientId)) {
-            deviceId = body.deviceId || body.clientId;
-          }
-          if (body && body.action) action = body.action;
-        } catch (_) {}
-      }
-      const uniqueDeviceKey = deviceId ? `${clientIp}:${deviceId}` : clientIp;
-
-      if (action === 'leave') {
-        ACTIVE_CLIENTS.delete(uniqueDeviceKey);
-        const stats = getOnlineStats(null);
-        return new Response(JSON.stringify(stats), { status: 200, headers: trafficHeaders });
-      }
-
-      const stats = getOnlineStats(uniqueDeviceKey);
-      return new Response(JSON.stringify(stats), { status: 200, headers: trafficHeaders });
-    }
-
     if (rawPath === '/api/tv-sync') {
       const syncHeaders = { ...headers, 'Cache-Control': 'no-cache, no-store, must-revalidate' };
       const code = (url.searchParams.get('code') || '').replace(/[^0-9]/g, '').slice(0, 6);
