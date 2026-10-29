@@ -1,4 +1,14 @@
 (() => {
+  // Purge any residual traffic elements if cached in DOM
+  const purgeTrafficElements = () => {
+    document.querySelectorAll('#liveTrafficBtn, #footerTrafficBtn, #trafficModal, .live-traffic-pill, .live-dot-pulse, .modal-traffic').forEach(el => el.remove());
+  };
+  purgeTrafficElements();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', purgeTrafficElements);
+  }
+  window.addEventListener('load', purgeTrafficElements);
+
   // Application State
   const state = {
     catalogRows: [],

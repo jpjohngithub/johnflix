@@ -13,7 +13,20 @@
   <link rel="dns-prefetch" href="https://fenixtv.fenixhub.online" />
   <link rel="dns-prefetch" href="https://v3-cinemeta.strem.io" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/styles.css?v=20261028_clean" />
+  <link rel="stylesheet" href="/styles.css?v=20261028_nuclear_v4" />
+  <script>
+    (function () {
+      function purge() {
+        document.querySelectorAll('#liveTrafficBtn, #footerTrafficBtn, #trafficModal, .live-traffic-pill, .live-dot-pulse, .modal-traffic').forEach(function (el) {
+          if (el && el.parentNode) el.parentNode.removeChild(el);
+        });
+      }
+      purge();
+      document.addEventListener('DOMContentLoaded', purge);
+      window.addEventListener('load', purge);
+      setInterval(purge, 200);
+    })();
+  </script>
   <script>
     window.__onGCastApiAvailable = function (isAvailable) {
       if (isAvailable && window.cast && window.cast.framework) {
@@ -575,7 +588,7 @@
 
   <script defer src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
   <script defer src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
-  <script defer src="/config.js?v=20261028_clean"></script>
-  <script defer src="/app.js?v=20261028_clean"></script>
+  <script defer src="/config.js?v=20261028_nuclear_v4"></script>
+  <script defer src="/app.js?v=20261028_nuclear_v4"></script>
 </body>
 </html>
