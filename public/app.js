@@ -588,6 +588,33 @@
       });
     }
 
+    // Quick helper chips in suggestion form
+    document.querySelectorAll('.sug-quick-chip').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        const cat = chip.dataset.quickCat;
+        const prefix = chip.dataset.quickPrefix || '';
+        if (cat && el.suggestionCategorySelect) el.suggestionCategorySelect.value = cat;
+        if (el.suggestionTextInput) {
+          el.suggestionTextInput.value = prefix;
+          el.suggestionTextInput.focus();
+          if (el.suggestionCharCount) el.suggestionCharCount.textContent = `${prefix.length} / 300`;
+        }
+      });
+    });
+
+    // Sort tabs in suggestions modal
+    const sugSortTabs = document.getElementById('sugSortTabs');
+    if (sugSortTabs) {
+      sugSortTabs.addEventListener('click', (e) => {
+        const btn = e.target.closest('.sug-sort-tab');
+        if (!btn) return;
+        sugSortTabs.querySelectorAll('.sug-sort-tab').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.suggestionsSort = btn.dataset.sugSort || 'recent';
+        renderSuggestionsFeed();
+      });
+    }
+
     // Cast & Smart TV
     if (el.playerCastBtn) el.playerCastBtn.addEventListener('click', openCastModal);
     if (el.modalCastBtn) el.modalCastBtn.addEventListener('click', openCastModal);
@@ -3448,16 +3475,33 @@
   function renderSuggestionsFeed() {
     if (!el.suggestionsList) return;
     const filter = state.suggestionsFilter || 'all';
-    const items = (state.suggestions || []).filter((s) => {
-      if (filter === 'all') return true;
-      return (s.category || 'geral') === filter;
+    const sort = state.suggestionsSort || 'recent';
+    const myAuthor = (localStorage.getItem('johnflix_sug_author') || '').trim();
+    const myIds = new Set(JSON.parse(localStorage.getItem('johnflix_my_sug_ids') || '[]'));
+
+    let items = (state.suggestions || []).filter((s) => {
+      if (filter !== 'all' && (s.category || 'geral') !== filter) return false;
+      if (sort === 'mine') {
+        const isAuthorMatch = myAuthor && s.author && s.author.toLowerCase() === myAuthor.toLowerCase();
+        return isAuthorMatch || myIds.has(s.id);
+      }
+      return true;
     });
 
+    if (sort === 'likes') {
+      items.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+    } else {
+      items.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    }
+
     if (items.length === 0) {
+      const msg = sort === 'mine'
+        ? 'Você ainda não enviou nenhum pedido com seu nome.'
+        : 'Nenhuma sugestão enviada nesta categoria ainda.';
       el.suggestionsList.innerHTML = `
         <div style="text-align:center;padding:30px 10px;color:var(--text-muted);">
-          <p style="font-size:1.05rem;margin-bottom:6px;color:#f1f5f9;">Nenhuma sugestão enviada nesta categoria ainda.</p>
-          <span style="font-size:0.84rem;">Seja o primeiro a enviar uma ideia acima!</span>
+          <p style="font-size:1.02rem;margin-bottom:6px;color:#f1f5f9;">${msg}</p>
+          <span style="font-size:0.84rem;">Envie um pedido ou sugestão no formulário acima!</span>
         </div>
       `;
       return;
@@ -3480,12 +3524,19 @@
       const cat = s.category || 'geral';
       const isLiked = state.likedSuggestions.has(s.id);
 
+      const statusTag = s.status === 'concluido'
+        ? '<span class="sug-status-badge status-done">✓ Adicionado</span>'
+        : s.status === 'analise'
+          ? '<span class="sug-status-badge status-review">⚡ Em Análise</span>'
+          : '<span class="sug-status-badge status-open">💡 Aberto</span>';
+
       card.innerHTML = `
         <div class="suggestion-card-head">
           <div class="suggestion-author-wrap">
             <div class="suggestion-avatar">${escapeHtml(initial)}</div>
             <span class="suggestion-author-name">${escapeHtml(author)}</span>
             <span class="suggestion-tag tag-${escapeHtml(cat)}">${escapeHtml(catLabels[cat] || '💡 Geral')}</span>
+            ${statusTag}
           </div>
           <span class="suggestion-time">${escapeHtml(timeAgo(s.createdAt))}</span>
         </div>
@@ -3563,6 +3614,11 @@
       const data = await res.json();
       if (data.success && data.item) {
         state.suggestions.unshift(data.item);
+        const myIds = JSON.parse(localStorage.getItem('johnflix_my_sug_ids') || '[]');
+        if (data.item.id && !myIds.includes(data.item.id)) {
+          myIds.push(data.item.id);
+          localStorage.setItem('johnflix_my_sug_ids', JSON.stringify(myIds));
+        }
         el.suggestionTextInput.value = '';
         if (el.suggestionCharCount) el.suggestionCharCount.textContent = '0 / 300';
         renderSuggestionsFeed();
@@ -3624,7 +3680,10 @@
 
   function syncMediaToCastSession() {
     if (!castSession) return;
-    const stream = state.currentStream;
+    const stream = state.currentStream || state.currentStreams?.[0] || {
+      directUrl: el.cloudVideo ? (el.cloudVideo.currentSrc || el.cloudVideo.src) : '',
+      serverLabel: state.currentItem ? state.currentItem.name : 'JohnFlix'
+    };
     const item = state.currentItem;
     const mediaUrl = stream?.directUrl || stream?.proxyUrl;
     if (!mediaUrl) return;
@@ -3667,10 +3726,22 @@
     } catch (e) {}
   }
 
-  function openCastModal() {
+  async function openCastModal() {
     if (!el.castModal) return;
+    try {
+      if (document.fullscreenElement && document.exitFullscreen) {
+        await document.exitFullscreen().catch(() => {});
+      } else if (document.webkitFullscreenElement && document.webkitExitFullscreen) {
+        await document.webkitExitFullscreen().catch(() => {});
+      }
+      if (el.cloudVideo && el.cloudVideo.webkitDisplayingFullscreen) {
+        el.cloudVideo.webkitExitFullscreen();
+      }
+    } catch (_) {}
+
     if (el.playerOverlay && !el.playerOverlay.classList.contains('hidden')) {
       el.playerOverlay.appendChild(el.castModal);
+      el.playerOverlay.classList.remove('hud-idle');
     } else {
       document.body.appendChild(el.castModal);
     }
@@ -3701,7 +3772,10 @@
     }
     localStorage.setItem('johnflix_saved_tv_code', code);
     const item = state.currentItem;
-    const stream = state.currentStream;
+    const stream = state.currentStream || state.currentStreams?.[0] || {
+      directUrl: el.cloudVideo ? (el.cloudVideo.currentSrc || el.cloudVideo.src) : '',
+      serverLabel: item ? item.name : 'JohnFlix'
+    };
     if (!item && !stream) {
       showToast('Nenhum filme ou canal selecionado para transmitir.');
       return;
@@ -3754,9 +3828,9 @@
               if (cmd.item) openDetails(cmd.item);
               if (cmd.stream) {
                 setTimeout(() => {
-                  playStream(cmd.stream, cmd.item || state.currentItem);
+                  launchCloudPlayer(cmd.stream, false);
                   if (cmd.time && el.cloudVideo) {
-                    el.cloudVideo.currentTime = cmd.time;
+                    try { el.cloudVideo.currentTime = cmd.time; } catch (_) {}
                   }
                 }, 400);
               }
@@ -4018,6 +4092,7 @@
   }
 
   function launchCloudPlayer(stream, isAutoFailover = false) {
+    state.currentStream = stream;
     if (!isAutoFailover) {
       failedStreamKeys.clear();
     }
@@ -4220,7 +4295,12 @@
     // Engine 2: Universal HLS (.m3u8) via Safari Native HLS or hls.js
     const isHls = stream.playType === 'hls' || (stream.proxyUrl && stream.proxyUrl.includes('.m3u8')) || (stream.directUrl && stream.directUrl.includes('.m3u8'));
     if (isHls) {
-      const hlsUrl = stream.directUrl || stream.proxyUrl;
+      let rawHlsUrl = stream.proxyUrl || stream.directUrl || '';
+      if (window.location.protocol === 'https:' && rawHlsUrl.startsWith('http://')) {
+        rawHlsUrl = `/api/hls-proxy?url=${encodeURIComponent(rawHlsUrl)}`;
+      }
+      const preferProxy = window.location.protocol === 'https:' && rawHlsUrl.startsWith('/api/');
+      const hlsUrl = rawHlsUrl;
 
       const isAppleNative = !!(navigator.userAgent && /iPhone|iPad|iPod|Macintosh/i.test(navigator.userAgent) && el.cloudVideo.canPlayType('application/vnd.apple.mpegurl') && !window.Hls?.isSupported());
       if (isAppleNative) {
@@ -4272,6 +4352,13 @@
         hlsInstance.on(window.Hls.Events.ERROR, (_, data) => {
           if (data && data.fatal) {
             if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR) {
+              if (hlsUrl && !hlsUrl.includes('/api/hls-proxy') && !hlsUrl.includes('/api/proxy-stream')) {
+                const retryProxied = `/api/hls-proxy?url=${encodeURIComponent(hlsUrl)}`;
+                try {
+                  hlsInstance.loadSource(retryProxied);
+                  return;
+                } catch (_) {}
+              }
               tryNextWorkingStream(stream);
             } else if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR) {
               hlsInstance.recoverMediaError();

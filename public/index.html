@@ -16,7 +16,7 @@
   <link rel="dns-prefetch" href="https://fenixtv.fenixhub.online" />
   <link rel="dns-prefetch" href="https://v3-cinemeta.strem.io" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/styles.css?v=20261029_fix_all_sources" />
+  <link rel="stylesheet" href="/styles.css?v=20261029_fix_tv_cast_v4" />
   <script>
     (function () {
       if ('serviceWorker' in navigator) {
@@ -333,9 +333,9 @@
       <button class="modal-close" id="closeSuggestionsModalBtn">&times;</button>
       <div class="modal-body suggestions-modal-body">
         <div class="suggestions-modal-header">
-          <div class="suggestions-header-badge">💡 MURAL PÚBLICO</div>
-          <h2 class="status-modal-title">Sugestões da Comunidade</h2>
-          <p class="status-modal-sub">Envie seu pedido ou melhoria. O que você mandar aparece aqui para todo mundo em tempo real!</p>
+          <div class="suggestions-header-badge">💡 MURAL DA COMUNIDADE</div>
+          <h2 class="status-modal-title">Central de Pedidos &amp; Sugestões</h2>
+          <p class="status-modal-sub">Peça novos filmes, séries, canais de TV ou reporte problemas. Os pedidos são atualizados em tempo real!</p>
         </div>
 
         <!-- Suggestion Submission Form -->
@@ -350,30 +350,46 @@
               <option value="geral">💡 Outro</option>
             </select>
           </div>
+
+          <!-- Quick Helper Chips -->
+          <div class="sug-quick-helpers">
+            <span class="sug-quick-label">Atalhos rápidos:</span>
+            <button type="button" class="sug-quick-chip" data-quick-cat="tv" data-quick-prefix="Por favor adicionar o canal: ">📺 Pedir Canal</button>
+            <button type="button" class="sug-quick-chip" data-quick-cat="filme" data-quick-prefix="Gostaria de ver o filme/série: ">🎬 Pedir Filme/Série</button>
+            <button type="button" class="sug-quick-chip" data-quick-cat="melhoria" data-quick-prefix="Sugestão para o player: ">⚡ Sugerir Melhoria</button>
+          </div>
+
           <div class="suggestion-textarea-wrap">
-            <textarea id="suggestionTextInput" class="suggestion-textarea" placeholder="O que você gostaria de ver ou alterar no JohnFlix? Ex: Adicionar tal canal, arrumar capa, etc..." maxlength="300" required></textarea>
+            <textarea id="suggestionTextInput" class="suggestion-textarea" placeholder="O que você gostaria de ver ou alterar no JohnFlix? Ex: Adicionar canal tal, legendas em tal filme..." maxlength="300" required></textarea>
             <div class="suggestion-form-footer">
               <span class="suggestion-char-count" id="suggestionCharCount">0 / 300</span>
               <button type="submit" class="btn btn-primary btn-sm btn-submit-suggestion" id="submitSuggestionBtn">
-                <span>Enviar Sugestão</span>
+                <span>Enviar Pedido</span>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
               </button>
             </div>
           </div>
         </form>
 
-        <!-- Suggestions Feed Tabs & Controls -->
-        <div class="suggestions-feed-top">
-          <div class="suggestions-filter-pills" id="suggestionsFilterPills">
-            <button type="button" class="sug-pill active" data-sug-filter="all">Todas</button>
-            <button type="button" class="sug-pill" data-sug-filter="filme">🎬 Filmes/Séries</button>
-            <button type="button" class="sug-pill" data-sug-filter="tv">📺 TV</button>
-            <button type="button" class="sug-pill" data-sug-filter="melhoria">⚡ Melhorias</button>
+        <!-- Sorting & Filter Controls -->
+        <div class="sug-controls-bar">
+          <div class="sug-sort-tabs" id="sugSortTabs">
+            <button type="button" class="sug-sort-tab active" data-sug-sort="recent">🕒 Recentes</button>
+            <button type="button" class="sug-sort-tab" data-sug-sort="likes">🔥 Mais Apoiados</button>
+            <button type="button" class="sug-sort-tab" data-sug-sort="mine">👤 Meus Pedidos</button>
           </div>
           <button type="button" class="btn btn-glass btn-xs" id="refreshSuggestionsBtn" title="Atualizar">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
             <span>Atualizar</span>
           </button>
+        </div>
+
+        <div class="suggestions-filter-pills" id="suggestionsFilterPills">
+          <button type="button" class="sug-pill active" data-sug-filter="all">Todas</button>
+          <button type="button" class="sug-pill" data-sug-filter="filme">🎬 Filmes &amp; Séries</button>
+          <button type="button" class="sug-pill" data-sug-filter="tv">📺 TV Ao Vivo</button>
+          <button type="button" class="sug-pill" data-sug-filter="melhoria">⚡ Melhorias</button>
+          <button type="button" class="sug-pill" data-sug-filter="bug">🐛 Erros</button>
         </div>
 
         <!-- Live Feed Container -->
@@ -606,7 +622,7 @@
 
   <script defer src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
   <script defer src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
-  <script defer src="/config.js?v=20261029_fix_all_sources"></script>
-  <script defer src="/app.js?v=20261029_fix_all_sources"></script>
+  <script defer src="/config.js?v=20261029_fix_tv_cast_v4"></script>
+  <script defer src="/app.js?v=20261029_fix_tv_cast_v4"></script>
 </body>
 </html>
