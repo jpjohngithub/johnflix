@@ -3863,16 +3863,42 @@
         const data = await res.json();
         if (data && typeof data.online === 'number') {
           trafficStatsCache = data;
-          if (el.liveTrafficCount) el.liveTrafficCount.textContent = data.online;
-          if (el.footerTrafficCount) el.footerTrafficCount.textContent = data.online;
+          const displayOnline = Math.max(1, data.online);
+          if (el.liveTrafficCount) el.liveTrafficCount.textContent = displayOnline;
+          if (el.footerTrafficCount) el.footerTrafficCount.textContent = displayOnline;
           if (el.trafficModal && !el.trafficModal.classList.contains('hidden')) {
-            renderTrafficModal(data);
+            renderTrafficModal({ ...data, online: displayOnline });
           }
         }
       } catch (_) {}
     };
+
+    const leave = () => {
+      const payload = JSON.stringify({ deviceId: did, action: 'leave' });
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon('/api/traffic', new Blob([payload], { type: 'application/json' }));
+      } else {
+        fetch('/api/traffic', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: payload,
+          keepalive: true
+        }).catch(() => {});
+      }
+    };
+
+    window.addEventListener('pagehide', leave);
+    window.addEventListener('beforeunload', leave);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        leave();
+      } else if (document.visibilityState === 'visible') {
+        ping();
+      }
+    });
+
     ping();
-    setInterval(ping, 12000);
+    setInterval(ping, 4000);
   }
 
   function openTrafficModal() {

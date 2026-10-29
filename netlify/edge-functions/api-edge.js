@@ -703,17 +703,17 @@ function getOnlineStats(reqClientId = null) {
     ACTIVE_CLIENTS.set(reqClientId, now);
   }
   for (const [id, lastSeen] of ACTIVE_CLIENTS.entries()) {
-    if (now - lastSeen > 25000) {
+    if (now - lastSeen > 10000) {
       ACTIVE_CLIENTS.delete(id);
     }
   }
 
-  // Purely distinct connected physical devices
-  const currentCount = Math.max(1, ACTIVE_CLIENTS.size);
+  // Exact real-time connected devices count
+  const currentCount = ACTIVE_CLIENTS.size;
   if (currentCount > MAX_PEAK_TODAY) MAX_PEAK_TODAY = currentCount;
 
   const lastEntry = TRAFFIC_HISTORY[TRAFFIC_HISTORY.length - 1];
-  if (!lastEntry || now - lastEntry.timestamp >= 30000) {
+  if (!lastEntry || now - lastEntry.timestamp >= 20000) {
     const d = new Date(now);
     const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
     TRAFFIC_HISTORY.push({ time: timeStr, count: currentCount, timestamp: now });
@@ -970,15 +970,24 @@ export default async (request) => {
                        (request.headers.get('x-forwarded-for') || '').split(',')[0].trim() ||
                        'dev';
       let deviceId = url.searchParams.get('did') || url.searchParams.get('cid');
+      let action = url.searchParams.get('action') || '';
       if (request.method === 'POST') {
         try {
           const body = await request.json();
           if (body && (body.deviceId || body.clientId)) {
             deviceId = body.deviceId || body.clientId;
           }
+          if (body && body.action) action = body.action;
         } catch (_) {}
       }
       const uniqueDeviceKey = deviceId ? `${clientIp}:${deviceId}` : clientIp;
+
+      if (action === 'leave') {
+        ACTIVE_CLIENTS.delete(uniqueDeviceKey);
+        const stats = getOnlineStats(null);
+        return new Response(JSON.stringify(stats), { status: 200, headers: trafficHeaders });
+      }
+
       const stats = getOnlineStats(uniqueDeviceKey);
       return new Response(JSON.stringify(stats), { status: 200, headers: trafficHeaders });
     }
