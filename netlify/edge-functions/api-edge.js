@@ -1906,9 +1906,6 @@ export default async (request) => {
             streams: [brStream]
           });
         }
-            streams: [brStream]
-          });
-        }
 
         let allTvStreams = tvAddonResults.flatMap((r) => r.streams);
 
