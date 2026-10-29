@@ -3664,6 +3664,11 @@
 
   function openCastModal() {
     if (!el.castModal) return;
+    if (el.playerOverlay && !el.playerOverlay.classList.contains('hidden')) {
+      el.playerOverlay.appendChild(el.castModal);
+    } else {
+      document.body.appendChild(el.castModal);
+    }
     el.castModal.classList.remove('hidden');
     const item = state.currentItem;
     if (item && el.castModalSub) {
@@ -3678,6 +3683,9 @@
   function closeCastModal() {
     if (!el.castModal) return;
     el.castModal.classList.add('hidden');
+    if (el.castModal.parentNode !== document.body) {
+      document.body.appendChild(el.castModal);
+    }
   }
 
   async function sendPlayToPairedTv() {
@@ -4356,6 +4364,7 @@
   }
 
   function stopAndClosePlayer() {
+    closeCastModal();
     clearTimeout(playerHudTimer);
     clearVideoHandlers();
     destroyHls();

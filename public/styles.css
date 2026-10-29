@@ -6276,6 +6276,10 @@ body.smart-tv-mode .media-card.tv-focused {
   box-shadow: 0 8px 30px rgba(168, 85, 247, 0.6) !important;
 }
 
+#castModal {
+  z-index: 999999 !important;
+}
+
 #liveTrafficBtn,
 #footerTrafficBtn,
 #trafficModal,
