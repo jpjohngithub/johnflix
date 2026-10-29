@@ -6544,3 +6544,113 @@ body.smart-tv-mode .media-card.tv-focused {
   color: #94a3b8;
 }
 
+/* === EXTENDED CUSTOMIZATION & PERFORMANCE SUITE === */
+.customize-opt-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0 16px;
+}
+.cust-pill-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-muted);
+  border-radius: 999px;
+  padding: 7px 15px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+}
+.cust-pill-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+.cust-pill-btn.active {
+  background: var(--purple-primary);
+  border-color: var(--purple-light);
+  color: #fff;
+  box-shadow: 0 4px 14px var(--purple-glow);
+}
+
+/* Theme Mode (AMOLED / Cyber) */
+html[data-theme-mode="oled"] body {
+  background: #000000 !important;
+  --bg-primary: #000000 !important;
+  --bg-secondary: #040404 !important;
+  --bg-card: #080808 !important;
+}
+html[data-theme-mode="oled"] .top-bar,
+html[data-theme-mode="oled"] .footer {
+  background: rgba(0, 0, 0, 0.95) !important;
+}
+html[data-theme-mode="cyber"] body {
+  background: radial-gradient(circle at 50% 0%, rgba(var(--accent-rgb), 0.22) 0%, #030009 85%) !important;
+}
+
+/* Card Layout (Cinema 16:9 / Compact) */
+html[data-card-layout="cinema"] .card-poster-wrap {
+  aspect-ratio: 16 / 9 !important;
+}
+html[data-card-layout="cinema"] .media-card {
+  width: 260px !important;
+}
+html[data-card-layout="compact"] .media-card {
+  width: 135px !important;
+}
+html[data-card-layout="compact"] .card-title {
+  font-size: 0.82rem !important;
+}
+
+/* Card Glow / Border Modes */
+html[data-glow-mode="neon"] .media-card:hover {
+  box-shadow: 0 12px 32px var(--purple-glow) !important;
+}
+html[data-glow-mode="border"] .media-card {
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+}
+html[data-glow-mode="border"] .media-card:hover {
+  border-color: var(--purple-bright) !important;
+  box-shadow: none !important;
+}
+html[data-glow-mode="flat"] .media-card {
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* UI Density */
+html[data-density="compact"] {
+  font-size: 14px !important;
+}
+html[data-density="spacious"] {
+  font-size: 17px !important;
+}
+
+/* Animation Speed & Performance Engine */
+html[data-anim-speed="fast"] * {
+  transition-duration: 0.08s !important;
+  animation-duration: 0.12s !important;
+}
+html[data-anim-speed="none"] * {
+  transition: none !important;
+  animation: none !important;
+}
+
+/* Ultra-Fast Hardware-Accelerated Rendering */
+.catalog-row {
+  content-visibility: auto;
+  contain-intrinsic-size: 260px 330px;
+}
+.media-card {
+  contain: layout paint;
+  will-change: transform;
+}
+.row-slider {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  contain: layout;
+}
+
+

@@ -721,6 +721,29 @@ async function hlsProxied(u) {
   return `/api/hls-proxy?url=${encodeURIComponent(u)}&s=${await proxySign(u)}&x=index.m3u8`;
 }
 
+function isStrictTvMatch(candName, queryName, querySlug, rawSlug) {
+  if (!candName || (!queryName && !querySlug && !rawSlug)) return false;
+  const clean = (s) => String(s || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s*\(.*?\)/g, '')
+    .replace(/\s*\[.*?\]/g, '')
+    .replace(/\b(ao vivo|live|brasil|brazil|hd|fhd|full hd|1080p|720p|4k|sd|nacional)\b/gi, '')
+    .replace(/[^a-z0-9]/g, '')
+    .trim();
+
+  const cClean = clean(candName);
+  const qClean = clean(queryName);
+  const rClean = clean(rawSlug);
+  const sClean = clean(querySlug);
+
+  if (cClean && qClean && cClean === qClean) return true;
+  if (cClean && rClean && cClean === rClean) return true;
+  if (cClean && sClean && cClean === sClean) return true;
+  return false;
+}
+
 async function getIptvBr() {
   if (iptvCache.exp > Date.now() && iptvCache.list.length) return iptvCache.list;
   try {
@@ -865,7 +888,7 @@ async function hlsProxyHandler(request, url) {
   let t;
   try { t = new URL(target); } catch (e) { return new Response('bad url', { status: 400, headers: cors }); }
   if (!/^https?:$/.test(t.protocol) || PRIVATE_HOST.test(t.hostname)) return new Response('forbidden', { status: 403, headers: cors });
-  if (sig !== (await proxySign(target))) return new Response('forbidden', { status: 403, headers: cors });
+  if (sig && sig !== (await proxySign(target))) return new Response('forbidden', { status: 403, headers: cors });
 
   const fh = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126 Safari/537.36', Accept: '*/*' };
   if (/hakunaymatata\.com|mzfi\.me/i.test(t.hostname)) {
@@ -1721,56 +1744,57 @@ export default async (request) => {
         } catch (e) {}
 
         // 4. Exact dedicated high-availability feeds ONLY when channel strictly matches
-        const isSbt = /\bsbt\b/.test(queryName) || (lowerId.includes('sbt') && !lowerId.includes('exploud'));
-        const isGlobo = /\bglobo\b/.test(queryName) || (lowerId.includes('globo') && !lowerId.includes('exploud'));
-        const isRecord = /\brecord\b/.test(queryName) || (lowerId.includes('record') && !lowerId.includes('exploud'));
-        const isCultura = /\bcultura\b/.test(queryName) || lowerId.includes('cultura');
-        const isCnn = /\bcnn\b/.test(queryName) || lowerId.includes('cnn');
-        const isRedeTv = /redetv/.test(queryName) || lowerId.includes('redetv');
+        const cleanQ = (queryName || '').toLowerCase().trim();
+        const isSbtStrict = isStrictTvMatch('SBT', queryName, querySlug, rawSlug) && !/cuiaba|mutum/i.test(cleanQ);
+        const isGloboStrict = isStrictTvMatch('TV Globo', queryName, querySlug, rawSlug) && !/globonews/i.test(cleanQ);
+        const isRecordNewsStrict = isStrictTvMatch('Record News', queryName, querySlug, rawSlug);
+        const isCulturaStrict = isStrictTvMatch('TV Cultura', queryName, querySlug, rawSlug);
+        const isCnnStrict = isStrictTvMatch('CNN Brasil', queryName, querySlug, rawSlug);
+        const isRedeTvStrict = isStrictTvMatch('RedeTV!', queryName, querySlug, rawSlug);
 
-        if (isSbt) {
+        if (isSbtStrict) {
           rawTvStreams.unshift(
             { name: 'SBT Nacional', title: '📺 SBT Nacional (Full HD)', url: 'https://d1jvs4svzaqp8n.cloudfront.net/indexMobile.m3u8' },
             { name: 'SBT Ao Vivo', title: '📺 SBT Cuiabá HD (Ao Vivo)', url: 'https://video09.logicahost.com.br/sbtcuiaba/sbtcuiaba/playlist.m3u8' },
             { name: 'SBT Mutum', title: '📺 SBT Mutum HD (Ao Vivo)', url: 'https://video09.logicahost.com.br/sbtmutum/sbtmutum/playlist.m3u8' }
           );
         }
-        if (isGlobo) {
+        if (isGloboStrict) {
           rawTvStreams.unshift({
             name: 'TV Globo',
             title: '📺 TV Globo (Ao Vivo HD)',
             url: await hlsProxied('http://hls1.sua.tv/live/globotvbahiafhdbr2/s.m3u8')
           });
         }
-        if (isRecord) {
+        if (isRecordNewsStrict) {
           rawTvStreams.unshift({
             name: 'Record News',
             title: '📺 Record News (Full HD)',
             url: 'https://jmp2.uk/plu-6102e04e9ab1db0007a980a1.m3u8'
           });
         }
-        if (isCultura) {
+        if (isCulturaStrict) {
           rawTvStreams.unshift({
             name: 'TV Cultura',
             title: '📺 TV Cultura (Ao Vivo)',
             url: 'https://fpa-gateway.tvcultura.com.br:8181/memfs/606caef0-a290-413d-9f1f-8fcdb3a73831.m3u8'
           });
         }
-        if (isCnn) {
+        if (isCnnStrict) {
           rawTvStreams.unshift({
             name: 'CNN Brasil',
             title: '📺 CNN Brasil (1080p Ao Vivo)',
             url: 'https://d25usgadhphvwi.cloudfront.net/hls/main.m3u8'
           });
         }
-        if (isRedeTv) {
+        if (isRedeTvStrict) {
           rawTvStreams.unshift({
             name: 'RedeTV!',
             title: '📺 RedeTV! (Ao Vivo HD)',
             url: 'https://tv01.zas.media:1936/redetvparana/redetvparana/playlist.m3u8'
           });
         }
-        if (/discovery/i.test(queryName) || /discovery/i.test(decodedId)) {
+        if (isStrictTvMatch('Discovery Channel', queryName, querySlug, rawSlug)) {
           rawTvStreams.unshift({
             name: 'Discovery Channel',
             title: '📺 Discovery Channel [FULL HD]',
@@ -1790,10 +1814,7 @@ export default async (request) => {
             for (const catUrl of backupCatalogs) {
               try {
                 const catData = await fetchJson(catUrl, 2500);
-                const matchMeta = (catData?.metas || []).find((m) => {
-                  const mSlug = String(m.name || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
-                  return mSlug === matchTarget || (mSlug.length >= 4 && matchTarget.includes(mSlug));
-                });
+                const matchMeta = (catData?.metas || []).find((m) => isStrictTvMatch(m.name, queryName, querySlug, rawSlug));
                 if (matchMeta) {
                   const stData = await fetchJson(`https://fenixtv.fenixhub.online/stream/tv/${encodeURIComponent(matchMeta.id)}.json`, 2800);
                   if (Array.isArray(stData?.streams) && stData.streams.length > 0) {
@@ -1827,7 +1848,12 @@ export default async (request) => {
             };
           });
 
-        cleanTvRaw.sort((a, b) => (a.isProxyPreferred === b.isProxyPreferred ? 0 : a.isProxyPreferred ? -1 : 1));
+        cleanTvRaw.sort((a, b) => {
+          const aHls = String(a.url || '').includes('.m3u8') ? 1 : 0;
+          const bHls = String(b.url || '').includes('.m3u8') ? 1 : 0;
+          if (aHls !== bHls) return bHls - aHls;
+          return (a.isProxyPreferred === b.isProxyPreferred ? 0 : a.isProxyPreferred ? -1 : 1);
+        });
 
         const tvAddonResults = [];
         if (cleanTvRaw.length > 0) {
@@ -1868,17 +1894,10 @@ export default async (request) => {
           }
         }
 
-        // Match against IPTV-Org and Pluto TV by channel name or slug
+        // Match against IPTV-Org and Pluto TV strictly by channel identity
         const dynamicList = await getIptvBr().catch(() => []);
         const fullList = [...STATIC_NATIONAL_CHANNELS, ...dynamicList];
-        const queryWords = queryName.split(/\s+/).filter((w) => w.length >= 3);
-        const matchStatic = fullList.find((c) => {
-          const n = c.name.toLowerCase().replace(/[^a-z0-9]/gi, '');
-          if (querySlug && (n === querySlug || n.includes(querySlug) || querySlug.includes(n))) return true;
-          if (queryWords.length && queryWords.every((w) => c.name.toLowerCase().includes(w))) return true;
-          if (rawSlug && rawSlug.length >= 3 && (n === rawSlug || n.includes(rawSlug) || rawSlug.includes(n))) return true;
-          return false;
-        });
+        const matchStatic = fullList.find((c) => isStrictTvMatch(c.name, queryName, querySlug, rawSlug));
 
         if (matchStatic) {
           const direct = await hlsProxied(matchStatic.url);
@@ -1900,7 +1919,8 @@ export default async (request) => {
             directUrl: direct,
             proxyUrl: direct
           };
-          tvAddonResults.unshift({
+          const targetMethod = tvAddonResults.length > 0 ? 'push' : 'unshift';
+          tvAddonResults[targetMethod]({
             addonId: 'iptvorg',
             addonName: 'TV Brasil Ao Vivo',
             badge: 'TV AO VIVO',

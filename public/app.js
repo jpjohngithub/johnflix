@@ -226,16 +226,27 @@
       const saved = JSON.parse(localStorage.getItem('johnflix_custom') || 'null');
       return {
         siteName: (saved && typeof saved.siteName === 'string' && saved.siteName.trim()) ? saved.siteName.trim().slice(0, 28) : 'JohnFlix',
-        accentColor: (saved && /^#[0-9a-fA-F]{6}$/.test(saved.accentColor)) ? saved.accentColor : '#a855f7'
+        accentColor: (saved && /^#[0-9a-fA-F]{6}$/.test(saved.accentColor)) ? saved.accentColor : '#a855f7',
+        cardLayout: (saved && ['portrait', 'cinema', 'compact'].includes(saved.cardLayout)) ? saved.cardLayout : 'portrait',
+        themeMode: (saved && ['glass', 'oled', 'cyber'].includes(saved.themeMode)) ? saved.themeMode : 'glass',
+        glowMode: (saved && ['neon', 'border', 'flat'].includes(saved.glowMode)) ? saved.glowMode : 'neon',
+        density: (saved && ['normal', 'compact', 'spacious'].includes(saved.density)) ? saved.density : 'normal',
+        animSpeed: (saved && ['normal', 'fast', 'none'].includes(saved.animSpeed)) ? saved.animSpeed : 'normal'
       };
     } catch (e) {
-      return { siteName: 'JohnFlix', accentColor: '#a855f7' };
+      return { siteName: 'JohnFlix', accentColor: '#a855f7', cardLayout: 'portrait', themeMode: 'glass', glowMode: 'neon', density: 'normal', animSpeed: 'normal' };
     }
   }
 
   function applyCustomConfig(cfg) {
     const name = (cfg && cfg.siteName ? cfg.siteName.trim() : 'JohnFlix') || 'JohnFlix';
     const color = (cfg && /^#[0-9a-fA-F]{6}$/.test(cfg.accentColor)) ? cfg.accentColor : '#a855f7';
+    const cardLayout = cfg?.cardLayout || 'portrait';
+    const themeMode = cfg?.themeMode || 'glass';
+    const glowMode = cfg?.glowMode || 'neon';
+    const density = cfg?.density || 'normal';
+    const animSpeed = cfg?.animSpeed || 'normal';
+
     const { r, g, b } = hexToRgb(color);
     const deep = shiftHex(color, -38);
     const light = shiftHex(color, 38);
@@ -248,6 +259,12 @@
     root.style.setProperty('--purple-glow', `rgba(${r}, ${g}, ${b}, 0.45)`);
     root.style.setProperty('--accent-rgb', `${r}, ${g}, ${b}`);
     root.style.setProperty('--border-subtle', `rgba(${r}, ${g}, ${b}, 0.22)`);
+
+    root.dataset.cardLayout = cardLayout;
+    root.dataset.themeMode = themeMode;
+    root.dataset.glowMode = glowMode;
+    root.dataset.density = density;
+    root.dataset.animSpeed = animSpeed;
 
     // Split name into main + highlighted suffix (e.g. "John" + "Flix" or last 4 chars / second word)
     let firstPart = name;
@@ -2256,6 +2273,56 @@
               </div>
             </div>
 
+            <div class="customize-divider"></div>
+
+            <label class="customize-label">Estilo dos Cards de Filmes & Séries</label>
+            <p class="customize-hint">Modifique a proporção visual dos pôsteres em todo o catálogo.</p>
+            <div class="customize-opt-group" id="cardLayoutOpts">
+              <button type="button" class="cust-pill-btn ${cfg.cardLayout === 'portrait' ? 'active' : ''}" data-val="portrait">🎬 Pôster Clássico (2:3)</button>
+              <button type="button" class="cust-pill-btn ${cfg.cardLayout === 'cinema' ? 'active' : ''}" data-val="cinema">📺 Cinema Paisagem (16:9)</button>
+              <button type="button" class="cust-pill-btn ${cfg.cardLayout === 'compact' ? 'active' : ''}" data-val="compact">⚡ Modo Compacto</button>
+            </div>
+
+            <div class="customize-divider"></div>
+
+            <label class="customize-label">Ambiente de Fundo & Contraste</label>
+            <p class="customize-hint">Personalize o acabamento do fundo e a opacidade do vidro.</p>
+            <div class="customize-opt-group" id="themeModeOpts">
+              <button type="button" class="cust-pill-btn ${cfg.themeMode === 'glass' ? 'active' : ''}" data-val="glass">🔮 Vidro Escuro (Padrão)</button>
+              <button type="button" class="cust-pill-btn ${cfg.themeMode === 'oled' ? 'active' : ''}" data-val="oled">🖤 Preto Puro AMOLED</button>
+              <button type="button" class="cust-pill-btn ${cfg.themeMode === 'cyber' ? 'active' : ''}" data-val="cyber">🌌 Cyberpunk Neon</button>
+            </div>
+
+            <div class="customize-divider"></div>
+
+            <label class="customize-label">Efeito de Destaque nos Cards (Hover)</label>
+            <p class="customize-hint">Brilho dinâmico ou contorno ao passar o mouse / focar.</p>
+            <div class="customize-opt-group" id="glowModeOpts">
+              <button type="button" class="cust-pill-btn ${cfg.glowMode === 'neon' ? 'active' : ''}" data-val="neon">✨ Glow Neon Colorido</button>
+              <button type="button" class="cust-pill-btn ${cfg.glowMode === 'border' ? 'active' : ''}" data-val="border">🛡️ Borda Metálica Fina</button>
+              <button type="button" class="cust-pill-btn ${cfg.glowMode === 'flat' ? 'active' : ''}" data-val="flat">◻️ Flat Minimalista</button>
+            </div>
+
+            <div class="customize-divider"></div>
+
+            <label class="customize-label">Densidade da Interface</label>
+            <p class="customize-hint">Ajusta o espaçamento dos elementos e tamanho da fonte.</p>
+            <div class="customize-opt-group" id="densityOpts">
+              <button type="button" class="cust-pill-btn ${cfg.density === 'normal' ? 'active' : ''}" data-val="normal">📱 Confortável (Padrão)</button>
+              <button type="button" class="cust-pill-btn ${cfg.density === 'compact' ? 'active' : ''}" data-val="compact">⚡ Compacto (Mais Títulos)</button>
+              <button type="button" class="cust-pill-btn ${cfg.density === 'spacious' ? 'active' : ''}" data-val="spacious">📺 Expandido (Smart TV)</button>
+            </div>
+
+            <div class="customize-divider"></div>
+
+            <label class="customize-label">Velocidade das Transições & Animações</label>
+            <p class="customize-hint">Otimize a fluidez de rolagem e clique no seu dispositivo.</p>
+            <div class="customize-opt-group" id="animSpeedOpts">
+              <button type="button" class="cust-pill-btn ${cfg.animSpeed === 'normal' ? 'active' : ''}" data-val="normal">🌊 Suave (60 FPS)</button>
+              <button type="button" class="cust-pill-btn ${cfg.animSpeed === 'fast' ? 'active' : ''}" data-val="fast">⚡ Ultra Rápido</button>
+              <button type="button" class="cust-pill-btn ${cfg.animSpeed === 'none' ? 'active' : ''}" data-val="none">🚀 Desempenho Extremo</button>
+            </div>
+
             <div class="customize-actions">
               <button type="button" class="btn btn-primary" id="saveCustomBtn">Salvar Personalização</button>
             </div>
@@ -2289,16 +2356,45 @@
     const colorPicker = section.querySelector('#customHexPicker');
     const hexText = section.querySelector('#customHexText');
     let currentColor = cfg.accentColor;
+    let currentCardLayout = cfg.cardLayout || 'portrait';
+    let currentThemeMode = cfg.themeMode || 'glass';
+    let currentGlowMode = cfg.glowMode || 'neon';
+    let currentDensity = cfg.density || 'normal';
+    let currentAnimSpeed = cfg.animSpeed || 'normal';
 
     const liveUpdate = () => {
       const next = {
         siteName: nameInput.value.trim() || 'JohnFlix',
-        accentColor: /^#[0-9a-fA-F]{6}$/.test(currentColor) ? currentColor : '#a855f7'
+        accentColor: /^#[0-9a-fA-F]{6}$/.test(currentColor) ? currentColor : '#a855f7',
+        cardLayout: currentCardLayout,
+        themeMode: currentThemeMode,
+        glowMode: currentGlowMode,
+        density: currentDensity,
+        animSpeed: currentAnimSpeed
       };
       applyCustomConfig(next);
     };
 
     nameInput.addEventListener('input', liveUpdate);
+
+    const bindOptGroup = (groupId, setter) => {
+      const group = section.querySelector(`#${groupId}`);
+      if (!group) return;
+      group.querySelectorAll('.cust-pill-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          group.querySelectorAll('.cust-pill-btn').forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+          setter(btn.dataset.val);
+          liveUpdate();
+        });
+      });
+    };
+
+    bindOptGroup('cardLayoutOpts', (v) => { currentCardLayout = v; });
+    bindOptGroup('themeModeOpts', (v) => { currentThemeMode = v; });
+    bindOptGroup('glowModeOpts', (v) => { currentGlowMode = v; });
+    bindOptGroup('densityOpts', (v) => { currentDensity = v; });
+    bindOptGroup('animSpeedOpts', (v) => { currentAnimSpeed = v; });
 
     section.querySelectorAll('.swatch-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -2330,7 +2426,12 @@
     section.querySelector('#saveCustomBtn').addEventListener('click', () => {
       const saved = {
         siteName: nameInput.value.trim() || 'JohnFlix',
-        accentColor: /^#[0-9a-fA-F]{6}$/.test(currentColor) ? currentColor : '#a855f7'
+        accentColor: /^#[0-9a-fA-F]{6}$/.test(currentColor) ? currentColor : '#a855f7',
+        cardLayout: currentCardLayout,
+        themeMode: currentThemeMode,
+        glowMode: currentGlowMode,
+        density: currentDensity,
+        animSpeed: currentAnimSpeed
       };
       localStorage.setItem('johnflix_custom', JSON.stringify(saved));
       applyCustomConfig(saved);
@@ -2338,7 +2439,7 @@
     });
 
     section.querySelector('#resetCustomBtn').addEventListener('click', () => {
-      const def = { siteName: 'JohnFlix', accentColor: '#a855f7' };
+      const def = { siteName: 'JohnFlix', accentColor: '#a855f7', cardLayout: 'portrait', themeMode: 'glass', glowMode: 'neon', density: 'normal', animSpeed: 'normal' };
       localStorage.setItem('johnflix_custom', JSON.stringify(def));
       applyCustomConfig(def);
       renderCatalogRows();
