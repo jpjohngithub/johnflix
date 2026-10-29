@@ -227,25 +227,19 @@
       return {
         siteName: (saved && typeof saved.siteName === 'string' && saved.siteName.trim()) ? saved.siteName.trim().slice(0, 28) : 'JohnFlix',
         accentColor: (saved && /^#[0-9a-fA-F]{6}$/.test(saved.accentColor)) ? saved.accentColor : '#a855f7',
-        cardLayout: (saved && ['portrait', 'cinema', 'compact'].includes(saved.cardLayout)) ? saved.cardLayout : 'portrait',
-        themeMode: (saved && ['glass', 'oled', 'cyber'].includes(saved.themeMode)) ? saved.themeMode : 'glass',
-        glowMode: (saved && ['neon', 'border', 'flat'].includes(saved.glowMode)) ? saved.glowMode : 'neon',
-        density: (saved && ['normal', 'compact', 'spacious'].includes(saved.density)) ? saved.density : 'normal',
-        animSpeed: (saved && ['normal', 'fast', 'none'].includes(saved.animSpeed)) ? saved.animSpeed : 'normal'
+        megaPerformance: Boolean(saved?.megaPerformance),
+        navStyle: (saved && ['text', 'icons', 'both'].includes(saved.navStyle)) ? saved.navStyle : 'text'
       };
     } catch (e) {
-      return { siteName: 'JohnFlix', accentColor: '#a855f7', cardLayout: 'portrait', themeMode: 'glass', glowMode: 'neon', density: 'normal', animSpeed: 'normal' };
+      return { siteName: 'JohnFlix', accentColor: '#a855f7', megaPerformance: false, navStyle: 'text' };
     }
   }
 
   function applyCustomConfig(cfg) {
     const name = (cfg && cfg.siteName ? cfg.siteName.trim() : 'JohnFlix') || 'JohnFlix';
     const color = (cfg && /^#[0-9a-fA-F]{6}$/.test(cfg.accentColor)) ? cfg.accentColor : '#a855f7';
-    const cardLayout = cfg?.cardLayout || 'portrait';
-    const themeMode = cfg?.themeMode || 'glass';
-    const glowMode = cfg?.glowMode || 'neon';
-    const density = cfg?.density || 'normal';
-    const animSpeed = cfg?.animSpeed || 'normal';
+    const megaPerf = Boolean(cfg?.megaPerformance);
+    const navStyle = cfg?.navStyle || 'text';
 
     const { r, g, b } = hexToRgb(color);
     const deep = shiftHex(color, -38);
@@ -260,11 +254,8 @@
     root.style.setProperty('--accent-rgb', `${r}, ${g}, ${b}`);
     root.style.setProperty('--border-subtle', `rgba(${r}, ${g}, ${b}, 0.22)`);
 
-    root.dataset.cardLayout = cardLayout;
-    root.dataset.themeMode = themeMode;
-    root.dataset.glowMode = glowMode;
-    root.dataset.density = density;
-    root.dataset.animSpeed = animSpeed;
+    root.classList.toggle('mega-performance', megaPerf);
+    root.dataset.navStyle = navStyle;
 
     // Split name into main + highlighted suffix (e.g. "John" + "Flix" or last 4 chars / second word)
     let firstPart = name;
@@ -297,8 +288,224 @@
     });
   }
 
+  function updateAuthUi() {
+    const authData = JSON.parse(localStorage.getItem('johnflix_auth') || 'null');
+    const isGuest = sessionStorage.getItem('johnflix_guest') === '1';
+    const nameEl = document.getElementById('navUserName');
+    const avatarEl = document.getElementById('navUserAvatar');
+    if (authData?.user) {
+      if (nameEl) nameEl.textContent = authData.user.name || 'Minha Conta';
+      if (avatarEl) {
+        if (authData.user.avatar) {
+          avatarEl.innerHTML = `<img src="${authData.user.avatar}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;"/>`;
+        } else {
+          avatarEl.textContent = '👤';
+        }
+      }
+    } else if (isGuest) {
+      if (nameEl) nameEl.textContent = 'Convidado';
+      if (avatarEl) avatarEl.textContent = '⚡';
+    } else {
+      if (nameEl) nameEl.textContent = 'Entrar';
+      if (avatarEl) avatarEl.textContent = '👤';
+    }
+  }
+
+  function initAuth() {
+    const authScreen = document.getElementById('authScreen');
+    const authCardClose = document.getElementById('authCardCloseBtn');
+    const tabLogin = document.getElementById('authTabLogin');
+    const tabRegister = document.getElementById('authTabRegister');
+    const nameGroup = document.getElementById('authNameGroup');
+    const submitBtn = document.getElementById('authSubmitBtn');
+    const authForm = document.getElementById('authForm');
+    const guestBtn = document.getElementById('authGuestBtn');
+    const googleBtn = document.getElementById('googleLoginBtn');
+    const navUserPill = document.getElementById('navUserPill');
+    const accountModal = document.getElementById('userAccountModal');
+    const closeAccountBtn = document.getElementById('closeUserAccountModalBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const switchBtn = document.getElementById('switchAccountBtn');
+    const pwdToggle = document.getElementById('authPwdToggle');
+    const pwdInput = document.getElementById('authPasswordInput');
+
+    let mode = 'login';
+
+    const checkInitialAuth = () => {
+      const authData = JSON.parse(localStorage.getItem('johnflix_auth') || 'null');
+      const isGuest = sessionStorage.getItem('johnflix_guest') === '1';
+      updateAuthUi();
+      if (!authData?.user && !isGuest && authScreen) {
+        authScreen.classList.remove('hidden');
+        if (authCardClose) authCardClose.classList.add('hidden');
+      }
+    };
+
+    if (pwdToggle && pwdInput) {
+      pwdToggle.addEventListener('click', () => {
+        const isPwd = pwdInput.type === 'password';
+        pwdInput.type = isPwd ? 'text' : 'password';
+        pwdToggle.textContent = isPwd ? '🙈' : '👁';
+      });
+    }
+
+    if (tabLogin && tabRegister) {
+      tabLogin.addEventListener('click', () => {
+        mode = 'login';
+        tabLogin.classList.add('active');
+        tabRegister.classList.remove('active');
+        if (nameGroup) nameGroup.classList.add('hidden');
+        if (submitBtn) submitBtn.querySelector('span').textContent = 'Acessar Plataforma';
+      });
+      tabRegister.addEventListener('click', () => {
+        mode = 'register';
+        tabRegister.classList.add('active');
+        tabLogin.classList.remove('active');
+        if (nameGroup) nameGroup.classList.remove('hidden');
+        if (submitBtn) submitBtn.querySelector('span').textContent = 'Criar Conta SaaS';
+      });
+    }
+
+    if (guestBtn) {
+      guestBtn.addEventListener('click', async () => {
+        try {
+          const res = await fetch('/api/auth/guest');
+          await res.json();
+          sessionStorage.setItem('johnflix_guest', '1');
+          if (authScreen) authScreen.classList.add('hidden');
+          updateAuthUi();
+          showToast('Bem-vindo como Convidado VIP! 🚀');
+        } catch (_) {
+          sessionStorage.setItem('johnflix_guest', '1');
+          if (authScreen) authScreen.classList.add('hidden');
+          updateAuthUi();
+        }
+      });
+    }
+
+    if (googleBtn) {
+      googleBtn.addEventListener('click', async () => {
+        try {
+          const email = prompt('Digite o seu e-mail do Google (ou clique OK para entrar rápido):') || 'usuario.google@gmail.com';
+          const name = email.split('@')[0];
+          const res = await fetch('/api/auth/google', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, name: name.charAt(0).toUpperCase() + name.slice(1) })
+          });
+          const data = await res.json();
+          if (data && data.user) {
+            localStorage.setItem('johnflix_auth', JSON.stringify({ user: data.user, token: data.token }));
+            sessionStorage.removeItem('johnflix_guest');
+            if (authScreen) authScreen.classList.add('hidden');
+            updateAuthUi();
+            showToast(`Bem-vindo, ${data.user.name}! Login com Google confirmado 🌟`);
+          }
+        } catch (_) {
+          showToast('Erro ao autenticar com Google.');
+        }
+      });
+    }
+
+    if (authForm) {
+      authForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = (document.getElementById('authEmailInput')?.value || '').trim();
+        const password = (document.getElementById('authPasswordInput')?.value || '').trim();
+        const name = (document.getElementById('authNameInput')?.value || '').trim();
+
+        if (!email || !password) {
+          showToast('Preencha e-mail e senha.');
+          return;
+        }
+
+        try {
+          const endpoint = mode === 'register' ? '/api/auth/register' : '/api/auth/login';
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password, name })
+          });
+          const data = await res.json();
+          if (data && data.user) {
+            localStorage.setItem('johnflix_auth', JSON.stringify({ user: data.user, token: data.token }));
+            sessionStorage.removeItem('johnflix_guest');
+            if (authScreen) authScreen.classList.add('hidden');
+            updateAuthUi();
+            showToast(`Olá, ${data.user.name}! Acesso liberado.`);
+          } else {
+            showToast(data.error || 'Falha na autenticação.');
+          }
+        } catch (_) {
+          showToast('Erro de conexão ao autenticar.');
+        }
+      });
+    }
+
+    if (navUserPill) {
+      navUserPill.addEventListener('click', () => {
+        const authData = JSON.parse(localStorage.getItem('johnflix_auth') || 'null');
+        if (authData?.user) {
+          const accName = document.getElementById('accountName');
+          const accEmail = document.getElementById('accountEmail');
+          const accPlan = document.getElementById('accountPlanBadge');
+          const accAvatar = document.getElementById('accountAvatar');
+          if (accName) accName.textContent = authData.user.name;
+          if (accEmail) accEmail.textContent = authData.user.email;
+          if (accPlan) accPlan.textContent = authData.user.plan || 'PRO VIP SaaS';
+          if (accAvatar && authData.user.avatar) {
+            accAvatar.innerHTML = `<img src="${authData.user.avatar}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;"/>`;
+          }
+          if (accountModal) accountModal.classList.remove('hidden');
+        } else {
+          if (authScreen) {
+            authScreen.classList.remove('hidden');
+            if (authCardClose) authCardClose.classList.remove('hidden');
+          }
+        }
+      });
+    }
+
+    if (authCardClose) {
+      authCardClose.addEventListener('click', () => {
+        if (authScreen) authScreen.classList.add('hidden');
+      });
+    }
+
+    if (closeAccountBtn && accountModal) {
+      closeAccountBtn.addEventListener('click', () => accountModal.classList.add('hidden'));
+    }
+
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', () => {
+        localStorage.removeItem('johnflix_auth');
+        sessionStorage.removeItem('johnflix_guest');
+        if (accountModal) accountModal.classList.add('hidden');
+        updateAuthUi();
+        if (authScreen) {
+          authScreen.classList.remove('hidden');
+          if (authCardClose) authCardClose.classList.add('hidden');
+        }
+        showToast('Sessão encerrada.');
+      });
+    }
+
+    if (switchBtn) {
+      switchBtn.addEventListener('click', () => {
+        if (accountModal) accountModal.classList.add('hidden');
+        if (authScreen) {
+          authScreen.classList.remove('hidden');
+          if (authCardClose) authCardClose.classList.remove('hidden');
+        }
+      });
+    }
+
+    checkInitialAuth();
+  }
+
   async function init() {
     applyCustomConfig(loadCustomConfig());
+    initAuth();
     updateBadges();
     renderContinueWatching();
     bindEvents();
@@ -2275,52 +2482,30 @@
 
             <div class="customize-divider"></div>
 
-            <label class="customize-label">Estilo dos Cards de Filmes & Séries</label>
-            <p class="customize-hint">Modifique a proporção visual dos pôsteres em todo o catálogo.</p>
-            <div class="customize-opt-group" id="cardLayoutOpts">
-              <button type="button" class="cust-pill-btn ${cfg.cardLayout === 'portrait' ? 'active' : ''}" data-val="portrait">🎬 Pôster Clássico (2:3)</button>
-              <button type="button" class="cust-pill-btn ${cfg.cardLayout === 'cinema' ? 'active' : ''}" data-val="cinema">📺 Cinema Paisagem (16:9)</button>
-              <button type="button" class="cust-pill-btn ${cfg.cardLayout === 'compact' ? 'active' : ''}" data-val="compact">⚡ Modo Compacto</button>
+            <label class="customize-label">Estilo do Menu Superior</label>
+            <p class="customize-hint">Escolha se deseja ver o menu com Nomes, apenas Ícones ou Ambos.</p>
+            <div class="customize-opt-group" id="navStyleOpts">
+              <button type="button" class="cust-pill-btn ${cfg.navStyle === 'text' ? 'active' : ''}" data-val="text">🔤 Nomes (Texto)</button>
+              <button type="button" class="cust-pill-btn ${cfg.navStyle === 'icons' ? 'active' : ''}" data-val="icons">✨ Apenas Ícones</button>
+              <button type="button" class="cust-pill-btn ${cfg.navStyle === 'both' ? 'active' : ''}" data-val="both">⚡ Ícones + Nomes</button>
             </div>
 
             <div class="customize-divider"></div>
 
-            <label class="customize-label">Ambiente de Fundo & Contraste</label>
-            <p class="customize-hint">Personalize o acabamento do fundo e a opacidade do vidro.</p>
-            <div class="customize-opt-group" id="themeModeOpts">
-              <button type="button" class="cust-pill-btn ${cfg.themeMode === 'glass' ? 'active' : ''}" data-val="glass">🔮 Vidro Escuro (Padrão)</button>
-              <button type="button" class="cust-pill-btn ${cfg.themeMode === 'oled' ? 'active' : ''}" data-val="oled">🖤 Preto Puro AMOLED</button>
-              <button type="button" class="cust-pill-btn ${cfg.themeMode === 'cyber' ? 'active' : ''}" data-val="cyber">🌌 Cyberpunk Neon</button>
-            </div>
-
-            <div class="customize-divider"></div>
-
-            <label class="customize-label">Efeito de Destaque nos Cards (Hover)</label>
-            <p class="customize-hint">Brilho dinâmico ou contorno ao passar o mouse / focar.</p>
-            <div class="customize-opt-group" id="glowModeOpts">
-              <button type="button" class="cust-pill-btn ${cfg.glowMode === 'neon' ? 'active' : ''}" data-val="neon">✨ Glow Neon Colorido</button>
-              <button type="button" class="cust-pill-btn ${cfg.glowMode === 'border' ? 'active' : ''}" data-val="border">🛡️ Borda Metálica Fina</button>
-              <button type="button" class="cust-pill-btn ${cfg.glowMode === 'flat' ? 'active' : ''}" data-val="flat">◻️ Flat Minimalista</button>
-            </div>
-
-            <div class="customize-divider"></div>
-
-            <label class="customize-label">Densidade da Interface</label>
-            <p class="customize-hint">Ajusta o espaçamento dos elementos e tamanho da fonte.</p>
-            <div class="customize-opt-group" id="densityOpts">
-              <button type="button" class="cust-pill-btn ${cfg.density === 'normal' ? 'active' : ''}" data-val="normal">📱 Confortável (Padrão)</button>
-              <button type="button" class="cust-pill-btn ${cfg.density === 'compact' ? 'active' : ''}" data-val="compact">⚡ Compacto (Mais Títulos)</button>
-              <button type="button" class="cust-pill-btn ${cfg.density === 'spacious' ? 'active' : ''}" data-val="spacious">📺 Expandido (Smart TV)</button>
-            </div>
-
-            <div class="customize-divider"></div>
-
-            <label class="customize-label">Velocidade das Transições & Animações</label>
-            <p class="customize-hint">Otimize a fluidez de rolagem e clique no seu dispositivo.</p>
-            <div class="customize-opt-group" id="animSpeedOpts">
-              <button type="button" class="cust-pill-btn ${cfg.animSpeed === 'normal' ? 'active' : ''}" data-val="normal">🌊 Suave (60 FPS)</button>
-              <button type="button" class="cust-pill-btn ${cfg.animSpeed === 'fast' ? 'active' : ''}" data-val="fast">⚡ Ultra Rápido</button>
-              <button type="button" class="cust-pill-btn ${cfg.animSpeed === 'none' ? 'active' : ''}" data-val="none">🚀 Desempenho Extremo</button>
+            <div class="mega-perf-card">
+              <div class="mega-perf-header">
+                <div>
+                  <span class="mega-perf-badge">MODO ULTRA RÁPIDO</span>
+                  <h4 class="mega-perf-title">MEGA DESEMPENHO</h4>
+                </div>
+                <button type="button" class="mega-perf-toggle-btn ${cfg.megaPerformance ? 'active' : ''}" id="megaPerfToggleBtn">
+                  <span class="mega-perf-dot"></span>
+                  <span class="mega-perf-label">${cfg.megaPerformance ? 'ATIVADO' : 'DESATIVADO'}</span>
+                </button>
+              </div>
+              <p class="mega-perf-desc">
+                Desativa blurs pesados, filtros de vidro e animações complexas. Reduz o consumo de memória RAM, bateria e processador, tornando a navegação instantânea e leve em qualquer celular ou Smart TV.
+              </p>
             </div>
 
             <div class="customize-actions">
@@ -2356,45 +2541,43 @@
     const colorPicker = section.querySelector('#customHexPicker');
     const hexText = section.querySelector('#customHexText');
     let currentColor = cfg.accentColor;
-    let currentCardLayout = cfg.cardLayout || 'portrait';
-    let currentThemeMode = cfg.themeMode || 'glass';
-    let currentGlowMode = cfg.glowMode || 'neon';
-    let currentDensity = cfg.density || 'normal';
-    let currentAnimSpeed = cfg.animSpeed || 'normal';
+    let isMegaPerf = Boolean(cfg.megaPerformance);
+    let currentNavStyle = cfg.navStyle || 'text';
 
     const liveUpdate = () => {
       const next = {
         siteName: nameInput.value.trim() || 'JohnFlix',
         accentColor: /^#[0-9a-fA-F]{6}$/.test(currentColor) ? currentColor : '#a855f7',
-        cardLayout: currentCardLayout,
-        themeMode: currentThemeMode,
-        glowMode: currentGlowMode,
-        density: currentDensity,
-        animSpeed: currentAnimSpeed
+        megaPerformance: isMegaPerf,
+        navStyle: currentNavStyle
       };
       applyCustomConfig(next);
     };
 
     nameInput.addEventListener('input', liveUpdate);
 
-    const bindOptGroup = (groupId, setter) => {
-      const group = section.querySelector(`#${groupId}`);
-      if (!group) return;
-      group.querySelectorAll('.cust-pill-btn').forEach((btn) => {
+    const navStyleGroup = section.querySelector('#navStyleOpts');
+    if (navStyleGroup) {
+      navStyleGroup.querySelectorAll('.cust-pill-btn').forEach((btn) => {
         btn.addEventListener('click', () => {
-          group.querySelectorAll('.cust-pill-btn').forEach((b) => b.classList.remove('active'));
+          navStyleGroup.querySelectorAll('.cust-pill-btn').forEach((b) => b.classList.remove('active'));
           btn.classList.add('active');
-          setter(btn.dataset.val);
+          currentNavStyle = btn.dataset.val;
           liveUpdate();
         });
       });
-    };
+    }
 
-    bindOptGroup('cardLayoutOpts', (v) => { currentCardLayout = v; });
-    bindOptGroup('themeModeOpts', (v) => { currentThemeMode = v; });
-    bindOptGroup('glowModeOpts', (v) => { currentGlowMode = v; });
-    bindOptGroup('densityOpts', (v) => { currentDensity = v; });
-    bindOptGroup('animSpeedOpts', (v) => { currentAnimSpeed = v; });
+    const megaToggleBtn = section.querySelector('#megaPerfToggleBtn');
+    if (megaToggleBtn) {
+      megaToggleBtn.addEventListener('click', () => {
+        isMegaPerf = !isMegaPerf;
+        megaToggleBtn.classList.toggle('active', isMegaPerf);
+        const label = megaToggleBtn.querySelector('.mega-perf-label');
+        if (label) label.textContent = isMegaPerf ? 'ATIVADO' : 'DESATIVADO';
+        liveUpdate();
+      });
+    }
 
     section.querySelectorAll('.swatch-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -2427,11 +2610,8 @@
       const saved = {
         siteName: nameInput.value.trim() || 'JohnFlix',
         accentColor: /^#[0-9a-fA-F]{6}$/.test(currentColor) ? currentColor : '#a855f7',
-        cardLayout: currentCardLayout,
-        themeMode: currentThemeMode,
-        glowMode: currentGlowMode,
-        density: currentDensity,
-        animSpeed: currentAnimSpeed
+        megaPerformance: isMegaPerf,
+        navStyle: currentNavStyle
       };
       localStorage.setItem('johnflix_custom', JSON.stringify(saved));
       applyCustomConfig(saved);
@@ -2439,7 +2619,7 @@
     });
 
     section.querySelector('#resetCustomBtn').addEventListener('click', () => {
-      const def = { siteName: 'JohnFlix', accentColor: '#a855f7', cardLayout: 'portrait', themeMode: 'glass', glowMode: 'neon', density: 'normal', animSpeed: 'normal' };
+      const def = { siteName: 'JohnFlix', accentColor: '#a855f7', megaPerformance: false, navStyle: 'text' };
       localStorage.setItem('johnflix_custom', JSON.stringify(def));
       applyCustomConfig(def);
       renderCatalogRows();

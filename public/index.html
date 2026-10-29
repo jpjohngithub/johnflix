@@ -16,7 +16,7 @@
   <link rel="dns-prefetch" href="https://fenixtv.fenixhub.online" />
   <link rel="dns-prefetch" href="https://v3-cinemeta.strem.io" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/styles.css?v=20261029_custom_perf_v5" />
+  <link rel="stylesheet" href="/styles.css?v=20261029_saas_auth_v6" />
   <script>
     (function () {
       if ('serviceWorker' in navigator) {
@@ -72,6 +72,96 @@
     </div>
   </div>
 
+  <!-- Initial SaaS Authentication Screen (Modal with Blurred Backdrop) -->
+  <div class="auth-screen-backdrop hidden" id="authScreen">
+    <div class="auth-screen-card">
+      <button type="button" class="auth-card-close hidden" id="authCardCloseBtn" title="Fechar">&times;</button>
+      <div class="auth-card-brand">
+        <span class="brand-word">John<span class="brand-flix">Flix</span></span>
+        <span class="auth-saas-badge">SaaS v3.0</span>
+      </div>
+      <p class="auth-card-subtitle">Plataforma de Streaming Inteligente com Alta Disponibilidade</p>
+
+      <div class="auth-tabs">
+        <button type="button" class="auth-tab active" id="authTabLogin">Entrar</button>
+        <button type="button" class="auth-tab" id="authTabRegister">Criar Conta</button>
+      </div>
+
+      <!-- Google One-Click Login -->
+      <button type="button" class="btn-auth-google" id="googleLoginBtn">
+        <svg viewBox="0 0 24 24" width="18" height="18">
+          <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.65v3.03h3.88c2.28-2.1 3.66-5.2 3.66-9.12z"/>
+          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.03c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.13C3.26 21.36 7.33 24 12 24z"/>
+          <path fill="#FBBC05" d="M5.28 14.29c-.25-.72-.38-1.49-.38-2.29s.13-1.57.38-2.29V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.13z"/>
+          <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.13c.95-2.83 3.6-4.96 6.72-4.96z"/>
+        </svg>
+        <span>Continuar com o Google</span>
+      </button>
+
+      <div class="auth-divider">
+        <span>ou continue com e-mail</span>
+      </div>
+
+      <form class="auth-form" id="authForm">
+        <div class="auth-input-group hidden" id="authNameGroup">
+          <label for="authNameInput">Seu Nome</label>
+          <input type="text" id="authNameInput" placeholder="Como prefere ser chamado" autocomplete="name" />
+        </div>
+
+        <div class="auth-input-group">
+          <label for="authEmailInput">E-mail</label>
+          <input type="email" id="authEmailInput" placeholder="seu@email.com" required autocomplete="email" />
+        </div>
+
+        <div class="auth-input-group">
+          <label for="authPasswordInput">Senha</label>
+          <div class="auth-password-wrap">
+            <input type="password" id="authPasswordInput" placeholder="Sua senha de acesso" required autocomplete="current-password" />
+            <button type="button" class="auth-pwd-toggle" id="authPwdToggle" title="Mostrar senha">👁</button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block btn-auth-submit" id="authSubmitBtn">
+          <span>Acessar Plataforma</span>
+        </button>
+      </form>
+
+      <!-- Guest Instant Access Button -->
+      <div class="auth-guest-box">
+        <button type="button" class="btn-auth-guest" id="authGuestBtn">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span>Entrar como Convidado (Acesso Instantâneo)</span>
+        </button>
+      </div>
+
+      <!-- SaaS Perks Footer -->
+      <div class="auth-saas-perks">
+        <div class="auth-perk-item">✓ 43 Servidores 4K/FHD</div>
+        <div class="auth-perk-item">✓ Nuvem Inteligente</div>
+        <div class="auth-perk-item">✓ TV e Mobile</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- User Account Modal -->
+  <div class="modal-backdrop hidden" id="userAccountModal">
+    <div class="modal-card modal-sm auth-profile-card">
+      <button class="modal-close" id="closeUserAccountModalBtn">&times;</button>
+      <div class="user-account-header">
+        <div class="user-account-avatar" id="accountAvatar">👤</div>
+        <div class="user-account-meta">
+          <h3 id="accountName">Usuário JohnFlix</h3>
+          <p id="accountEmail">usuario@johnflix.online</p>
+          <span class="user-plan-badge" id="accountPlanBadge">PRO VIP SaaS</span>
+        </div>
+      </div>
+      <div class="user-account-actions">
+        <button type="button" class="btn btn-glass btn-block" id="switchAccountBtn">Trocar de Conta</button>
+        <button type="button" class="btn btn-danger btn-block" id="logoutBtn">Sair da Conta</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Ambient Background Glows -->
   <div class="ambient-glow glow-1"></div>
   <div class="ambient-glow glow-2"></div>
@@ -84,12 +174,31 @@
       </a>
 
       <nav class="nav-links">
-        <button class="nav-link active" data-filter="all">Início</button>
-        <button class="nav-link" data-filter="movie">Filmes</button>
-        <button class="nav-link" data-filter="series">Séries</button>
-        <button class="nav-link" data-filter="tv">Canais de TV</button>
-        <button class="nav-link" data-filter="mylist">Minha Lista <span class="badge-count hidden" id="myListCount">0</span></button>
-        <button class="nav-link" data-filter="customize">Personalizar</button>
+        <button class="nav-link active" data-filter="all" title="Início">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <span class="nav-text">Início</span>
+        </button>
+        <button class="nav-link" data-filter="movie" title="Filmes">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2" ry="2"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>
+          <span class="nav-text">Filmes</span>
+        </button>
+        <button class="nav-link" data-filter="series" title="Séries">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg>
+          <span class="nav-text">Séries</span>
+        </button>
+        <button class="nav-link" data-filter="tv" title="Canais de TV">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/><line x1="12" y1="2" x2="8" y2="6"/><line x1="12" y1="2" x2="16" y2="6"/></svg>
+          <span class="nav-text">Canais de TV</span>
+        </button>
+        <button class="nav-link" data-filter="mylist" title="Minha Lista">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+          <span class="nav-text">Minha Lista</span>
+          <span class="badge-count hidden" id="myListCount">0</span>
+        </button>
+        <button class="nav-link" data-filter="customize" title="Personalizar">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <span class="nav-text">Personalizar</span>
+        </button>
       </nav>
     </div>
 
@@ -117,6 +226,11 @@
       </button>
 
       <button type="button" class="btn btn-sm btn-glass hidden" id="exitVaultModeBtn" style="border-color:rgba(244,63,94,0.55);color:#fda4af;">Sair da Área Restrita</button>
+
+      <button type="button" class="nav-user-pill" id="navUserPill" title="Minha Conta / Acesso SaaS">
+        <span class="nav-user-avatar" id="navUserAvatar">👤</span>
+        <span class="nav-user-name" id="navUserName">Entrar</span>
+      </button>
     </div>
   </header>
 
@@ -622,7 +736,7 @@
 
   <script defer src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
   <script defer src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
-  <script defer src="/config.js?v=20261029_custom_perf_v5"></script>
-  <script defer src="/app.js?v=20261029_custom_perf_v5"></script>
+  <script defer src="/config.js?v=20261029_saas_auth_v6"></script>
+  <script defer src="/app.js?v=20261029_saas_auth_v6"></script>
 </body>
 </html>

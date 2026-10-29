@@ -996,6 +996,99 @@ export default async (request) => {
       return new Response(JSON.stringify({ ok: true, paired: true, commands }), { status: 200, headers: syncHeaders });
     }
 
+    // === SAAS AUTHENTICATION & SESSION ENGINE ===
+    if (rawPath.startsWith('/api/auth/')) {
+      const authHeaders = { ...headers, 'Cache-Control': 'no-cache, no-store, must-revalidate' };
+      const action = rawPath.replace('/api/auth/', '');
+
+      if (action === 'login' && request.method === 'POST') {
+        try {
+          const body = await request.json();
+          const email = String(body.email || '').toLowerCase().trim();
+          const pass = String(body.password || '').trim();
+          if (!email || !pass || pass.length < 4) {
+            return new Response(JSON.stringify({ error: 'E-mail e senha válida obrigatórios.' }), { status: 400, headers: authHeaders });
+          }
+          const baseName = email.split('@')[0];
+          const name = baseName.charAt(0).toUpperCase() + baseName.slice(1);
+          const user = {
+            id: `usr_${Math.random().toString(36).slice(2, 10)}`,
+            name,
+            email,
+            plan: 'PRO VIP (SaaS)',
+            role: 'subscriber',
+            avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(email)}`,
+            createdAt: new Date().toISOString()
+          };
+          return new Response(JSON.stringify({ ok: true, user, token: `tk_${Date.now()}` }), { status: 200, headers: authHeaders });
+        } catch (e) {
+          return new Response(JSON.stringify({ error: 'Erro ao processar login.' }), { status: 400, headers: authHeaders });
+        }
+      }
+
+      if (action === 'register' && request.method === 'POST') {
+        try {
+          const body = await request.json();
+          const email = String(body.email || '').toLowerCase().trim();
+          const pass = String(body.password || '').trim();
+          const customName = String(body.name || '').trim();
+          if (!email || !pass || pass.length < 4) {
+            return new Response(JSON.stringify({ error: 'E-mail e senha de no mínimo 4 dígitos são obrigatórios.' }), { status: 400, headers: authHeaders });
+          }
+          const baseName = customName || email.split('@')[0];
+          const name = baseName.charAt(0).toUpperCase() + baseName.slice(1);
+          const user = {
+            id: `usr_${Math.random().toString(36).slice(2, 10)}`,
+            name,
+            email,
+            plan: 'PRO VIP (SaaS)',
+            role: 'subscriber',
+            avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(email)}`,
+            createdAt: new Date().toISOString()
+          };
+          return new Response(JSON.stringify({ ok: true, user, token: `tk_${Date.now()}` }), { status: 201, headers: authHeaders });
+        } catch (e) {
+          return new Response(JSON.stringify({ error: 'Erro ao criar conta.' }), { status: 400, headers: authHeaders });
+        }
+      }
+
+      if (action === 'google' && request.method === 'POST') {
+        try {
+          const body = await request.json();
+          const email = String(body.email || 'usuario.google@gmail.com').toLowerCase().trim();
+          const name = String(body.name || 'Usuário Google').trim();
+          const user = {
+            id: `usr_g_${Math.random().toString(36).slice(2, 10)}`,
+            name,
+            email,
+            plan: 'PRO VIP (SaaS)',
+            role: 'subscriber',
+            provider: 'google',
+            avatar: body.picture || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(email)}`,
+            createdAt: new Date().toISOString()
+          };
+          return new Response(JSON.stringify({ ok: true, user, token: `tk_g_${Date.now()}` }), { status: 200, headers: authHeaders });
+        } catch (e) {
+          return new Response(JSON.stringify({ error: 'Erro no login com Google.' }), { status: 400, headers: authHeaders });
+        }
+      }
+
+      if (action === 'guest') {
+        const user = {
+          id: `gst_${Math.random().toString(36).slice(2, 10)}`,
+          name: 'Convidado VIP',
+          email: 'convidado@johnflix.online',
+          plan: 'Acesso Livre (Convidado)',
+          role: 'guest',
+          avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=guest',
+          createdAt: new Date().toISOString()
+        };
+        return new Response(JSON.stringify({ ok: true, user, isGuest: true }), { status: 200, headers: authHeaders });
+      }
+
+      return new Response(JSON.stringify({ ok: true }), { status: 200, headers: authHeaders });
+    }
+
     if (rawPath === '/api/suggestions') {
       const sugHeaders = {
         ...headers,
