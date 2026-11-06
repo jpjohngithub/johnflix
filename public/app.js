@@ -134,6 +134,9 @@
     telemetryPeers: document.getElementById('telemetryPeers'),
     telemetrySpeed: document.getElementById('telemetrySpeed'),
     switchServerBtn: document.getElementById('switchServerBtn'),
+    playerShareBtn: document.getElementById('playerShareBtn'),
+    playerDownloadBtn: document.getElementById('playerDownloadBtn'),
+    modalShareBtn: document.getElementById('modalShareBtn'),
     playerFullscreenBtn: document.getElementById('playerFullscreenBtn'),
     cloudVideo: document.getElementById('cloudVideo'),
     cloudEmbed: document.getElementById('cloudEmbed'),
@@ -519,18 +522,19 @@
     await loadHomeCatalog();
     if (splashEl) splashEl.classList.add('splash-hide');
 
-    // Smart TV Direct Link Deep-linking (e.g. ?open=tt0133093)
+    // Smart TV Direct Link Deep-linking (e.g. ?open=tt0133093 or ?watch=tt0133093)
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('tv') === '1' || isSmartTv) {
       initTvLeanbackMode();
     }
-    const openId = urlParams.get('open');
+    const openId = urlParams.get('watch') || urlParams.get('open');
     if (openId) {
       setTimeout(() => {
         const s = parseInt(urlParams.get('s'), 10) || 1;
         const e = parseInt(urlParams.get('e'), 10) || 1;
-        openItemDetails({ id: openId, type: openId.startsWith('tt') ? 'movie' : 'series' }, true, null, s, e);
-      }, 600);
+        const type = urlParams.get('type') || (openId.startsWith('tv:') ? 'tv' : (s > 1 || e > 1) ? 'series' : 'movie');
+        openItemDetails({ id: openId, type, name: urlParams.get('title') || 'Vídeo Compartilhado' }, true, null, s, e);
+      }, 300);
     }
   }
 
@@ -839,9 +843,9 @@
       });
     }
 
-    // Cast & Smart TV
-    if (el.playerCastBtn) el.playerCastBtn.addEventListener('click', openCastModal);
-    if (el.modalCastBtn) el.modalCastBtn.addEventListener('click', openCastModal);
+    // Cast & Smart TV (1-click direct YouTube-style cast)
+    if (el.playerCastBtn) el.playerCastBtn.addEventListener('click', handleUniversalDirectCast);
+    if (el.modalCastBtn) el.modalCastBtn.addEventListener('click', handleUniversalDirectCast);
     if (el.closeCastModalBtn) el.closeCastModalBtn.addEventListener('click', closeCastModal);
     if (el.castModal) {
       el.castModal.addEventListener('click', (e) => {
@@ -857,6 +861,9 @@
 
     // Player controls
     el.closePlayerBtn.addEventListener('click', stopAndClosePlayer);
+    if (el.playerShareBtn) el.playerShareBtn.addEventListener('click', () => shareCurrentMedia());
+    if (el.modalShareBtn) el.modalShareBtn.addEventListener('click', () => shareCurrentMedia());
+    if (el.playerDownloadBtn) el.playerDownloadBtn.addEventListener('click', () => downloadCurrentMedia());
     el.switchServerBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       renderPlayerDrawer();
@@ -2446,9 +2453,9 @@
       <div class="customize-container">
         <div class="customize-header">
           <div>
-            <span class="customize-kicker">IDENTIDADE VISUAL</span>
-            <h2>Personalizar Plataforma</h2>
-            <p>Altere o nome exibido no topo e escolha a cor principal de destaque do seu streaming.</p>
+            <span class="customize-kicker">CENTRAL DE AJUSTES</span>
+            <h2>Configurações do Sistema</h2>
+            <p>Personalize identidade, temas, atalhos do menu e acelere o desempenho da sua experiência.</p>
           </div>
           <button type="button" class="btn btn-glass btn-sm" id="resetCustomBtn">Restaurar Padrão</button>
         </div>
@@ -2509,7 +2516,7 @@
             </div>
 
             <div class="customize-actions">
-              <button type="button" class="btn btn-primary" id="saveCustomBtn">Salvar Personalização</button>
+              <button type="button" class="btn btn-primary" id="saveCustomBtn">Salvar Configurações</button>
             </div>
           </div>
 
@@ -3290,6 +3297,16 @@
     state.currentStreams = [];
     state.activeAddonFilter = 'all';
 
+    // Update URL query string with unique link for this title
+    try {
+      const shareUrl = new URL(window.location.href);
+      shareUrl.searchParams.set('watch', item.id);
+      if (item.type) shareUrl.searchParams.set('type', item.type);
+      if (customSeason) shareUrl.searchParams.set('s', customSeason);
+      if (customEp) shareUrl.searchParams.set('e', customEp);
+      window.history.replaceState({ watchId: item.id }, '', shareUrl.toString());
+    } catch (_) {}
+
     el.detailsModal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 
@@ -3959,6 +3976,54 @@
     }
   }
 
+  function shareCurrentMedia() {
+    const item = state.currentItem;
+    if (!item) {
+      showToast('Nenhum filme selecionado.');
+      return;
+    }
+    const shareUrl = new URL(window.location.origin);
+    shareUrl.searchParams.set('watch', item.id);
+    if (item.type) shareUrl.searchParams.set('type', item.type);
+    if (state.currentSeason) shareUrl.searchParams.set('s', state.currentSeason);
+    if (state.currentEpisode) shareUrl.searchParams.set('e', state.currentEpisode);
+
+    const shareData = {
+      title: `${item.name || item.title || 'Filme'} • JohnFlix`,
+      text: `Assista a "${item.name || item.title}" online em alta qualidade no JohnFlix!`,
+      url: shareUrl.toString()
+    };
+
+    if (navigator.share) {
+      navigator.share(shareData).catch(() => {});
+    } else if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(shareUrl.toString()).then(() => {
+        showToast('Link do filme copiado para a área de transferência! 🔗');
+      }).catch(() => {
+        prompt('Copie o link abaixo:', shareUrl.toString());
+      });
+    } else {
+      prompt('Copie o link abaixo:', shareUrl.toString());
+    }
+  }
+
+  function downloadCurrentMedia() {
+    const stream = state.currentStream || state.currentStreams?.[0];
+    const dlUrl = stream?.directUrl || stream?.proxyUrl;
+    if (!dlUrl) {
+      showToast('Link direto não disponível para download no momento.');
+      return;
+    }
+    const a = document.createElement('a');
+    a.href = dlUrl;
+    a.target = '_blank';
+    a.download = `${state.currentItem?.name || 'video'}.mp4`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    showToast('Download iniciado! 📥');
+  }
+
   function syncMediaToCastSession() {
     if (!castSession) return;
     const stream = state.currentStream || state.currentStreams?.[0] || {
@@ -4005,6 +4070,42 @@
         () => showToast('Erro ao reproduzir no Chromecast')
       );
     } catch (e) {}
+  }
+
+  async function handleUniversalDirectCast() {
+    showToast('Buscando dispositivos para transmitir...');
+    // 1. Google Cast SDK (Chromecast / Google TV / Android TV)
+    if (window.cast && window.cast.framework) {
+      try {
+        const castContext = cast.framework.CastContext.getInstance();
+        await castContext.requestSession();
+        return;
+      } catch (e) {}
+    }
+    // 2. Apple AirPlay Picker (iPhone, iPad, Mac Safari)
+    if (el.cloudVideo && typeof el.cloudVideo.webkitShowPlaybackTargetPicker === 'function') {
+      try {
+        el.cloudVideo.webkitShowPlaybackTargetPicker();
+        return;
+      } catch (e) {}
+    }
+    // 3. HTML5 Remote Playback (Android Chrome / Smart TV Wi-Fi)
+    if (el.cloudVideo && el.cloudVideo.remote && typeof el.cloudVideo.remote.prompt === 'function') {
+      try {
+        await el.cloudVideo.remote.prompt();
+        return;
+      } catch (e) {}
+    }
+    // 4. Quick Screen Share (DLNA / Miracast / WebRTC)
+    if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
+      try {
+        await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+        showToast('Transmitindo na TV 📺');
+        return;
+      } catch (e) {}
+    }
+    // 5. Fallback: Open clean pair dialog
+    openCastModal();
   }
 
   async function openCastModal() {
