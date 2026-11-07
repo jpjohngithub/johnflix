@@ -2104,12 +2104,12 @@ export default async (request) => {
               addon,
               rawStreams: [{
                 name: 'SuperFlix Oficial',
-                title: '🇧🇷 Servidor Dublado Oficial (SuperFlix)',
+                title: '🇧🇷 Dublado BR Oficial (SuperFlix)',
                 embedUrl: sEmbed
               }]
             };
           }
-          if (addon.id === 'warezcdn' || addon.id === 'videasy' || addon.id === 'multiembed') {
+          if (addon.id === 'warezcdn' || addon.id === 'multiembed') {
             const isSeries = type === 'series';
             const multiEmbed = isSeries
               ? 'https://multiembed.mov/?video_id=' + baseImdb + '&s=' + epSeason + '&e=' + epNumber
@@ -2117,24 +2117,33 @@ export default async (request) => {
             return {
               addon,
               rawStreams: [{
-                name: 'MultiEmbed VIP',
-                title: '⚡ Servidor MultiEmbed 4K/FHD',
+                name: 'MultiEmbed',
+                title: '⚡ MultiEmbed 4K Multi-Áudio',
                 embedUrl: multiEmbed
               }]
             };
           }
           if (addon.id === 'vidsrc') {
             const isSeries = type === 'series';
-            const vidsrcPt = isSeries
+            const vidsrcEmbed = isSeries
               ? 'https://vidsrc.me/embed/tv?imdb=' + baseImdb + '&season=' + epSeason + '&episode=' + epNumber
               : 'https://vidsrc.me/embed/movie?imdb=' + baseImdb;
             return {
               addon,
-              rawStreams: [{
-                name: 'VidSrc MultiServer',
-                title: '🌐 Servidor Multiserver HD (VidSrc)',
-                embedUrl: vidsrcPt
-              }]
+              rawStreams: [
+                {
+                  name: 'VidSrc.me',
+                  title: '🌐 VidSrc.me Multi-Server',
+                  embedUrl: vidsrcEmbed
+                },
+                {
+                  name: 'VidSrc.pm',
+                  title: '🌐 VidSrc.pm Multi-Server',
+                  embedUrl: isSeries
+                    ? 'https://vidsrc.pm/embed/tv/' + baseImdb + '/' + epSeason + '/' + epNumber
+                    : 'https://vidsrc.pm/embed/movie/' + baseImdb
+                }
+              ]
             };
           }
           if (addon.id === 'autoembed') {
@@ -2146,9 +2155,31 @@ export default async (request) => {
               addon,
               rawStreams: [{
                 name: 'AutoEmbed Cloud',
-                title: '⚡ Servidor Rápido (AutoEmbed)',
+                title: '🚀 AutoEmbed Ultra Rápido',
                 embedUrl: autoEmbed
               }]
+            };
+          }
+          if (addon.id === 'videasy') {
+            const isSeries = type === 'series';
+            return {
+              addon,
+              rawStreams: [
+                {
+                  name: 'SmashyStream',
+                  title: '💎 SmashyStream Multi-Server',
+                  embedUrl: isSeries
+                    ? 'https://embed.smashystream.com/playere.php?imdb=' + baseImdb + '&s=' + epSeason + '&e=' + epNumber
+                    : 'https://embed.smashystream.com/playere.php?imdb=' + baseImdb
+                },
+                {
+                  name: '2Embed',
+                  title: '💎 2Embed Universal VIP',
+                  embedUrl: isSeries
+                    ? 'https://www.2embed.cc/embedtv/' + baseImdb + '&s=' + epSeason + '&e=' + epNumber
+                    : 'https://www.2embed.cc/embed/' + baseImdb
+                }
+              ]
             };
           }
           if (addon.id === 'framextv') {
@@ -2218,12 +2249,24 @@ export default async (request) => {
         return 0;
       });
 
+      // Map: each P2P addon gets a unique embed provider so servers are truly different
+      const P2P_EMBED_MAP = {
+        micoleao:    (imdb, s, e, isSeries) => isSeries ? `https://superflixapi.fun/serie/${imdb}/${s}/${e}#noBackground#noEpList#noLink` : `https://superflixapi.fun/filme/${imdb}#noBackground#noLink`,
+        brazuca:     (imdb, s, e, isSeries) => isSeries ? `https://vidsrc.pm/embed/tv/${imdb}/${s}/${e}` : `https://vidsrc.pm/embed/movie/${imdb}`,
+        magneto:     (imdb, s, e, isSeries) => isSeries ? `https://multiembed.mov/?video_id=${imdb}&s=${s}&e=${e}` : `https://multiembed.mov/?video_id=${imdb}`,
+        cinetorrent: (imdb, s, e, isSeries) => isSeries ? `https://autoembed.co/tv/imdb/${imdb}-${s}-${e}` : `https://autoembed.co/movie/imdb/${imdb}`,
+        guindex:     (imdb, s, e, isSeries) => isSeries ? `https://embed.smashystream.com/playere.php?imdb=${imdb}&s=${s}&e=${e}` : `https://embed.smashystream.com/playere.php?imdb=${imdb}`,
+        torrentio:   (imdb, s, e, isSeries) => isSeries ? `https://www.2embed.cc/embedtv/${imdb}&s=${s}&e=${e}` : `https://www.2embed.cc/embed/${imdb}`,
+        froststream: (imdb, s, e, isSeries) => isSeries ? `https://vidsrc.me/embed/tv?imdb=${imdb}&season=${s}&episode=${e}` : `https://vidsrc.me/embed/movie?imdb=${imdb}`,
+      };
+
       const universalEmbedUrl = type === 'series'
         ? `https://vidsrc.me/embed/tv?imdb=${baseImdb}&season=${epSeason}&episode=${epNumber}`
         : `https://vidsrc.me/embed/movie?imdb=${baseImdb}`;
 
+      // Embeds come FIRST — they are more reliable than proxied direct streams
       const sortStreamsUniversal = (a, b) => {
-        const rank = (p) => (p === 'direct' ? 0 : p === 'hls' ? 1 : p === 'embed' ? 2 : 3);
+        const rank = (p) => (p === 'embed' ? 0 : p === 'hls' ? 1 : p === 'direct' ? 2 : 3);
         if (rank(a.playType) !== rank(b.playType)) return rank(a.playType) - rank(b.playType);
         if (Boolean(a.isHevcOrMkv) !== Boolean(b.isHevcOrMkv)) return a.isHevcOrMkv ? 1 : -1;
         if (a.isDub !== b.isDub) return a.isDub ? -1 : 1;
@@ -2236,8 +2279,14 @@ export default async (request) => {
           const filteredRaw = rawStreams.filter((s) => !isBadSubServer(s));
           if (filteredRaw.length === 0) return null;
 
+          // For P2P addons, give each addon its unique embed URL so servers are truly different
+          const p2pEmbedFn = P2P_EMBED_MAP[addon.id];
+          const addonEmbedUrl = p2pEmbedFn
+            ? p2pEmbedFn(baseImdb, epSeason, epNumber, type === 'series')
+            : universalEmbedUrl;
+
           const streams = filteredRaw
-            .map((s, idx) => normalizeStream(s, addon, directPool, idx, englishPool, universalEmbedUrl))
+            .map((s, idx) => normalizeStream(s, addon, directPool, idx, englishPool, addonEmbedUrl))
             .filter((s) => s.proxyUrl);
 
           if (streams.length === 0) return null;
@@ -2262,25 +2311,39 @@ export default async (request) => {
         const isSeries = type === 'series';
         const fallbackList = [
           {
-            serverLabel: 'Videasy • Universal Cloud #1',
+            serverLabel: 'SuperFlix • Dublado BR #1',
             quality: '1080p Full HD',
-            audio: 'Multi-Áudio / Dublado',
+            audio: 'Dublado PT-BR',
             playType: 'embed',
-            proxyUrl: isSeries ? `https://player.videasy.to/tv/${baseImdb}/${epSeason}/${epNumber}` : `https://player.videasy.to/movie/${baseImdb}`
+            proxyUrl: isSeries ? `https://superflixapi.fun/serie/${baseImdb}/${epSeason}/${epNumber}#noBackground#noLink` : `https://superflixapi.fun/filme/${baseImdb}#noBackground#noLink`
           },
           {
-            serverLabel: 'AutoEmbed • Fast Cloud #2',
+            serverLabel: 'VidSrc.me • Multiserver #2',
             quality: '1080p Full HD',
-            audio: 'Multi-Áudio / Dublado',
+            audio: 'Multi-Áudio / Legendado',
             playType: 'embed',
-            proxyUrl: isSeries ? `https://player.autoembed.cc/embed/tv/${baseImdb}/${epSeason}/${epNumber}` : `https://player.autoembed.cc/embed/movie/${baseImdb}`
+            proxyUrl: isSeries ? `https://vidsrc.me/embed/tv?imdb=${baseImdb}&season=${epSeason}&episode=${epNumber}` : `https://vidsrc.me/embed/movie?imdb=${baseImdb}`
           },
           {
-            serverLabel: 'VidSrc BR • Multiserver #3',
+            serverLabel: 'MultiEmbed • 4K/FHD #3',
             quality: '1080p Full HD',
             audio: 'Multi-Áudio / Dublado',
             playType: 'embed',
-            proxyUrl: isSeries ? `https://vidsrc.sh/embed/tv?imdb=${baseImdb}&season=${epSeason}&episode=${epNumber}&ds_lang=pt` : `https://vidsrc.sh/embed/movie?imdb=${baseImdb}&ds_lang=pt`
+            proxyUrl: isSeries ? `https://multiembed.mov/?video_id=${baseImdb}&s=${epSeason}&e=${epNumber}` : `https://multiembed.mov/?video_id=${baseImdb}`
+          },
+          {
+            serverLabel: 'AutoEmbed • Rápido #4',
+            quality: '1080p Full HD',
+            audio: 'Multi-Áudio / Legendado',
+            playType: 'embed',
+            proxyUrl: isSeries ? `https://autoembed.co/tv/imdb/${baseImdb}-${epSeason}-${epNumber}` : `https://autoembed.co/movie/imdb/${baseImdb}`
+          },
+          {
+            serverLabel: 'VidSrc.pm • Cloud #5',
+            quality: '1080p Full HD',
+            audio: 'Multi-Áudio / Legendado',
+            playType: 'embed',
+            proxyUrl: isSeries ? `https://vidsrc.pm/embed/tv/${baseImdb}/${epSeason}/${epNumber}` : `https://vidsrc.pm/embed/movie/${baseImdb}`
           }
         ].map((s) => ({
           addonId: 'universal_cloud',

@@ -4615,12 +4615,17 @@
       el.cloudVideo.pause();
       el.cloudVideo.removeAttribute('src');
       el.cloudVideo.classList.add('hidden');
+      // Force reset iframe so switching servers always reloads
+      el.cloudEmbed.onload = null;
+      el.cloudEmbed.src = 'about:blank';
       el.cloudEmbed.classList.remove('hidden');
-      el.cloudEmbed.onload = () => {
-        el.playerLoader.classList.add('hidden');
-      };
-      el.cloudEmbed.src = stream.proxyUrl;
-      setTimeout(() => el.playerLoader.classList.add('hidden'), 1200);
+      requestAnimationFrame(() => {
+        el.cloudEmbed.onload = () => {
+          el.playerLoader.classList.add('hidden');
+        };
+        el.cloudEmbed.src = stream.proxyUrl;
+      });
+      setTimeout(() => el.playerLoader.classList.add('hidden'), 1500);
 
       // Embed black screen watchdog: show switch button if iframe hangs
       blackScreenWatchdogTimer = setTimeout(() => {
