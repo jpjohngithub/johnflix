@@ -3577,26 +3577,37 @@
         card.addEventListener('click', () => {
           el.episodesGrid.querySelectorAll('.ep-card').forEach((c) => c.classList.remove('active'));
           card.classList.add('active');
+          state.currentSeason = seasonNum;
           state.currentEpisode = epNum;
-          loadStreamsForTarget('series', streamId, true);
+          customStreamId = null;
+          const targetEpId = (streamId && streamId.includes(':')) ? streamId : `${state.currentItem.id}:${seasonNum}:${epNum}`;
+          loadStreamsForTarget('series', targetEpId, true);
         });
         el.episodesGrid.appendChild(card);
       });
 
       if (selectedEpObj) {
         state.currentEpisode = selectedEpObj.episode || selectedEpObj.number || 1;
-        const rawEpId = selectedEpObj.id || `${state.currentItem.id}:${seasonNum}:${state.currentEpisode}`;
+        const baseId = String(state.currentItem.id).split(':')[0];
+        const rawEpId = (selectedEpObj.id && String(selectedEpObj.id).startsWith('tt') && String(selectedEpObj.id).includes(':'))
+          ? selectedEpObj.id
+          : `${baseId}:${seasonNum}:${state.currentEpisode}`;
         const resolvedEpId = String(state.currentItem.id).startsWith('vault:') && !String(rawEpId).startsWith('vault:')
           ? `vault:${state.currentItem.vaultAddonId || 'midnight'}:series:${rawEpId}`
           : rawEpId;
         const streamId = customStreamId || resolvedEpId;
+        customStreamId = null;
         if (!skipLoad || streamId !== currentLoadTargetId) {
           loadStreamsForTarget('series', streamId, triggerAuto);
         }
       }
     };
 
-    el.seasonSelect.onchange = (e) => renderSeasonEpisodes(Number(e.target.value), false, null, false);
+    el.seasonSelect.onchange = (e) => {
+      customStreamId = null;
+      customEp = null;
+      renderSeasonEpisodes(Number(e.target.value), false, null, false);
+    };
     renderSeasonEpisodes(initialSeason, autoPlayFirst, customEp, skipInitialStreamLoad);
   }
 
@@ -3646,35 +3657,46 @@
           {
             addonId: 'universal_cloud',
             addonName: 'Cloud Universal',
-            addonBadge: 'CLOUD VIP',
+            addonBadge: 'DUBLADO BR',
             addonColor: '#a855f7',
-            serverLabel: 'Videasy • Universal Cloud #1',
+            serverLabel: 'WarezCDN • Dublado Oficial #1',
             quality: '1080p Full HD',
-            audio: 'Multi-Áudio / Dublado',
+            audio: 'Dublado PT-BR',
             playType: 'embed',
-            proxyUrl: isSeries ? `https://player.videasy.to/tv/${baseImdb}/${s}/${e}` : `https://player.videasy.to/movie/${baseImdb}`
+            proxyUrl: isSeries ? `https://embed.warezcdn.net/serie/${baseImdb}/${s}/${e}` : `https://embed.warezcdn.net/filme/${baseImdb}`
+          },
+          {
+            addonId: 'universal_cloud',
+            addonName: 'Cloud Universal',
+            addonBadge: 'DUBLADO BR',
+            addonColor: '#e11d48',
+            serverLabel: 'SuperFlix • Dublado Oficial #2',
+            quality: '1080p Full HD',
+            audio: 'Dublado PT-BR',
+            playType: 'embed',
+            proxyUrl: isSeries ? `https://superflixapi.fun/serie/${baseImdb}/${s}/${e}#noBackground#noLink` : `https://superflixapi.fun/filme/${baseImdb}#noBackground#noLink`
           },
           {
             addonId: 'universal_cloud',
             addonName: 'Cloud Universal',
             addonBadge: 'CLOUD VIP',
-            addonColor: '#a855f7',
-            serverLabel: 'AutoEmbed • Fast Cloud #2',
+            addonColor: '#3b82f6',
+            serverLabel: 'VidSrc • Multiserver #3',
             quality: '1080p Full HD',
             audio: 'Multi-Áudio / Dublado',
             playType: 'embed',
-            proxyUrl: isSeries ? `https://player.autoembed.cc/embed/tv/${baseImdb}/${s}/${e}` : `https://player.autoembed.cc/embed/movie/${baseImdb}`
+            proxyUrl: isSeries ? `https://vidsrc.me/embed/tv?imdb=${baseImdb}&season=${s}&episode=${e}` : `https://vidsrc.me/embed/movie?imdb=${baseImdb}`
           },
           {
             addonId: 'universal_cloud',
             addonName: 'Cloud Universal',
-            addonBadge: 'CLOUD VIP',
-            addonColor: '#a855f7',
-            serverLabel: 'VidSrc BR • Multiserver #3',
+            addonBadge: 'FAST CLOUD',
+            addonColor: '#10b981',
+            serverLabel: 'AutoEmbed • Rápido #4',
             quality: '1080p Full HD',
-            audio: 'Multi-Áudio / Dublado',
+            audio: 'Multi-Áudio / Legendado',
             playType: 'embed',
-            proxyUrl: isSeries ? `https://vidsrc.sh/embed/tv?imdb=${baseImdb}&season=${s}&episode=${e}&ds_lang=pt` : `https://vidsrc.sh/embed/movie?imdb=${baseImdb}&ds_lang=pt`
+            proxyUrl: isSeries ? `https://autoembed.co/tv/imdb/${baseImdb}-${s}-${e}` : `https://autoembed.co/movie/imdb/${baseImdb}`
           }
         ];
         state.currentStreams = emergencyStreams;
@@ -4484,8 +4506,8 @@
     if (state.currentItem && state.currentItem.id && String(state.currentItem.id).startsWith('tt') && el.cloudEmbed) {
       const baseImdb = String(state.currentItem.id).split(':')[0];
       const fallbackEmbedUrl = state.currentItem.type === 'series'
-        ? `https://player.videasy.to/tv/${baseImdb}/${state.currentSeason || 1}/${state.currentEpisode || 1}`
-        : `https://player.videasy.to/movie/${baseImdb}`;
+        ? `https://embed.warezcdn.net/serie/${baseImdb}/${state.currentSeason || 1}/${state.currentEpisode || 1}`
+        : `https://embed.warezcdn.net/filme/${baseImdb}`;
       if (!failedStreamKeys.has(fallbackEmbedUrl)) {
         failedStreamKeys.add(fallbackEmbedUrl);
         launchCloudPlayer({

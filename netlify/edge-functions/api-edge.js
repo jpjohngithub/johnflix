@@ -634,17 +634,10 @@ function normalizeStream(rawStream, addon, fallbackDirectUrls = [], idx = 0, eng
     playType = 'embed';
     proxyUrl = embedUrl;
   } else if (rawStream.infoHash) {
-    const pool = (forceEn && englishPool.length > 0) ? englishPool : fallbackDirectUrls;
-    if (pool.length > 0) {
-      const picked = pool[idx % pool.length];
-      playType = 'direct';
-      streamUrl = picked.directUrl;
-      proxyUrl = streamUrl.includes('workers.dev')
-        ? streamUrl
-        : `/api/proxy-stream?url=${encodeURIComponent(streamUrl)}`;
-    } else if (universalEmbedUrl) {
+    if (universalEmbedUrl) {
       playType = 'embed';
       proxyUrl = universalEmbedUrl;
+      embedUrl = universalEmbedUrl;
     }
   }
 
@@ -1269,7 +1262,7 @@ export default async (request) => {
     if (rawPath === '/api/hls-proxy') return hlsProxyHandler(request, url);
 
     if (rawPath === '/api/catalogs') {
-      const cachedCat = getEdgeCache('catalogs:v12');
+      const cachedCat = getEdgeCache('catalogs:v16');
       if (cachedCat) return new Response(cachedCat, { status: 200, headers });
 
       const sources = [
@@ -2102,11 +2095,11 @@ export default async (request) => {
         MOVIE_ADDONS.map(async (addon) => {
           if (addon.id === 'superflix') {
             const tmdbId = await tmdbPromise;
-            if (!tmdbId) return { addon, rawStreams: [] };
+            const targetRef = tmdbId || baseImdb;
             const isSeries = type === 'series';
             const sEmbed = isSeries
-              ? 'https://superflixapi.fun/serie/' + tmdbId + '/' + epSeason + '/' + epNumber + '#noBackground#noEpList#noLink'
-              : 'https://superflixapi.fun/filme/' + tmdbId + '#noBackground#noLink';
+              ? 'https://superflixapi.fun/serie/' + targetRef + '/' + epSeason + '/' + epNumber + '#noBackground#noEpList#noLink'
+              : 'https://superflixapi.fun/filme/' + targetRef + '#noBackground#noLink';
             return {
               addon,
               rawStreams: [{
@@ -2116,51 +2109,45 @@ export default async (request) => {
               }]
             };
           }
-          if (addon.id === 'vidsrc') {
-            const tmdbId = await tmdbPromise;
+          if (addon.id === 'warezcdn' || addon.id === 'videasy') {
             const isSeries = type === 'series';
-            const vidsrcPt = isSeries
-              ? (tmdbId
-                  ? 'https://vidsrc.sh/embed/tv?tmdb=' + tmdbId + '&season=' + epSeason + '&episode=' + epNumber + '&ds_lang=pt'
-                  : 'https://vidsrc.sh/embed/tv?imdb=' + baseImdb + '&season=' + epSeason + '&episode=' + epNumber + '&ds_lang=pt')
-              : (tmdbId
-                  ? 'https://vidsrc.sh/embed/movie?tmdb=' + tmdbId + '&ds_lang=pt'
-                  : 'https://vidsrc.sh/embed/movie?imdb=' + baseImdb + '&ds_lang=pt');
+            const warezEmbed = isSeries
+              ? 'https://embed.warezcdn.net/serie/' + baseImdb + '/' + epSeason + '/' + epNumber
+              : 'https://embed.warezcdn.net/filme/' + baseImdb;
             return {
               addon,
               rawStreams: [{
-                name: 'VidSrc BR',
-                title: '🇧🇷 Servidor Multiserver (VidSrc)',
+                name: 'WarezCDN Oficial',
+                title: '🇧🇷 Servidor Dublado HD (WarezCDN)',
+                embedUrl: warezEmbed
+              }]
+            };
+          }
+          if (addon.id === 'vidsrc') {
+            const isSeries = type === 'series';
+            const vidsrcPt = isSeries
+              ? 'https://vidsrc.me/embed/tv?imdb=' + baseImdb + '&season=' + epSeason + '&episode=' + epNumber
+              : 'https://vidsrc.me/embed/movie?imdb=' + baseImdb;
+            return {
+              addon,
+              rawStreams: [{
+                name: 'VidSrc MultiServer',
+                title: '🌐 Servidor Multiserver HD (VidSrc)',
                 embedUrl: vidsrcPt
               }]
             };
           }
           if (addon.id === 'autoembed') {
-            const tmdbId = await tmdbPromise;
             const isSeries = type === 'series';
             const autoEmbed = isSeries
-              ? (tmdbId ? `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1&s=${epSeason}&e=${epNumber}` : `https://player.videasy.to/tv/${baseImdb}/${epSeason}/${epNumber}`)
-              : (tmdbId ? `https://multiembed.mov/?video_id=${tmdbId}&tmdb=1` : `https://player.videasy.to/movie/${baseImdb}`);
+              ? 'https://autoembed.co/tv/imdb/' + baseImdb + '-' + epSeason + '-' + epNumber
+              : 'https://autoembed.co/movie/imdb/' + baseImdb;
             return {
               addon,
               rawStreams: [{
                 name: 'AutoEmbed Cloud',
-                title: '⚡ Servidor Rápido MultiEmbed (AutoEmbed)',
+                title: '⚡ Servidor Rápido (AutoEmbed)',
                 embedUrl: autoEmbed
-              }]
-            };
-          }
-          if (addon.id === 'videasy') {
-            const isSeries = type === 'series';
-            const videasyEmbed = isSeries
-              ? 'https://player.videasy.to/tv/' + baseImdb + '/' + epSeason + '/' + epNumber
-              : 'https://player.videasy.to/movie/' + baseImdb;
-            return {
-              addon,
-              rawStreams: [{
-                name: 'Videasy 4K',
-                title: '🎬 Player Universal Multilingue (Videasy)',
-                embedUrl: videasyEmbed
               }]
             };
           }
@@ -2232,8 +2219,8 @@ export default async (request) => {
       });
 
       const universalEmbedUrl = type === 'series'
-        ? `https://player.videasy.to/tv/${baseImdb}/${epSeason}/${epNumber}`
-        : `https://player.videasy.to/movie/${baseImdb}`;
+        ? `https://embed.warezcdn.net/serie/${baseImdb}/${epSeason}/${epNumber}`
+        : `https://embed.warezcdn.net/filme/${baseImdb}`;
 
       const sortStreamsUniversal = (a, b) => {
         const rank = (p) => (p === 'direct' ? 0 : p === 'hls' ? 1 : p === 'embed' ? 2 : 3);
