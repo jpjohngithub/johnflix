@@ -6686,6 +6686,48 @@ html[data-nav-style="text"] .nav-link .nav-text {
   display: inline !important;
 }
 
+/* === CUSTOMIZE NAV STYLE PILLS === */
+.customize-opt-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 12px 0 18px;
+}
+.cust-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 18px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  color: #cbd5e1;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+  font-family: inherit;
+}
+.cust-pill-btn svg {
+  display: inline-block !important;
+  stroke: currentColor;
+  flex-shrink: 0;
+}
+.cust-pill-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.24);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+.cust-pill-btn.active {
+  background: linear-gradient(135deg, #7c3aed, #a855f7);
+  border-color: #c084fc;
+  color: #ffffff;
+  box-shadow: 0 4px 18px rgba(124, 58, 237, 0.45);
+}
+
 /* === SAAS INITIAL AUTH SCREEN & USER PILL === */
 .nav-user-pill {
   display: flex;

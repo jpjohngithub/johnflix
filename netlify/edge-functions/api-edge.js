@@ -781,47 +781,108 @@ async function getIptvBr() {
 
 const GROUP_PT = { News: 'Notícias', Sports: 'Esportes', Movies: 'Filmes', Kids: 'Infantil', Music: 'Música', Entertainment: 'Entretenimento', General: 'Geral', Culture: 'Cultura', Documentary: 'Documentários', Religious: 'Religiosos', Series: 'Séries', Animation: 'Animação', Education: 'Educação', Lifestyle: 'Estilo de Vida', Comedy: 'Comédia', Undefined: 'Variedades', Public: 'TV Pública', Legislative: 'Legislativo', Weather: 'Clima', Business: 'Negócios' };
 
+function makeTvPoster(name, group = '') {
+  const n = (name || 'TV').replace(/\s*\(Ao Vivo\)/gi, '').trim();
+  const cleanN = n.toLowerCase();
+  let bg1 = '#130c24', bg2 = '#080410', accent = '#a855f7', badgeColor = '#ef4444', label = 'CANAL DIGITAL';
+  let iconSvg = '<circle cx="200" cy="240" r="54" fill="rgba(255,255,255,0.06)" stroke="' + accent + '" stroke-width="2"/><path d="M182 220 L228 240 L182 260 Z" fill="' + accent + '"/>';
+
+  if (cleanN.includes('globo')) {
+    bg1 = '#091e3a'; bg2 = '#030b14'; accent = '#00a8ff'; label = 'REDE GLOBO';
+    iconSvg = '<circle cx="200" cy="240" r="60" fill="none" stroke="#00a8ff" stroke-width="6"/><circle cx="200" cy="240" r="28" fill="#00a8ff"/><path d="M140 240 Q200 180 260 240 Q200 300 140 240" fill="none" stroke="#38bdf8" stroke-width="4"/>';
+  } else if (cleanN.includes('sbt')) {
+    bg1 = '#3a2004'; bg2 = '#120800'; accent = '#f59e0b'; label = 'REDE SBT';
+    iconSvg = '<circle cx="200" cy="240" r="54" fill="#1e293b" stroke="#f59e0b" stroke-width="5"/><circle cx="200" cy="240" r="42" fill="none" stroke="#fbbf24" stroke-width="4"/><text x="200" y="249" text-anchor="middle" fill="#ffffff" font-family="Arial,sans-serif" font-size="28" font-weight="900" letter-spacing="1">SBT</text>';
+  } else if (cleanN.includes('record')) {
+    bg1 = '#061a3d'; bg2 = '#020919'; accent = '#3b82f6'; label = cleanN.includes('news') ? 'RECORD NEWS' : 'RECORD TV';
+    iconSvg = '<circle cx="200" cy="240" r="56" fill="none" stroke="#3b82f6" stroke-width="5"/><polygon points="200,195 240,240 200,285 160,240" fill="#60a5fa"/><circle cx="200" cy="240" r="16" fill="#1e3a8a"/>';
+  } else if (cleanN.includes('cnn')) {
+    bg1 = '#3a0808'; bg2 = '#120202'; accent = '#ef4444'; label = 'CNN BRASIL';
+    iconSvg = '<rect x="130" y="210" width="140" height="60" rx="8" fill="#cc0000"/><text x="200" y="252" text-anchor="middle" fill="#ffffff" font-family="Arial Black,sans-serif" font-size="34" font-weight="900" letter-spacing="2">CNN</text>';
+  } else if (cleanN.includes('cultura')) {
+    bg1 = '#062b1b'; bg2 = '#021009'; accent = '#10b981'; label = 'TV CULTURA';
+    iconSvg = '<circle cx="200" cy="240" r="54" fill="none" stroke="#10b981" stroke-width="5"/><circle cx="200" cy="240" r="32" fill="#047857"/><polygon points="200,215 224,240 200,265 176,240" fill="#a7f3d0"/>';
+  } else if (cleanN.includes('redetv')) {
+    bg1 = '#130d36'; bg2 = '#060317'; accent = '#06b6d4'; label = 'REDETV!';
+    iconSvg = '<circle cx="200" cy="240" r="54" fill="none" stroke="#06b6d4" stroke-width="5"/><circle cx="180" cy="235" r="26" fill="#22c55e" fill-opacity="0.8"/><circle cx="220" cy="245" r="24" fill="#06b6d4" fill-opacity="0.8"/>';
+  } else if (cleanN.includes('band')) {
+    bg1 = '#1f2404'; bg2 = '#0b0c01'; accent = '#eab308'; label = 'REDE BANDEIRANTES';
+    iconSvg = '<ellipse cx="200" cy="240" rx="58" ry="36" fill="none" stroke="#eab308" stroke-width="5"/><circle cx="200" cy="240" r="20" fill="#22c55e"/>';
+  }
+
+  const shortName = n.length > 20 ? n.slice(0, 19) + '…' : n;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 480" width="320" height="480">
+    <defs>
+      <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="${bg1}"/>
+        <stop offset="60%" stop-color="${bg2}"/>
+        <stop offset="100%" stop-color="#020105"/>
+      </linearGradient>
+      <radialGradient id="glow" cx="50%" cy="45%" r="55%">
+        <stop offset="0%" stop-color="${accent}" stop-opacity="0.28"/>
+        <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <rect width="100%" height="100%" fill="url(#bg)"/>
+    <circle cx="160" cy="216" r="140" fill="url(#glow)"/>
+    <rect x="16" y="16" width="288" height="448" rx="20" fill="none" stroke="${accent}" stroke-opacity="0.3" stroke-width="1.8"/>
+    <g transform="translate(30, 32)">
+      <rect width="90" height="24" rx="12" fill="${badgeColor}"/>
+      <circle cx="14" cy="12" r="4.5" fill="#ffffff"/>
+      <text x="27" y="16" fill="#ffffff" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif" font-size="10.5" font-weight="900" letter-spacing="1">AO VIVO</text>
+    </g>
+    <g transform="translate(-40, -24)">
+      ${iconSvg}
+    </g>
+    <text x="160" y="340" text-anchor="middle" fill="#ffffff" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif" font-size="20" font-weight="800">${shortName}</text>
+    <text x="160" y="370" text-anchor="middle" fill="${accent}" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif" font-size="11" font-weight="700" letter-spacing="2">${label}</text>
+    <line x1="40" y1="420" x2="280" y2="420" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+    <text x="160" y="442" text-anchor="middle" fill="rgba(255,255,255,0.35)" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif" font-size="10" font-weight="600" letter-spacing="1">JOHNFLIX TV HD</text>
+  </svg>`;
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+}
+
 const STATIC_NATIONAL_CHANNELS = [
   {
     name: 'TV Globo (Ao Vivo)',
     url: 'http://hls1.sua.tv/live/globotvbahiafhdbr2/s.m3u8',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/TV_Globo_2021.svg/512px-TV_Globo_2021.svg.png',
+    logo: makeTvPoster('TV Globo'),
     group: 'General'
   },
   {
     name: 'SBT Nacional (Ao Vivo)',
     url: 'https://d1jvs4svzaqp8n.cloudfront.net/indexMobile.m3u8',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Sistema_Brasileiro_de_Televis%C3%A3o_logo.svg/512px-Sistema_Brasileiro_de_Televis%C3%A3o_logo.svg.png',
+    logo: makeTvPoster('SBT Nacional'),
     group: 'General'
   },
   {
     name: 'Record News (Ao Vivo)',
     url: 'https://jmp2.uk/plu-6102e04e9ab1db0007a980a1.m3u8',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/Record_News_2023.svg/512px-Record_News_2023.svg.png',
+    logo: makeTvPoster('Record News'),
     group: 'News'
   },
   {
     name: 'CNN Brasil (Ao Vivo)',
     url: 'https://d25usgadhphvwi.cloudfront.net/hls/main.m3u8',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/CNN_Brasil_logo.svg/512px-CNN_Brasil_logo.svg.png',
+    logo: makeTvPoster('CNN Brasil'),
     group: 'News'
   },
   {
     name: 'TV Cultura (Ao Vivo)',
     url: 'https://fpa-gateway.tvcultura.com.br:8181/memfs/606caef0-a290-413d-9f1f-8fcdb3a73831.m3u8',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/TV_Cultura_logo.svg/512px-TV_Cultura_logo.svg.png',
+    logo: makeTvPoster('TV Cultura'),
     group: 'General'
   },
   {
     name: 'RedeTV! (Ao Vivo)',
     url: 'https://tv01.zas.media:1936/redetvparana/redetvparana/playlist.m3u8',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/RedeTV%21_logo.svg/512px-RedeTV%21_logo.svg.png',
+    logo: makeTvPoster('RedeTV!'),
     group: 'General'
   },
   {
     name: 'SBT Cuiabá (Ao Vivo)',
     url: 'https://video09.logicahost.com.br/sbtcuiaba/sbtcuiaba/playlist.m3u8',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Sistema_Brasileiro_de_Televis%C3%A3o_logo.svg/512px-Sistema_Brasileiro_de_Televis%C3%A3o_logo.svg.png',
+    logo: makeTvPoster('SBT Cuiabá'),
     group: 'General'
   }
 ];
@@ -834,21 +895,24 @@ async function iptvRows() {
     ...dynamicList.filter((c) => !staticUrls.has(c.url))
   ];
   if (!list.length) return [];
-  const toItem = (ch) => ({
-    id: `tv:iptvorg:${b64uEnc(ch.url)}`,
-    type: 'tv',
-    name: ch.name,
-    logo: ch.logo,
-    poster: ch.logo,
-    background: ch.logo,
-    year: 'AO VIVO',
-    runtime: '',
-    imdbRating: '',
-    description: '',
-    genres: [GROUP_PT[ch.group] || ch.group],
-    cast: [],
-    ytId: ''
-  });
+  const toItem = (ch) => {
+    const poster = (!ch.logo || ch.logo.includes('wikimedia') || ch.logo.includes('placehold')) ? makeTvPoster(ch.name, ch.group) : ch.logo;
+    return {
+      id: `tv:iptvorg:${b64uEnc(ch.url)}`,
+      type: 'tv',
+      name: ch.name,
+      logo: poster,
+      poster: poster,
+      background: poster,
+      year: 'AO VIVO',
+      runtime: '',
+      imdbRating: '',
+      description: '',
+      genres: [GROUP_PT[ch.group] || ch.group],
+      cast: [],
+      ytId: ''
+    };
+  };
   const groups = new Map();
   list.forEach((ch) => {
     const g = GROUP_PT[ch.group] || ch.group;
@@ -1457,26 +1521,8 @@ export default async (request) => {
       rows.push(...topFirst, ...interleaved, ...tvRows);
       const validRows = rows.filter((r) => r.items.length > 0);
 
-      // YouTube Row for Home View
-      const ytItems = [
-        { id: 'yt:mrbeast', name: 'MrBeast', type: 'channel', ytId: 'UCX6OQ3DkcsbYNE6H8uQQuVA', poster: 'https://yt3.googleusercontent.com/fxGKYucJAVme-YzgnKiYGasPuvYXcmqOIXriGdgHPku0o_pnW0JaW ведущий?f=1', year: 'YouTube', imdbRating: '300M+', description: 'Desafios épicos e vídeos virais milionários.', category: 'youtube' },
-        { id: 'yt:nostalgia', name: 'Canal Nostalgia', type: 'channel', ytId: 'UCbba9T4Dcxk_8Zl7aQxM3iA', poster: 'https://yt3.googleusercontent.com/ytc/AIdro_k6_U2VqF7w0B7B9k9m0', year: 'YouTube', imdbRating: '13M+', description: 'História, cinema, ciência e documentários por Felipe Castanhari.', category: 'youtube' },
-        { id: 'yt:alanzoka', name: 'Alanzoka', type: 'channel', ytId: 'UCg4Hq42-QY32w92a7oT_07w', poster: 'https://yt3.googleusercontent.com/ytc/AIdro_k_alanzoka', year: 'YouTube', imdbRating: 'Gaming', description: 'Gameplays, sustos e melhores momentos de jogos.', category: 'youtube' },
-        { id: 'yt:casimito', name: 'Cortes do Casimito', type: 'channel', ytId: 'UCpjyfPq0xPzK2_G80M', year: 'YouTube', imdbRating: 'React', poster: 'https://yt3.googleusercontent.com/ytc/AIdro_casimito', description: 'Reacts, futebol e muito entretenimento.', category: 'youtube' },
-        { id: 'yt:flow', name: 'Flow Podcast', type: 'channel', ytId: 'UC4ncvgh5hFr5O83MH7-jRJg', poster: 'https://yt3.googleusercontent.com/ytc/AIdro_flow', year: 'YouTube', imdbRating: 'Podcast', description: 'Entrevistas e conversas sem filtro.', category: 'youtube' },
-        { id: 'yt:pewdiepie', name: 'PewDiePie', type: 'channel', ytId: 'UC-lHJZR3Gqxm24_Vd_AJ5Yw', poster: 'https://yt3.googleusercontent.com/ytc/AIdro_pewdiepie', year: 'YouTube', imdbRating: '111M+', description: 'O criador mais emblemático do YouTube global.', category: 'youtube' },
-        { id: 'yt:markiplier', name: 'Markiplier', type: 'channel', ytId: 'UC7_YxT-hzdPBtcWhtG5CE-Q', poster: 'https://yt3.googleusercontent.com/ytc/AIdro_markiplier', year: 'YouTube', imdbRating: 'Gaming', description: 'Jogos de terror e produções cinematográficas.', category: 'youtube' }
-      ];
-      validRows.push({
-        id: 'youtube_featured',
-        title: 'Canais em Destaque do YouTube',
-        type: 'channel',
-        category: 'youtube',
-        items: ytItems
-      });
-
       const bodyStr = JSON.stringify({ rows: validRows, catalogs: validRows, addons: ADDONS, tvAddons: TV_ADDONS, movieAddons: MOVIE_ADDONS });
-      if (validRows.length > 0) setEdgeCache('catalogs:v13', bodyStr, 300);
+      if (validRows.length > 0) setEdgeCache('catalogs:v15', bodyStr, 300);
       const catHeaders = { ...headers, 'Cache-Control': 'public, max-age=180, s-maxage=600, stale-while-revalidate=1200' };
       return new Response(bodyStr, { status: 200, headers: catHeaders });
     }

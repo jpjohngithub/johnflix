@@ -42,22 +42,6 @@
       try {
         var obs = new MutationObserver(purge);
         obs.observe(document.documentElement, { childList: true, subtree: true });
-      } catch (_) {}
-    })();
-  </script>
-  <script>
-    window.__onGCastApiAvailable = function (isAvailable) {
-      if (isAvailable && window.cast && window.cast.framework) {
-        window.__gCastReady = true;
-        try {
-          const ctx = cast.framework.CastContext.getInstance();
-          ctx.setOptions({
-            receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
-            autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
-          });
-        } catch (_) {}
-      }
-    };
   </script>
 </head>
 <body>
@@ -355,13 +339,6 @@
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 9-14 9V3z"/></svg>
               <span>Assistir</span>
             </button>
-            <button class="btn btn-glass modal-ghost-btn" id="modalCastBtn" title="Transmitir para TV">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                <path d="M2 16.1A5 5 0 0 1 5.9 20M2 12.05A9 9 0 0 1 9.95 20M2 8V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6"/>
-                <line x1="2" y1="20" x2="2.01" y2="20"/>
-              </svg>
-              <span>Transmitir</span>
-            </button>
             <button class="btn btn-glass modal-ghost-btn" id="modalShareBtn" title="Compartilhar Link Direto">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                 <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
@@ -515,97 +492,7 @@
     </div>
   </div>
 
-  <!-- Cast & Smart TV Modal -->
-  <div class="modal-backdrop hidden" id="castModal">
-    <div class="modal-card modal-sm modal-cast">
-      <button class="modal-close" id="closeCastModalBtn">&times;</button>
-      <div class="modal-body">
-        <div class="cast-modal-header">
-          <div class="cast-badge">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
-              <path d="M2 16.1A5 5 0 0 1 5.9 20M2 12.05A9 9 0 0 1 9.95 20M2 8V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6"/>
-              <line x1="2" y1="20" x2="2.01" y2="20"/>
-            </svg>
-          </div>
-          <h2 class="status-modal-title">Transmitir para TV</h2>
-          <p class="status-modal-sub" id="castModalSub">Escolha como deseja conectar o vídeo à sua Smart TV ou aparelho de streaming.</p>
-        </div>
 
-        <!-- TV Code Pairing (YouTube TV Style) -->
-        <div class="cast-pair-box">
-          <div class="cast-pair-header">
-            <span class="cast-pair-tag">MODO YOUTUBE TV</span>
-            <strong>Vincular com Código de TV</strong>
-          </div>
-          <p class="cast-pair-hint">Abra <strong>johnflix.netlify.app/?tv=1</strong> no navegador da sua TV para ver o código de 6 dígitos:</p>
-          <div class="cast-pair-input-row">
-            <input type="text" id="tvPairCodeInput" class="cast-code-input" placeholder="Ex: 849201" maxlength="6" inputmode="numeric" />
-            <button type="button" class="btn btn-primary btn-sm" id="btnSendToPairedTv">
-              <span>Transmitir na TV</span>
-            </button>
-          </div>
-          <div class="cast-pair-tv-shortcut">
-            <span>Sua TV está sem o site aberto?</span>
-            <button type="button" class="link-btn" id="btnOpenTvModeCurrent">Abrir Modo TV neste aparelho</button>
-          </div>
-        </div>
-
-        <div class="cast-options-list">
-          <button type="button" class="cast-option-card" id="castScreenMirrorBtn">
-            <div class="cast-opt-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
-                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-                <line x1="8" y1="21" x2="16" y2="21"/>
-                <line x1="12" y1="17" x2="12" y2="21"/>
-              </svg>
-            </div>
-            <div class="cast-opt-info">
-              <strong>Espelhar Tela com Vídeo e Imagem</strong>
-              <span>Transmite a tela cheia do filme/série com vídeo e som para a TV</span>
-            </div>
-            <span class="cast-opt-action">Espelhar Tela &rarr;</span>
-          </button>
-
-          <button type="button" class="cast-option-card" id="castStartNativeBtn">
-            <div class="cast-opt-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
-                <path d="M2 16.1A5 5 0 0 1 5.9 20M2 12.05A9 9 0 0 1 9.95 20M2 8V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6"/>
-                <line x1="2" y1="20" x2="2.01" y2="20"/>
-              </svg>
-            </div>
-            <div class="cast-opt-info">
-              <strong>Chromecast / Smart TV Wi-Fi</strong>
-              <span>Transmite via Google Cast, AirPlay ou DLNA nativo</span>
-            </div>
-            <span class="cast-opt-action">Conectar &rarr;</span>
-          </button>
-
-          <button type="button" class="cast-option-card" id="castOpenDirectLinkBtn">
-            <div class="cast-opt-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
-                <rect x="2" y="7" width="20" height="15" rx="2" ry="2"/>
-                <polyline points="17 2 12 7 7 2"/>
-              </svg>
-            </div>
-            <div class="cast-opt-info">
-              <strong>Copiar Link Direto para TV</strong>
-              <span>Compartilhe o link direto para reproduzir no navegador da TV</span>
-            </div>
-            <span class="cast-opt-action">Copiar</span>
-          </button>
-        </div>
-
-        <div class="cast-tv-guide">
-          <h4>💡 Como assistir na Smart TV:</h4>
-          <ul>
-            <li><strong>Samsung (Tizen) / LG (webOS):</strong> Abra o app "Internet / Navegador" da TV e acesse <code>johnflix.netlify.app</code> ou use o código acima.</li>
-            <li><strong>Chromecast / Android TV:</strong> Certifique-se de estar no mesmo Wi-Fi e toque no botão <em>Chromecast</em>.</li>
-            <li><strong>iPhone / Apple TV:</strong> O player suporta AirPlay nativo no Safari.</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <!-- TV Leanback Banner (Active when in TV Mode) -->
   <div class="tv-leanback-banner hidden" id="tvLeanbackBanner">
@@ -636,12 +523,6 @@
         <div class="torrent-telemetry hidden" id="torrentTelemetry">
           <span id="telemetryPeers">0 peers</span> • <span id="telemetrySpeed">0 KB/s</span>
         </div>
-        <button class="btn btn-glass btn-sm player-icon-btn" id="playerCastBtn" title="Transmitir (YouTube Style)" aria-label="Transmitir para TV">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-            <path d="M2 16.1A5 5 0 0 1 5.9 20M2 12.05A9 9 0 0 1 9.95 20M2 8V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6"/>
-            <line x1="2" y1="20" x2="2.01" y2="20"/>
-          </svg>
-        </button>
         <button class="btn btn-glass btn-sm player-icon-btn" id="playerShareBtn" title="Compartilhar Filme" aria-label="Compartilhar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
             <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
@@ -666,7 +547,7 @@
 
     <div class="player-stage" id="playerStage">
       <video id="cloudVideo" controls playsinline webkit-playsinline x-webkit-airplay="allow" preload="auto"></video>
-      <iframe id="cloudEmbed" class="hidden" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true" sandbox="allow-scripts allow-same-origin allow-forms allow-presentation" allow="autoplay; encrypted-media; fullscreen; picture-in-picture; screen-wake-lock" referrerpolicy="no-referrer"></iframe>
+      <iframe id="cloudEmbed" class="hidden" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true" allow="autoplay; encrypted-media; fullscreen; picture-in-picture; screen-wake-lock" referrerpolicy="no-referrer"></iframe>
 
       <div class="player-loader hidden" id="playerLoader">
         <div class="loader-ring"></div>

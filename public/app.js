@@ -2492,9 +2492,18 @@
             <label class="customize-label">Estilo do Menu Superior</label>
             <p class="customize-hint">Escolha se deseja ver o menu com Nomes, apenas Ícones ou Ambos.</p>
             <div class="customize-opt-group" id="navStyleOpts">
-              <button type="button" class="cust-pill-btn ${cfg.navStyle === 'text' ? 'active' : ''}" data-val="text">🔤 Nomes (Texto)</button>
-              <button type="button" class="cust-pill-btn ${cfg.navStyle === 'icons' ? 'active' : ''}" data-val="icons">✨ Apenas Ícones</button>
-              <button type="button" class="cust-pill-btn ${cfg.navStyle === 'both' ? 'active' : ''}" data-val="both">⚡ Ícones + Nomes</button>
+              <button type="button" class="cust-pill-btn ${cfg.navStyle === 'text' ? 'active' : ''}" data-val="text">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+                <span>Nomes (Texto)</span>
+              </button>
+              <button type="button" class="cust-pill-btn ${cfg.navStyle === 'icons' ? 'active' : ''}" data-val="icons">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
+                <span>Apenas Ícones</span>
+              </button>
+              <button type="button" class="cust-pill-btn ${cfg.navStyle === 'both' ? 'active' : ''}" data-val="both">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                <span>Ícones + Nomes</span>
+              </button>
             </div>
 
             <div class="customize-divider"></div>
@@ -2773,12 +2782,80 @@
     }
   }
 
+  function getTvPosterSvg(item) {
+    const name = ((item && item.name) || 'Canal TV').replace(/\s*\(Ao Vivo\)/gi, '').trim();
+    const cleanN = name.toLowerCase();
+    let bg1 = '#130c24', bg2 = '#080410', accent = '#a855f7', badgeColor = '#ef4444', label = 'CANAL DIGITAL';
+    let iconSvg = '<circle cx="200" cy="240" r="54" fill="rgba(255,255,255,0.06)" stroke="' + accent + '" stroke-width="2"/><path d="M182 220 L228 240 L182 260 Z" fill="' + accent + '"/>';
+
+    if (cleanN.includes('globo')) {
+      bg1 = '#091e3a'; bg2 = '#030b14'; accent = '#00a8ff'; label = 'REDE GLOBO';
+      iconSvg = '<circle cx="200" cy="240" r="60" fill="none" stroke="#00a8ff" stroke-width="6"/><circle cx="200" cy="240" r="28" fill="#00a8ff"/><path d="M140 240 Q200 180 260 240 Q200 300 140 240" fill="none" stroke="#38bdf8" stroke-width="4"/>';
+    } else if (cleanN.includes('sbt')) {
+      bg1 = '#3a2004'; bg2 = '#120800'; accent = '#f59e0b'; label = 'REDE SBT';
+      iconSvg = '<circle cx="200" cy="240" r="54" fill="#1e293b" stroke="#f59e0b" stroke-width="5"/><circle cx="200" cy="240" r="42" fill="none" stroke="#fbbf24" stroke-width="4"/><text x="200" y="249" text-anchor="middle" fill="#ffffff" font-family="Arial,sans-serif" font-size="28" font-weight="900" letter-spacing="1">SBT</text>';
+    } else if (cleanN.includes('record')) {
+      bg1 = '#061a3d'; bg2 = '#020919'; accent = '#3b82f6'; label = cleanN.includes('news') ? 'RECORD NEWS' : 'RECORD TV';
+      iconSvg = '<circle cx="200" cy="240" r="56" fill="none" stroke="#3b82f6" stroke-width="5"/><polygon points="200,195 240,240 200,285 160,240" fill="#60a5fa"/><circle cx="200" cy="240" r="16" fill="#1e3a8a"/>';
+    } else if (cleanN.includes('cnn')) {
+      bg1 = '#3a0808'; bg2 = '#120202'; accent = '#ef4444'; label = 'CNN BRASIL';
+      iconSvg = '<rect x="130" y="210" width="140" height="60" rx="8" fill="#cc0000"/><text x="200" y="252" text-anchor="middle" fill="#ffffff" font-family="Arial Black,sans-serif" font-size="34" font-weight="900" letter-spacing="2">CNN</text>';
+    } else if (cleanN.includes('cultura')) {
+      bg1 = '#062b1b'; bg2 = '#021009'; accent = '#10b981'; label = 'TV CULTURA';
+      iconSvg = '<circle cx="200" cy="240" r="54" fill="none" stroke="#10b981" stroke-width="5"/><circle cx="200" cy="240" r="32" fill="#047857"/><polygon points="200,215 224,240 200,265 176,240" fill="#a7f3d0"/>';
+    } else if (cleanN.includes('redetv')) {
+      bg1 = '#130d36'; bg2 = '#060317'; accent = '#06b6d4'; label = 'REDETV!';
+      iconSvg = '<circle cx="200" cy="240" r="54" fill="none" stroke="#06b6d4" stroke-width="5"/><circle cx="180" cy="235" r="26" fill="#22c55e" fill-opacity="0.8"/><circle cx="220" cy="245" r="24" fill="#06b6d4" fill-opacity="0.8"/>';
+    } else if (cleanN.includes('band')) {
+      bg1 = '#1f2404'; bg2 = '#0b0c01'; accent = '#eab308'; label = 'REDE BANDEIRANTES';
+      iconSvg = '<ellipse cx="200" cy="240" rx="58" ry="36" fill="none" stroke="#eab308" stroke-width="5"/><circle cx="200" cy="240" r="20" fill="#22c55e"/>';
+    }
+
+    const shortName = name.length > 20 ? name.slice(0, 19) + '…' : name;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 480" width="320" height="480">
+      <defs>
+        <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="${bg1}"/>
+          <stop offset="60%" stop-color="${bg2}"/>
+          <stop offset="100%" stop-color="#020105"/>
+        </linearGradient>
+        <radialGradient id="glow" cx="50%" cy="45%" r="55%">
+          <stop offset="0%" stop-color="${accent}" stop-opacity="0.28"/>
+          <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#bg)"/>
+      <circle cx="160" cy="216" r="140" fill="url(#glow)"/>
+      <rect x="16" y="16" width="288" height="448" rx="20" fill="none" stroke="${accent}" stroke-opacity="0.3" stroke-width="1.8"/>
+      <g transform="translate(30, 32)">
+        <rect width="90" height="24" rx="12" fill="${badgeColor}"/>
+        <circle cx="14" cy="12" r="4.5" fill="#ffffff"/>
+        <text x="27" y="16" fill="#ffffff" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif" font-size="10.5" font-weight="900" letter-spacing="1">AO VIVO</text>
+      </g>
+      <g transform="translate(-40, -24)">
+        ${iconSvg}
+      </g>
+      <text x="160" y="340" text-anchor="middle" fill="#ffffff" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif" font-size="20" font-weight="800">${shortName}</text>
+      <text x="160" y="370" text-anchor="middle" fill="${accent}" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif" font-size="11" font-weight="700" letter-spacing="2">${label}</text>
+      <line x1="40" y1="420" x2="280" y2="420" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+      <text x="160" y="442" text-anchor="middle" fill="rgba(255,255,255,0.35)" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif" font-size="10" font-weight="600" letter-spacing="1">JOHNFLIX TV HD</text>
+    </svg>`;
+    return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+  }
+
   function createMediaCard(item, opts = {}) {
     const card = document.createElement('article');
     card.className = opts.isTop10 ? 'media-card top10-card' : 'media-card';
     card.setAttribute('tabindex', '0');
     card.setAttribute('role', 'button');
-    const fallbackPoster = `https://images.metahub.space/poster/medium/${item.id}/img`;
+
+    const isTv = item.type === 'tv';
+    if (isTv && (!item.poster || item.poster.includes('wikimedia') || item.poster.includes('placehold'))) {
+      item.poster = getTvPosterSvg(item);
+    }
+    const fallbackPoster = isTv
+      ? getTvPosterSvg(item)
+      : `https://images.metahub.space/poster/medium/${item.id}/img`;
     const inList = isInMyList(item.id);
 
     let progressHtml = '';
@@ -2796,9 +2873,13 @@
       ? escapeHtml(item.epLabel)
       : [item.year, genreStr, item.imdbRating ? `★ ${item.imdbRating}` : ''].filter(Boolean).join(' • ');
 
+    const posterErr = isTv
+      ? `this.onerror=null;this.src='${getTvPosterSvg(item)}'`
+      : `this.onerror=null;this.src='https://placehold.co/300x450/160b2b/a855f7?text=${encodeURIComponent(item.name)}'`;
+
     const innerCardHtml = `
       <div class="card-poster-wrap">
-        <img class="card-poster" src="${item.poster || fallbackPoster}" alt="${escapeHtml(item.name)}" loading="lazy" decoding="async" fetchpriority="low" onerror="this.onerror=null;this.src='https://placehold.co/300x450/160b2b/a855f7?text=${encodeURIComponent(item.name)}'" />
+        <img class="card-poster" src="${item.poster || fallbackPoster}" alt="${escapeHtml(item.name)}" loading="lazy" decoding="async" fetchpriority="low" onerror="${posterErr}" />
         <div class="card-quick-actions">
           <button class="card-action-btn mylist-btn ${inList ? 'active' : ''}" title="${inList ? 'Remover da Minha Lista' : 'Salvar na Minha Lista'}">${inList ? BOOKF_ICON : BOOK_ICON}</button>
           <button class="card-action-btn pl-btn" title="Adicionar à Playlist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg></button>
