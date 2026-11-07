@@ -2118,10 +2118,10 @@ export default async (request) => {
           }
           if (addon.id === 'videasy') {
             const isSeries = type === 'series';
-            const multiEmbed = isSeries
-              ? 'https://multiembed.mov/?video_id=' + baseImdb + '&s=' + epSeason + '&e=' + epNumber
-              : 'https://multiembed.mov/?video_id=' + baseImdb;
-            return { addon, rawStreams: [{ name: 'Videasy 4K', title: '⚡ Servidor MultiEmbed 4K/FHD', embedUrl: multiEmbed }] };
+            const videasyEmbed = isSeries
+              ? 'https://player.videasy.to/tv/' + baseImdb + '/' + epSeason + '/' + epNumber
+              : 'https://player.videasy.to/movie/' + baseImdb;
+            return { addon, rawStreams: [{ name: 'Videasy 4K', title: '⚡ Servidor Videasy 4K/FHD', embedUrl: videasyEmbed }] };
           }
           if (addon.id === 'framextv') {
             const tmdbId = await tmdbPromise;
@@ -2190,22 +2190,10 @@ export default async (request) => {
         return 0;
       });
 
-      // Map: each P2P addon gets a unique embed provider so servers are truly different
-      const P2P_EMBED_MAP = {
-        micoleao:    (imdb, s, e, isSeries) => isSeries ? `https://superflixapi.fun/serie/${imdb}/${s}/${e}#noBackground#noEpList#noLink` : `https://superflixapi.fun/filme/${imdb}#noBackground#noLink`,
-        brazuca:     (imdb, s, e, isSeries) => isSeries ? `https://vidsrc.pm/embed/tv/${imdb}/${s}/${e}` : `https://vidsrc.pm/embed/movie/${imdb}`,
-        magneto:     (imdb, s, e, isSeries) => isSeries ? `https://multiembed.mov/?video_id=${imdb}&s=${s}&e=${e}` : `https://multiembed.mov/?video_id=${imdb}`,
-        cinetorrent: (imdb, s, e, isSeries) => isSeries ? `https://autoembed.co/tv/imdb/${imdb}-${s}-${e}` : `https://autoembed.co/movie/imdb/${imdb}`,
-        guindex:     (imdb, s, e, isSeries) => isSeries ? `https://embed.smashystream.com/playere.php?imdb=${imdb}&s=${s}&e=${e}` : `https://embed.smashystream.com/playere.php?imdb=${imdb}`,
-        torrentio:   (imdb, s, e, isSeries) => isSeries ? `https://www.2embed.cc/embedtv/${imdb}&s=${s}&e=${e}` : `https://www.2embed.cc/embed/${imdb}`,
-        froststream: (imdb, s, e, isSeries) => isSeries ? `https://vidsrc.me/embed/tv?imdb=${imdb}&season=${s}&episode=${e}` : `https://vidsrc.me/embed/movie?imdb=${imdb}`,
-      };
-
       const universalEmbedUrl = type === 'series'
-        ? `https://vidsrc.me/embed/tv?imdb=${baseImdb}&season=${epSeason}&episode=${epNumber}`
-        : `https://vidsrc.me/embed/movie?imdb=${baseImdb}`;
+        ? `https://superflixapi.fun/serie/${baseImdb}/${epSeason}/${epNumber}#noBackground#noEpList#noLink`
+        : `https://superflixapi.fun/filme/${baseImdb}#noBackground#noLink`;
 
-      // Embeds come FIRST — they are more reliable than proxied direct streams
       const sortStreamsUniversal = (a, b) => {
         const rank = (p) => (p === 'embed' ? 0 : p === 'hls' ? 1 : p === 'direct' ? 2 : 3);
         if (rank(a.playType) !== rank(b.playType)) return rank(a.playType) - rank(b.playType);
@@ -2220,14 +2208,8 @@ export default async (request) => {
           const filteredRaw = rawStreams.filter((s) => !isBadSubServer(s));
           if (filteredRaw.length === 0) return null;
 
-          // For P2P addons, give each addon its unique embed URL so servers are truly different
-          const p2pEmbedFn = P2P_EMBED_MAP[addon.id];
-          const addonEmbedUrl = p2pEmbedFn
-            ? p2pEmbedFn(baseImdb, epSeason, epNumber, type === 'series')
-            : universalEmbedUrl;
-
           const streams = filteredRaw
-            .map((s, idx) => normalizeStream(s, addon, directPool, idx, englishPool, addonEmbedUrl))
+            .map((s, idx) => normalizeStream(s, addon, directPool, idx, englishPool, universalEmbedUrl))
             .filter((s) => s.proxyUrl);
 
           if (streams.length === 0) return null;
@@ -2261,64 +2243,90 @@ export default async (request) => {
         const isSeries = type === 'series';
         const fallbackList = [
           {
-            serverLabel: 'SuperFlix • Dublado BR #1',
+            addonId: 'superflix',
+            addonName: 'SuperFlix Oficial',
+            addonBadge: 'DUBLADO BR',
+            addonColor: '#e11d48',
+            rawName: 'SuperFlix Oficial',
+            rawTitle: 'SuperFlix Oficial • Dublado BR',
+            serverLabel: 'SuperFlix Oficial • Dublado BR',
             quality: '1080p Full HD',
+            is4k: false,
+            isDub: true,
             audio: 'Dublado PT-BR',
+            seeds: null,
             playType: 'embed',
+            directUrl: null,
+            embedUrl: isSeries ? `https://superflixapi.fun/serie/${baseImdb}/${epSeason}/${epNumber}#noBackground#noLink` : `https://superflixapi.fun/filme/${baseImdb}#noBackground#noLink`,
             proxyUrl: isSeries ? `https://superflixapi.fun/serie/${baseImdb}/${epSeason}/${epNumber}#noBackground#noLink` : `https://superflixapi.fun/filme/${baseImdb}#noBackground#noLink`
           },
           {
-            serverLabel: 'VidSrc.me • Multiserver #2',
+            addonId: 'vidsrc',
+            addonName: 'VidSrc BR',
+            addonBadge: 'MULTISERVER',
+            addonColor: '#3b82f6',
+            rawName: 'VidSrc BR',
+            rawTitle: 'VidSrc BR • Multiserver',
+            serverLabel: 'VidSrc BR • Multiserver',
             quality: '1080p Full HD',
+            is4k: false,
+            isDub: false,
             audio: 'Multi-Áudio / Legendado',
+            seeds: null,
             playType: 'embed',
+            directUrl: null,
+            embedUrl: isSeries ? `https://vidsrc.me/embed/tv?imdb=${baseImdb}&season=${epSeason}&episode=${epNumber}` : `https://vidsrc.me/embed/movie?imdb=${baseImdb}`,
             proxyUrl: isSeries ? `https://vidsrc.me/embed/tv?imdb=${baseImdb}&season=${epSeason}&episode=${epNumber}` : `https://vidsrc.me/embed/movie?imdb=${baseImdb}`
           },
           {
-            serverLabel: 'MultiEmbed • 4K/FHD #3',
+            addonId: 'autoembed',
+            addonName: 'AutoEmbed Cloud',
+            addonBadge: 'FAST CLOUD',
+            addonColor: '#10b981',
+            rawName: 'AutoEmbed Cloud',
+            rawTitle: 'AutoEmbed Cloud • Servidor Rápido',
+            serverLabel: 'AutoEmbed Cloud • Servidor Rápido',
             quality: '1080p Full HD',
-            audio: 'Multi-Áudio / Dublado',
-            playType: 'embed',
-            proxyUrl: isSeries ? `https://multiembed.mov/?video_id=${baseImdb}&s=${epSeason}&e=${epNumber}` : `https://multiembed.mov/?video_id=${baseImdb}`
-          },
-          {
-            serverLabel: 'AutoEmbed • Rápido #4',
-            quality: '1080p Full HD',
+            is4k: false,
+            isDub: false,
             audio: 'Multi-Áudio / Legendado',
+            seeds: null,
             playType: 'embed',
+            directUrl: null,
+            embedUrl: isSeries ? `https://autoembed.co/tv/imdb/${baseImdb}-${epSeason}-${epNumber}` : `https://autoembed.co/movie/imdb/${baseImdb}`,
             proxyUrl: isSeries ? `https://autoembed.co/tv/imdb/${baseImdb}-${epSeason}-${epNumber}` : `https://autoembed.co/movie/imdb/${baseImdb}`
           },
           {
-            serverLabel: 'VidSrc.pm • Cloud #5',
+            addonId: 'videasy',
+            addonName: 'Videasy 4K',
+            addonBadge: 'UNIVERSAL',
+            addonColor: '#8b5cf6',
+            rawName: 'Videasy 4K',
+            rawTitle: 'Videasy 4K • Universal',
+            serverLabel: 'Videasy 4K • Universal',
             quality: '1080p Full HD',
-            audio: 'Multi-Áudio / Legendado',
+            is4k: false,
+            isDub: true,
+            audio: 'Multi-Áudio / Dublado',
+            seeds: null,
             playType: 'embed',
-            proxyUrl: isSeries ? `https://vidsrc.pm/embed/tv/${baseImdb}/${epSeason}/${epNumber}` : `https://vidsrc.pm/embed/movie/${baseImdb}`
+            directUrl: null,
+            embedUrl: isSeries ? `https://player.videasy.to/tv/${baseImdb}/${epSeason}/${epNumber}` : `https://player.videasy.to/movie/${baseImdb}`,
+            proxyUrl: isSeries ? `https://player.videasy.to/tv/${baseImdb}/${epSeason}/${epNumber}` : `https://player.videasy.to/movie/${baseImdb}`
           }
-        ].map((s) => ({
-          addonId: 'universal_cloud',
-          addonName: 'Cloud Universal',
-          addonBadge: 'CLOUD VIP',
-          addonColor: '#a855f7',
-          rawName: 'Cloud Universal',
-          rawTitle: s.serverLabel,
-          is4k: false,
-          isDub: true,
-          seeds: null,
-          directUrl: null,
-          embedUrl: s.proxyUrl,
-          ...s
-        }));
+        ];
 
         allStreams = fallbackList;
-        addonResults.push({
-          addonId: 'universal_cloud',
-          addonName: 'Cloud Universal',
-          badge: 'CLOUD VIP',
-          color: '#a855f7',
-          isEnglishOnly: false,
-          count: fallbackList.length,
-          streams: fallbackList
+        fallbackList.forEach((s) => {
+          addonResults.push({
+            addonId: s.addonId,
+            addonName: s.addonName,
+            badge: s.addonBadge,
+            color: s.addonColor,
+            isEnglishOnly: false,
+            count: 1,
+            streams: [s]
+          });
         });
       }
 

@@ -3376,16 +3376,6 @@
     state.currentStreams = [];
     state.activeAddonFilter = 'all';
 
-    // Update URL query string with unique link for this title
-    try {
-      const shareUrl = new URL(window.location.href);
-      shareUrl.searchParams.set('watch', item.id);
-      if (item.type) shareUrl.searchParams.set('type', item.type);
-      if (customSeason) shareUrl.searchParams.set('s', customSeason);
-      if (customEp) shareUrl.searchParams.set('e', customEp);
-      window.history.replaceState({ watchId: item.id }, '', shareUrl.toString());
-    } catch (_) {}
-
     el.detailsModal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 
@@ -3653,54 +3643,54 @@
         const e = parts[2] || '1';
         const emergencyStreams = [
           {
-            addonId: 'universal_cloud',
-            addonName: 'Cloud Universal',
-            addonBadge: 'CLOUD VIP',
-            addonColor: '#8b5cf6',
-            serverLabel: 'MultiEmbed • 4K/FHD #1',
-            quality: '1080p Full HD',
-            audio: 'Multi-Áudio / Dublado',
-            playType: 'embed',
-            proxyUrl: isSeries ? `https://multiembed.mov/?video_id=${baseImdb}&s=${s}&e=${e}` : `https://multiembed.mov/?video_id=${baseImdb}`
-          },
-          {
-            addonId: 'universal_cloud',
-            addonName: 'Cloud Universal',
+            addonId: 'superflix',
+            addonName: 'SuperFlix Oficial',
             addonBadge: 'DUBLADO BR',
             addonColor: '#e11d48',
-            serverLabel: 'SuperFlix • Dublado Oficial #2',
+            serverLabel: 'SuperFlix Oficial • Dublado BR',
             quality: '1080p Full HD',
             audio: 'Dublado PT-BR',
             playType: 'embed',
             proxyUrl: isSeries ? `https://superflixapi.fun/serie/${baseImdb}/${s}/${e}#noBackground#noLink` : `https://superflixapi.fun/filme/${baseImdb}#noBackground#noLink`
           },
           {
-            addonId: 'universal_cloud',
-            addonName: 'Cloud Universal',
-            addonBadge: 'CLOUD VIP',
+            addonId: 'vidsrc',
+            addonName: 'VidSrc BR',
+            addonBadge: 'MULTISERVER',
             addonColor: '#3b82f6',
-            serverLabel: 'VidSrc • Multiserver #3',
+            serverLabel: 'VidSrc BR • Multiserver',
             quality: '1080p Full HD',
-            audio: 'Multi-Áudio / Dublado',
+            audio: 'Multi-Áudio / Legendado',
             playType: 'embed',
             proxyUrl: isSeries ? `https://vidsrc.me/embed/tv?imdb=${baseImdb}&season=${s}&episode=${e}` : `https://vidsrc.me/embed/movie?imdb=${baseImdb}`
           },
           {
-            addonId: 'universal_cloud',
-            addonName: 'Cloud Universal',
+            addonId: 'autoembed',
+            addonName: 'AutoEmbed Cloud',
             addonBadge: 'FAST CLOUD',
             addonColor: '#10b981',
-            serverLabel: 'AutoEmbed • Rápido #4',
+            serverLabel: 'AutoEmbed Cloud • Servidor Rápido',
             quality: '1080p Full HD',
             audio: 'Multi-Áudio / Legendado',
             playType: 'embed',
             proxyUrl: isSeries ? `https://autoembed.co/tv/imdb/${baseImdb}-${s}-${e}` : `https://autoembed.co/movie/imdb/${baseImdb}`
+          },
+          {
+            addonId: 'videasy',
+            addonName: 'Videasy 4K',
+            addonBadge: 'UNIVERSAL',
+            addonColor: '#8b5cf6',
+            serverLabel: 'Videasy 4K • Universal',
+            quality: '1080p Full HD',
+            audio: 'Multi-Áudio / Dublado',
+            playType: 'embed',
+            proxyUrl: isSeries ? `https://player.videasy.to/tv/${baseImdb}/${s}/${e}` : `https://player.videasy.to/movie/${baseImdb}`
           }
         ];
         state.currentStreams = emergencyStreams;
         state.activeAddonFilter = 'all';
         el.streamCounter.textContent = emergencyStreams.length;
-        renderAddonFilterTabs([{ addonId: 'universal_cloud', addonName: 'Cloud Universal', count: emergencyStreams.length }]);
+        renderAddonFilterTabs(emergencyStreams.map((s) => ({ addonId: s.addonId, addonName: s.addonName, count: 1 })));
         renderStreamsList();
         if (autoPlayFirst || state.pendingAutoPlay) {
           state.pendingAutoPlay = false;
@@ -4500,18 +4490,25 @@
       return true;
     }
 
-    // Ultimate fallback: if every stream in the list failed on this browser/device, launch Universal Cloud Multi-Server Embed
+    // Ultimate fallback: if every stream in the list failed on this browser/device, launch SuperFlix Oficial
     if (state.currentItem && state.currentItem.id && String(state.currentItem.id).startsWith('tt') && el.cloudEmbed) {
       const baseImdb = String(state.currentItem.id).split(':')[0];
-      const fallbackEmbedUrl = state.currentItem.type === 'series'
-        ? `https://vidsrc.me/embed/tv?imdb=${baseImdb}&season=${state.currentSeason || 1}&episode=${state.currentEpisode || 1}`
-        : `https://vidsrc.me/embed/movie?imdb=${baseImdb}`;
+      const isSeries = state.currentItem.type === 'series';
+      const s = state.currentSeason || 1;
+      const e = state.currentEpisode || 1;
+      const fallbackEmbedUrl = isSeries
+        ? `https://superflixapi.fun/serie/${baseImdb}/${s}/${e}#noBackground#noLink`
+        : `https://superflixapi.fun/filme/${baseImdb}#noBackground#noLink`;
       if (!failedStreamKeys.has(fallbackEmbedUrl)) {
         failedStreamKeys.add(fallbackEmbedUrl);
         launchCloudPlayer({
-          serverLabel: 'Cloud Universal 4K/FHD',
-          quality: '1080p / 4K UHD',
-          audio: 'Multi-Áudio / Legendado',
+          addonId: 'superflix',
+          addonName: 'SuperFlix Oficial',
+          addonBadge: 'DUBLADO BR',
+          addonColor: '#e11d48',
+          serverLabel: 'SuperFlix Oficial • Dublado BR',
+          quality: '1080p Full HD',
+          audio: 'Dublado PT-BR',
           playType: 'embed',
           proxyUrl: fallbackEmbedUrl
         }, true);
