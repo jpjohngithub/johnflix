@@ -587,7 +587,7 @@ function isBadSubServer(rawStream) {
   return false;
 }
 
-function normalizeStream(rawStream, addon, fallbackDirectUrls = [], idx = 0, englishPool = [], universalEmbedUrl = '') {
+function normalizeStream(rawStream, addon, fallbackDirectUrls = [], idx = 0, englishPool = [], universalEmbedUrl = '', baseImdb = '', epSeason = '1', epNumber = '1') {
   const titleText = `${rawStream.name || ''} ${rawStream.title || ''} ${rawStream.description || ''}`;
   const is4k = /2160p|4k|uhd/i.test(titleText);
   const is1080p = /1080p|full\s*hd|fhd/i.test(titleText);
@@ -623,7 +623,10 @@ function normalizeStream(rawStream, addon, fallbackDirectUrls = [], idx = 0, eng
     if (streamUrl.includes('.m3u8') || streamUrl.includes('fenixtv.fenixhub.online/proxy') || streamUrl.includes('fenixtv.fenixhub.online/direct.m3u8')) {
       playType = 'hls';
       proxyUrl = streamUrl;
-    } else if (rawStream.isDirectCors || streamUrl.includes('workers.dev')) {
+    } else if (rawStream.isDirectCors || streamUrl.includes('workers.dev') || streamUrl.includes('fenixflix.fenixhub.online') || streamUrl.includes('flixnest.app') || streamUrl.includes('hakunaymatata.com')) {
+      playType = 'direct';
+      proxyUrl = streamUrl;
+    } else if (streamUrl.startsWith('https://')) {
       playType = 'direct';
       proxyUrl = streamUrl;
     } else {
@@ -634,10 +637,28 @@ function normalizeStream(rawStream, addon, fallbackDirectUrls = [], idx = 0, eng
     playType = 'embed';
     proxyUrl = embedUrl;
   } else if (rawStream.infoHash) {
-    if (universalEmbedUrl) {
-      playType = 'embed';
-      proxyUrl = universalEmbedUrl;
-      embedUrl = universalEmbedUrl;
+    const pool = (forceEn && englishPool.length > 0) ? englishPool : fallbackDirectUrls;
+    if (pool.length > 0) {
+      const picked = pool[idx % pool.length];
+      playType = 'direct';
+      streamUrl = picked.directUrl;
+      proxyUrl = streamUrl;
+    } else {
+      const isSeries = universalEmbedUrl.includes('/serie/') || universalEmbedUrl.includes('/tv');
+      if (addon.id === 'cinetorrent') {
+        playType = 'embed';
+        proxyUrl = isSeries ? `https://player.videasy.to/tv/${baseImdb}/${epSeason}/${epNumber}` : `https://player.videasy.to/movie/${baseImdb}`;
+      } else if (addon.id === 'magneto') {
+        playType = 'embed';
+        proxyUrl = isSeries ? `https://autoembed.co/tv/imdb/${baseImdb}-${epSeason}-${epNumber}` : `https://autoembed.co/movie/imdb/${baseImdb}`;
+      } else if (addon.id === 'brazuca' || addon.id === 'torrentio') {
+        playType = 'embed';
+        proxyUrl = isSeries ? `https://vidsrc.me/embed/tv?imdb=${baseImdb}&season=${epSeason}&episode=${epNumber}` : `https://vidsrc.me/embed/movie?imdb=${baseImdb}`;
+      } else {
+        playType = 'embed';
+        proxyUrl = universalEmbedUrl;
+      }
+      embedUrl = proxyUrl;
     }
   }
 
@@ -667,7 +688,7 @@ function normalizeStream(rawStream, addon, fallbackDirectUrls = [], idx = 0, eng
     playType,
     directUrl: streamUrl,
     proxyUrl,
-    embedUrl: embedUrl || universalEmbedUrl || null,
+    embedUrl: embedUrl || (playType === 'embed' ? universalEmbedUrl : null),
     infoHash: rawStream.infoHash ? rawStream.infoHash.toLowerCase() : null,
     fileIdx: rawStream.fileIdx !== undefined ? rawStream.fileIdx : null
   };
@@ -2209,7 +2230,7 @@ export default async (request) => {
           if (filteredRaw.length === 0) return null;
 
           const streams = filteredRaw
-            .map((s, idx) => normalizeStream(s, addon, directPool, idx, englishPool, universalEmbedUrl))
+            .map((s, idx) => normalizeStream(s, addon, directPool, idx, englishPool, universalEmbedUrl, baseImdb, epSeason, epNumber))
             .filter((s) => s.proxyUrl);
 
           if (streams.length === 0) return null;

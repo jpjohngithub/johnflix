@@ -4616,9 +4616,13 @@
       el.cloudEmbed.onload = () => {
         el.playerLoader.classList.add('hidden');
       };
-      if (el.cloudEmbed.src !== stream.proxyUrl) {
-        el.cloudEmbed.src = stream.proxyUrl;
-      }
+      const embedTarget = stream.proxyUrl || stream.embedUrl;
+      el.cloudEmbed.src = 'about:blank';
+      setTimeout(() => {
+        if (state.currentStream === stream && !el.playerOverlay.classList.contains('hidden')) {
+          el.cloudEmbed.src = embedTarget;
+        }
+      }, 40);
       setTimeout(() => el.playerLoader.classList.add('hidden'), 1200);
 
       // Embed black screen watchdog: show switch button if iframe hangs
@@ -4841,25 +4845,17 @@
 
     // Engine 1: Direct Cloud MP4 Stream (with direct URL fallback + automatic failover to next working server)
     el.cloudVideo.pause();
-    el.cloudVideo.src = stream.proxyUrl;
+    el.cloudVideo.src = stream.directUrl || stream.proxyUrl;
     el.cloudVideo.load();
     startVideoPlayback();
 
     let retryDirectTried = false;
     el.cloudVideo.onerror = () => {
-      if (!retryDirectTried && stream.directUrl && stream.directUrl !== stream.proxyUrl && !stream.directUrl.startsWith('http://')) {
+      if (!retryDirectTried && stream.proxyUrl && stream.directUrl && stream.directUrl !== stream.proxyUrl) {
         retryDirectTried = true;
-        el.cloudVideo.src = stream.directUrl;
+        el.cloudVideo.src = stream.proxyUrl;
         el.cloudVideo.load();
         startVideoPlayback();
-        return;
-      }
-      if (stream.embedUrl && el.cloudEmbed) {
-        el.cloudVideo.pause();
-        el.cloudVideo.classList.add('hidden');
-        el.cloudEmbed.classList.remove('hidden');
-        el.cloudEmbed.src = stream.embedUrl;
-        el.playerLoader.classList.add('hidden');
         return;
       }
       tryNextWorkingStream(stream);
@@ -4878,15 +4874,16 @@
       return;
     }
     state.currentStreams.forEach((s) => {
+      const isCurrent = state.currentStream && (state.currentStream === s || state.currentStream.proxyUrl === s.proxyUrl);
       const item = document.createElement('div');
-      item.className = 'drawer-stream-row';
+      item.className = `drawer-stream-row${isCurrent ? ' active' : ''}`;
       item.innerHTML = `
         <span class="stream-dot" style="background:${s.addonColor || 'var(--purple-bright)'}"></span>
         <div class="drawer-stream-info">
           <strong>${escapeHtml(s.serverLabel)}</strong>
           <span>${escapeHtml(s.audio || 'Dublado / Legendado')} • ${escapeHtml(s.quality || 'HD')}</span>
         </div>
-        <span class="drawer-stream-status">Assistir</span>
+        <span class="drawer-stream-status">${isCurrent ? 'Reproduzindo' : 'Assistir'}</span>
       `;
       item.addEventListener('click', (e) => {
         e.stopPropagation();
