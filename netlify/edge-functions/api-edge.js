@@ -2109,17 +2109,17 @@ export default async (request) => {
               }]
             };
           }
-          if (addon.id === 'warezcdn' || addon.id === 'videasy') {
+          if (addon.id === 'warezcdn' || addon.id === 'videasy' || addon.id === 'multiembed') {
             const isSeries = type === 'series';
-            const warezEmbed = isSeries
-              ? 'https://embed.warezcdn.net/serie/' + baseImdb + '/' + epSeason + '/' + epNumber
-              : 'https://embed.warezcdn.net/filme/' + baseImdb;
+            const multiEmbed = isSeries
+              ? 'https://multiembed.mov/?video_id=' + baseImdb + '&s=' + epSeason + '&e=' + epNumber
+              : 'https://multiembed.mov/?video_id=' + baseImdb;
             return {
               addon,
               rawStreams: [{
-                name: 'WarezCDN Oficial',
-                title: '🇧🇷 Servidor Dublado HD (WarezCDN)',
-                embedUrl: warezEmbed
+                name: 'MultiEmbed VIP',
+                title: '⚡ Servidor MultiEmbed 4K/FHD',
+                embedUrl: multiEmbed
               }]
             };
           }
@@ -2219,8 +2219,8 @@ export default async (request) => {
       });
 
       const universalEmbedUrl = type === 'series'
-        ? `https://embed.warezcdn.net/serie/${baseImdb}/${epSeason}/${epNumber}`
-        : `https://embed.warezcdn.net/filme/${baseImdb}`;
+        ? `https://vidsrc.me/embed/tv?imdb=${baseImdb}&season=${epSeason}&episode=${epNumber}`
+        : `https://vidsrc.me/embed/movie?imdb=${baseImdb}`;
 
       const sortStreamsUniversal = (a, b) => {
         const rank = (p) => (p === 'direct' ? 0 : p === 'hls' ? 1 : p === 'embed' ? 2 : 3);

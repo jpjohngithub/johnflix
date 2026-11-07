@@ -861,8 +861,6 @@
 
     // Player controls
     el.closePlayerBtn.addEventListener('click', stopAndClosePlayer);
-    if (el.playerShareBtn) el.playerShareBtn.addEventListener('click', () => shareCurrentMedia());
-    if (el.modalShareBtn) el.modalShareBtn.addEventListener('click', () => shareCurrentMedia());
     if (el.playerDownloadBtn) el.playerDownloadBtn.addEventListener('click', () => downloadCurrentMedia());
     el.switchServerBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -3657,13 +3655,13 @@
           {
             addonId: 'universal_cloud',
             addonName: 'Cloud Universal',
-            addonBadge: 'DUBLADO BR',
-            addonColor: '#a855f7',
-            serverLabel: 'WarezCDN • Dublado Oficial #1',
+            addonBadge: 'CLOUD VIP',
+            addonColor: '#8b5cf6',
+            serverLabel: 'MultiEmbed • 4K/FHD #1',
             quality: '1080p Full HD',
-            audio: 'Dublado PT-BR',
+            audio: 'Multi-Áudio / Dublado',
             playType: 'embed',
-            proxyUrl: isSeries ? `https://embed.warezcdn.net/serie/${baseImdb}/${s}/${e}` : `https://embed.warezcdn.net/filme/${baseImdb}`
+            proxyUrl: isSeries ? `https://multiembed.mov/?video_id=${baseImdb}&s=${s}&e=${e}` : `https://multiembed.mov/?video_id=${baseImdb}`
           },
           {
             addonId: 'universal_cloud',
@@ -4506,8 +4504,8 @@
     if (state.currentItem && state.currentItem.id && String(state.currentItem.id).startsWith('tt') && el.cloudEmbed) {
       const baseImdb = String(state.currentItem.id).split(':')[0];
       const fallbackEmbedUrl = state.currentItem.type === 'series'
-        ? `https://embed.warezcdn.net/serie/${baseImdb}/${state.currentSeason || 1}/${state.currentEpisode || 1}`
-        : `https://embed.warezcdn.net/filme/${baseImdb}`;
+        ? `https://vidsrc.me/embed/tv?imdb=${baseImdb}&season=${state.currentSeason || 1}&episode=${state.currentEpisode || 1}`
+        : `https://vidsrc.me/embed/movie?imdb=${baseImdb}`;
       if (!failedStreamKeys.has(fallbackEmbedUrl)) {
         failedStreamKeys.add(fallbackEmbedUrl);
         launchCloudPlayer({
