@@ -1446,55 +1446,28 @@ export default async (request) => {
             .map((s, idx) => normalizeStream(s, addon, directPool, idx, englishPool, universalEmbedUrl, baseImdb, epSeason, epNumber))
             .filter((s) => s.proxyUrl);
 
-          if (streams.length === 0 && baseImdb) {
-            const isSeries = type === 'series';
-            let backupStream = null;
-            if (directPool.length > 0 && !addon.isEnglishOnly) {
-              const picked = directPool[Math.abs(strHash(addon.id)) % directPool.length];
-              backupStream = {
-                addonId: addon.id,
-                addonName: addon.name,
-                addonBadge: addon.badge,
-                addonColor: addon.color,
-                serverLabel: `${addon.name} • ${picked.name || 'Servidor Cloud 1080p'}`,
-                rawName: addon.name,
-                rawTitle: `${addon.name} • ${addon.badge}`,
-                quality: picked.is4k ? '4K UHD' : '1080p Full HD',
-                is4k: picked.is4k,
-                isDub: picked.isDub,
-                audio: picked.isDub ? 'Dublado PT-BR' : 'Multi-Áudio / Dual',
-                seeds: null,
-                playType: 'direct',
-                directUrl: picked.directUrl,
-                proxyUrl: picked.directUrl,
-                embedUrl: null
-              };
-            } else {
-              if (directPool.length > 0) {
-              const pool = (addon.isEnglishOnly && englishPool.length > 0) ? englishPool : directPool;
-              const picked = pool[Math.abs(strHash(addon.id)) % pool.length];
-              backupStream = {
-                addonId: addon.id,
-                addonName: addon.name,
-                addonBadge: addon.badge,
-                addonColor: addon.color,
-                serverLabel: `${addon.name} • ${picked.name || 'Servidor Cloud 1080p'}`,
-                rawName: addon.name,
-                rawTitle: `${addon.name} • ${addon.badge}`,
-                quality: picked.is4k ? '4K UHD' : '1080p Full HD',
-                is4k: picked.is4k,
-                isDub: picked.isDub,
-                audio: picked.isDub ? 'Dublado PT-BR' : 'Multi-Áudio / Dual',
-                seeds: null,
-                playType: 'direct',
-                directUrl: picked.directUrl,
-                proxyUrl: picked.directUrl,
-                embedUrl: null
-              };
-              streams = [backupStream];
-            } else {
-              streams = [];
-            }
+          if (streams.length === 0 && baseImdb && directPool.length > 0) {
+            const pool = (addon.isEnglishOnly && englishPool.length > 0) ? englishPool : directPool;
+            const picked = pool[Math.abs(strHash(addon.id)) % pool.length];
+            const backupStream = {
+              addonId: addon.id,
+              addonName: addon.name,
+              addonBadge: addon.badge,
+              addonColor: addon.color,
+              serverLabel: `${addon.name} • ${picked.name || 'Servidor Cloud 1080p'}`,
+              rawName: addon.name,
+              rawTitle: `${addon.name} • ${addon.badge}`,
+              quality: picked.is4k ? '4K UHD' : '1080p Full HD',
+              is4k: picked.is4k,
+              isDub: picked.isDub,
+              audio: picked.isDub ? 'Dublado PT-BR' : 'Multi-Áudio / Dual',
+              seeds: null,
+              playType: 'direct',
+              directUrl: picked.directUrl,
+              proxyUrl: picked.directUrl,
+              embedUrl: null
+            };
+            streams = [backupStream];
           }
 
           if (streams.length === 0) return null;
