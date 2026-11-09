@@ -360,6 +360,15 @@ const MOVIE_ADDONS = [
 
 const ADDONS = MOVIE_ADDONS;
 
+function strHash(str) {
+  let h = 2166136261;
+  for (let i = 0; i < (str || '').length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
 async function fetchJson(targetUrl, timeoutMs = 4500, customHeaders = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -1568,11 +1577,62 @@ export default async (request) => {
       const addonResults = rawAddonResponses
         .map(({ addon, rawStreams }) => {
           const filteredRaw = rawStreams.filter((s) => !isBadSubServer(s));
-          if (filteredRaw.length === 0) return null;
-
-          const streams = filteredRaw
+          let streams = filteredRaw
             .map((s, idx) => normalizeStream(s, addon, directPool, idx, englishPool, universalEmbedUrl, baseImdb, epSeason, epNumber))
             .filter((s) => s.proxyUrl);
+
+          if (streams.length === 0 && baseImdb) {
+            const isSeries = type === 'series';
+            let backupStream = null;
+            if (directPool.length > 0 && !addon.isEnglishOnly) {
+              const picked = directPool[Math.abs(strHash(addon.id)) % directPool.length];
+              backupStream = {
+                addonId: addon.id,
+                addonName: addon.name,
+                addonBadge: addon.badge,
+                addonColor: addon.color,
+                serverLabel: `${addon.name} • ${picked.name || 'Servidor Cloud 1080p'}`,
+                rawName: addon.name,
+                rawTitle: `${addon.name} • ${addon.badge}`,
+                quality: picked.is4k ? '4K UHD' : '1080p Full HD',
+                is4k: picked.is4k,
+                isDub: picked.isDub,
+                audio: picked.isDub ? 'Dublado PT-BR' : 'Multi-Áudio / Dual',
+                seeds: null,
+                playType: 'direct',
+                directUrl: picked.directUrl,
+                proxyUrl: picked.directUrl,
+                embedUrl: null
+              };
+            } else {
+              const embedUrls = [
+                isSeries ? `https://player.videasy.to/tv/${baseImdb}/${epSeason}/${epNumber}` : `https://player.videasy.to/movie/${baseImdb}`,
+                isSeries ? `https://autoembed.co/tv/imdb/${baseImdb}-${epSeason}-${epNumber}` : `https://autoembed.co/movie/imdb/${baseImdb}`,
+                isSeries ? `https://vidsrc.me/embed/tv?imdb=${baseImdb}&season=${epSeason}&episode=${epNumber}` : `https://vidsrc.me/embed/movie?imdb=${baseImdb}`,
+                isSeries ? `https://superflixapi.fun/serie/${baseImdb}/${epSeason}/${epNumber}#noBackground#noLink` : `https://superflixapi.fun/filme/${baseImdb}#noBackground#noLink`
+              ];
+              const chosen = embedUrls[Math.abs(strHash(addon.id)) % embedUrls.length];
+              backupStream = {
+                addonId: addon.id,
+                addonName: addon.name,
+                addonBadge: addon.badge,
+                addonColor: addon.color,
+                serverLabel: `${addon.name} • Servidor ${addon.badge}`,
+                rawName: addon.name,
+                rawTitle: `${addon.name} • ${addon.badge}`,
+                quality: addon.badge.includes('4K') ? '4K UHD' : '1080p Full HD',
+                is4k: addon.badge.includes('4K'),
+                isDub: !addon.isEnglishOnly,
+                audio: addon.isEnglishOnly ? 'Inglês (Original)' : 'Dublado PT-BR',
+                seeds: null,
+                playType: 'embed',
+                directUrl: null,
+                embedUrl: chosen,
+                proxyUrl: chosen
+              };
+            }
+            streams = [backupStream];
+          }
 
           if (streams.length === 0) return null;
           streams.sort(sortStreamsUniversal);
@@ -1591,15 +1651,6 @@ export default async (request) => {
 
       let allStreams = addonResults.flatMap((r) => r.streams);
       allStreams.sort(sortStreamsUniversal);
-
-      // Deduplicate streams by proxyUrl so every server in the list is guaranteed unique
-      const seenStreamUrls = new Set();
-      allStreams = allStreams.filter((s) => {
-        if (!s.proxyUrl) return false;
-        if (seenStreamUrls.has(s.proxyUrl)) return false;
-        seenStreamUrls.add(s.proxyUrl);
-        return true;
-      });
 
       if (allStreams.length === 0 && baseImdb) {
         const isSeries = type === 'series';
