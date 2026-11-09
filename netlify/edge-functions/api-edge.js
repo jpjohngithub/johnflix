@@ -1,5 +1,262 @@
-const MOVIE_ADDONS = [];
-const ADDONS = [];
+const MOVIE_ADDONS = [
+  {
+    id: 'orangebyte',
+    name: 'Curated Trending',
+    badge: 'TMDB TOP',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://trending.orangebyte.io/manifest.json',
+    baseUrl: 'https://trending.orangebyte.io',
+    logo: 'https://trending.orangebyte.io/apple-touch-icon.png',
+    color: '#f97316'
+  },
+  {
+    id: 'cinetorrent',
+    name: 'CineTorrent BR',
+    badge: 'TORRENT BR',
+    type: 'p2p',
+    category: 'movie_series',
+    manifestUrl: 'https://150203dd784e-cinetorrent-addon.baby-beamup.club/manifest.json',
+    baseUrl: 'https://150203dd784e-cinetorrent-addon.baby-beamup.club',
+    logo: 'https://i.ibb.co/RDtR0q0/Logo.jpg',
+    color: '#eab308'
+  },
+  {
+    id: 'bestcine',
+    name: 'BestCine',
+    badge: '4K & FHD',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://bestcine.dpdns.org/manifest.json',
+    baseUrl: 'https://bestcine.dpdns.org',
+    logo: 'https://i.imgur.com/fX5vY2s.png',
+    color: '#8b5cf6'
+  },
+  {
+    id: 'fenixflix',
+    name: 'FenixFlix',
+    badge: 'ULTRA CLOUD',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://fenixflix.fenixhub.online/manifest.json',
+    baseUrl: 'https://fenixflix.fenixhub.online',
+    logo: 'https://fenixflix.fenixhub.online/logo.png',
+    color: '#a855f7'
+  },
+  {
+    id: 'froststream',
+    name: 'FrostStream',
+    badge: 'HDR 4K',
+    type: 'hybrid',
+    category: 'movie_series',
+    manifestUrl: 'https://froststream.cloutteam.com/manifest.json',
+    baseUrl: 'https://froststream.cloutteam.com',
+    logo: 'https://froststream.cloutteam.com/public/logo.png',
+    color: '#38bdf8'
+  },
+  {
+    id: 'magneto',
+    name: 'Magneto',
+    badge: 'CLOUD + P2P',
+    type: 'p2p',
+    category: 'movie_series',
+    manifestUrl: 'https://magneto-jnv5.onrender.com/v1/manifest.json',
+    baseUrl: 'https://magneto-jnv5.onrender.com/v1',
+    logo: 'https://images.metahub.space/logo/medium/tt0133093/img',
+    color: '#ec4899'
+  },
+  {
+    id: 'micoleao',
+    name: 'Mico-Leão Dublado',
+    badge: 'DUBLADO BR',
+    type: 'p2p',
+    category: 'movie_series',
+    manifestUrl: 'https://27a5b2bfe3c0-stremio-brazilian-addon.baby-beamup.club/manifest.json',
+    baseUrl: 'https://27a5b2bfe3c0-stremio-brazilian-addon.baby-beamup.club',
+    logo: 'https://i.ibb.co/YyPbHVT/icon.png',
+    color: '#eab308'
+  },
+  {
+    id: 'brazuca',
+    name: 'Brazuca',
+    badge: 'BRASIL',
+    type: 'p2p',
+    category: 'movie_series',
+    manifestUrl: 'https://94c8cb9f702d-brazuca-torrents.baby-beamup.club/manifest.json',
+    baseUrl: 'https://94c8cb9f702d-brazuca-torrents.baby-beamup.club',
+    logo: 'https://i.imgur.com/KVpfrAk.png',
+    color: '#22c55e'
+  },
+  {
+    id: 'guindex',
+    name: 'GuIndex BR',
+    badge: 'NACIONAL',
+    type: 'p2p',
+    category: 'movie_series',
+    manifestUrl: 'https://guindex-stremio.vercel.app/manifest.json',
+    baseUrl: 'https://guindex-stremio.vercel.app',
+    logo: 'https://raw.githubusercontent.com/GuickerZ/guindex/main/public/logo.png',
+    color: '#10b981'
+  },
+  {
+    id: 'ehtudo',
+    name: 'Eh! Tudo',
+    badge: 'PT-BR',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://stremio-addon.ehtudo.app/manifest.json',
+    baseUrl: 'https://stremio-addon.ehtudo.app',
+    logo: 'https://stremio-addon.ehtudo.app/logo-small-256x256.png',
+    color: '#f97316'
+  },
+  {
+    id: 'torrentio',
+    name: 'Torrentio (Inglês)',
+    badge: 'INGLÊS',
+    type: 'p2p',
+    category: 'movie_series',
+    isEnglishOnly: true,
+    manifestUrl: 'https://torrentio.strem.fun/manifest.json',
+    baseUrl: 'https://torrentio.strem.fun',
+    logo: 'https://torrentio.strem.fun/images/logo_v1.png',
+    color: '#ef4444'
+  },
+  {
+    id: 'flixstreams',
+    name: 'Flix-Streams (Inglês)',
+    badge: 'INGLÊS',
+    type: 'direct',
+    category: 'movie_series',
+    isEnglishOnly: true,
+    manifestUrl: 'https://flixnest.app/flix-streams/manifest.json',
+    baseUrl: 'https://flixnest.app/flix-streams',
+    logo: 'https://flixnest.app/flix-streams/static/icon.png',
+    color: '#06b6d4'
+  },
+  {
+    id: 'magnetflix',
+    name: 'Magnetflix BR',
+    badge: 'DUBLADO 4K/HD',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://magnetflix.flixbr.online/qualities%3D4k%2C1080p%2C720p%2Csd%7Caudio%3Ddublado%2Clegendado%7Ccatalogs%3Dpopulares_movie%2Cpopulares_series%2Crecentes_servidor_movie%2Crecentes_servidor_series%2Cemalta_movie%2Cemalta_series/manifest.json',
+    baseUrl: 'https://magnetflix.flixbr.online/qualities%3D4k%2C1080p%2C720p%2Csd%7Caudio%3Ddublado%2Clegendado%7Ccatalogs%3Dpopulares_movie%2Cpopulares_series%2Crecentes_servidor_movie%2Crecentes_servidor_series%2Cemalta_movie%2Cemalta_series',
+    logo: 'https://magnetflix.flixbr.online/static/logo.jpg',
+    color: '#e11d48'
+  },
+  {
+    id: 'plaviohd',
+    name: 'PlavioHD 4K',
+    badge: '4K HDR',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://hd.plavio.site/manifest.json',
+    baseUrl: 'https://hd.plavio.site',
+    logo: 'https://hd.plavio.site/logo.png',
+    color: '#3b82f6'
+  },
+  {
+    id: 'debridbr',
+    name: 'DebridBR',
+    badge: 'CLOUD BR',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://debridbr.vercel.app/manifest.json',
+    baseUrl: 'https://debridbr.vercel.app',
+    logo: 'https://img.icons8.com/?size=100&id=x22BXJ8IEoLJ&format=png&color=a855f7',
+    color: '#a855f7'
+  },
+  {
+    id: 'mycine',
+    name: 'MyCine BR',
+    badge: 'CINEMA BR',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://mycine.alwaysdata.net/manifest.json',
+    baseUrl: 'https://mycine.alwaysdata.net',
+    logo: 'https://images.metahub.space/logo/medium/tt0133093/img',
+    color: '#f59e0b'
+  },
+  {
+    id: 'pleiades',
+    name: 'PleiadesStream',
+    badge: 'ANIMES & FILMES',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://pleiadesstream.duckdns.org/addon/pleiades/manifest.json',
+    baseUrl: 'https://pleiadesstream.duckdns.org/addon/pleiades',
+    logo: 'https://pleiadesstream.duckdns.org/addon/pleiades/logo.png',
+    color: '#8b5cf6'
+  },
+  {
+    id: 'animesbr',
+    name: 'Animes BR',
+    badge: 'ANIMES PT-BR',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://animes-br-self.vercel.app/manifest.json',
+    baseUrl: 'https://animes-br-self.vercel.app',
+    logo: 'https://images.metahub.space/logo/medium/tt0409591/img',
+    color: '#ec4899'
+  },
+  {
+    id: 'animesdigital',
+    name: 'Animes Digital',
+    badge: 'ANIMES HD',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://animesdigital-vercel.vercel.app/manifest.json',
+    baseUrl: 'https://animesdigital-vercel.vercel.app',
+    logo: 'https://images.metahub.space/logo/medium/tt0988824/img',
+    color: '#14b8a6'
+  },
+  {
+    id: 'nightknight',
+    name: 'NightKnight Cinema',
+    badge: 'HUB GLOBAL',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://nightknight-cinema.onrender.com/manifest.json',
+    baseUrl: 'https://nightknight-cinema.onrender.com',
+    logo: 'https://nightknight-cinema.onrender.com/icon.png',
+    color: '#6366f1'
+  },
+  {
+    id: 'flixnest_free',
+    name: 'Flix-Streams Free',
+    badge: 'HD FREE',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://free.flixnest.app/manifest.json',
+    baseUrl: 'https://free.flixnest.app',
+    logo: 'https://free.flixnest.app/favicon.ico',
+    color: '#06b6d4'
+  },
+  {
+    id: 'animee',
+    name: 'Animee',
+    badge: 'ANIMES HD',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://animee.stravo.site/local/manifest.json',
+    baseUrl: 'https://animee.stravo.site/local',
+    logo: 'https://animee.stravo.site/favicon.ico',
+    color: '#f43f5e'
+  },
+  {
+    id: 'tvdb_search',
+    name: 'TVDB Search',
+    badge: 'CATÁLOGO TVDB',
+    type: 'direct',
+    category: 'movie_series',
+    manifestUrl: 'https://tvdb.nepiraw.com/manifest.json',
+    baseUrl: 'https://tvdb.nepiraw.com',
+    logo: 'https://tvdb.nepiraw.com/favicon.ico',
+    color: '#3b82f6'
+  }
+];
+
+const ADDONS = MOVIE_ADDONS;
 
 
 function strHash(str) {
@@ -1089,16 +1346,7 @@ export default async (request) => {
       }
 
       // === MOVIE & SERIES STREAM AGGREGATION ===
-      if (MOVIE_ADDONS.length === 0) {
-        const bodyStr = JSON.stringify({
-          id: decodedId,
-          type: type,
-          totalStreams: 0,
-          servers: [],
-          streams: []
-        });
-        return new Response(bodyStr, { status: 200, headers });
-      }
+      // Stream aggregation for 23 active sources
 
       const idParts = decodedId.split(':');
       const baseImdb = idParts[0];
@@ -1117,49 +1365,13 @@ export default async (request) => {
 
       const rawAddonResponses = await Promise.all(
         MOVIE_ADDONS.map(async (addon) => {
-          if (addon.id === 'superflix') {
-            const tmdbId = await tmdbPromise;
-            const targetRef = tmdbId || baseImdb;
-            const isSeries = type === 'series';
-            const sEmbed = isSeries
-              ? 'https://superflixapi.fun/serie/' + targetRef + '/' + epSeason + '/' + epNumber + '#noBackground#noEpList#noLink'
-              : 'https://superflixapi.fun/filme/' + targetRef + '#noBackground#noLink';
-            return { addon, rawStreams: [{ name: 'SuperFlix Oficial', title: '🇧🇷 Servidor Dublado Oficial (SuperFlix)', embedUrl: sEmbed }] };
-          }
-          if (addon.id === 'vidsrc') {
-            const isSeries = type === 'series';
-            const vidsrcEmbed = isSeries
-              ? 'https://vidsrc.me/embed/tv?imdb=' + baseImdb + '&season=' + epSeason + '&episode=' + epNumber
-              : 'https://vidsrc.me/embed/movie?imdb=' + baseImdb;
-            return { addon, rawStreams: [{ name: 'VidSrc BR', title: '🌐 Servidor Multiserver HD (VidSrc)', embedUrl: vidsrcEmbed }] };
-          }
-          if (addon.id === 'autoembed') {
-            const isSeries = type === 'series';
-            const autoEmbed = isSeries
-              ? 'https://autoembed.co/tv/imdb/' + baseImdb + '-' + epSeason + '-' + epNumber
-              : 'https://autoembed.co/movie/imdb/' + baseImdb;
-            return { addon, rawStreams: [{ name: 'AutoEmbed Cloud', title: '⚡ Servidor Rápido (AutoEmbed)', embedUrl: autoEmbed }] };
-          }
-          if (addon.id === 'videasy') {
-            const isSeries = type === 'series';
-            const videasyEmbed = isSeries
-              ? 'https://player.videasy.to/tv/' + baseImdb + '/' + epSeason + '/' + epNumber
-              : 'https://player.videasy.to/movie/' + baseImdb;
-            return { addon, rawStreams: [{ name: 'Videasy 4K', title: '⚡ Servidor Videasy 4K/FHD', embedUrl: videasyEmbed }] };
-          }
-          if (addon.id === 'framextv') {
-            const tmdbId = await tmdbPromise;
-            const fxStreams = await fetchFrameXTVStreams(type, tmdbId, epSeason, epNumber);
-            return { addon, rawStreams: fxStreams };
-          }
-
-          const primaryPromise = fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 3200)
+          const primaryPromise = fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 3500)
             .then((d) => (Array.isArray(d?.streams) && d.streams.length > 0 ? d.streams : Promise.reject(new Error('empty'))));
 
           const tasks = [primaryPromise];
           if (addon.fallbackUrl) {
             tasks.push(
-              fetchJson(`${addon.fallbackUrl}/stream/${type}/${encodedId}.json`, 3200)
+              fetchJson(`${addon.fallbackUrl}/stream/${type}/${encodedId}.json`, 3500)
                 .then((d) => (Array.isArray(d?.streams) && d.streams.length > 0 ? d.streams : Promise.reject(new Error('empty'))))
             );
           }
@@ -1219,7 +1431,7 @@ export default async (request) => {
         : `https://superflixapi.fun/filme/${baseImdb}#noBackground#noLink`;
 
       const sortStreamsUniversal = (a, b) => {
-        const rank = (p) => (p === 'embed' ? 0 : p === 'hls' ? 1 : p === 'direct' ? 2 : 3);
+        const rank = (p) => (p === 'direct' ? 0 : p === 'hls' ? 1 : 2);
         if (rank(a.playType) !== rank(b.playType)) return rank(a.playType) - rank(b.playType);
         if (Boolean(a.isHevcOrMkv) !== Boolean(b.isHevcOrMkv)) return a.isHevcOrMkv ? 1 : -1;
         if (a.isDub !== b.isDub) return a.isDub ? -1 : 1;
@@ -1258,33 +1470,31 @@ export default async (request) => {
                 embedUrl: null
               };
             } else {
-              const embedUrls = [
-                isSeries ? `https://player.videasy.to/tv/${baseImdb}/${epSeason}/${epNumber}` : `https://player.videasy.to/movie/${baseImdb}`,
-                isSeries ? `https://autoembed.co/tv/imdb/${baseImdb}-${epSeason}-${epNumber}` : `https://autoembed.co/movie/imdb/${baseImdb}`,
-                isSeries ? `https://vidsrc.me/embed/tv?imdb=${baseImdb}&season=${epSeason}&episode=${epNumber}` : `https://vidsrc.me/embed/movie?imdb=${baseImdb}`,
-                isSeries ? `https://superflixapi.fun/serie/${baseImdb}/${epSeason}/${epNumber}#noBackground#noLink` : `https://superflixapi.fun/filme/${baseImdb}#noBackground#noLink`
-              ];
-              const chosen = embedUrls[Math.abs(strHash(addon.id)) % embedUrls.length];
+              if (directPool.length > 0) {
+              const pool = (addon.isEnglishOnly && englishPool.length > 0) ? englishPool : directPool;
+              const picked = pool[Math.abs(strHash(addon.id)) % pool.length];
               backupStream = {
                 addonId: addon.id,
                 addonName: addon.name,
                 addonBadge: addon.badge,
                 addonColor: addon.color,
-                serverLabel: `${addon.name} • Servidor ${addon.badge}`,
+                serverLabel: `${addon.name} • ${picked.name || 'Servidor Cloud 1080p'}`,
                 rawName: addon.name,
                 rawTitle: `${addon.name} • ${addon.badge}`,
-                quality: addon.badge.includes('4K') ? '4K UHD' : '1080p Full HD',
-                is4k: addon.badge.includes('4K'),
-                isDub: !addon.isEnglishOnly,
-                audio: addon.isEnglishOnly ? 'Inglês (Original)' : 'Dublado PT-BR',
+                quality: picked.is4k ? '4K UHD' : '1080p Full HD',
+                is4k: picked.is4k,
+                isDub: picked.isDub,
+                audio: picked.isDub ? 'Dublado PT-BR' : 'Multi-Áudio / Dual',
                 seeds: null,
-                playType: 'embed',
-                directUrl: null,
-                embedUrl: chosen,
-                proxyUrl: chosen
+                playType: 'direct',
+                directUrl: picked.directUrl,
+                proxyUrl: picked.directUrl,
+                embedUrl: null
               };
+              streams = [backupStream];
+            } else {
+              streams = [];
             }
-            streams = [backupStream];
           }
 
           if (streams.length === 0) return null;
@@ -1305,96 +1515,7 @@ export default async (request) => {
       let allStreams = addonResults.flatMap((r) => r.streams);
       allStreams.sort(sortStreamsUniversal);
 
-      if (allStreams.length === 0 && baseImdb) {
-        const isSeries = type === 'series';
-        const fallbackList = [
-          {
-            addonId: 'superflix',
-            addonName: 'SuperFlix Oficial',
-            addonBadge: 'DUBLADO BR',
-            addonColor: '#e11d48',
-            rawName: 'SuperFlix Oficial',
-            rawTitle: 'SuperFlix Oficial • Dublado BR',
-            serverLabel: 'SuperFlix Oficial • Dublado BR',
-            quality: '1080p Full HD',
-            is4k: false,
-            isDub: true,
-            audio: 'Dublado PT-BR',
-            seeds: null,
-            playType: 'embed',
-            directUrl: null,
-            embedUrl: isSeries ? `https://superflixapi.fun/serie/${baseImdb}/${epSeason}/${epNumber}#noBackground#noLink` : `https://superflixapi.fun/filme/${baseImdb}#noBackground#noLink`,
-            proxyUrl: isSeries ? `https://superflixapi.fun/serie/${baseImdb}/${epSeason}/${epNumber}#noBackground#noLink` : `https://superflixapi.fun/filme/${baseImdb}#noBackground#noLink`
-          },
-          {
-            addonId: 'vidsrc',
-            addonName: 'VidSrc BR',
-            addonBadge: 'MULTISERVER',
-            addonColor: '#3b82f6',
-            rawName: 'VidSrc BR',
-            rawTitle: 'VidSrc BR • Multiserver',
-            serverLabel: 'VidSrc BR • Multiserver',
-            quality: '1080p Full HD',
-            is4k: false,
-            isDub: false,
-            audio: 'Multi-Áudio / Legendado',
-            seeds: null,
-            playType: 'embed',
-            directUrl: null,
-            embedUrl: isSeries ? `https://vidsrc.me/embed/tv?imdb=${baseImdb}&season=${epSeason}&episode=${epNumber}` : `https://vidsrc.me/embed/movie?imdb=${baseImdb}`,
-            proxyUrl: isSeries ? `https://vidsrc.me/embed/tv?imdb=${baseImdb}&season=${epSeason}&episode=${epNumber}` : `https://vidsrc.me/embed/movie?imdb=${baseImdb}`
-          },
-          {
-            addonId: 'autoembed',
-            addonName: 'AutoEmbed Cloud',
-            addonBadge: 'FAST CLOUD',
-            addonColor: '#10b981',
-            rawName: 'AutoEmbed Cloud',
-            rawTitle: 'AutoEmbed Cloud • Servidor Rápido',
-            serverLabel: 'AutoEmbed Cloud • Servidor Rápido',
-            quality: '1080p Full HD',
-            is4k: false,
-            isDub: false,
-            audio: 'Multi-Áudio / Legendado',
-            seeds: null,
-            playType: 'embed',
-            directUrl: null,
-            embedUrl: isSeries ? `https://autoembed.co/tv/imdb/${baseImdb}-${epSeason}-${epNumber}` : `https://autoembed.co/movie/imdb/${baseImdb}`,
-            proxyUrl: isSeries ? `https://autoembed.co/tv/imdb/${baseImdb}-${epSeason}-${epNumber}` : `https://autoembed.co/movie/imdb/${baseImdb}`
-          },
-          {
-            addonId: 'videasy',
-            addonName: 'Videasy 4K',
-            addonBadge: 'UNIVERSAL',
-            addonColor: '#8b5cf6',
-            rawName: 'Videasy 4K',
-            rawTitle: 'Videasy 4K • Universal',
-            serverLabel: 'Videasy 4K • Universal',
-            quality: '1080p Full HD',
-            is4k: false,
-            isDub: true,
-            audio: 'Multi-Áudio / Dublado',
-            seeds: null,
-            playType: 'embed',
-            directUrl: null,
-            embedUrl: isSeries ? `https://player.videasy.to/tv/${baseImdb}/${epSeason}/${epNumber}` : `https://player.videasy.to/movie/${baseImdb}`,
-            proxyUrl: isSeries ? `https://player.videasy.to/tv/${baseImdb}/${epSeason}/${epNumber}` : `https://player.videasy.to/movie/${baseImdb}`
-          }
-        ];
-
-        allStreams = fallbackList;
-        fallbackList.forEach((s) => {
-          addonResults.push({
-            addonId: s.addonId,
-            addonName: s.addonName,
-            badge: s.addonBadge,
-            color: s.addonColor,
-            isEnglishOnly: false,
-            count: 1,
-            streams: [s]
-          });
-        });
-      }
+      // Fallbacks cleanly disabled
 
       const bodyStr = JSON.stringify({
         id: decodedId,
