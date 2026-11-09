@@ -1602,37 +1602,11 @@
       return;
     }
 
-    const savedTvHidden = new Set(JSON.parse(localStorage.getItem('johnflix_hidden_tv_channels') || '[]'));
-    if (state.activeFilter === 'tv') {
-      const allTvItems = state.catalogRows.filter((r) => r.type === 'tv').flatMap((r) => r.items || []);
-      const totalCount = allTvItems.length;
-      const activeCount = allTvItems.filter((it) => !savedTvHidden.has(it.id)).length;
-
-      const tvBar = document.createElement('div');
-      tvBar.className = 'tv-manage-bar';
-      tvBar.innerHTML = `
-        <div class="tv-manage-title">
-          <span>Canais de TV Ativos:</span>
-          <span class="tv-manage-badge">${activeCount} de ${totalCount} disponíveis</span>
-        </div>
-        <button type="button" class="btn btn-sm btn-glass" id="tvSelectChannelsBtn">Selecionar Canais</button>
-      `;
-      tvBar.querySelector('#tvSelectChannelsBtn').addEventListener('click', openTvChannelPickerModal);
-      el.catalogContainer.appendChild(tvBar);
-    }
-
     let rows = state.catalogRows;
-    if (state.activeFilter === 'all') {
-      rows = rows.filter((r) => r.type !== 'tv');
-    } else if (state.activeFilter === 'movie') {
+    if (state.activeFilter === 'movie') {
       rows = rows.filter((r) => r.type === 'movie');
     } else if (state.activeFilter === 'series') {
       rows = rows.filter((r) => r.type === 'series');
-    } else if (state.activeFilter === 'tv') {
-      rows = rows.filter((r) => r.type === 'tv').map((r) => ({
-        ...r,
-        items: (r.items || []).filter((item) => !savedTvHidden.has(item.id))
-      })).filter((r) => r.items.length > 0);
     }
 
     if (isHomeView && state.activeHomeCategory && state.activeHomeCategory !== 'all') {
@@ -3128,11 +3102,10 @@
       all: allResults.length,
       movie: allResults.filter((i) => i.type === 'movie').length,
       series: allResults.filter((i) => i.type === 'series').length,
-      tv: allResults.filter((i) => i.type === 'tv').length,
       channel: allResults.filter((i) => i.type === 'channel' || i.category === 'youtube').length
     };
 
-    const sFilter = state.searchTypeFilter || (['movie', 'series', 'tv', 'channel'].includes(state.activeFilter) ? state.activeFilter : 'all');
+    const sFilter = state.searchTypeFilter || (['movie', 'series', 'channel'].includes(state.activeFilter) ? state.activeFilter : 'all');
     let filtered = allResults;
     let tabLabel = 'Todos os resultados';
 
@@ -3142,9 +3115,6 @@
     } else if (sFilter === 'series') {
       filtered = allResults.filter((i) => i.type === 'series');
       tabLabel = 'Séries';
-    } else if (sFilter === 'tv') {
-      filtered = allResults.filter((i) => i.type === 'tv');
-      tabLabel = 'Canais de TV';
     } else if (sFilter === 'channel') {
       filtered = allResults.filter((i) => i.type === 'channel' || i.category === 'youtube');
       tabLabel = 'YouTube';
@@ -3165,7 +3135,6 @@
         { id: 'all', label: 'Todos', count: counts.all },
         { id: 'movie', label: 'Filmes', count: counts.movie },
         { id: 'series', label: 'Séries', count: counts.series },
-        { id: 'tv', label: 'TV', count: counts.tv },
         { id: 'channel', label: 'YouTube', count: counts.channel }
       ];
       const genresList = ['Ação', 'Comédia', 'Drama', 'Ficção', 'Terror', 'Animação'];
