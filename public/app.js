@@ -3604,70 +3604,12 @@
     } catch (err) {
       if (currentLoadTargetId !== targetId) return;
       el.streamsLoading.classList.add('hidden');
-      const baseImdb = String(targetId).split(':')[0];
-      if (baseImdb.startsWith('tt')) {
-        const isSeries = type === 'series';
-        const parts = String(targetId).split(':');
-        const s = parts[1] || '1';
-        const e = parts[2] || '1';
-        const emergencyStreams = [
-          {
-            addonId: 'superflix',
-            addonName: 'SuperFlix Oficial',
-            addonBadge: 'DUBLADO BR',
-            addonColor: '#e11d48',
-            serverLabel: 'SuperFlix Oficial • Dublado BR',
-            quality: '1080p Full HD',
-            audio: 'Dublado PT-BR',
-            playType: 'embed',
-            proxyUrl: isSeries ? `https://superflixapi.fun/serie/${baseImdb}/${s}/${e}#noBackground#noLink` : `https://superflixapi.fun/filme/${baseImdb}#noBackground#noLink`
-          },
-          {
-            addonId: 'vidsrc',
-            addonName: 'VidSrc BR',
-            addonBadge: 'MULTISERVER',
-            addonColor: '#3b82f6',
-            serverLabel: 'VidSrc BR • Multiserver',
-            quality: '1080p Full HD',
-            audio: 'Multi-Áudio / Legendado',
-            playType: 'embed',
-            proxyUrl: isSeries ? `https://vidsrc.me/embed/tv?imdb=${baseImdb}&season=${s}&episode=${e}` : `https://vidsrc.me/embed/movie?imdb=${baseImdb}`
-          },
-          {
-            addonId: 'autoembed',
-            addonName: 'AutoEmbed Cloud',
-            addonBadge: 'FAST CLOUD',
-            addonColor: '#10b981',
-            serverLabel: 'AutoEmbed Cloud • Servidor Rápido',
-            quality: '1080p Full HD',
-            audio: 'Multi-Áudio / Legendado',
-            playType: 'embed',
-            proxyUrl: isSeries ? `https://autoembed.co/tv/imdb/${baseImdb}-${s}-${e}` : `https://autoembed.co/movie/imdb/${baseImdb}`
-          },
-          {
-            addonId: 'videasy',
-            addonName: 'Videasy 4K',
-            addonBadge: 'UNIVERSAL',
-            addonColor: '#8b5cf6',
-            serverLabel: 'Videasy 4K • Universal',
-            quality: '1080p Full HD',
-            audio: 'Multi-Áudio / Dublado',
-            playType: 'embed',
-            proxyUrl: isSeries ? `https://player.videasy.to/tv/${baseImdb}/${s}/${e}` : `https://player.videasy.to/movie/${baseImdb}`
-          }
-        ];
-        state.currentStreams = emergencyStreams;
-        state.activeAddonFilter = 'all';
-        el.streamCounter.textContent = emergencyStreams.length;
-        renderAddonFilterTabs(emergencyStreams.map((s) => ({ addonId: s.addonId, addonName: s.addonName, count: 1 })));
-        renderStreamsList();
-        if (autoPlayFirst || state.pendingAutoPlay) {
-          state.pendingAutoPlay = false;
-          launchCloudPlayer(emergencyStreams[0]);
-        }
-        return;
-      }
-      el.streamsList.innerHTML = `<p style="color:#f87171;">Erro ao carregar fontes.</p>`;
+      state.currentStreams = [];
+      state.activeAddonFilter = 'all';
+      el.streamCounter.textContent = '0';
+      renderAddonFilterTabs([]);
+      renderStreamsList();
+      el.streamsList.innerHTML = `<div style="grid-column:1/-1;padding:24px;text-align:center;color:var(--text-muted);">Nenhuma fonte adicionada no momento.</div>`;
       if (autoPlayFirst || state.pendingAutoPlay) {
         state.pendingAutoPlay = false;
         tryNextWorkingStream(null);
@@ -4459,34 +4401,8 @@
       return true;
     }
 
-    // Ultimate fallback: if every stream in the list failed on this browser/device, launch SuperFlix Oficial
-    if (state.currentItem && state.currentItem.id && String(state.currentItem.id).startsWith('tt') && el.cloudEmbed) {
-      const baseImdb = String(state.currentItem.id).split(':')[0];
-      const isSeries = state.currentItem.type === 'series';
-      const s = state.currentSeason || 1;
-      const e = state.currentEpisode || 1;
-      const fallbackEmbedUrl = isSeries
-        ? `https://superflixapi.fun/serie/${baseImdb}/${s}/${e}#noBackground#noLink`
-        : `https://superflixapi.fun/filme/${baseImdb}#noBackground#noLink`;
-      if (!failedStreamKeys.has(fallbackEmbedUrl)) {
-        failedStreamKeys.add(fallbackEmbedUrl);
-        launchCloudPlayer({
-          addonId: 'superflix',
-          addonName: 'SuperFlix Oficial',
-          addonBadge: 'DUBLADO BR',
-          addonColor: '#e11d48',
-          serverLabel: 'SuperFlix Oficial • Dublado BR',
-          quality: '1080p Full HD',
-          audio: 'Dublado PT-BR',
-          playType: 'embed',
-          proxyUrl: fallbackEmbedUrl
-        }, true);
-        return true;
-      }
-    }
-
-    el.playerLoaderTitle.textContent = 'Esta fonte demorou ou falhou ao responder';
-    el.playerLoaderSub.textContent = 'Toque abaixo para escolher outro servidor.';
+    el.playerLoaderTitle.textContent = 'Nenhuma fonte disponível no momento';
+    el.playerLoaderSub.textContent = 'Não há servidores ativos para este título.';
     if (el.playerLoaderSwitchBtn) el.playerLoaderSwitchBtn.classList.remove('hidden');
     return false;
   }
