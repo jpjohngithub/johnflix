@@ -28,7 +28,7 @@ export default async (request, context) => {
   }
 
   const clientRange = request.headers.get('range');
-  const rangeHeader = clientRange || (request.method === 'HEAD' ? 'bytes=0-1' : 'bytes=0-');
+  const rangeHeader = clientRange || (request.method === 'HEAD' ? 'bytes=0-1' : null);
 
   try {
     const cached = redirectCache.get(targetUrl);
@@ -98,10 +98,6 @@ export default async (request, context) => {
       if (val) resHeaders.set(h, val);
     }
 
-    const ct = (resHeaders.get('content-type') || '').toLowerCase();
-    if (!ct || ct.includes('text/plain') || ct.includes('octet-stream')) {
-      resHeaders.set('content-type', 'video/mp4');
-    }
     if (!resHeaders.has('accept-ranges')) {
       resHeaders.set('accept-ranges', 'bytes');
     }

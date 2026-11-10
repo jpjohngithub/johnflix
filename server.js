@@ -54,7 +54,6 @@ const ADDONS = [
     type: 'p2p',
     manifestUrl: 'https://magneto-jnv5.onrender.com/v1/manifest.json',
     baseUrl: 'https://magneto-jnv5.onrender.com/v1',
-    fallbackUrl: 'https://torrentio.strem.fun/providers=yts,eztv,rarbg,1337x,thepiratebay|language=portuguese',
     logo: 'https://images.metahub.space/logo/medium/tt0133093/img',
     color: '#ec4899'
   },
@@ -65,7 +64,6 @@ const ADDONS = [
     type: 'p2p',
     manifestUrl: 'https://27a5b2bfe3c0-stremio-brazilian-addon.baby-beamup.club/manifest.json',
     baseUrl: 'https://27a5b2bfe3c0-stremio-brazilian-addon.baby-beamup.club',
-    fallbackUrl: 'https://torrentio.strem.fun/providers=micoleaodublado,comando,bludv',
     logo: 'https://i.ibb.co/YyPbHVT/icon.png',
     color: '#eab308'
   },
@@ -76,7 +74,6 @@ const ADDONS = [
     type: 'p2p',
     manifestUrl: 'https://94c8cb9f702d-brazuca-torrents.baby-beamup.club/manifest.json',
     baseUrl: 'https://94c8cb9f702d-brazuca-torrents.baby-beamup.club',
-    fallbackUrl: 'https://torrentio.strem.fun/providers=comando,bludv,lapumia,ondebaixa',
     logo: 'https://i.imgur.com/KVpfrAk.png',
     color: '#22c55e'
   }
@@ -250,9 +247,6 @@ function proxyVideoStream(targetUrl, clientReq, clientRes, redirectsLeft = 6) {
         }
       }
 
-      if (!resHeaders['content-type'] || resHeaders['content-type'].includes('text/plain') || resHeaders['content-type'].includes('octet-stream')) {
-        resHeaders['content-type'] = 'video/mp4';
-      }
       if (!resHeaders['accept-ranges']) {
         resHeaders['accept-ranges'] = 'bytes';
       }
@@ -317,7 +311,8 @@ function getOrCreateTorrentEngine(infoHash, customTrackers = []) {
     entry.ready = true;
     entry.files = engine.files || [];
     // Pick largest video file
-    const videoExts = ['.mp4', '.mkv', '.webm', '.avi', '.mov', '.m4v'];
+    // Keep torrent playback to containers commonly supported by browser decoders.
+    const videoExts = ['.mp4', '.webm', '.m4v'];
     const videoFiles = entry.files.filter((f) =>
       videoExts.some((ext) => f.name.toLowerCase().endsWith(ext))
     );
@@ -349,7 +344,13 @@ function handleTorrentStream(infoHash, query, clientReq, clientRes) {
   const serveFile = (torEntry) => {
     let file = torEntry.mainFile;
     if (query.fileIdx !== undefined && torEntry.files[Number(query.fileIdx)]) {
-      file = torEntry.files[Number(query.fileIdx)];
+      const selectedFile = torEntry.files[Number(query.fileIdx)];
+      if (!['.mp4', '.webm', '.m4v'].includes(path.extname(selectedFile.name).toLowerCase())) {
+        clientRes.writeHead(415, { 'Content-Type': 'application/json' });
+        clientRes.end(JSON.stringify({ error: 'Este arquivo não usa um formato de vídeo compatível com o navegador.' }));
+        return;
+      }
+      file = selectedFile;
     }
 
     if (!file) {
@@ -364,12 +365,10 @@ function handleTorrentStream(infoHash, query, clientReq, clientRes) {
     const ext = path.extname(file.name).toLowerCase();
     const mimeMap = {
       '.mp4': 'video/mp4',
-      '.mkv': 'video/x-matroska',
       '.webm': 'video/webm',
-      '.avi': 'video/x-msvideo',
-      '.mov': 'video/quicktime'
+      '.m4v': 'video/mp4'
     };
-    const contentType = mimeMap[ext] || 'video/mp4';
+    const contentType = mimeMap[ext] || 'application/octet-stream';
     const range = clientReq.headers.range;
 
     if (range) {
@@ -433,7 +432,7 @@ function handleTorrentStream(infoHash, query, clientReq, clientRes) {
 }
 
 // Parse stream quality, language, and details into normalized JohnFlix stream object
-function normalizeStream(rawStream, addon, fallbackDirectUrls = []) {
+function normalizeStream(rawStream, addon) {
   const titleText = `${rawStream.name || ''} ${rawStream.title || ''} ${rawStream.description || ''}`;
   const is4k = /2160p|4k|uhd/i.test(titleText);
   const is1080p = /1080p|full\s*hd|fhd/i.test(titleText);
@@ -456,8 +455,11 @@ function normalizeStream(rawStream, addon, fallbackDirectUrls = []) {
     if (streamUrl.startsWith('http://fenixflix.fenixhub.online/')) {
       streamUrl = streamUrl.replace('http://', 'https://');
     }
-    playType = 'direct';
-    proxyUrl = `/api/proxy-stream?url=${encodeURIComponent(streamUrl)}`;
+    const isHls = /\.m3u8(?:$|[?#])/i.test(streamUrl);
+    playType = isHls ? 'hls' : 'direct';
+    // The local server has no manifest rewriter; native HLS must resolve segments
+    // from the original playlist URL. Other media is streamed through JohnFlix.
+    proxyUrl = isHls ? streamUrl : `/api/proxy-stream?url=${encodeURIComponent(streamUrl)}`;
   } else if (rawStream.infoHash) {
     const hash = rawStream.infoHash.toLowerCase();
     playType = 'torrent';
@@ -500,7 +502,7 @@ function normalizeStream(rawStream, addon, fallbackDirectUrls = []) {
 
 // Fetch and aggregate streams from all 6 Stremio Addons in parallel
 async function fetchAggregatedStreams(type, id, reqHost) {
-  const cacheKey = `streams:v3:${type}:${id}`;
+  const cacheKey = `streams:v4:${type}:${id}`;
   const cached = getCached(cacheKey);
   if (cached) return cached;
 
@@ -514,47 +516,13 @@ async function fetchAggregatedStreams(type, id, reqHost) {
         if (Array.isArray(data?.streams)) rawStreams = data.streams;
       } catch (e) {}
 
-      if (rawStreams.length === 0 && addon.fallbackUrl) {
-        try {
-          const fbData = await fetchJson(`${addon.fallbackUrl}/stream/${type}/${encodedId}.json`, 6500);
-          if (Array.isArray(fbData?.streams)) rawStreams = fbData.streams;
-        } catch (e) {}
-      }
       return { addon, rawStreams, latencyMs: Date.now() - startTime };
     })
   );
 
-  const isBadSubServer = (s) => {
-    const u = s.url || '';
-    const t = `${s.name || ''} ${s.title || ''}`;
-    if (u.includes('passing-melinda') || u.includes('fenixbot.squareweb.app')) return true;
-    if (/badger|hypex|atlas|\bastra\b|\bneon\b/i.test(t)) return true;
-    return false;
-  };
-
-  const directPool = [];
-  for (const { addon, rawStreams } of rawAddonResponses) {
-    for (const s of rawStreams) {
-      if (s.url && !isBadSubServer(s)) {
-        let cleanUrl = s.url;
-        if (cleanUrl.startsWith('http://fenixflix.fenixhub.online/')) {
-          cleanUrl = cleanUrl.replace('http://', 'https://');
-        }
-        const t = `${s.name || ''} ${s.title || ''}`;
-        directPool.push({
-          directUrl: cleanUrl,
-          is4k: /2160p|4k|uhd/i.test(t),
-          isDub: /dublado|🇧🇷|portugu[eê]s|dual/i.test(t)
-        });
-      }
-    }
-  }
-
   const addonResults = rawAddonResponses.map(({ addon, rawStreams, latencyMs }) => {
-    let filteredRaw = rawStreams.filter((s) => !isBadSubServer(s));
-
-    const streams = filteredRaw
-      .map((s) => normalizeStream(s, addon, directPool))
+    const streams = rawStreams
+      .map((s) => normalizeStream(s, addon))
       .filter((s) => s.proxyUrl);
 
     return {

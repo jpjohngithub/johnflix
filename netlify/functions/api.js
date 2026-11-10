@@ -39,7 +39,6 @@ const ADDONS = [
     type: 'p2p',
     manifestUrl: 'https://magneto-jnv5.onrender.com/v1/manifest.json',
     baseUrl: 'https://magneto-jnv5.onrender.com/v1',
-    fallbackUrl: 'https://torrentio.strem.fun/providers=yts,eztv,rarbg,1337x,thepiratebay|language=portuguese',
     logo: 'https://images.metahub.space/logo/medium/tt0133093/img',
     color: '#ec4899'
   },
@@ -50,7 +49,6 @@ const ADDONS = [
     type: 'p2p',
     manifestUrl: 'https://27a5b2bfe3c0-stremio-brazilian-addon.baby-beamup.club/manifest.json',
     baseUrl: 'https://27a5b2bfe3c0-stremio-brazilian-addon.baby-beamup.club',
-    fallbackUrl: 'https://torrentio.strem.fun/providers=micoleaodublado,comando,bludv',
     logo: 'https://i.ibb.co/YyPbHVT/icon.png',
     color: '#eab308'
   },
@@ -61,7 +59,6 @@ const ADDONS = [
     type: 'p2p',
     manifestUrl: 'https://94c8cb9f702d-brazuca-torrents.baby-beamup.club/manifest.json',
     baseUrl: 'https://94c8cb9f702d-brazuca-torrents.baby-beamup.club',
-    fallbackUrl: 'https://torrentio.strem.fun/providers=comando,bludv,lapumia,ondebaixa',
     logo: 'https://i.imgur.com/KVpfrAk.png',
     color: '#22c55e'
   }
@@ -144,26 +141,11 @@ function normalizeStream(rawStream, addon, fallbackDirectUrls = []) {
     if (streamUrl.startsWith('http://fenixflix.fenixhub.online/')) {
       streamUrl = streamUrl.replace('http://', 'https://');
     }
-    playType = 'direct';
-    proxyUrl = `/api/proxy-stream?url=${encodeURIComponent(streamUrl)}`;
-  } else if (embedUrl) {
-    playType = 'embed';
-    proxyUrl = embedUrl;
-  } else if (rawStream.infoHash) {
-    const hash = rawStream.infoHash.toLowerCase();
-    // If we have a matching cloud direct stream (e.g., 4K/1080p Dublado/Legendado), bridge the P2P entry to Cloud Instant Stream so it plays in <1s on any browser!
-    const matchingCloud = fallbackDirectUrls.find((f) => f.isDub === isDub && f.is4k === is4k)
-      || fallbackDirectUrls.find((f) => f.isDub === isDub)
-      || fallbackDirectUrls[0];
-
-    if (matchingCloud && matchingCloud.directUrl) {
-      playType = 'direct';
-      streamUrl = matchingCloud.directUrl;
-      proxyUrl = `/api/proxy-stream?url=${encodeURIComponent(streamUrl)}`;
-    } else {
-      playType = 'webtor';
-      proxyUrl = `/api/torrent/${hash}/stream.mp4`;
-    }
+    const isHls = /\.m3u8(?:$|[?#])/i.test(streamUrl);
+    playType = isHls ? 'hls' : 'direct';
+    proxyUrl = isHls ? streamUrl : `/api/proxy-stream?url=${encodeURIComponent(streamUrl)}`;
+  } else {
+    return null;
   }
 
   let serverLabel = (rawStream.name || addon.name).replace(/\n/g, ' ');
@@ -331,7 +313,7 @@ exports.handler = async (event) => {
       const decodedId = decodeURIComponent(rawId);
       const encodedId = encodeURIComponent(decodedId);
 
-      // 1. Fetch raw streams from all 6 addons (with automatic fallback for rate-limited/indexed addons)
+      // Fetch only streams returned by the configured addon.
       const rawAddonResponses = await Promise.all(
         ADDONS.map(async (addon) => {
           let rawStreams = [];
@@ -340,56 +322,14 @@ exports.handler = async (event) => {
             if (Array.isArray(data?.streams)) rawStreams = data.streams;
           } catch (e) {}
 
-          if (rawStreams.length === 0 && addon.fallbackUrl) {
-            try {
-              const fbData = await fetchJson(`${addon.fallbackUrl}/stream/${type}/${encodedId}.json`, 6500);
-              if (Array.isArray(fbData?.streams)) rawStreams = fbData.streams;
-            } catch (e) {}
-          }
           return { addon, rawStreams };
         })
       );
 
-      // 2. Collect verified direct HTTP MP4 streams from BestCine, FenixFlix, FrostStream to accelerate P2P servers in the cloud
-      const directPool = [];
-      for (const { addon, rawStreams } of rawAddonResponses) {
-        for (const s of rawStreams) {
-          if (s.url) {
-            // Skip known dead koyeb/squareweb test links if better ones exist
-            if (s.url.includes('passing-melinda') || s.url.includes('fenixbot.squareweb.app')) continue;
-            let cleanUrl = s.url;
-            if (cleanUrl.startsWith('http://fenixflix.fenixhub.online/')) {
-              cleanUrl = cleanUrl.replace('http://', 'https://');
-            }
-            const t = `${s.name || ''} ${s.title || ''}`;
-            directPool.push({
-              directUrl: cleanUrl,
-              is4k: /2160p|4k|uhd/i.test(t),
-              isDub: /dublado|🇧🇷|portugu[eê]s|dual/i.test(t),
-              title: s.title || addon.name
-            });
-          }
-        }
-      }
-
-      // 3. Normalize all 6 addons and ensure every single addon has working cloud streams
       const addonResults = rawAddonResponses.map(({ addon, rawStreams }) => {
-        let filteredRaw = rawStreams.filter((s) => {
-          if (s.url && (s.url.includes('passing-melinda') || s.url.includes('fenixbot.squareweb.app'))) return false;
-          return true;
-        });
-
-        // If an addon returned 0 streams for this specific title, populate it with Cloud Mirror / Embed streams so all 6 tabs always work!
-        if (filteredRaw.length === 0 && directPool.length > 0) {
-          filteredRaw = directPool.slice(0, 4).map((d, idx) => ({
-            name: `${addon.name} Cloud`,
-            title: `🎬 Mirror Cloud #${idx + 1}\n${d.isDub ? '🇧🇷 Dublado PT-BR' : '🇺🇸 Legendado'}`,
-            url: d.directUrl
-          }));
-        }
-
-        const streams = filteredRaw
-          .map((s) => normalizeStream(s, addon, directPool))
+        const streams = rawStreams
+          .map((s) => normalizeStream(s, addon))
+          .filter(Boolean)
           .filter((s) => s.proxyUrl);
 
         return {

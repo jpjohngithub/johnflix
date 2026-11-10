@@ -139,7 +139,6 @@
     modalShareBtn: document.getElementById('modalShareBtn'),
     playerFullscreenBtn: document.getElementById('playerFullscreenBtn'),
     cloudVideo: document.getElementById('cloudVideo'),
-    cloudEmbed: document.getElementById('cloudEmbed'),
     playerLoader: document.getElementById('playerLoader'),
     playerLoaderTitle: document.getElementById('playerLoaderTitle'),
     playerLoaderSub: document.getElementById('playerLoaderSub'),
@@ -4376,8 +4375,7 @@
     }
   }
 
-  // Universal Cloud Video Player (HTML5 MP4 + HLS.js + Safari Native HLS + Cloud Embed + Smart Auto-Failover)
-  let hlsInstance = null;
+  // Native HTML video playback with compatible-source failover.
   let playerHudTimer = null;
   let playerStallTimer = null;
   const failedStreamKeys = new Set();
@@ -4451,13 +4449,6 @@
     el.cloudVideo.onstalled = null;
   }
 
-  function destroyHls() {
-    if (hlsInstance) {
-      try { hlsInstance.destroy(); } catch (e) {}
-      hlsInstance = null;
-    }
-  }
-
   function launchCloudPlayer(stream, isAutoFailover = false) {
     state.currentStream = stream;
     if (!isAutoFailover) {
@@ -4472,7 +4463,6 @@
     showPlayerHud();
 
     clearVideoHandlers();
-    destroyHls();
     state.nextEpisodeDismissed = false;
     hideNextEpisodePrompt();
 
@@ -4494,38 +4484,19 @@
 
     renderPlayerDrawer(stream);
 
-    // Engine 3: Cloud Embed Iframe
-    if (stream.playType === 'embed' && el.cloudEmbed) {
+    // Do not pass an external player page to an iframe or HTML video element.
+    if (stream.playType === 'embed') {
       el.cloudVideo.pause();
       el.cloudVideo.removeAttribute('src');
+      el.cloudVideo.load();
       el.cloudVideo.classList.add('hidden');
-      el.cloudEmbed.classList.remove('hidden');
-      el.cloudEmbed.onload = () => {
-        el.playerLoader.classList.add('hidden');
-      };
-      const embedTarget = stream.proxyUrl || stream.embedUrl;
-      el.cloudEmbed.src = 'about:blank';
-      setTimeout(() => {
-        if (state.currentStream === stream && !el.playerOverlay.classList.contains('hidden')) {
-          el.cloudEmbed.src = embedTarget;
-        }
-      }, 40);
-      setTimeout(() => el.playerLoader.classList.add('hidden'), 1200);
-
-      // Embed black screen watchdog: show switch button if iframe hangs
-      blackScreenWatchdogTimer = setTimeout(() => {
-        if (!el.playerOverlay.classList.contains('hidden') && el.cloudVideo.classList.contains('hidden')) {
-          if (el.playerLoaderSwitchBtn) el.playerLoaderSwitchBtn.classList.remove('hidden');
-        }
-      }, 6500);
+      el.playerLoaderTitle.textContent = 'Fonte sem vídeo nativo';
+      el.playerLoaderSub.textContent = 'Escolha uma fonte de vídeo compatível com este navegador.';
+      el.playerLoader.classList.remove('hidden');
+      if (el.playerLoaderSwitchBtn) el.playerLoaderSwitchBtn.classList.remove('hidden');
       return;
     }
 
-    if (el.cloudEmbed) {
-      el.cloudEmbed.onload = null;
-      el.cloudEmbed.src = 'about:blank';
-      el.cloudEmbed.classList.add('hidden');
-    }
     el.cloudVideo.classList.remove('hidden');
 
     let playbackStarted = false;
@@ -4653,113 +4624,30 @@
       }
     };
 
-    // Engine 2: Universal HLS (.m3u8) via Safari Native HLS or hls.js
-    const isHls = stream.playType === 'hls' || (stream.proxyUrl && stream.proxyUrl.includes('.m3u8')) || (stream.directUrl && stream.directUrl.includes('.m3u8'));
+    // HLS is played only when the browser has a native decoder (such as Safari).
+    // Other browsers move to the next source without downloading a third-party player.
+    const isHls = stream.playType === 'hls' || /\.m3u8(?:$|[?#])/i.test(stream.directUrl || stream.proxyUrl || '');
     if (isHls) {
-      let rawHlsUrl = stream.proxyUrl || stream.directUrl || '';
-      if (window.location.protocol === 'https:' && rawHlsUrl.startsWith('http://')) {
-        rawHlsUrl = `/api/hls-proxy?url=${encodeURIComponent(rawHlsUrl)}`;
-      }
-      const preferProxy = window.location.protocol === 'https:' && rawHlsUrl.startsWith('/api/');
-      const hlsUrl = rawHlsUrl;
-
-      const isAppleNative = !!(navigator.userAgent && /iPhone|iPad|iPod|Macintosh/i.test(navigator.userAgent) && el.cloudVideo.canPlayType('application/vnd.apple.mpegurl') && !window.Hls?.isSupported());
-      if (isAppleNative) {
-        el.cloudVideo.src = hlsUrl;
-        el.cloudVideo.load();
-        startVideoPlayback();
-        el.cloudVideo.onerror = () => tryNextWorkingStream(stream);
+      if (!el.cloudVideo.canPlayType('application/vnd.apple.mpegurl')) {
+        tryNextWorkingStream(stream);
         return;
       }
-
-      if (window.Hls && window.Hls.isSupported()) {
-        class CustomTvLoader extends window.Hls.DefaultConfig.loader {
-          load(context, config, callbacks) {
-            const originalOnSuccess = callbacks.onSuccess;
-            callbacks.onSuccess = (response, stats, ctx, networkDetails) => {
-              if (response && response.data instanceof ArrayBuffer) {
-                const u8 = new Uint8Array(response.data);
-                if (u8.length > 68 && u8[0] === 0x89 && u8[1] === 0x50 && u8[2] === 0x4e && u8[3] === 0x47) {
-                  const iend = [0x49, 0x45, 0x4e, 0x44];
-                  for (let i = 0; i < Math.min(u8.length - 8, 200); i++) {
-                    if (u8[i] === iend[0] && u8[i + 1] === iend[1] && u8[i + 2] === iend[2] && u8[i + 3] === iend[3]) {
-                      const tsOffset = i + 8;
-                      response.data = response.data.slice(tsOffset);
-                      break;
-                    }
-                  }
-                }
-              }
-              originalOnSuccess(response, stats, ctx, networkDetails);
-            };
-            super.load(context, config, callbacks);
-          }
-        }
-
-        hlsInstance = new window.Hls({
-          enableWorker: true,
-          lowLatencyMode: false,
-          backBufferLength: 60,
-          maxBufferLength: 30,
-          maxMaxBufferLength: 60,
-          loader: CustomTvLoader
-        });
-        hlsInstance.loadSource(hlsUrl);
-        hlsInstance.attachMedia(el.cloudVideo);
-        hlsInstance.on(window.Hls.Events.MANIFEST_PARSED, () => {
-          hideLoader();
-          startVideoPlayback();
-        });
-        hlsInstance.on(window.Hls.Events.ERROR, (_, data) => {
-          if (data && data.fatal) {
-            if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR) {
-              if (hlsUrl && !hlsUrl.includes('/api/hls-proxy') && !hlsUrl.includes('/api/proxy-stream')) {
-                const retryProxied = `/api/hls-proxy?url=${encodeURIComponent(hlsUrl)}`;
-                try {
-                  hlsInstance.loadSource(retryProxied);
-                  return;
-                } catch (_) {}
-              }
-              tryNextWorkingStream(stream);
-            } else if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR) {
-              hlsInstance.recoverMediaError();
-            } else {
-              if (el.cloudVideo.canPlayType('application/vnd.apple.mpegurl')) {
-                destroyHls();
-                el.cloudVideo.src = hlsUrl;
-                el.cloudVideo.load();
-                startVideoPlayback();
-                return;
-              }
-              tryNextWorkingStream(stream);
-            }
-          }
-        });
-        return;
-      } else if (el.cloudVideo.canPlayType('application/vnd.apple.mpegurl')) {
-        el.cloudVideo.src = hlsUrl;
-        el.cloudVideo.load();
-        startVideoPlayback();
-        el.cloudVideo.onerror = () => tryNextWorkingStream(stream);
-        return;
-      }
+      el.cloudVideo.src = stream.proxyUrl || stream.directUrl;
+      el.cloudVideo.load();
+      startVideoPlayback();
+      el.cloudVideo.onerror = () => tryNextWorkingStream(stream);
+      return;
     }
 
-    // Engine 1: Direct Cloud MP4 Stream (with direct URL fallback + automatic failover to next working server)
+    // Direct video files are streamed through JohnFlix so the browser receives
+    // Range responses and the source's original MIME type from the same origin.
+    // Engine 1: Native HTML video playback (with direct URL fallback + automatic failover to next working server)
     el.cloudVideo.pause();
-    el.cloudVideo.src = stream.directUrl || stream.proxyUrl;
+    el.cloudVideo.src = stream.proxyUrl || stream.directUrl;
     el.cloudVideo.load();
     startVideoPlayback();
 
-    let retryDirectTried = false;
     el.cloudVideo.onerror = () => {
-      if (!retryDirectTried && stream.proxyUrl && stream.directUrl && stream.directUrl !== stream.proxyUrl) {
-        retryDirectTried = true;
-        el.cloudVideo.src = stream.proxyUrl;
-        el.cloudVideo.load();
-        startVideoPlayback();
-        return;
-      }
       tryNextWorkingStream(stream);
     };
   }
@@ -4823,7 +4711,6 @@
     closeCastModal();
     clearTimeout(playerHudTimer);
     clearVideoHandlers();
-    destroyHls();
     stopTorrentTelemetry();
     hideNextEpisodePrompt();
     state.nextEpisodeDismissed = false;
@@ -4835,11 +4722,6 @@
     el.cloudVideo.pause();
     el.cloudVideo.removeAttribute('src');
     el.cloudVideo.load();
-    if (el.cloudEmbed) {
-      el.cloudEmbed.onload = null;
-      el.cloudEmbed.src = 'about:blank';
-      el.cloudEmbed.classList.add('hidden');
-    }
     el.playerOverlay.classList.add('hidden');
     document.body.classList.remove('player-open');
     if (el.detailsModal.classList.contains('hidden')) {
