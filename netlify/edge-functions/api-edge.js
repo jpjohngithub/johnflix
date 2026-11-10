@@ -597,14 +597,16 @@ function setEdgeCache(key, val, ttlSec = 300) {
 const IPTV_URL = 'https://iptv-org.github.io/iptv/countries/br.m3u';
 const PRIVATE_HOST = /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|0\.|\[?::1|\[?f[cd])/i;
 
+function hlsProxied(u) {
+  return `/api/hls-proxy?url=${encodeURIComponent(u)}`;
+}
+
 async function hlsProxyHandler(request, url) {
   const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Expose-Headers': 'Content-Length, Content-Range' };
   const target = url.searchParams.get('url') || '';
-  const sig = url.searchParams.get('s') || '';
   let t;
   try { t = new URL(target); } catch (e) { return new Response('bad url', { status: 400, headers: cors }); }
   if (!/^https?:$/.test(t.protocol) || PRIVATE_HOST.test(t.hostname)) return new Response('forbidden', { status: 403, headers: cors });
-  if (sig && sig !== (await proxySign(target))) return new Response('forbidden', { status: 403, headers: cors });
 
   const fh = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126 Safari/537.36', Accept: '*/*' };
   if (/hakunaymatata\.com|mzfi\.me/i.test(t.hostname)) {
@@ -636,12 +638,12 @@ async function hlsProxyHandler(request, url) {
         let res = line;
         for (const x of m) {
           const a = abs(x[1]);
-          if (a) res = res.replace(x[0], `URI="${await hlsProxied(a)}"`);
+          if (a) res = res.replace(x[0], `URI="${hlsProxied(a)}"`);
         }
         return res;
       }
       const a = abs(line.trim());
-      return a ? await hlsProxied(a) : line;
+      return a ? hlsProxied(a) : line;
     }));
     return new Response(out.join('\n'), { status: 200, headers: { ...cors, 'Content-Type': 'application/vnd.apple.mpegurl', 'Cache-Control': 'no-store' } });
   }
@@ -1822,7 +1824,7 @@ export default async (request) => {
           const isHls = /\.m3u8(\?|$)/i.test(rawUrl) || /\/hls\b|\/hlsm\//i.test(rawUrl);
           const playType = isHls ? 'hls' : 'direct';
           const proxiedUrl = isHls
-            ? await hlsProxied(rawUrl)
+            ? hlsProxied(rawUrl)
             : `/api/proxy-stream?url=${encodeURIComponent(rawUrl)}`;
 
           const cleanTitle = String(picked.title || addon.name).replace(/\r?\n/g, ' • ').trim();
