@@ -3683,6 +3683,8 @@
 
   async function openServersModal() {
     if (!el.serversModal) return;
+    const modalTitle = el.serversModal.querySelector('.status-modal-title');
+    if (modalTitle) modalTitle.textContent = 'Servidores Adicionados';
     el.serversModal.classList.remove('hidden');
     el.serversModalList.innerHTML = `
       <div class="streams-loading">
