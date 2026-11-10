@@ -502,7 +502,7 @@ function normalizeStream(rawStream, addon) {
 
 // Fetch and aggregate streams from all 6 Stremio Addons in parallel
 async function fetchAggregatedStreams(type, id, reqHost) {
-  const cacheKey = `streams:v4:${type}:${id}`;
+  const cacheKey = `streams:v5:${type}:${id}`;
   const cached = getCached(cacheKey);
   if (cached) return cached;
 

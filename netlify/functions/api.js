@@ -118,7 +118,7 @@ function fetchJson(targetUrl, timeoutMs = 8000, redirectsLeft = 5) {
   });
 }
 
-function normalizeStream(rawStream, addon, fallbackDirectUrls = []) {
+function normalizeStream(rawStream, addon) {
   const titleText = `${rawStream.name || ''} ${rawStream.title || ''} ${rawStream.description || ''}`;
   const is4k = /2160p|4k|uhd/i.test(titleText);
   const is1080p = /1080p|full\s*hd|fhd/i.test(titleText);
@@ -135,15 +135,13 @@ function normalizeStream(rawStream, addon, fallbackDirectUrls = []) {
   let playType = 'direct';
   let streamUrl = rawStream.url || null;
   let proxyUrl = null;
-  let embedUrl = rawStream.embedUrl || null;
-
   if (streamUrl) {
     if (streamUrl.startsWith('http://fenixflix.fenixhub.online/')) {
       streamUrl = streamUrl.replace('http://', 'https://');
     }
     const isHls = /\.m3u8(?:$|[?#])/i.test(streamUrl);
     playType = isHls ? 'hls' : 'direct';
-    proxyUrl = isHls ? streamUrl : `/api/proxy-stream?url=${encodeURIComponent(streamUrl)}`;
+    proxyUrl = isHls ? `/api/hls-proxy?url=${encodeURIComponent(streamUrl)}` : `/api/proxy-stream?url=${encodeURIComponent(streamUrl)}`;
   } else {
     return null;
   }
@@ -171,9 +169,9 @@ function normalizeStream(rawStream, addon, fallbackDirectUrls = []) {
     playType,
     directUrl: streamUrl,
     proxyUrl,
-    embedUrl,
-    infoHash: rawStream.infoHash ? rawStream.infoHash.toLowerCase() : null,
-    fileIdx: rawStream.fileIdx !== undefined ? rawStream.fileIdx : null
+    embedUrl: null,
+    infoHash: null,
+    fileIdx: null
   };
 }
 
