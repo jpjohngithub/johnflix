@@ -463,7 +463,7 @@ async function fetchFrameXTVStreams(type, tmdbId, season = 1, episode = 1) {
 function isBadSubServer(rawStream) {
   const u = rawStream.url || '';
   const t = `${rawStream.name || ''} ${rawStream.title || ''} ${rawStream.description || ''}`;
-  if (u.includes('fenixflix.fenixhub.online') || u.includes('cloudflare-terms-of-service-abuse')) return true;
+  if (u.includes('cloudflare-terms-of-service-abuse')) return true;
   if (u.includes('.mkv') || u.includes('.mpd') || u.includes('manifest.mpd') || (rawStream.behaviorHints && rawStream.behaviorHints.notWebReady)) return true;
   if (rawStream.externalUrl && !rawStream.url && !rawStream.embedUrl) return true;
   if (/login necess[aá]rio|autentica[cç][aã]o pessoal|conecte sua conta/i.test(t)) return true;
@@ -476,7 +476,7 @@ function isBadSubServer(rawStream) {
   return false;
 }
 
-function normalizeStream(rawStream, addon, fallbackDirectUrls = [], idx = 0, englishPool = [], universalEmbedUrl = '', baseImdb = '', epSeason = '1', epNumber = '1') {
+function normalizeStream(rawStream, addon) {
   const titleText = `${rawStream.name || ''} ${rawStream.title || ''} ${rawStream.description || ''}`;
   const is4k = /2160p|4k|uhd/i.test(titleText);
   const is1080p = /1080p|full\s*hd|fhd/i.test(titleText);
@@ -509,10 +509,15 @@ function normalizeStream(rawStream, addon, fallbackDirectUrls = [], idx = 0, eng
     if (streamUrl.startsWith('http://fenixflix.fenixhub.online/')) {
       streamUrl = streamUrl.replace('http://', 'https://');
     }
-    if (streamUrl.includes('.m3u8') || streamUrl.includes('fenixtv.fenixhub.online/proxy') || streamUrl.includes('fenixtv.fenixhub.online/direct.m3u8')) {
+    const isHls = streamUrl.includes('.m3u8')
+      || streamUrl.includes('hls-proxy')
+      || streamUrl.includes('zunderflix.lat')
+      || streamUrl.includes('fenixtv.fenixhub.online/proxy')
+      || streamUrl.includes('fenixtv.fenixhub.online/direct.m3u8');
+    if (isHls) {
       playType = 'hls';
-      proxyUrl = streamUrl;
-    } else if (rawStream.isDirectCors || streamUrl.includes('workers.dev') || streamUrl.includes('fenixflix.fenixhub.online') || streamUrl.includes('flixnest.app') || streamUrl.includes('hakunaymatata.com')) {
+      proxyUrl = `/api/hls-proxy?url=${encodeURIComponent(streamUrl)}`;
+    } else if (rawStream.isDirectCors || streamUrl.includes('workers.dev') || streamUrl.includes('flixnest.app') || streamUrl.includes('hakunaymatata.com')) {
       playType = 'direct';
       proxyUrl = streamUrl;
     } else if (streamUrl.startsWith('https://')) {
@@ -526,26 +531,8 @@ function normalizeStream(rawStream, addon, fallbackDirectUrls = [], idx = 0, eng
     playType = 'embed';
     proxyUrl = embedUrl;
   } else if (rawStream.infoHash) {
-    const isSeries = (universalEmbedUrl || '').includes('/serie/') || (universalEmbedUrl || '').includes('/tv') || (epSeason && epSeason !== '1') || (epNumber && epNumber !== '1');
-    const pool = (forceEn && englishPool.length > 0) ? englishPool : fallbackDirectUrls;
-    if (pool.length > 0) {
-      const picked = pool[idx % pool.length];
-      playType = 'direct';
-      streamUrl = picked.directUrl;
-      proxyUrl = streamUrl;
-    } else {
-      playType = 'embed';
-      if (forceEn || addon.isEnglishOnly) {
-        proxyUrl = isSeries
-          ? `https://vidsrc.me/embed/tv?imdb=${baseImdb}&season=${epSeason}&episode=${epNumber}`
-          : `https://vidsrc.me/embed/movie?imdb=${baseImdb}`;
-      } else {
-        proxyUrl = isSeries
-          ? `https://superflixapi.fun/serie/${baseImdb}/${epSeason}/${epNumber}#noBackground#noEpList#noLink`
-          : `https://superflixapi.fun/filme/${baseImdb}#noBackground#noLink`;
-      }
-      embedUrl = proxyUrl;
-    }
+    playType = 'torrent';
+    proxyUrl = null;
   }
 
   let serverLabel = (rawStream.name || addon.name).replace(/\n/g, ' ');
@@ -626,6 +613,9 @@ async function hlsProxyHandler(request, url) {
   if (/tiktokcdn\.live|dadinhodetapioca/i.test(t.hostname)) {
     fh.Referer = 'https://dadinhodetapioca.fun/play/discoverychannel.html';
   }
+  if (/zunderflix\.lat|fenixflix/i.test(t.hostname)) {
+    fh.Referer = 'https://zunderflix.lat/';
+  }
   const range = request.headers.get('range');
   if (range) fh.Range = range;
   let up;
@@ -633,7 +623,7 @@ async function hlsProxyHandler(request, url) {
   if (!up.ok && up.status !== 206) return new Response('upstream ' + up.status, { status: 502, headers: cors });
 
   const ct = up.headers.get('content-type') || '';
-  const isM3u8 = /mpegurl/i.test(ct) || /\.m3u8(\?|$)/i.test(t.pathname + t.search);
+  const isM3u8 = /mpegurl/i.test(ct) || /\.m3u8(\?|$)/i.test(t.pathname + t.search) || t.pathname.includes('hls-proxy');
   if (isM3u8) {
     const text = await up.text();
     if (!text.startsWith('#EXTM3U')) return new Response(text, { status: 200, headers: { ...cors, 'Content-Type': ct || 'text/plain' } });
@@ -1599,69 +1589,23 @@ export default async (request) => {
         .map(({ addon, rawStreams }) => {
           const filteredRaw = rawStreams.filter((s) => !isBadSubServer(s));
           let streams = filteredRaw
-            .map((s, idx) => normalizeStream(s, addon, directPool, idx, englishPool, universalEmbedUrl, baseImdb, epSeason, epNumber))
-            .filter((s) => s.proxyUrl);
+            .map((s) => normalizeStream(s, addon))
+            .filter((s) => s && (s.proxyUrl || s.directUrl || s.embedUrl || s.infoHash));
 
-          if (streams.length === 0 && baseImdb) {
-            const isSeries = type === 'series';
-            let backupStream = null;
-            if (directPool.length > 0) {
-              const pool = (addon.isEnglishOnly && englishPool.length > 0) ? englishPool : directPool;
-              const picked = pool[Math.abs(strHash(addon.id)) % pool.length];
-              backupStream = {
-                addonId: addon.id,
-                addonName: addon.name,
-                addonBadge: addon.badge,
-                addonColor: addon.color,
-                serverLabel: `${addon.name} • ${picked.name || 'Servidor Cloud 1080p'}`,
-                rawName: addon.name,
-                rawTitle: `${addon.name} • ${addon.badge}`,
-                quality: picked.is4k ? '4K UHD' : '1080p Full HD',
-                is4k: picked.is4k,
-                isDub: picked.isDub,
-                audio: picked.isDub ? 'Dublado PT-BR' : 'Multi-Áudio / Dual',
-                seeds: null,
-                playType: 'direct',
-                directUrl: picked.directUrl,
-                proxyUrl: picked.directUrl,
-                embedUrl: null
-              };
-            } else {
-              let embedTarget = null;
-              if (addon.id === 'autoembed') {
-                embedTarget = isSeries ? `https://player.autoembed.cc/embed/tv/${baseImdb}/${epSeason}/${epNumber}` : `https://player.autoembed.cc/embed/movie/${baseImdb}`;
-              } else if (addon.id === 'videasy') {
-                embedTarget = isSeries ? `https://player.videasy.to/tv/${baseImdb}/${epSeason}/${epNumber}` : `https://player.videasy.to/movie/${baseImdb}`;
-              } else if (addon.id === 'vidsrc') {
-                embedTarget = isSeries ? `https://vidsrc.me/embed/tv?imdb=${baseImdb}&season=${epSeason}&episode=${epNumber}` : `https://vidsrc.me/embed/movie?imdb=${baseImdb}`;
-              } else if (addon.id === 'superflix') {
-                embedTarget = isSeries ? `https://superflixapi.fun/serie/${baseImdb}/${epSeason}/${epNumber}#noBackground#noEpList#noLink` : `https://superflixapi.fun/filme/${baseImdb}#noBackground#noLink`;
-              } else if (addon.isEnglishOnly) {
-                embedTarget = isSeries ? `https://vidsrc.me/embed/tv?imdb=${baseImdb}&season=${epSeason}&episode=${epNumber}` : `https://vidsrc.me/embed/movie?imdb=${baseImdb}`;
-              } else {
-                embedTarget = isSeries ? `https://superflixapi.fun/serie/${baseImdb}/${epSeason}/${epNumber}#noBackground#noEpList#noLink` : `https://superflixapi.fun/filme/${baseImdb}#noBackground#noLink`;
-              }
-              backupStream = {
-                addonId: addon.id,
-                addonName: addon.name,
-                addonBadge: addon.badge,
-                addonColor: addon.color,
-                serverLabel: `${addon.name} • Servidor ${addon.badge}`,
-                rawName: addon.name,
-                rawTitle: `${addon.name} • ${addon.badge}`,
-                quality: '1080p Full HD',
-                is4k: false,
-                isDub: !addon.isEnglishOnly,
-                audio: addon.isEnglishOnly ? 'Inglês (Original)' : 'Dublado PT-BR',
-                seeds: null,
-                playType: 'embed',
-                directUrl: null,
-                embedUrl: embedTarget,
-                proxyUrl: embedTarget
-              };
-            }
-            streams = [backupStream];
-          }
+          if (streams.length === 0) return null;
+          streams.sort(sortStreamsUniversal);
+
+          return {
+            addonId: addon.id,
+            addonName: addon.name,
+            badge: addon.badge,
+            color: addon.color,
+            isEnglishOnly: Boolean(addon.isEnglishOnly),
+            count: streams.length,
+            streams
+          };
+        })
+        .filter(Boolean);
 
           if (streams.length === 0) return null;
           streams.sort(sortStreamsUniversal);
