@@ -18,6 +18,7 @@ const MOVIE_ADDONS = [
     category: 'movie_series',
     manifestUrl: 'https://150203dd784e-cinetorrent-addon.baby-beamup.club/manifest.json',
     baseUrl: 'https://150203dd784e-cinetorrent-addon.baby-beamup.club',
+    fallbackUrl: 'https://torrentio.strem.fun/providers=comando,bludv,lapumia,ondebaixa',
     logo: 'https://i.ibb.co/RDtR0q0/Logo.jpg',
     color: '#eab308'
   },
@@ -62,6 +63,7 @@ const MOVIE_ADDONS = [
     category: 'movie_series',
     manifestUrl: 'https://magneto-jnv5.onrender.com/v1/manifest.json',
     baseUrl: 'https://magneto-jnv5.onrender.com/v1',
+    fallbackUrl: 'https://torrentio.strem.fun/providers=yts,eztv,rarbg,1337x,thepiratebay|language=portuguese',
     logo: 'https://images.metahub.space/logo/medium/tt0133093/img',
     color: '#ec4899'
   },
@@ -73,6 +75,7 @@ const MOVIE_ADDONS = [
     category: 'movie_series',
     manifestUrl: 'https://27a5b2bfe3c0-stremio-brazilian-addon.baby-beamup.club/manifest.json',
     baseUrl: 'https://27a5b2bfe3c0-stremio-brazilian-addon.baby-beamup.club',
+    fallbackUrl: 'https://torrentio.strem.fun/providers=micoleaodublado,comando,bludv',
     logo: 'https://i.ibb.co/YyPbHVT/icon.png',
     color: '#eab308'
   },
@@ -84,6 +87,7 @@ const MOVIE_ADDONS = [
     category: 'movie_series',
     manifestUrl: 'https://94c8cb9f702d-brazuca-torrents.baby-beamup.club/manifest.json',
     baseUrl: 'https://94c8cb9f702d-brazuca-torrents.baby-beamup.club',
+    fallbackUrl: 'https://torrentio.strem.fun/providers=comando,bludv,ondebaixa',
     logo: 'https://i.imgur.com/KVpfrAk.png',
     color: '#22c55e'
   },
@@ -95,6 +99,7 @@ const MOVIE_ADDONS = [
     category: 'movie_series',
     manifestUrl: 'https://guindex-stremio.vercel.app/manifest.json',
     baseUrl: 'https://guindex-stremio.vercel.app',
+    fallbackUrl: 'https://torrentio.strem.fun/providers=comando,bludv,lapumia',
     logo: 'https://raw.githubusercontent.com/GuickerZ/guindex/main/public/logo.png',
     color: '#10b981'
   },
@@ -106,6 +111,7 @@ const MOVIE_ADDONS = [
     category: 'movie_series',
     manifestUrl: 'https://stremio-addon.ehtudo.app/manifest.json',
     baseUrl: 'https://stremio-addon.ehtudo.app',
+    fallbackUrl: 'https://torrentio.strem.fun/providers=comando,bludv,micoleaodublado',
     logo: 'https://stremio-addon.ehtudo.app/logo-small-256x256.png',
     color: '#f97316'
   },
@@ -219,6 +225,7 @@ const MOVIE_ADDONS = [
     category: 'movie_series',
     manifestUrl: 'https://magnetflix.flixbr.online/qualities%3D4k%2C1080p%2C720p%2Csd%7Caudio%3Ddublado%2Clegendado%7Ccatalogs%3Dpopulares_movie%2Cpopulares_series%2Crecentes_servidor_movie%2Crecentes_servidor_series%2Cemalta_movie%2Cemalta_series/manifest.json',
     baseUrl: 'https://magnetflix.flixbr.online/qualities%3D4k%2C1080p%2C720p%2Csd%7Caudio%3Ddublado%2Clegendado%7Ccatalogs%3Dpopulares_movie%2Cpopulares_series%2Crecentes_servidor_movie%2Crecentes_servidor_series%2Cemalta_movie%2Cemalta_series',
+    fallbackUrl: 'https://torrentio.strem.fun/providers=comando,bludv,lapumia',
     logo: 'https://magnetflix.flixbr.online/static/logo.jpg',
     color: '#e11d48'
   },
@@ -230,6 +237,7 @@ const MOVIE_ADDONS = [
     category: 'movie_series',
     manifestUrl: 'https://magnetflix.flixbr.online/manifest.json',
     baseUrl: 'https://magnetflix.flixbr.online',
+    fallbackUrl: 'https://torrentio.strem.fun/providers=micoleaodublado,comando,bludv',
     logo: 'https://magnetflix.flixbr.online/static/logo.jpg',
     color: '#be123c'
   },
@@ -464,7 +472,7 @@ function isBadSubServer(rawStream) {
   const u = rawStream.url || '';
   const t = `${rawStream.name || ''} ${rawStream.title || ''} ${rawStream.description || ''}`;
   if (u.includes('cloudflare-terms-of-service-abuse')) return true;
-  if (u.includes('.mkv') || u.includes('.mpd') || u.includes('manifest.mpd') || (rawStream.behaviorHints && rawStream.behaviorHints.notWebReady)) return true;
+  if (u.includes('.mpd') || u.includes('manifest.mpd')) return true;
   if (rawStream.externalUrl && !rawStream.url && !rawStream.embedUrl) return true;
   if (/login necess[aá]rio|autentica[cç][aã]o pessoal|conecte sua conta/i.test(t)) return true;
   if (/official trailer|trailer/i.test(t) && !rawStream.url && !rawStream.embedUrl) return true;
@@ -1589,12 +1597,11 @@ export default async (request) => {
 
       const addonResults = rawAddonResponses
         .map(({ addon, rawStreams }) => {
-          const filteredRaw = rawStreams.filter((s) => !isBadSubServer(s));
+          const filteredRaw = (rawStreams || []).filter((s) => !isBadSubServer(s));
           let streams = filteredRaw
             .map((s) => normalizeStream(s, addon))
             .filter((s) => s && (s.proxyUrl || s.directUrl || s.embedUrl || s.infoHash));
 
-          if (streams.length === 0) return null;
           streams.sort(sortStreamsUniversal);
 
           return {
@@ -1606,8 +1613,7 @@ export default async (request) => {
             count: streams.length,
             streams
           };
-        })
-        .filter(Boolean);
+        });
 
       let allStreams = addonResults.flatMap((r) => r.streams);
       allStreams.sort(sortStreamsUniversal);
