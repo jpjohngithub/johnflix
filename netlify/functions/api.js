@@ -61,6 +61,26 @@ const ADDONS = [
     baseUrl: 'https://94c8cb9f702d-brazuca-torrents.baby-beamup.club',
     logo: 'https://i.imgur.com/KVpfrAk.png',
     color: '#22c55e'
+  },
+  {
+    id: 'torrentio',
+    name: 'Torrentio (Inglês)',
+    badge: 'TORRENT / EN',
+    type: 'p2p',
+    manifestUrl: 'https://torrentio.strem.fun/manifest.json',
+    baseUrl: 'https://torrentio.strem.fun',
+    logo: 'https://torrentio.strem.fun/images/logo_v1.png',
+    color: '#ef4444'
+  },
+  {
+    id: 'torrentio_br',
+    name: 'Torrentio (Dublado BR)',
+    badge: 'TORRENT / BR',
+    type: 'p2p',
+    manifestUrl: 'https://torrentio.strem.fun/providers=micoleaodublado,comando,bludv,lapumia,ondebaixa/manifest.json',
+    baseUrl: 'https://torrentio.strem.fun/providers=micoleaodublado,comando,bludv,lapumia,ondebaixa',
+    logo: 'https://torrentio.strem.fun/images/logo_v1.png',
+    color: '#8b5cf6'
   }
 ];
 
@@ -132,16 +152,27 @@ function normalizeStream(rawStream, addon) {
   const seedMatch = titleText.match(/👤\s*(\d+)/);
   const seeds = seedMatch ? parseInt(seedMatch[1], 10) : null;
 
-  let playType = 'direct';
   let streamUrl = rawStream.url || null;
   let proxyUrl = null;
+  let playType = 'direct';
+  let sourceKind = 'direct';
+  let sourceUrl = null;
   if (streamUrl) {
     if (streamUrl.startsWith('http://fenixflix.fenixhub.online/')) {
       streamUrl = streamUrl.replace('http://', 'https://');
     }
     const isHls = /\.m3u8(?:$|[?#])/i.test(streamUrl);
     playType = isHls ? 'hls' : 'direct';
+    sourceKind = playType;
     proxyUrl = isHls ? `/api/hls-proxy?url=${encodeURIComponent(streamUrl)}` : `/api/proxy-stream?url=${encodeURIComponent(streamUrl)}`;
+  } else if (rawStream.infoHash) {
+    playType = 'unsupported';
+    sourceKind = 'torrent';
+    sourceUrl = `magnet:?xt=urn:btih:${rawStream.infoHash}`;
+  } else if (rawStream.embedUrl) {
+    playType = 'unsupported';
+    sourceKind = 'external-player';
+    sourceUrl = rawStream.embedUrl;
   } else {
     return null;
   }
@@ -167,11 +198,13 @@ function normalizeStream(rawStream, addon) {
     audio,
     seeds,
     playType,
+    sourceKind,
+    sourceUrl,
     directUrl: streamUrl,
     proxyUrl,
     embedUrl: null,
-    infoHash: null,
-    fileIdx: null
+    infoHash: rawStream.infoHash ? rawStream.infoHash.toLowerCase() : null,
+    fileIdx: rawStream.fileIdx !== undefined ? rawStream.fileIdx : null
   };
 }
 
@@ -328,7 +361,7 @@ exports.handler = async (event) => {
         const streams = rawStreams
           .map((s) => normalizeStream(s, addon))
           .filter(Boolean)
-          .filter((s) => s.proxyUrl);
+          .filter((s) => s.proxyUrl || s.sourceUrl);
 
         return {
           addonId: addon.id,

@@ -463,17 +463,9 @@ async function fetchFrameXTVStreams(type, tmdbId, season = 1, episode = 1) {
 function isBadSubServer(rawStream) {
   const u = rawStream.url || '';
   const t = `${rawStream.name || ''} ${rawStream.title || ''} ${rawStream.description || ''}`;
-  if (u.includes('cloudflare-terms-of-service-abuse')) return true;
-  if (u.includes('.mkv') || u.includes('.mpd') || u.includes('manifest.mpd') || (rawStream.behaviorHints && rawStream.behaviorHints.notWebReady)) return true;
-  if (rawStream.externalUrl && !rawStream.url && !rawStream.embedUrl) return true;
-  if (/login necess[aá]rio|autentica[cç][aã]o pessoal|conecte sua conta/i.test(t)) return true;
-  if (/official trailer|trailer/i.test(t) && !rawStream.url && !rawStream.embedUrl) return true;
-  if (rawStream.ytId && !u && !rawStream.embedUrl && !rawStream.infoHash) return true;
-  if (/\[official trailer\]|play trailer|open in stremio|install stremio/i.test(t)) return true;
-  if (/moviebox/i.test(t) || /moviebox/i.test(u)) return true;
-  if (u.includes('koyeb.app') || u.includes('squareweb.app')) return true;
-  if (/hypex|atlas|\bastra\b|\bneon\b/i.test(t)) return true;
-  return false;
+  if (!rawStream.url && !rawStream.infoHash && !rawStream.embedUrl) return true;
+  return u.includes('cloudflare-terms-of-service-abuse')
+    || /\[official trailer\]|play trailer|open in stremio|install stremio/i.test(t);
 }
 
 function normalizeStream(rawStream, addon) {
@@ -503,6 +495,8 @@ function normalizeStream(rawStream, addon) {
   let playType = 'direct';
   let streamUrl = rawStream.url || null;
   let proxyUrl = null;
+  let sourceKind = 'direct';
+  let sourceUrl = null;
 
   if (streamUrl) {
     if (streamUrl.startsWith('http://fenixflix.fenixhub.online/')) {
@@ -510,13 +504,22 @@ function normalizeStream(rawStream, addon) {
     }
     if (/\.m3u8(?:$|[?#])/i.test(streamUrl) || streamUrl.includes('fenixtv.fenixhub.online/proxy') || streamUrl.includes('fenixtv.fenixhub.online/direct.m3u8')) {
       playType = 'hls';
+      sourceKind = 'hls';
       proxyUrl = `/api/hls-proxy?url=${encodeURIComponent(streamUrl)}`;
     } else {
       playType = 'direct';
+      sourceKind = 'direct';
       proxyUrl = `/api/proxy-stream?url=${encodeURIComponent(streamUrl)}`;
     }
+  } else if (rawStream.infoHash) {
+    playType = 'unsupported';
+    sourceKind = 'torrent';
+    sourceUrl = `magnet:?xt=urn:btih:${rawStream.infoHash}`;
+  } else if (rawStream.embedUrl) {
+    playType = 'unsupported';
+    sourceKind = 'external-player';
+    sourceUrl = rawStream.embedUrl;
   } else {
-    // infoHash entries and embeds require a separate player/engine, so they are not native sources.
     return null;
   }
 
@@ -546,9 +549,11 @@ function normalizeStream(rawStream, addon) {
     audio,
     seeds,
     playType,
+    sourceKind,
+    sourceUrl,
     directUrl: streamUrl,
     proxyUrl,
-    embedUrl: null,
+    embedUrl: rawStream.embedUrl || null,
     infoHash: rawStream.infoHash ? rawStream.infoHash.toLowerCase() : null,
     fileIdx: rawStream.fileIdx !== undefined ? rawStream.fileIdx : null
   };
@@ -1430,7 +1435,7 @@ export default async (request) => {
       const decodedId = decodeURIComponent(rawId);
       const encodedId = encodeURIComponent(decodedId);
 
-      const streamCacheKey = `streams:v21:${type}:${decodedId}`;
+      const streamCacheKey = `streams:v22:${type}:${decodedId}`;
       const cachedStreams = getEdgeCache(streamCacheKey);
       if (cachedStreams) return new Response(cachedStreams, { status: 200, headers });
 
@@ -1523,7 +1528,7 @@ export default async (request) => {
           const filteredRaw = rawStreams.filter((s) => !isBadSubServer(s));
           let streams = filteredRaw
             .map((s) => normalizeStream(s, addon))
-            .filter((s) => s && s.proxyUrl);
+            .filter((s) => s && (s.proxyUrl || s.sourceUrl));
 
 
 

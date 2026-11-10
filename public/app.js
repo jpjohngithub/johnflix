@@ -3663,7 +3663,8 @@
       card.setAttribute('tabindex', '0');
       card.setAttribute('role', 'button');
       const seedsTag = stream.seeds ? ` · ${stream.seeds}` : '';
-      const audioText = `${stream.audio || ''}${seedsTag}`;
+      const nativeHint = stream.playType === 'unsupported' ? ' · Requer player externo ou torrent' : '';
+      const audioText = `${stream.audio || ''}${seedsTag}${nativeHint}`;
 
       card.innerHTML = `
         <span class="stream-dot" style="background:${stream.addonColor}"></span>
@@ -3671,7 +3672,7 @@
           <span class="stream-server-name">${escapeHtml(stream.serverLabel)}</span>
           <span class="stream-audio ${stream.isEnglishOnly ? 'is-en' : ''}">${escapeHtml(audioText)}</span>
         </div>
-        <span class="stream-quality">${escapeHtml(stream.quality)}</span>
+        <span class="stream-quality">${escapeHtml(stream.playType === 'unsupported' ? 'ADDON' : stream.quality)}</span>
         <span class="stream-play-ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 9-14 9V3z"/></svg></span>
       `;
 
@@ -4484,14 +4485,18 @@
 
     renderPlayerDrawer(stream);
 
-    // Do not pass an external player page to an iframe or HTML video element.
-    if (stream.playType === 'embed') {
+    // Preserve non-native Stremio results in the source list without treating
+    // an embed page or an unstreamed magnet as a browser video URL.
+    if (stream.playType === 'unsupported' || stream.playType === 'embed') {
       el.cloudVideo.pause();
       el.cloudVideo.removeAttribute('src');
       el.cloudVideo.load();
       el.cloudVideo.classList.add('hidden');
-      el.playerLoaderTitle.textContent = 'Fonte sem vídeo nativo';
-      el.playerLoaderSub.textContent = 'Escolha uma fonte de vídeo compatível com este navegador.';
+      const isTorrent = stream.sourceKind === 'torrent' || stream.infoHash;
+      el.playerLoaderTitle.textContent = isTorrent ? 'Fonte torrent disponível' : 'Fonte sem vídeo nativo';
+      el.playerLoaderSub.textContent = isTorrent
+        ? 'Esta implantação não converte magnet em vídeo. Escolha uma fonte direta para reproduzir no navegador.'
+        : 'O addon retornou um player externo; escolha uma fonte direta para reprodução nativa.';
       el.playerLoader.classList.remove('hidden');
       if (el.playerLoaderSwitchBtn) el.playerLoaderSwitchBtn.classList.remove('hidden');
       return;

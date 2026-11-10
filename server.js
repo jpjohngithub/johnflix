@@ -76,6 +76,26 @@ const ADDONS = [
     baseUrl: 'https://94c8cb9f702d-brazuca-torrents.baby-beamup.club',
     logo: 'https://i.imgur.com/KVpfrAk.png',
     color: '#22c55e'
+  },
+  {
+    id: 'torrentio',
+    name: 'Torrentio (Inglês)',
+    badge: 'TORRENT / EN',
+    type: 'p2p',
+    manifestUrl: 'https://torrentio.strem.fun/manifest.json',
+    baseUrl: 'https://torrentio.strem.fun',
+    logo: 'https://torrentio.strem.fun/images/logo_v1.png',
+    color: '#ef4444'
+  },
+  {
+    id: 'torrentio_br',
+    name: 'Torrentio (Dublado BR)',
+    badge: 'TORRENT / BR',
+    type: 'p2p',
+    manifestUrl: 'https://torrentio.strem.fun/providers=micoleaodublado,comando,bludv,lapumia,ondebaixa/manifest.json',
+    baseUrl: 'https://torrentio.strem.fun/providers=micoleaodublado,comando,bludv,lapumia,ondebaixa',
+    logo: 'https://torrentio.strem.fun/images/logo_v1.png',
+    color: '#8b5cf6'
   }
 ];
 
@@ -450,6 +470,8 @@ function normalizeStream(rawStream, addon) {
   let streamUrl = rawStream.url || null;
   let proxyUrl = null;
   let magnetUri = null;
+  let sourceKind = 'direct';
+  let sourceUrl = null;
 
   if (streamUrl) {
     if (streamUrl.startsWith('http://fenixflix.fenixhub.online/')) {
@@ -457,12 +479,14 @@ function normalizeStream(rawStream, addon) {
     }
     const isHls = /\.m3u8(?:$|[?#])/i.test(streamUrl);
     playType = isHls ? 'hls' : 'direct';
+    sourceKind = playType;
     // The local server has no manifest rewriter; native HLS must resolve segments
     // from the original playlist URL. Other media is streamed through JohnFlix.
     proxyUrl = isHls ? streamUrl : `/api/proxy-stream?url=${encodeURIComponent(streamUrl)}`;
   } else if (rawStream.infoHash) {
     const hash = rawStream.infoHash.toLowerCase();
     playType = 'torrent';
+    sourceKind = 'torrent';
     const trackers = (rawStream.sources || [])
       .filter((s) => typeof s === 'string' && s.startsWith('tracker:'))
       .map((s) => s.replace(/^tracker:/, ''));
@@ -470,6 +494,12 @@ function normalizeStream(rawStream, addon) {
     const fileIdxParam = rawStream.fileIdx !== undefined ? `&fileIdx=${rawStream.fileIdx}` : '';
     proxyUrl = `/api/torrent/${hash}/stream.mp4?${trQuery}${fileIdxParam}`;
     magnetUri = `magnet:?xt=urn:btih:${hash}&dn=${encodeURIComponent(rawStream.title || 'JohnFlix')}`;
+  } else if (rawStream.embedUrl) {
+    playType = 'unsupported';
+    sourceKind = 'external-player';
+    sourceUrl = rawStream.embedUrl;
+  } else {
+    return null;
   }
 
   let serverLabel = (rawStream.name || addon.name).replace(/\n/g, ' ');
@@ -493,6 +523,8 @@ function normalizeStream(rawStream, addon) {
     audio,
     seeds,
     playType,
+    sourceKind,
+    sourceUrl,
     directUrl: streamUrl,
     proxyUrl,
     infoHash: rawStream.infoHash ? rawStream.infoHash.toLowerCase() : null,
@@ -523,7 +555,7 @@ async function fetchAggregatedStreams(type, id, reqHost) {
   const addonResults = rawAddonResponses.map(({ addon, rawStreams, latencyMs }) => {
     const streams = rawStreams
       .map((s) => normalizeStream(s, addon))
-      .filter((s) => s.proxyUrl);
+      .filter((s) => s.proxyUrl || s.sourceUrl);
 
     return {
       addonId: addon.id,
