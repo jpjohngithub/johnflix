@@ -4575,11 +4575,11 @@
     };
 
     // Anti-Black-Screen Watchdog: verifies video frames actually decode and advance
-    const stallLimit = state.currentItem?.type === 'tv' ? 12000 : 15000;
+    const stallLimit = state.currentItem?.type === 'tv' ? 8000 : 3500;
     blackScreenWatchdogTimer = setTimeout(() => {
       if (el.playerOverlay.classList.contains('hidden')) return;
       if (!el.cloudVideo.classList.contains('hidden')) {
-        const hasFrames = el.cloudVideo.currentTime > 0.2 && el.cloudVideo.videoWidth > 0;
+        const hasFrames = el.cloudVideo.currentTime > 0.1 && el.cloudVideo.videoWidth > 0;
         if (!hasFrames) {
           tryNextWorkingStream(stream);
         }
@@ -4590,7 +4590,17 @@
       if (!playbackStarted && !el.playerOverlay.classList.contains('hidden')) {
         tryNextWorkingStream(stream);
       }
-    }, stallLimit + 1500);
+    }, stallLimit + 800);
+
+    setTimeout(() => {
+      if (!el.playerOverlay.classList.contains('hidden') && !el.playerLoader.classList.contains('hidden')) {
+        if (!el.cloudVideo.classList.contains('hidden') && el.cloudVideo.currentTime < 0.1) {
+          tryNextWorkingStream(stream);
+        } else {
+          hideLoader();
+        }
+      }
+    }, 3500);
 
     // Subtitles auto-fetch via LegendasBR
     Array.from(el.cloudVideo.querySelectorAll('track')).forEach((t) => t.remove());
@@ -4621,7 +4631,9 @@
       el.cloudVideo.muted = false;
       const playPromise = el.cloudVideo.play();
       if (playPromise !== undefined) {
-        playPromise.catch((err) => {
+        playPromise.then(() => {
+          hideLoader();
+        }).catch((err) => {
           if (err && err.name === 'NotAllowedError') {
             // Mobile / Safari strict autoplay policy fallback: start muted so video begins immediately, user can tap unmute
             el.cloudVideo.muted = true;
@@ -4630,7 +4642,10 @@
               setTimeout(() => { try { el.cloudVideo.muted = false; } catch (e) {} }, 300);
             }).catch(() => {
               hideLoader();
+              tryNextWorkingStream(stream);
             });
+          } else {
+            tryNextWorkingStream(stream);
           }
         });
       }
