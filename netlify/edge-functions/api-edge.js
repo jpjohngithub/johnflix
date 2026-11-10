@@ -1607,21 +1607,6 @@ export default async (request) => {
         })
         .filter(Boolean);
 
-          if (streams.length === 0) return null;
-          streams.sort(sortStreamsUniversal);
-
-          return {
-            addonId: addon.id,
-            addonName: addon.name,
-            badge: addon.badge,
-            color: addon.color,
-            isEnglishOnly: Boolean(addon.isEnglishOnly),
-            count: streams.length,
-            streams
-          };
-        })
-        .filter(Boolean);
-
       let allStreams = addonResults.flatMap((r) => r.streams);
       allStreams.sort(sortStreamsUniversal);
 
