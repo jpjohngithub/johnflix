@@ -3021,29 +3021,38 @@
 
   // Client-side Stream Cache & Prefetcher for Instant Opening
   const clientStreamsCache = new Map();
-  function prefetchStreams(type, targetId, optItem = null) {
+  function prefetchStreams(type, targetId, optItem = null, { fast = false } = {}) {
     if (!type || !targetId) return null;
     const isVault = String(targetId).startsWith('vault:') || state.isVaultMode;
-    const key = `${isVault ? 'vault' : type}:${targetId}`;
+    const baseKey = `${isVault ? 'vault' : type}:${targetId}`;
+    const fullExisting = clientStreamsCache.get(baseKey);
+    if (fullExisting && fullExisting.exp > Date.now() && (!fast || fullExisting.settled)) {
+      return fullExisting.promise;
+    }
+    const key = fast ? `fast:${baseKey}` : baseKey;
     const existing = clientStreamsCache.get(key);
     if (existing && existing.exp > Date.now()) return existing.promise;
 
     const channelName = optItem?.name || optItem?.title || state.currentItem?.name || '';
-    const nameParam = (type === 'tv' && channelName) ? `?name=${encodeURIComponent(channelName)}` : '';
+    const qs = [];
+    if (type === 'tv' && channelName) qs.push(`name=${encodeURIComponent(channelName)}`);
+    if (fast && !isVault) qs.push('fast=1');
+    const querySuffix = qs.length ? `?${qs.join('&')}` : '';
 
     const url = isVault
       ? `/api/vault/streams?id=${encodeURIComponent(targetId)}`
-      : `/api/streams/${type}/${encodeURIComponent(targetId)}${nameParam}`;
+      : `/api/streams/${type}/${encodeURIComponent(targetId)}${querySuffix}`;
 
-    const cacheEntry = { promise: null, exp: Number.MAX_SAFE_INTEGER };
+    const cacheEntry = { promise: null, exp: Number.MAX_SAFE_INTEGER, settled: false };
     const promise = fetch(url)
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       })
       .then((data) => {
+        cacheEntry.settled = true;
         if (Array.isArray(data?.streams) && data.streams.length > 0) {
-          cacheEntry.exp = Date.now() + 60 * 1000;
+          cacheEntry.exp = Date.now() + (fast && data.hasPending ? 15 : 60) * 1000;
         } else {
           // Empty/partial results are often caused by a short addon outage. Do not
           // keep them in the client cache and hide recovered sources for 5 minutes.
@@ -3591,7 +3600,7 @@
 
     try {
       const item = state.currentItem;
-      const data = await prefetchStreams(type, targetId, item);
+      const data = await prefetchStreams(type, targetId, item, { fast: true });
       if (currentLoadTargetId !== targetId) return;
       el.streamsLoading.classList.add('hidden');
 
@@ -3607,13 +3616,55 @@
       renderStreamsList();
       renderPlayerDrawer();
 
-      if (autoPlayFirst || state.pendingAutoPlay) {
+      const wantAutoPlay = Boolean(autoPlayFirst || state.pendingAutoPlay);
+      let needsAutoPlayAfterFull = false;
+      if (wantAutoPlay) {
         state.pendingAutoPlay = false;
         if (state.currentStreams.length > 0) {
           launchCloudPlayer(pickBestPlayableStream(state.currentStreams));
+        } else if (data?.hasPending) {
+          needsAutoPlayAfterFull = true;
         } else {
           tryNextWorkingStream(null);
         }
+      }
+
+      if (data?.hasPending) {
+        const fastCount = state.currentStreams.length;
+        Promise.resolve(prefetchStreams(type, targetId, item, { fast: false }))
+          .then((fullData) => {
+            if (currentLoadTargetId !== targetId || !fullData) return;
+            state.currentStreams = fullData.streams || [];
+            el.streamCounter.textContent = state.currentStreams.length;
+
+            if (state.activeAddonFilter !== 'all') {
+              const hasMatching = state.currentStreams.some((s) => s.addonId === state.activeAddonFilter);
+              if (!hasMatching) state.activeAddonFilter = 'all';
+            }
+
+            renderAddonFilterTabs(fullData.servers || []);
+            renderStreamsList();
+            renderPlayerDrawer();
+
+            const fastFailedAll = wantAutoPlay
+              && state.currentStreams.length > fastCount
+              && el.playerLoader
+              && !el.playerLoader.classList.contains('hidden')
+              && el.playerLoaderSwitchBtn
+              && !el.playerLoaderSwitchBtn.classList.contains('hidden');
+
+            if (needsAutoPlayAfterFull || fastFailedAll) {
+              if (state.currentStreams.length > 0) {
+                launchCloudPlayer(pickBestPlayableStream(state.currentStreams));
+              } else {
+                tryNextWorkingStream(null);
+              }
+            }
+          })
+          .catch(() => {
+            if (currentLoadTargetId !== targetId) return;
+            if (needsAutoPlayAfterFull) tryNextWorkingStream(null);
+          });
       }
     } catch (err) {
       if (currentLoadTargetId !== targetId) return;
@@ -3647,9 +3698,11 @@
       const btn = document.createElement('button');
       btn.className = `addon-tab ${state.activeAddonFilter === srv.addonId ? 'active' : ''} ${srv.count === 0 ? 'empty' : ''}`;
       const engTag = srv.isEnglishOnly && !srv.addonName.includes('') ? '' : '';
-      btn.textContent = `${engTag}${srv.addonName} (${srv.count})`;
+      const countLabel = srv.status === 'loading' ? '...' : srv.count;
+      btn.textContent = `${engTag}${srv.addonName} (${countLabel})`;
       const statusText = {
         available: 'retornou fontes',
+        loading: 'buscando fontes...',
         empty: 'sem fontes para este título',
         offline: 'addon indisponível',
         filtered: 'resultados filtrados como promocionais ou incompatíveis',

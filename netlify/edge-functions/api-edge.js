@@ -387,6 +387,7 @@ async function fetchFrameXTVStreams(type, tmdbId, season = 1, episode = 1) {
             name: `FrameXTV • ${src.server || prov.toUpperCase()}`,
             title: `🇺🇸 ${src.server || prov} (${src.quality || '1080p'})\n🇺🇸 Inglês (Original)`,
             url: src.url,
+            isHls: Boolean(src.isHls || (src.url && (/\.m3u8|hybrows\.workers\.dev/i.test(src.url) || prov === 'bowler' || prov === 'giant'))),
             isDirectCors: Boolean(src.skipProxy || (src.url && src.url.includes('workers.dev')))
           }));
         }
@@ -499,9 +500,11 @@ function normalizeStream(rawStream, addon) {
     }
     const isDash = /\.mpd(?:$|[?#])/i.test(streamUrl);
     const isMkv = /\.mkv(?:$|[?#])/i.test(streamUrl);
-    const isHls = /\.m3u8(?:$|[?#])/i.test(streamUrl)
+    const isHls = Boolean(rawStream.isHls)
+      || /\.m3u8(?:$|[?#])/i.test(streamUrl)
       || /[?&](?:format|type)=hls\b/i.test(streamUrl)
       || /\/hls(?:\/|\?|$)/i.test(streamUrl)
+      || /hybrows\.workers\.dev/i.test(streamUrl)
       || streamUrl.includes('hls-proxy')
       || streamUrl.includes('zunderflix.lat')
       || streamUrl.includes('fenixtv.fenixhub.online/proxy')
@@ -1461,7 +1464,8 @@ export default async (request) => {
       const decodedId = decodeURIComponent(rawId);
       const encodedId = encodeURIComponent(decodedId);
 
-      const streamCacheKey = `streams:v24:${type}:${decodedId}`;
+      const isFast = url.searchParams.get('fast') === '1';
+      const streamCacheKey = `streams:v25:${type}:${decodedId}`;
       const streamHeaders = { ...headers, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
       const cachedStreams = getEdgeCache(streamCacheKey);
       if (cachedStreams) return new Response(cachedStreams, { status: 200, headers: streamHeaders });
@@ -1484,42 +1488,69 @@ export default async (request) => {
         }
       })();
 
-      const rawAddonResponses = await Promise.all(
-        MOVIE_ADDONS.map(async (addon) => {
-          if (type === 'tv' && addon.id === 'framextv') {
-            return { addon, rawStreams: [], sourceStatus: 'unsupported', sourceError: 'Addon não oferece stream de canais ao vivo.', latencyMs: null };
-          }
-          if (addon.id === 'framextv') {
-            const tmdbId = await tmdbPromise;
-            const fxStreams = await fetchFrameXTVStreams(type, tmdbId, epSeason, epNumber);
-            return { addon, rawStreams: fxStreams, sourceStatus: fxStreams.length ? 'available' : 'empty', sourceError: null, latencyMs: null };
-          }
-          let rawStreams = [];
-          let sourceStatus = 'offline';
-          let sourceError = null;
+      const addonResultsState = MOVIE_ADDONS.map((addon) => ({
+        addon,
+        rawStreams: [],
+        sourceStatus: 'loading',
+        sourceError: null,
+        latencyMs: null,
+        done: false
+      }));
+
+      const addonTasks = addonResultsState.map(async (entry) => {
+        const { addon } = entry;
+        if (type === 'tv' && addon.id === 'framextv') {
+          entry.sourceStatus = 'unsupported';
+          entry.sourceError = 'Addon não oferece stream de canais ao vivo.';
+          entry.done = true;
+          return;
+        }
+        if (addon.id === 'framextv') {
           const startedAt = Date.now();
-          try {
-            const data = await fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 9500);
-            rawStreams = Array.isArray(data?.streams) ? data.streams : [];
-            sourceStatus = rawStreams.length ? 'available' : 'empty';
-          } catch (e) {
-            sourceError = String(e?.message || 'upstream error').slice(0, 120);
-          }
-          return { addon, rawStreams, sourceStatus, sourceError, latencyMs: Date.now() - startedAt };
-        })
-      );
+          const tmdbId = await tmdbPromise;
+          const fxStreams = await fetchFrameXTVStreams(type, tmdbId, epSeason, epNumber);
+          entry.rawStreams = fxStreams;
+          entry.sourceStatus = fxStreams.length ? 'available' : 'empty';
+          entry.latencyMs = Date.now() - startedAt;
+          entry.done = true;
+          return;
+        }
+        const startedAt = Date.now();
+        try {
+          const data = await fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 9500);
+          entry.rawStreams = Array.isArray(data?.streams) ? data.streams : [];
+          entry.sourceStatus = entry.rawStreams.length ? 'available' : 'empty';
+        } catch (e) {
+          entry.sourceStatus = 'offline';
+          entry.sourceError = String(e?.message || 'upstream error').slice(0, 120);
+        }
+        entry.latencyMs = Date.now() - startedAt;
+        entry.done = true;
+      });
+
+      if (isFast) {
+        await Promise.race([
+          Promise.all(addonTasks),
+          new Promise((resolve) => setTimeout(resolve, 2200))
+        ]);
+      } else {
+        await Promise.all(addonTasks);
+      }
+
+      const rawAddonResponses = addonResultsState.map((e) => ({ ...e }));
+      const hasPending = isFast && rawAddonResponses.some((e) => !e.done);
 
       const sortStreamsUniversal = (a, b) => {
         const rank = (s) => {
-          if (s.playType === 'direct' && !s.isHevcOrMkv) return 0;
+          if (s.playType === 'direct' && !s.isHevcOrMkv && !/hd\.plavio\.site\/.*\/extract\//i.test(s.directUrl || '')) return 0;
           if (s.playType === 'hls') return 1;
           if (s.playType === 'direct') return 2;
           if (s.playType === 'torrent' && s.proxyUrl) return 3;
           return 4;
         };
         if (rank(a) !== rank(b)) return rank(a) - rank(b);
-        const aDegraded = /free\.flixnest\.app\/api\/4khdhub\//i.test(a.directUrl || '') ? 1 : 0;
-        const bDegraded = /free\.flixnest\.app\/api\/4khdhub\//i.test(b.directUrl || '') ? 1 : 0;
+        const aDegraded = /free\.flixnest\.app\/api\/(?:4khdhub|hdhub4u)\//i.test(a.directUrl || '') ? 1 : 0;
+        const bDegraded = /free\.flixnest\.app\/api\/(?:4khdhub|hdhub4u)\//i.test(b.directUrl || '') ? 1 : 0;
         if (aDegraded !== bDegraded) return aDegraded - bDegraded;
         if (a.isDub !== b.isDub) return a.isDub ? -1 : 1;
         if (a.is4k !== b.is4k) return a.is4k ? 1 : -1;
@@ -1557,11 +1588,12 @@ export default async (request) => {
       const bodyStr = JSON.stringify({
         id: decodedId,
         type,
+        hasPending,
         totalStreams: allStreams.length,
         servers: addonResults,
         streams: allStreams
       });
-      if (allStreams.length > 0) {
+      if (!isFast && allStreams.length > 0) {
         const hasFailedAddon = addonResults.some((server) => server.status === 'offline');
         setEdgeCache(streamCacheKey, bodyStr, hasFailedAddon ? 15 : 300);
       }

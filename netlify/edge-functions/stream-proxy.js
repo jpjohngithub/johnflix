@@ -82,7 +82,7 @@ export default async (request, context) => {
       }
 
       const abortCtrl = new AbortController();
-      const abortTimer = setTimeout(() => abortCtrl.abort(), 5500);
+      const abortTimer = setTimeout(() => abortCtrl.abort(), 8500);
       try {
         upstreamRes = await fetch(currentUrl, {
           method: 'GET',

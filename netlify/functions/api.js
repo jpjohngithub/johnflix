@@ -462,10 +462,11 @@ function normalizeStream(rawStream, addon) {
       streamUrl = streamUrl.replace('http://', 'https://');
     }
     if (/\.mpd(?:$|[?#])/i.test(streamUrl)) return null;
-    const isHls = /\.m3u8(?:$|[?#])/i.test(streamUrl)
+    const isHls = Boolean(rawStream.isHls)
+      || /\.m3u8(?:$|[?#])/i.test(streamUrl)
       || /[?&](?:format|type)=hls\b/i.test(streamUrl)
       || /\/hls(?:\/|\?|$)/i.test(streamUrl)
-      || /zunderflix\.lat|fenixtv\.fenixhub\.online\/(?:proxy|direct\.m3u8)/i.test(streamUrl);
+      || /hybrows\.workers\.dev|zunderflix\.lat|fenixtv\.fenixhub\.online\/(?:proxy|direct\.m3u8)/i.test(streamUrl);
     if (/^http:\/\//i.test(streamUrl) || /fenixflix\.fenixhub\.online|zunderflix\.lat|hd\.plavio\.site|free\.flixnest\.app|hakunaymatata\.com|mzfi\.me|animesfhd\.net|pixel-sus-4k-image\.com|stravo\.site/i.test(streamUrl)) {
       requiresProxy = true;
     }
@@ -679,15 +680,15 @@ exports.handler = async (event) => {
 
       const sortStreamsUniversal = (a, b) => {
         const rank = (s) => {
-          if (s.playType === 'direct' && !s.isHevcOrMkv) return 0;
+          if (s.playType === 'direct' && !s.isHevcOrMkv && !/hd\.plavio\.site\/.*\/extract\//i.test(s.directUrl || '')) return 0;
           if (s.playType === 'hls') return 1;
           if (s.playType === 'direct') return 2;
           if (s.playType === 'torrent' && s.proxyUrl) return 3;
           return 4;
         };
         if (rank(a) !== rank(b)) return rank(a) - rank(b);
-        const aDegraded = /free\.flixnest\.app\/api\/4khdhub\//i.test(a.directUrl || '') ? 1 : 0;
-        const bDegraded = /free\.flixnest\.app\/api\/4khdhub\//i.test(b.directUrl || '') ? 1 : 0;
+        const aDegraded = /free\.flixnest\.app\/api\/(?:4khdhub|hdhub4u)\//i.test(a.directUrl || '') ? 1 : 0;
+        const bDegraded = /free\.flixnest\.app\/api\/(?:4khdhub|hdhub4u)\//i.test(b.directUrl || '') ? 1 : 0;
         if (aDegraded !== bDegraded) return aDegraded - bDegraded;
         if (a.isDub !== b.isDub) return a.isDub ? -1 : 1;
         if (a.is4k !== b.is4k) return a.is4k ? 1 : -1;
