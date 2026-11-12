@@ -122,7 +122,7 @@ export default async (request, context) => {
         headers: { 'Location': hlsTarget, 'Access-Control-Allow-Origin': '*' }
       });
     }
-    if (upstreamType.includes('text/html')) {
+    if (upstreamType.includes('text/html') || upstreamType.includes('dash+xml')) {
       try { await upstreamRes.body?.cancel(); } catch {}
       return new Response('Esta fonte respondeu com uma página de bloqueio, não com vídeo.', {
         status: 451,

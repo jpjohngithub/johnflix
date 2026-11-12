@@ -1053,7 +1053,7 @@ async function fetchAggregatedStreams(type, id, reqHost) {
       return 4;
     };
     if (rank(a) !== rank(b)) return rank(a) - rank(b);
-    const isDegraded = (s) => (/free\.flixnest\.app\/api\/(?:4khdhub|hdhub4u)\//i.test(s.directUrl || '') || /\bbadger\b|dbonline\.tech-cdn\.top/i.test(`${s.serverLabel || ''} ${s.directUrl || ''}`)) ? 1 : 0;
+    const isDegraded = (s) => (/free\.flixnest\.app\/api\/(?:4khdhub|hdhub4u)\//i.test(s.directUrl || '') || /\b(?:badger|cinejoy|netmirror|multimovies|cinezo)\b|dbonline\.tech-cdn\.top/i.test(`${s.serverLabel || ''} ${s.directUrl || ''}`)) ? 1 : 0;
     const aDegraded = isDegraded(a);
     const bDegraded = isDegraded(b);
     if (aDegraded !== bDegraded) return aDegraded - bDegraded;

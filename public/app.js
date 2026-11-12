@@ -3373,6 +3373,38 @@
     renderSeasonEpisodes(initialSeason, autoPlayFirst, customEp, skipInitialStreamLoad);
   }
 
+  function mergeStreamsPayload(prevData, nextData) {
+    const serverMap = new Map();
+    const order = [];
+    for (const srv of (prevData?.servers || [])) {
+      serverMap.set(srv.addonId, srv);
+      order.push(srv.addonId);
+    }
+    for (const srv of (nextData?.servers || [])) {
+      const prev = serverMap.get(srv.addonId);
+      if (!prev) order.push(srv.addonId);
+      // Never lose streams that already loaded on the fast pass if a slow addon flakes on the full pass
+      if (!prev || srv.count >= prev.count || (prev.count === 0 && srv.status !== 'loading')) {
+        serverMap.set(srv.addonId, srv);
+      }
+    }
+    const mergedServers = order.map((id) => serverMap.get(id)).filter(Boolean);
+    const seenKeys = new Set();
+    const mergedStreams = [];
+    const pushUnique = (list) => {
+      for (const s of (list || [])) {
+        const key = `${s.addonId || ''}:${getStreamKey(s)}`;
+        if (seenKeys.has(key)) continue;
+        seenKeys.add(key);
+        mergedStreams.push(s);
+      }
+    };
+    pushUnique(prevData?.streams);
+    pushUnique(nextData?.streams);
+    for (const srv of mergedServers) pushUnique(srv.streams);
+    return { servers: mergedServers, streams: mergedStreams };
+  }
+
   let currentLoadTargetId = null;
   async function loadStreamsForTarget(type, targetId, autoPlayFirst = false) {
     currentLoadTargetId = targetId;
@@ -3416,7 +3448,8 @@
         Promise.resolve(prefetchStreams(type, targetId, item, { fast: false }))
           .then((fullData) => {
             if (currentLoadTargetId !== targetId || !fullData) return;
-            state.currentStreams = fullData.streams || [];
+            const merged = mergeStreamsPayload({ servers: data.servers || [], streams: state.currentStreams }, fullData);
+            state.currentStreams = merged.streams;
             el.streamCounter.textContent = state.currentStreams.length;
 
             if (state.activeAddonFilter !== 'all') {
@@ -3424,7 +3457,7 @@
               if (!hasMatching) state.activeAddonFilter = 'all';
             }
 
-            renderAddonFilterTabs(fullData.servers || []);
+            renderAddonFilterTabs(merged.servers);
             renderStreamsList();
             renderPlayerDrawer();
 
@@ -4573,8 +4606,10 @@
       `;
       return;
     }
-    const playableOnly = state.currentStreams.filter(isStreamPlayableNow);
-    const drawerStreams = playableOnly.length > 0 ? playableOnly : state.currentStreams;
+    const drawerStreams = [
+      ...state.currentStreams.filter(isStreamPlayableNow),
+      ...state.currentStreams.filter((s) => !isStreamPlayableNow(s))
+    ];
     drawerStreams.forEach((s) => {
       const isCurrent = Boolean(state.currentStream && (
         state.currentStream === s

@@ -1467,7 +1467,7 @@ export default async (request) => {
       const encodedId = encodeURIComponent(decodedId);
 
       const isFast = url.searchParams.get('fast') === '1';
-      const streamCacheKey = `streams:v28:${type}:${decodedId}`;
+      const streamCacheKey = `streams:v29:${type}:${decodedId}`;
       const streamHeaders = { ...headers, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
       const cachedStreams = getEdgeCache(streamCacheKey);
       if (cachedStreams) return new Response(cachedStreams, { status: 200, headers: streamHeaders });
@@ -1501,6 +1501,12 @@ export default async (request) => {
 
       const addonTasks = addonResultsState.map(async (entry) => {
         const { addon } = entry;
+        if (addon.id === 'orangebyte' || addon.id === 'tvdb_search') {
+          entry.sourceStatus = 'unsupported';
+          entry.sourceError = 'Addon de catálogo/metadados (sem streams).';
+          entry.done = true;
+          return;
+        }
         if (type === 'tv' && addon.id === 'framextv') {
           entry.sourceStatus = 'unsupported';
           entry.sourceError = 'Addon não oferece stream de canais ao vivo.';
@@ -1521,6 +1527,16 @@ export default async (request) => {
         try {
           const data = await fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 9500);
           entry.rawStreams = Array.isArray(data?.streams) ? data.streams : [];
+          if (entry.rawStreams.length === 0 && (addon.id === 'pleiades' || addon.id === 'plaviohd') && type !== 'tv') {
+            const tmdbId = await tmdbPromise;
+            if (tmdbId) {
+              const tmdbTarget = type === 'series' ? `tmdb:${tmdbId}:${epSeason}:${epNumber}` : `tmdb:${tmdbId}`;
+              const tmdbData = await fetchJson(`${addon.baseUrl}/stream/${type}/${encodeURIComponent(tmdbTarget)}.json`, 4500).catch(() => null);
+              if (Array.isArray(tmdbData?.streams) && tmdbData.streams.length > 0) {
+                entry.rawStreams = tmdbData.streams;
+              }
+            }
+          }
           entry.sourceStatus = entry.rawStreams.length ? 'available' : 'empty';
         } catch (e) {
           entry.sourceStatus = 'offline';
@@ -1551,7 +1567,7 @@ export default async (request) => {
           return 4;
         };
         if (rank(a) !== rank(b)) return rank(a) - rank(b);
-        const isDegraded = (s) => (/free\.flixnest\.app\/api\/(?:4khdhub|hdhub4u)\//i.test(s.directUrl || '') || /\bbadger\b|dbonline\.tech-cdn\.top/i.test(`${s.serverLabel || ''} ${s.directUrl || ''}`)) ? 1 : 0;
+        const isDegraded = (s) => (/free\.flixnest\.app\/api\/(?:4khdhub|hdhub4u)\//i.test(s.directUrl || '') || /\b(?:badger|cinejoy|netmirror|multimovies|cinezo)\b|dbonline\.tech-cdn\.top/i.test(`${s.serverLabel || ''} ${s.directUrl || ''}`)) ? 1 : 0;
         const aDegraded = isDegraded(a);
         const bDegraded = isDegraded(b);
         if (aDegraded !== bDegraded) return aDegraded - bDegraded;
