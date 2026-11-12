@@ -539,7 +539,7 @@ function normalizeStream(rawStream, addon) {
   let serverLabel = (rawStream.name || addon.name).replace(/\n/g, ' ');
   serverLabel = serverLabel.replace(/\bstremio\b/gi, '').replace(/\baddon\b/gi, '').replace(/\s+/g, ' ').trim();
   const subText = `${rawStream.title || ''}\n${rawStream.description || ''}`;
-  const subServerMatch = subText.match(/(?:⚡|🦡|⬛|📍|🐉|🌊|⚙️|⚙|🌪️|🔋|⭐️|❄️|🔥|💎)\s*(?:Servidor:\s*)?([^\n\r]+)/i);
+  const subServerMatch = subText.match(/(?:^|\n)\s*(?:⚡|🦡|⬛|📍|🐉|🌊|⚙️|⚙|🌪️|🔋|⭐️|❄️|💎)\s*(?:Servidor:\s*)?([^\n\r]+)/i);
   if (subServerMatch) {
     let cleanSub = subServerMatch[1].replace(/\bstremio\b/gi, '').replace(/https?:\/\/[^\s]+/gi, '').trim();
     serverLabel = `${addon.name} • ${cleanSub}`;
@@ -1465,7 +1465,7 @@ export default async (request) => {
       const encodedId = encodeURIComponent(decodedId);
 
       const isFast = url.searchParams.get('fast') === '1';
-      const streamCacheKey = `streams:v26:${type}:${decodedId}`;
+      const streamCacheKey = `streams:v27:${type}:${decodedId}`;
       const streamHeaders = { ...headers, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
       const cachedStreams = getEdgeCache(streamCacheKey);
       if (cachedStreams) return new Response(cachedStreams, { status: 200, headers: streamHeaders });
