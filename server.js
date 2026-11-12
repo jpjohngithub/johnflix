@@ -499,7 +499,8 @@ function isBadSubServer(rawStream) {
   const t = `${rawStream.name || ''} ${rawStream.title || ''} ${rawStream.description || ''}`;
   const hasSource = Boolean(rawStream.url || rawStream.infoHash);
   if (!hasSource || /cloudflare-terms-of-service-abuse/i.test(u)) return true;
-  if (/requer autentica[cç][aã]o|login necess[aá]rio|try the paid tier|go premium/i.test(t) && !rawStream.url) return true;
+  if (/\b(?:badger|cinejoy|netmirror|multimovies|cinezo)\b|dbonline\.tech-cdn\.top/i.test(`${t} ${u}`)) return true;
+  if (/requer autentica[cç][aã]o|login necess[aá]rio|m[eé]todo n[aã]o autorizado|try the paid tier|go premium/i.test(t) && !rawStream.url) return true;
   const isPromo = /\[official trailer\]|play trailer|open in stremio|install stremio/i.test(t);
   return isPromo && !rawStream.url && !rawStream.infoHash;
 }

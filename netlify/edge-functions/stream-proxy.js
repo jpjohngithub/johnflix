@@ -43,6 +43,18 @@ export default async (request, context) => {
     });
   }
 
+  if (/\b(?:badger|cinejoy|netmirror|multimovies|cinezo)\b|dbonline\.tech-cdn\.top/i.test(targetUrl)) {
+    return new Response('Fonte desativada devido a bloqueio do provedor upstream.', {
+      status: 451,
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Expose-Headers': 'X-JohnFlix-Source-Error',
+        'X-JohnFlix-Source-Error': 'upstream-policy'
+      }
+    });
+  }
+
   // Upgrade fenixflix http to https to avoid extra redirect hop
   if (targetUrl.startsWith('http://fenixflix.fenixhub.online/')) {
     targetUrl = targetUrl.replace('http://', 'https://');

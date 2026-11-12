@@ -143,6 +143,8 @@
     playerLoaderTitle: document.getElementById('playerLoaderTitle'),
     playerLoaderSub: document.getElementById('playerLoaderSub'),
     playerLoaderSwitchBtn: document.getElementById('playerLoaderSwitchBtn'),
+    playerLoaderStremioBtn: document.getElementById('playerLoaderStremioBtn'),
+    playerLoaderMagnetBtn: document.getElementById('playerLoaderMagnetBtn'),
     playerServerDrawer: document.getElementById('playerServerDrawer'),
     closeDrawerBtn: document.getElementById('closeDrawerBtn'),
     playerDrawerList: document.getElementById('playerDrawerList'),
@@ -4399,11 +4401,23 @@
     el.playerLoaderTitle.textContent = isAutoFailover ? 'Alternando para servidor compatível...' : 'Iniciando reprodução rápida...';
     el.playerLoaderSub.textContent = `${stream.serverLabel} • ${stream.quality}`;
     if (el.playerLoaderSwitchBtn) el.playerLoaderSwitchBtn.classList.add('hidden');
+    if (el.playerLoaderStremioBtn) el.playerLoaderStremioBtn.classList.add('hidden');
+    if (el.playerLoaderMagnetBtn) el.playerLoaderMagnetBtn.classList.add('hidden');
 
     if (stream.playType === 'torrent' && stream.proxyUrl) startTorrentTelemetry(stream.infoHash);
     else stopTorrentTelemetry();
 
     renderPlayerDrawer(stream);
+
+    // If a P2P/torrent stream is picked in a browser without local streaming proxy, auto-bridge to the best working cloud stream
+    if (stream.playType === 'torrent' && !stream.proxyUrl) {
+      const bestPlayable = (state.currentStreams || []).find((s) => isStreamPlayableNow(s) && !failedStreamKeys.has(getStreamKey(s)));
+      if (bestPlayable) {
+        showToast(`Conectando via Nuvem Direta (${bestPlayable.serverLabel})`);
+        launchCloudPlayer(bestPlayable, movie, episode);
+        return;
+      }
+    }
 
     const canPlayTorrent = stream.playType === 'torrent' && Boolean(stream.proxyUrl);
     const nativePlayable = ['direct', 'hls'].includes(stream.playType) || canPlayTorrent;
@@ -4412,19 +4426,26 @@
       el.cloudVideo.removeAttribute('src');
       el.cloudVideo.load();
       el.cloudVideo.classList.add('hidden');
-      const hasPlayableAlternative = (state.currentStreams || []).some(isStreamPlayableNow);
-      const reason = {
-        torrent: [
-          'Torrent indisponível neste ambiente',
-          hasPlayableAlternative
-            ? 'Fontes P2P não tocam no Netlify. Clique em "Escolher Outra Fonte" para usar os servidores diretos no topo da lista.'
-            : 'Este ambiente não oferece o servidor de stream P2P do JohnFlix para esta fonte.'
-        ],
-        unsupported: [stream.sourceKind === 'dash' ? 'Formato DASH incompatível' : 'Formato de vídeo incompatível', 'O navegador não consegue reproduzir este formato como vídeo nativo. Escolha outra fonte.']
-      }[stream.playType] || ['Fonte incompatível', 'Escolha uma fonte de vídeo nativa.'];
       el.playerLoader.classList.remove('hidden');
-      el.playerLoaderTitle.textContent = reason[0];
-      el.playerLoaderSub.textContent = reason[1];
+      if (stream.playType === 'torrent') {
+        el.playerLoaderTitle.textContent = 'Fonte P2P (Torrent / Stremio)';
+        el.playerLoaderSub.textContent = 'Esta fonte P2P requer cliente local. Abra diretamente no Stremio ou app de Torrent:';
+        const stremioUrl = `stremio:///detail/${movie?.type || state.currentItem?.type || 'movie'}/${movie?.id || state.currentItem?.id || ''}`;
+        const magnetUrl = stream.sourceUrl || (stream.infoHash ? `magnet:?xt=urn:btih:${stream.infoHash}` : '');
+        if (el.playerLoaderStremioBtn) {
+          el.playerLoaderStremioBtn.href = stremioUrl;
+          el.playerLoaderStremioBtn.classList.remove('hidden');
+        }
+        if (el.playerLoaderMagnetBtn && magnetUrl) {
+          el.playerLoaderMagnetBtn.href = magnetUrl;
+          el.playerLoaderMagnetBtn.classList.remove('hidden');
+        }
+      } else {
+        el.playerLoaderTitle.textContent = stream.sourceKind === 'dash' ? 'Formato DASH incompatível' : 'Formato incompatível';
+        el.playerLoaderSub.textContent = 'O navegador não consegue reproduzir este formato diretamente. Escolha outra fonte.';
+        if (el.playerLoaderStremioBtn) el.playerLoaderStremioBtn.classList.add('hidden');
+        if (el.playerLoaderMagnetBtn) el.playerLoaderMagnetBtn.classList.add('hidden');
+      }
       if (el.playerLoaderSwitchBtn) el.playerLoaderSwitchBtn.classList.remove('hidden');
       return;
     }
@@ -4433,6 +4454,8 @@
     let playbackStarted = false;
     const hideLoader = () => {
       el.playerLoader.classList.add('hidden');
+      if (el.playerLoaderStremioBtn) el.playerLoaderStremioBtn.classList.add('hidden');
+      if (el.playerLoaderMagnetBtn) el.playerLoaderMagnetBtn.classList.add('hidden');
     };
 
     const resumeAt = state.pendingResume > 5 ? state.pendingResume : 0;
