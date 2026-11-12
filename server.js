@@ -1322,8 +1322,12 @@ const server = http.createServer(async (req, res) => {
         ADDONS.map(async (a) => {
           const t0 = Date.now();
           try {
-            const m = await fetchJson(a.manifestUrl, 6000);
-            return { ...a, online: true, version: m.version, description: m.description, pingMs: Date.now() - t0 };
+            const pingTarget = a.id === 'framextv'
+              ? 'https://api.framextv.tech/api/stream?type=movie&id=693134&provider=bowler'
+              : a.manifestUrl;
+            const m = await fetchJson(pingTarget, 6000);
+            const isOk = a.id === 'framextv' ? Boolean(m?.success || Array.isArray(m?.sources)) : Boolean(m && (m.id || m.name || m.resources));
+            return { ...a, online: isOk, version: m?.version, description: m?.description, pingMs: Date.now() - t0 };
           } catch (e) {
             return { ...a, online: false, error: e.message, pingMs: Date.now() - t0 };
           }

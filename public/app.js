@@ -3432,12 +3432,15 @@
 
       const wantAutoPlay = Boolean(autoPlayFirst || state.pendingAutoPlay);
       let needsAutoPlayAfterFull = false;
+      const bestFastPlayable = state.currentStreams.find(isStreamPlayableNow);
       if (wantAutoPlay) {
         state.pendingAutoPlay = false;
-        if (state.currentStreams.length > 0) {
-          launchCloudPlayer(pickBestPlayableStream(state.currentStreams));
+        if (bestFastPlayable) {
+          launchCloudPlayer(bestFastPlayable);
         } else if (data?.hasPending) {
           needsAutoPlayAfterFull = true;
+        } else if (state.currentStreams.length > 0) {
+          launchCloudPlayer(pickBestPlayableStream(state.currentStreams));
         } else {
           tryNextWorkingStream(null);
         }
@@ -3468,8 +3471,11 @@
               && el.playerLoaderSwitchBtn
               && !el.playerLoaderSwitchBtn.classList.contains('hidden');
 
-            if (needsAutoPlayAfterFull || fastFailedAll) {
-              if (state.currentStreams.length > 0) {
+            const nextPlayable = state.currentStreams.find((s) => isStreamPlayableNow(s) && !failedStreamKeys.has(getStreamKey(s)));
+            if (needsAutoPlayAfterFull || (fastFailedAll && nextPlayable)) {
+              if (nextPlayable) {
+                launchCloudPlayer(nextPlayable);
+              } else if (state.currentStreams.length > 0) {
                 launchCloudPlayer(pickBestPlayableStream(state.currentStreams));
               } else {
                 tryNextWorkingStream(null);
@@ -4406,8 +4412,14 @@
       el.cloudVideo.removeAttribute('src');
       el.cloudVideo.load();
       el.cloudVideo.classList.add('hidden');
+      const hasPlayableAlternative = (state.currentStreams || []).some(isStreamPlayableNow);
       const reason = {
-        torrent: ['Torrent indisponível neste ambiente', 'Este ambiente não oferece o servidor de stream P2P do JohnFlix para esta fonte.'],
+        torrent: [
+          'Torrent indisponível neste ambiente',
+          hasPlayableAlternative
+            ? 'Fontes P2P não tocam no Netlify. Clique em "Escolher Outra Fonte" para usar os servidores diretos no topo da lista.'
+            : 'Este ambiente não oferece o servidor de stream P2P do JohnFlix para esta fonte.'
+        ],
         unsupported: [stream.sourceKind === 'dash' ? 'Formato DASH incompatível' : 'Formato de vídeo incompatível', 'O navegador não consegue reproduzir este formato como vídeo nativo. Escolha outra fonte.']
       }[stream.playType] || ['Fonte incompatível', 'Escolha uma fonte de vídeo nativa.'];
       el.playerLoader.classList.remove('hidden');
@@ -4619,13 +4631,14 @@
       const canPlayNow = isStreamPlayableNow(s);
       const item = document.createElement('div');
       item.className = `drawer-stream-row${isCurrent ? ' active' : ''}`;
+      if (!canPlayNow) item.style.opacity = '0.52';
       item.innerHTML = `
         <span class="stream-dot" style="background:${s.addonColor || 'var(--purple-bright)'}"></span>
         <div class="drawer-stream-info">
           <strong>${escapeHtml(s.serverLabel)}</strong>
           <span>${escapeHtml(s.audio || 'Dublado / Legendado')} • ${escapeHtml(s.quality || 'HD')}</span>
         </div>
-        <span class="drawer-stream-status">${isCurrent ? 'Reproduzindo' : (canPlayNow ? 'Assistir' : 'P2P / Stremio')}</span>
+        <span class="drawer-stream-status">${isCurrent ? 'Reproduzindo' : (canPlayNow ? 'Assistir' : 'P2P (Local/Stremio)')}</span>
       `;
       item.addEventListener('click', (e) => {
         e.stopPropagation();
