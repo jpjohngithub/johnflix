@@ -1461,7 +1461,7 @@ export default async (request) => {
       const decodedId = decodeURIComponent(rawId);
       const encodedId = encodeURIComponent(decodedId);
 
-      const streamCacheKey = `streams:v23:${type}:${decodedId}`;
+      const streamCacheKey = `streams:v24:${type}:${decodedId}`;
       const streamHeaders = { ...headers, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
       const cachedStreams = getEdgeCache(streamCacheKey);
       if (cachedStreams) return new Response(cachedStreams, { status: 200, headers: streamHeaders });
@@ -1499,7 +1499,7 @@ export default async (request) => {
           let sourceError = null;
           const startedAt = Date.now();
           try {
-            const data = await fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 6500);
+            const data = await fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 9500);
             rawStreams = Array.isArray(data?.streams) ? data.streams : [];
             sourceStatus = rawStreams.length ? 'available' : 'empty';
           } catch (e) {
