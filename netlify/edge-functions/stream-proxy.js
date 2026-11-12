@@ -135,6 +135,25 @@ export default async (request, context) => {
       });
     }
 
+    // Reject tiny warning/decoy videos (e.g. "AVISO: Método Não Autorizado" 101KB MP4)
+    const contentRangeHeader = upstreamRes.headers.get('content-range') || '';
+    const crTotalMatch = contentRangeHeader.match(/\/(\d+)\s*$/);
+    const totalBytes = crTotalMatch
+      ? Number(crTotalMatch[1])
+      : (upstreamRes.status === 200 ? Number(upstreamRes.headers.get('content-length') || 0) : 0);
+    if (upstreamType.startsWith('video/') && totalBytes > 0 && totalBytes < 524288) {
+      try { await upstreamRes.body?.cancel(); } catch {}
+      return new Response('Esta fonte retornou um vídeo de aviso/bloqueio, não o conteúdo real.', {
+        status: 451,
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Expose-Headers': 'X-JohnFlix-Source-Error',
+          'X-JohnFlix-Source-Error': 'upstream-policy'
+        }
+      });
+    }
+
     const resHeaders = new Headers({
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',

@@ -539,7 +539,7 @@ function normalizeStream(rawStream, addon) {
   let serverLabel = (rawStream.name || addon.name).replace(/\n/g, ' ');
   serverLabel = serverLabel.replace(/\bstremio\b/gi, '').replace(/\baddon\b/gi, '').replace(/\s+/g, ' ').trim();
   const subText = `${rawStream.title || ''}\n${rawStream.description || ''}`;
-  const subServerMatch = subText.match(/(?:⚡|🦡|📍|🐉|🌊|⚙️|⚙|🌪️|🔋|⭐️|❄️|🔥|💎)\s*(?:Servidor:\s*)?([^\n\r]+)/i);
+  const subServerMatch = subText.match(/(?:⚡|🦡|⬛|📍|🐉|🌊|⚙️|⚙|🌪️|🔋|⭐️|❄️|🔥|💎)\s*(?:Servidor:\s*)?([^\n\r]+)/i);
   if (subServerMatch) {
     let cleanSub = subServerMatch[1].replace(/\bstremio\b/gi, '').replace(/https?:\/\/[^\s]+/gi, '').trim();
     serverLabel = `${addon.name} • ${cleanSub}`;
@@ -1465,7 +1465,7 @@ export default async (request) => {
       const encodedId = encodeURIComponent(decodedId);
 
       const isFast = url.searchParams.get('fast') === '1';
-      const streamCacheKey = `streams:v25:${type}:${decodedId}`;
+      const streamCacheKey = `streams:v26:${type}:${decodedId}`;
       const streamHeaders = { ...headers, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
       const cachedStreams = getEdgeCache(streamCacheKey);
       if (cachedStreams) return new Response(cachedStreams, { status: 200, headers: streamHeaders });
@@ -1549,8 +1549,9 @@ export default async (request) => {
           return 4;
         };
         if (rank(a) !== rank(b)) return rank(a) - rank(b);
-        const aDegraded = /free\.flixnest\.app\/api\/(?:4khdhub|hdhub4u)\//i.test(a.directUrl || '') ? 1 : 0;
-        const bDegraded = /free\.flixnest\.app\/api\/(?:4khdhub|hdhub4u)\//i.test(b.directUrl || '') ? 1 : 0;
+        const isDegraded = (s) => (/free\.flixnest\.app\/api\/(?:4khdhub|hdhub4u)\//i.test(s.directUrl || '') || /\bbadger\b|dbonline\.tech-cdn\.top/i.test(`${s.serverLabel || ''} ${s.directUrl || ''}`)) ? 1 : 0;
+        const aDegraded = isDegraded(a);
+        const bDegraded = isDegraded(b);
         if (aDegraded !== bDegraded) return aDegraded - bDegraded;
         if (a.isDub !== b.isDub) return a.isDub ? -1 : 1;
         if (a.is4k !== b.is4k) return a.is4k ? 1 : -1;

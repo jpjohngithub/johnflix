@@ -1053,8 +1053,9 @@ async function fetchAggregatedStreams(type, id, reqHost) {
       return 4;
     };
     if (rank(a) !== rank(b)) return rank(a) - rank(b);
-    const aDegraded = /free\.flixnest\.app\/api\/(?:4khdhub|hdhub4u)\//i.test(a.directUrl || '') ? 1 : 0;
-    const bDegraded = /free\.flixnest\.app\/api\/(?:4khdhub|hdhub4u)\//i.test(b.directUrl || '') ? 1 : 0;
+    const isDegraded = (s) => (/free\.flixnest\.app\/api\/(?:4khdhub|hdhub4u)\//i.test(s.directUrl || '') || /\bbadger\b|dbonline\.tech-cdn\.top/i.test(`${s.serverLabel || ''} ${s.directUrl || ''}`)) ? 1 : 0;
+    const aDegraded = isDegraded(a);
+    const bDegraded = isDegraded(b);
     if (aDegraded !== bDegraded) return aDegraded - bDegraded;
     if (a.isDub !== b.isDub) return a.isDub ? -1 : 1;
     if (a.is4k !== b.is4k) return a.is4k ? 1 : -1;
