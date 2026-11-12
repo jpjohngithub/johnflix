@@ -139,7 +139,6 @@
     modalShareBtn: document.getElementById('modalShareBtn'),
     playerFullscreenBtn: document.getElementById('playerFullscreenBtn'),
     cloudVideo: document.getElementById('cloudVideo'),
-    cloudEmbed: document.getElementById('cloudEmbed'),
     playerLoader: document.getElementById('playerLoader'),
     playerLoaderTitle: document.getElementById('playerLoaderTitle'),
     playerLoaderSub: document.getElementById('playerLoaderSub'),
@@ -728,9 +727,9 @@
           ? state.currentStreams
           : state.currentStreams.filter((s) => s.addonId === state.activeAddonFilter);
         if (list.length) {
-          launchCloudPlayer(list[0]);
+          launchCloudPlayer(pickBestPlayableStream(list));
         } else if (state.currentStreams.length) {
-          launchCloudPlayer(state.currentStreams[0]);
+          launchCloudPlayer(pickBestPlayableStream(state.currentStreams));
         } else {
           state.pendingAutoPlay = true;
           el.playerOverlay.classList.remove('hidden', 'hud-idle');
@@ -3036,14 +3035,29 @@
       ? `/api/vault/streams?id=${encodeURIComponent(targetId)}`
       : `/api/streams/${type}/${encodeURIComponent(targetId)}${nameParam}`;
 
+    const cacheEntry = { promise: null, exp: Number.MAX_SAFE_INTEGER };
     const promise = fetch(url)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then((data) => {
+        if (Array.isArray(data?.streams) && data.streams.length > 0) {
+          cacheEntry.exp = Date.now() + 60 * 1000;
+        } else {
+          // Empty/partial results are often caused by a short addon outage. Do not
+          // keep them in the client cache and hide recovered sources for 5 minutes.
+          clientStreamsCache.delete(key);
+        }
+        return data;
+      })
       .catch((err) => {
         clientStreamsCache.delete(key);
         throw err;
       });
 
-    clientStreamsCache.set(key, { promise, exp: Date.now() + 5 * 60 * 1000 });
+    cacheEntry.promise = promise;
+    clientStreamsCache.set(key, cacheEntry);
     return promise;
   }
 
@@ -3596,7 +3610,7 @@
       if (autoPlayFirst || state.pendingAutoPlay) {
         state.pendingAutoPlay = false;
         if (state.currentStreams.length > 0) {
-          launchCloudPlayer(state.currentStreams[0]);
+          launchCloudPlayer(pickBestPlayableStream(state.currentStreams));
         } else {
           tryNextWorkingStream(null);
         }
@@ -3634,6 +3648,14 @@
       btn.className = `addon-tab ${state.activeAddonFilter === srv.addonId ? 'active' : ''} ${srv.count === 0 ? 'empty' : ''}`;
       const engTag = srv.isEnglishOnly && !srv.addonName.includes('') ? '' : '';
       btn.textContent = `${engTag}${srv.addonName} (${srv.count})`;
+      const statusText = {
+        available: 'retornou fontes',
+        empty: 'sem fontes para este título',
+        offline: 'addon indisponível',
+        filtered: 'resultados filtrados como promocionais ou incompatíveis',
+        unsupported: 'addon não oferece esta categoria',
+      }[srv.status] || srv.status || 'status desconhecido';
+      btn.title = `${statusText}${srv.sourceError ? `: ${srv.sourceError}` : ''}${srv.latencyMs ? ` • ${srv.latencyMs} ms` : ''}`;
       btn.onclick = () => {
         state.activeAddonFilter = srv.addonId;
         renderAddonFilterTabs(servers);
@@ -3664,7 +3686,13 @@
       card.setAttribute('tabindex', '0');
       card.setAttribute('role', 'button');
       const seedsTag = stream.seeds ? ` · ${stream.seeds}` : '';
-      const audioText = `${stream.audio || ''}${seedsTag}`;
+      const sourceHint = stream.playType === 'torrent'
+        ? (stream.proxyUrl ? ' • Torrent (player do JohnFlix)' : ' • Magnet (indisponível neste ambiente)')
+        : stream.playType === 'unsupported'
+          ? ` • ${stream.sourceKind === 'dash' ? 'DASH' : 'formato não suportado'}`
+          : '';
+      const audioText = `${stream.audio || ''}${seedsTag}${sourceHint}`;
+      const qualityLabel = stream.playType === 'torrent' ? 'TORRENT' : stream.playType === 'unsupported' ? 'INDISP.' : stream.quality;
 
       card.innerHTML = `
         <span class="stream-dot" style="background:${stream.addonColor}"></span>
@@ -3672,7 +3700,7 @@
           <span class="stream-server-name">${escapeHtml(stream.serverLabel)}</span>
           <span class="stream-audio ${stream.isEnglishOnly ? 'is-en' : ''}">${escapeHtml(audioText)}</span>
         </div>
-        <span class="stream-quality">${escapeHtml(stream.quality)}</span>
+        <span class="stream-quality">${escapeHtml(qualityLabel)}</span>
         <span class="stream-play-ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 9-14 9V3z"/></svg></span>
       `;
 
@@ -4376,21 +4404,35 @@
     }
   }
 
-  // Universal Cloud Video Player (HTML5 MP4 + HLS.js + Safari Native HLS + Cloud Embed + Smart Auto-Failover)
+  // Addon URLs play through the site's native <video>; HLS.js feeds that same element for HLS.
   let hlsInstance = null;
   let playerHudTimer = null;
   let playerStallTimer = null;
   const failedStreamKeys = new Set();
 
     function getStreamKey(s) {
-      return s ? (s.directUrl || s.proxyUrl || s.embedUrl || s.serverLabel || '') : '';
+      return s ? (s.directUrl || s.proxyUrl || s.sourceUrl || s.infoHash || s.serverLabel || '') : '';
     }
 
+  function isStreamPlayableNow(s) {
+    return Boolean(s && (['direct', 'hls'].includes(s.playType) || (s.playType === 'torrent' && Boolean(s.proxyUrl))));
+  }
+
+  function pickBestPlayableStream(streams) {
+    if (!Array.isArray(streams) || !streams.length) return null;
+    return streams.find(isStreamPlayableNow) || streams[0];
+  }
+
   function tryNextWorkingStream(failedStream) {
+    if (failedStream && state.currentStream !== failedStream) return false;
     const key = getStreamKey(failedStream);
     if (key) failedStreamKeys.add(key);
 
-    const candidates = state.currentStreams || [];
+    // Automatic failover only tries URLs the native <video> element can use.
+    // Magnets without a local stream endpoint and DASH entries remain diagnostic only.
+    const candidates = (state.currentStreams || []).filter((s) =>
+      ['direct', 'hls'].includes(s.playType) || (s.playType === 'torrent' && Boolean(s.proxyUrl))
+    );
     // Prefer same audio language first, then any working stream
     const nextSameLang = candidates.find((s) => !failedStreamKeys.has(getStreamKey(s)) && Boolean(s.isDub) === Boolean(failedStream?.isDub));
     const nextAny = candidates.find((s) => !failedStreamKeys.has(getStreamKey(s)));
@@ -4403,8 +4445,8 @@
       return true;
     }
 
-    el.playerLoaderTitle.textContent = 'Nenhuma fonte disponível no momento';
-    el.playerLoaderSub.textContent = 'Não há servidores ativos para este título.';
+    el.playerLoaderTitle.textContent = 'Esta fonte foi bloqueada ou não pôde ser reproduzida';
+    el.playerLoaderSub.textContent = 'Tente outra fonte. Se nenhuma funcionar, os servidores disponíveis podem estar offline ou restritos.';
     if (el.playerLoaderSwitchBtn) el.playerLoaderSwitchBtn.classList.remove('hidden');
     return false;
   }
@@ -4438,9 +4480,15 @@
   }
 
   let blackScreenWatchdogTimer = null;
+  let playerBufferStallTimer = null;
   function clearVideoHandlers() {
     clearTimeout(playerStallTimer);
     clearTimeout(blackScreenWatchdogTimer);
+    clearTimeout(playerBufferStallTimer);
+    if (hlsInstance) {
+      try { hlsInstance.destroy(); } catch (_) {}
+      hlsInstance = null;
+    }
     if (!el.cloudVideo) return;
     el.cloudVideo.onloadedmetadata = null;
     el.cloudVideo.onloadeddata = null;
@@ -4449,13 +4497,6 @@
     el.cloudVideo.onerror = null;
     el.cloudVideo.onwaiting = null;
     el.cloudVideo.onstalled = null;
-  }
-
-  function destroyHls() {
-    if (hlsInstance) {
-      try { hlsInstance.destroy(); } catch (e) {}
-      hlsInstance = null;
-    }
   }
 
   function launchCloudPlayer(stream, isAutoFailover = false) {
@@ -4472,7 +4513,6 @@
     showPlayerHud();
 
     clearVideoHandlers();
-    destroyHls();
     state.nextEpisodeDismissed = false;
     hideNextEpisodePrompt();
 
@@ -4486,52 +4526,32 @@
     el.playerLoaderSub.textContent = `${stream.serverLabel} • ${stream.quality}`;
     if (el.playerLoaderSwitchBtn) el.playerLoaderSwitchBtn.classList.add('hidden');
 
-    if (stream.playType === 'torrent') {
-      startTorrentTelemetry(stream.infoHash);
-    } else {
-      stopTorrentTelemetry();
-    }
+    if (stream.playType === 'torrent' && stream.proxyUrl) startTorrentTelemetry(stream.infoHash);
+    else stopTorrentTelemetry();
 
     renderPlayerDrawer(stream);
 
-    // Engine 3: Cloud Embed Iframe
-    if (stream.playType === 'embed' && el.cloudEmbed) {
+    const canPlayTorrent = stream.playType === 'torrent' && Boolean(stream.proxyUrl);
+    const nativePlayable = ['direct', 'hls'].includes(stream.playType) || canPlayTorrent;
+    if (!nativePlayable) {
       el.cloudVideo.pause();
       el.cloudVideo.removeAttribute('src');
+      el.cloudVideo.load();
       el.cloudVideo.classList.add('hidden');
-      el.cloudEmbed.classList.remove('hidden');
-      el.cloudEmbed.onload = () => {
-        el.playerLoader.classList.add('hidden');
-      };
-      const embedTarget = stream.proxyUrl || stream.embedUrl;
-      el.cloudEmbed.src = 'about:blank';
-      setTimeout(() => {
-        if (state.currentStream === stream && !el.playerOverlay.classList.contains('hidden')) {
-          el.cloudEmbed.src = embedTarget;
-        }
-      }, 40);
-      setTimeout(() => el.playerLoader.classList.add('hidden'), 1200);
-
-      // Embed black screen watchdog: show switch button if iframe hangs
-      blackScreenWatchdogTimer = setTimeout(() => {
-        if (!el.playerOverlay.classList.contains('hidden') && el.cloudVideo.classList.contains('hidden')) {
-          if (el.playerLoaderSwitchBtn) el.playerLoaderSwitchBtn.classList.remove('hidden');
-        }
-      }, 6500);
+      const reason = {
+        torrent: ['Torrent indisponível neste ambiente', 'Este ambiente não oferece o servidor de stream P2P do JohnFlix para esta fonte.'],
+        unsupported: [stream.sourceKind === 'dash' ? 'Formato DASH incompatível' : 'Formato de vídeo incompatível', 'O navegador não consegue reproduzir este formato como vídeo nativo. Escolha outra fonte.']
+      }[stream.playType] || ['Fonte incompatível', 'Escolha uma fonte de vídeo nativa.'];
+      el.playerLoader.classList.remove('hidden');
+      el.playerLoaderTitle.textContent = reason[0];
+      el.playerLoaderSub.textContent = reason[1];
+      if (el.playerLoaderSwitchBtn) el.playerLoaderSwitchBtn.classList.remove('hidden');
       return;
-    }
-
-    if (el.cloudEmbed) {
-      el.cloudEmbed.onload = null;
-      el.cloudEmbed.src = 'about:blank';
-      el.cloudEmbed.classList.add('hidden');
     }
     el.cloudVideo.classList.remove('hidden');
 
     let playbackStarted = false;
     const hideLoader = () => {
-      playbackStarted = true;
-      clearTimeout(playerStallTimer);
       el.playerLoader.classList.add('hidden');
     };
 
@@ -4547,14 +4567,17 @@
       state.pendingResume = 0;
     };
 
+    let proxyFallbackTried = false;
+    let retrySourceOrNext = () => tryNextWorkingStream(stream);
+
     // Detect HEVC / MKV audio-only decode failure on Chrome/Firefox/Mobile (videoWidth === 0 when audio plays)
     const verifyVideoTrack = () => {
       hideLoader();
       applyResume();
       setTimeout(() => {
-        if (!el.playerOverlay.classList.contains('hidden') && !el.cloudVideo.paused && el.cloudVideo.currentTime > 0.4) {
+        if (state.currentStream === stream && !el.playerOverlay.classList.contains('hidden') && !el.cloudVideo.paused && el.cloudVideo.currentTime > 0.4) {
           if (el.cloudVideo.videoWidth === 0 && el.cloudVideo.videoHeight === 0 && state.currentItem?.type !== 'tv') {
-            tryNextWorkingStream(stream);
+            retrySourceOrNext();
           }
         }
       }, 900);
@@ -4562,51 +4585,42 @@
 
     el.cloudVideo.onloadedmetadata = () => { applyResume(); hideLoader(); };
     el.cloudVideo.onloadeddata = () => { applyResume(); hideLoader(); };
-    let bufferStallTimer = null;
     el.cloudVideo.onwaiting = () => {
-      clearTimeout(bufferStallTimer);
-      bufferStallTimer = setTimeout(() => {
-        if (!el.playerOverlay.classList.contains('hidden') && el.cloudVideo.currentTime < 1) {
-          tryNextWorkingStream(stream);
+      clearTimeout(playerBufferStallTimer);
+      playerBufferStallTimer = setTimeout(() => {
+        if (state.currentStream === stream && !el.playerOverlay.classList.contains('hidden') && el.cloudVideo.currentTime < 1) {
+          retrySourceOrNext();
         }
-      }, 4500);
+      }, 10000);
     };
     el.cloudVideo.onplaying = () => {
-      clearTimeout(bufferStallTimer);
+      playbackStarted = true;
+      clearTimeout(playerStallTimer);
+      clearTimeout(playerBufferStallTimer);
       verifyVideoTrack();
     };
 
     // Anti-Black-Screen Watchdog: verifies video frames actually decode and advance
-    const stallLimit = state.currentItem?.type === 'tv' ? 8000 : 3500;
+    const stallLimit = state.currentItem?.type === 'tv' ? 18000 : 12000;
     blackScreenWatchdogTimer = setTimeout(() => {
-      if (el.playerOverlay.classList.contains('hidden')) return;
+      if (state.currentStream !== stream || el.playerOverlay.classList.contains('hidden')) return;
       if (!el.cloudVideo.classList.contains('hidden')) {
         const hasFrames = el.cloudVideo.currentTime > 0.1 && el.cloudVideo.videoWidth > 0;
         if (!hasFrames) {
-          tryNextWorkingStream(stream);
+          retrySourceOrNext();
         }
       }
     }, stallLimit);
 
     playerStallTimer = setTimeout(() => {
-      if (!playbackStarted && !el.playerOverlay.classList.contains('hidden')) {
-        tryNextWorkingStream(stream);
+      if (state.currentStream === stream && !playbackStarted && !el.playerOverlay.classList.contains('hidden')) {
+        retrySourceOrNext();
       }
     }, stallLimit + 800);
 
-    setTimeout(() => {
-      if (!el.playerOverlay.classList.contains('hidden') && !el.playerLoader.classList.contains('hidden')) {
-        if (!el.cloudVideo.classList.contains('hidden') && el.cloudVideo.currentTime < 0.1) {
-          tryNextWorkingStream(stream);
-        } else {
-          hideLoader();
-        }
-      }
-    }, 3500);
-
     // Subtitles auto-fetch via LegendasBR
     Array.from(el.cloudVideo.querySelectorAll('track')).forEach((t) => t.remove());
-    if (state.currentItem && state.currentItem.id && String(state.currentItem.id).startsWith('tt') && stream.playType !== 'embed') {
+    if (state.currentItem && state.currentItem.id && String(state.currentItem.id).startsWith('tt')) {
       const baseImdb = String(state.currentItem.id).split(':')[0];
       const subTarget = state.currentItem.type === 'series'
         ? `${baseImdb}:${state.currentSeason || 1}:${state.currentEpisode || 1}`
@@ -4634,8 +4648,9 @@
       const playPromise = el.cloudVideo.play();
       if (playPromise !== undefined) {
         playPromise.then(() => {
-          hideLoader();
+          if (state.currentStream === stream) hideLoader();
         }).catch((err) => {
+          if (state.currentStream !== stream) return;
           if (err && err.name === 'NotAllowedError') {
             // Mobile / Safari strict autoplay policy fallback: start muted so video begins immediately, user can tap unmute
             el.cloudVideo.muted = true;
@@ -4644,117 +4659,23 @@
               setTimeout(() => { try { el.cloudVideo.muted = false; } catch (e) {} }, 300);
             }).catch(() => {
               hideLoader();
-              tryNextWorkingStream(stream);
+              retrySourceOrNext();
             });
           } else {
-            tryNextWorkingStream(stream);
+            retrySourceOrNext();
           }
         });
       }
     };
 
-    // Engine 2: Universal HLS (.m3u8) via Safari Native HLS or hls.js
-    const isHls = stream.playType === 'hls' || (stream.proxyUrl && stream.proxyUrl.includes('.m3u8')) || (stream.directUrl && stream.directUrl.includes('.m3u8'));
-    if (isHls) {
-      let rawHlsUrl = stream.proxyUrl || stream.directUrl || '';
-      if (window.location.protocol === 'https:' && rawHlsUrl.startsWith('http://')) {
-        rawHlsUrl = `/api/hls-proxy?url=${encodeURIComponent(rawHlsUrl)}`;
-      }
-      const preferProxy = window.location.protocol === 'https:' && rawHlsUrl.startsWith('/api/');
-      const hlsUrl = rawHlsUrl;
-
-      const isAppleNative = !!(navigator.userAgent && /iPhone|iPad|iPod|Macintosh/i.test(navigator.userAgent) && el.cloudVideo.canPlayType('application/vnd.apple.mpegurl') && !window.Hls?.isSupported());
-      if (isAppleNative) {
-        el.cloudVideo.src = hlsUrl;
-        el.cloudVideo.load();
-        startVideoPlayback();
+    const isHls = stream.playType === 'hls' || /\.m3u8(?:$|[?#])/i.test(stream.directUrl || stream.proxyUrl || '');
+    const preferProxy = Boolean(stream.requiresProxy && stream.proxyUrl);
+    const primaryDirectSrc = preferProxy ? stream.proxyUrl : (stream.directUrl || stream.proxyUrl);
+    const startedViaProxy = Boolean(preferProxy || !stream.directUrl);
+    retrySourceOrNext = () => {
+      if (stream.playType === 'direct' && !startedViaProxy && !proxyFallbackTried && stream.directUrl && stream.proxyUrl && stream.directUrl !== stream.proxyUrl) {
+        proxyFallbackTried = true;
         el.cloudVideo.onerror = () => tryNextWorkingStream(stream);
-        return;
-      }
-
-      if (window.Hls && window.Hls.isSupported()) {
-        class CustomTvLoader extends window.Hls.DefaultConfig.loader {
-          load(context, config, callbacks) {
-            const originalOnSuccess = callbacks.onSuccess;
-            callbacks.onSuccess = (response, stats, ctx, networkDetails) => {
-              if (response && response.data instanceof ArrayBuffer) {
-                const u8 = new Uint8Array(response.data);
-                if (u8.length > 68 && u8[0] === 0x89 && u8[1] === 0x50 && u8[2] === 0x4e && u8[3] === 0x47) {
-                  const iend = [0x49, 0x45, 0x4e, 0x44];
-                  for (let i = 0; i < Math.min(u8.length - 8, 200); i++) {
-                    if (u8[i] === iend[0] && u8[i + 1] === iend[1] && u8[i + 2] === iend[2] && u8[i + 3] === iend[3]) {
-                      const tsOffset = i + 8;
-                      response.data = response.data.slice(tsOffset);
-                      break;
-                    }
-                  }
-                }
-              }
-              originalOnSuccess(response, stats, ctx, networkDetails);
-            };
-            super.load(context, config, callbacks);
-          }
-        }
-
-        hlsInstance = new window.Hls({
-          enableWorker: true,
-          lowLatencyMode: false,
-          backBufferLength: 60,
-          maxBufferLength: 30,
-          maxMaxBufferLength: 60,
-          loader: CustomTvLoader
-        });
-        hlsInstance.loadSource(hlsUrl);
-        hlsInstance.attachMedia(el.cloudVideo);
-        hlsInstance.on(window.Hls.Events.MANIFEST_PARSED, () => {
-          hideLoader();
-          startVideoPlayback();
-        });
-        hlsInstance.on(window.Hls.Events.ERROR, (_, data) => {
-          if (data && data.fatal) {
-            if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR) {
-              if (hlsUrl && !hlsUrl.includes('/api/hls-proxy') && !hlsUrl.includes('/api/proxy-stream')) {
-                const retryProxied = `/api/hls-proxy?url=${encodeURIComponent(hlsUrl)}`;
-                try {
-                  hlsInstance.loadSource(retryProxied);
-                  return;
-                } catch (_) {}
-              }
-              tryNextWorkingStream(stream);
-            } else if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR) {
-              hlsInstance.recoverMediaError();
-            } else {
-              if (el.cloudVideo.canPlayType('application/vnd.apple.mpegurl')) {
-                destroyHls();
-                el.cloudVideo.src = hlsUrl;
-                el.cloudVideo.load();
-                startVideoPlayback();
-                return;
-              }
-              tryNextWorkingStream(stream);
-            }
-          }
-        });
-        return;
-      } else if (el.cloudVideo.canPlayType('application/vnd.apple.mpegurl')) {
-        el.cloudVideo.src = hlsUrl;
-        el.cloudVideo.load();
-        startVideoPlayback();
-        el.cloudVideo.onerror = () => tryNextWorkingStream(stream);
-        return;
-      }
-    }
-
-    // Engine 1: Direct Cloud MP4 Stream (with direct URL fallback + automatic failover to next working server)
-    el.cloudVideo.pause();
-    el.cloudVideo.src = stream.directUrl || stream.proxyUrl;
-    el.cloudVideo.load();
-    startVideoPlayback();
-
-    let retryDirectTried = false;
-    el.cloudVideo.onerror = () => {
-      if (!retryDirectTried && stream.proxyUrl && stream.directUrl && stream.directUrl !== stream.proxyUrl) {
-        retryDirectTried = true;
         el.cloudVideo.src = stream.proxyUrl;
         el.cloudVideo.load();
         startVideoPlayback();
@@ -4762,6 +4683,48 @@
       }
       tryNextWorkingStream(stream);
     };
+
+    if (isHls) {
+      const hlsUrl = stream.proxyUrl || stream.directUrl;
+      if (window.Hls && window.Hls.isSupported()) {
+        let hlsMediaRecoveries = 0;
+        hlsInstance = new window.Hls({ enableWorker: true, lowLatencyMode: false, backBufferLength: 60 });
+        hlsInstance.loadSource(hlsUrl);
+        hlsInstance.attachMedia(el.cloudVideo);
+        hlsInstance.on(window.Hls.Events.MANIFEST_PARSED, startVideoPlayback);
+        hlsInstance.on(window.Hls.Events.ERROR, (_event, data) => {
+          if (!data?.fatal) return;
+          if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR && hlsMediaRecoveries < 1) {
+            hlsMediaRecoveries += 1;
+            hlsInstance?.recoverMediaError();
+          } else {
+            retrySourceOrNext();
+          }
+        });
+        return;
+      }
+      if (el.cloudVideo.canPlayType('application/vnd.apple.mpegurl')) {
+        el.cloudVideo.onerror = retrySourceOrNext;
+        el.cloudVideo.src = hlsUrl;
+        el.cloudVideo.load();
+        startVideoPlayback();
+        return;
+      }
+      retrySourceOrNext();
+      if (state.currentStream === stream) {
+        el.playerLoaderTitle.textContent = 'HLS indisponível neste navegador';
+        el.playerLoaderSub.textContent = 'Selecione outra fonte compatível com a reprodução de vídeo do navegador.';
+      }
+      return;
+    }
+
+    // Keep the addon's own URL as the primary stream. The in-site Range proxy is
+    // a same-source fallback for hosts that require it, never a replacement source.
+    el.cloudVideo.pause();
+    el.cloudVideo.onerror = retrySourceOrNext;
+    el.cloudVideo.src = (stream.playType === 'torrent' ? stream.proxyUrl : primaryDirectSrc);
+    el.cloudVideo.load();
+    startVideoPlayback();
   }
 
   function renderPlayerDrawer() {
@@ -4776,7 +4739,11 @@
       return;
     }
     state.currentStreams.forEach((s) => {
-      const isCurrent = state.currentStream && (state.currentStream === s || state.currentStream.proxyUrl === s.proxyUrl);
+      const isCurrent = Boolean(state.currentStream && (
+        state.currentStream === s
+        || (s.proxyUrl && state.currentStream.proxyUrl === s.proxyUrl)
+        || (s.infoHash && state.currentStream.infoHash === s.infoHash && s.addonId === state.currentStream.addonId)
+      ));
       const item = document.createElement('div');
       item.className = `drawer-stream-row${isCurrent ? ' active' : ''}`;
       item.innerHTML = `
@@ -4823,7 +4790,6 @@
     closeCastModal();
     clearTimeout(playerHudTimer);
     clearVideoHandlers();
-    destroyHls();
     stopTorrentTelemetry();
     hideNextEpisodePrompt();
     state.nextEpisodeDismissed = false;
@@ -4835,11 +4801,6 @@
     el.cloudVideo.pause();
     el.cloudVideo.removeAttribute('src');
     el.cloudVideo.load();
-    if (el.cloudEmbed) {
-      el.cloudEmbed.onload = null;
-      el.cloudEmbed.src = 'about:blank';
-      el.cloudEmbed.classList.add('hidden');
-    }
     el.playerOverlay.classList.add('hidden');
     document.body.classList.remove('player-open');
     if (el.detailsModal.classList.contains('hidden')) {
@@ -4939,7 +4900,7 @@
       const data = await prefetchStreams('series', nextEp.id);
       state.currentStreams = data.streams || [];
       if (state.currentStreams.length > 0) {
-        launchCloudPlayer(state.currentStreams[0]);
+        launchCloudPlayer(pickBestPlayableStream(state.currentStreams));
       } else {
         el.playerLoaderTitle.textContent = 'Nenhuma fonte encontrada';
         el.playerLoaderSub.textContent = 'Não foi possível encontrar servidores para este episódio.';

@@ -18,7 +18,6 @@ const MOVIE_ADDONS = [
     category: 'movie_series',
     manifestUrl: 'https://150203dd784e-cinetorrent-addon.baby-beamup.club/manifest.json',
     baseUrl: 'https://150203dd784e-cinetorrent-addon.baby-beamup.club',
-    fallbackUrl: 'https://torrentio.strem.fun/providers=comando,bludv,lapumia,ondebaixa',
     logo: 'https://i.ibb.co/RDtR0q0/Logo.jpg',
     color: '#eab308'
   },
@@ -63,7 +62,6 @@ const MOVIE_ADDONS = [
     category: 'movie_series',
     manifestUrl: 'https://magneto-jnv5.onrender.com/v1/manifest.json',
     baseUrl: 'https://magneto-jnv5.onrender.com/v1',
-    fallbackUrl: 'https://torrentio.strem.fun/providers=yts,eztv,rarbg,1337x,thepiratebay|language=portuguese',
     logo: 'https://images.metahub.space/logo/medium/tt0133093/img',
     color: '#ec4899'
   },
@@ -75,7 +73,6 @@ const MOVIE_ADDONS = [
     category: 'movie_series',
     manifestUrl: 'https://27a5b2bfe3c0-stremio-brazilian-addon.baby-beamup.club/manifest.json',
     baseUrl: 'https://27a5b2bfe3c0-stremio-brazilian-addon.baby-beamup.club',
-    fallbackUrl: 'https://torrentio.strem.fun/providers=micoleaodublado,comando,bludv',
     logo: 'https://i.ibb.co/YyPbHVT/icon.png',
     color: '#eab308'
   },
@@ -87,7 +84,6 @@ const MOVIE_ADDONS = [
     category: 'movie_series',
     manifestUrl: 'https://94c8cb9f702d-brazuca-torrents.baby-beamup.club/manifest.json',
     baseUrl: 'https://94c8cb9f702d-brazuca-torrents.baby-beamup.club',
-    fallbackUrl: 'https://torrentio.strem.fun/providers=comando,bludv,ondebaixa',
     logo: 'https://i.imgur.com/KVpfrAk.png',
     color: '#22c55e'
   },
@@ -99,7 +95,6 @@ const MOVIE_ADDONS = [
     category: 'movie_series',
     manifestUrl: 'https://guindex-stremio.vercel.app/manifest.json',
     baseUrl: 'https://guindex-stremio.vercel.app',
-    fallbackUrl: 'https://torrentio.strem.fun/providers=comando,bludv,lapumia',
     logo: 'https://raw.githubusercontent.com/GuickerZ/guindex/main/public/logo.png',
     color: '#10b981'
   },
@@ -111,7 +106,6 @@ const MOVIE_ADDONS = [
     category: 'movie_series',
     manifestUrl: 'https://stremio-addon.ehtudo.app/manifest.json',
     baseUrl: 'https://stremio-addon.ehtudo.app',
-    fallbackUrl: 'https://torrentio.strem.fun/providers=comando,bludv,micoleaodublado',
     logo: 'https://stremio-addon.ehtudo.app/logo-small-256x256.png',
     color: '#f97316'
   },
@@ -151,50 +145,6 @@ const MOVIE_ADDONS = [
     color: '#8b5cf6'
   },
   {
-    id: 'superflix',
-    name: 'SuperFlix Oficial',
-    badge: 'DUBLADO BR',
-    type: 'direct',
-    category: 'movie_series',
-    manifestUrl: 'https://superflixapi.fun/',
-    baseUrl: 'https://superflixapi.fun',
-    logo: 'https://superflixapi.fun/favicon.ico',
-    color: '#dc2626'
-  },
-  {
-    id: 'vidsrc',
-    name: 'VidSrc BR',
-    badge: 'MULTISERVER',
-    type: 'direct',
-    category: 'movie_series',
-    manifestUrl: 'https://vidsrc.sh/',
-    baseUrl: 'https://vidsrc.sh',
-    logo: 'https://vidsrc.me/favicon.ico',
-    color: '#06b6d4'
-  },
-  {
-    id: 'autoembed',
-    name: 'AutoEmbed Cloud',
-    badge: 'FAST CLOUD',
-    type: 'direct',
-    category: 'movie_series',
-    manifestUrl: 'https://player.autoembed.cc/',
-    baseUrl: 'https://player.autoembed.cc',
-    logo: 'https://autoembed.co/favicon.ico',
-    color: '#10b981'
-  },
-  {
-    id: 'videasy',
-    name: 'Videasy 4K',
-    badge: 'UNIVERSAL',
-    type: 'direct',
-    category: 'movie_series',
-    manifestUrl: 'https://player.videasy.to/',
-    baseUrl: 'https://player.videasy.to',
-    logo: 'https://player.videasy.to/favicon.ico',
-    color: '#f59e0b'
-  },
-  {
     id: 'flixstreams',
     name: 'Flix-Streams (Inglês)',
     badge: 'INGLÊS',
@@ -202,7 +152,7 @@ const MOVIE_ADDONS = [
     category: 'movie_series',
     isEnglishOnly: true,
     manifestUrl: 'https://flixnest.app/flix-streams/manifest.json',
-    baseUrl: 'https://flixnest.app/flix-streams',
+    baseUrl: 'https://flixnest.app/flix-streams/e30=',
     logo: 'https://flixnest.app/flix-streams/static/icon.png',
     color: '#06b6d4'
   },
@@ -225,7 +175,6 @@ const MOVIE_ADDONS = [
     category: 'movie_series',
     manifestUrl: 'https://magnetflix.flixbr.online/qualities%3D4k%2C1080p%2C720p%2Csd%7Caudio%3Ddublado%2Clegendado%7Ccatalogs%3Dpopulares_movie%2Cpopulares_series%2Crecentes_servidor_movie%2Crecentes_servidor_series%2Cemalta_movie%2Cemalta_series/manifest.json',
     baseUrl: 'https://magnetflix.flixbr.online/qualities%3D4k%2C1080p%2C720p%2Csd%7Caudio%3Ddublado%2Clegendado%7Ccatalogs%3Dpopulares_movie%2Cpopulares_series%2Crecentes_servidor_movie%2Crecentes_servidor_series%2Cemalta_movie%2Cemalta_series',
-    fallbackUrl: 'https://torrentio.strem.fun/providers=comando,bludv,lapumia',
     logo: 'https://magnetflix.flixbr.online/static/logo.jpg',
     color: '#e11d48'
   },
@@ -237,7 +186,6 @@ const MOVIE_ADDONS = [
     category: 'movie_series',
     manifestUrl: 'https://magnetflix.flixbr.online/manifest.json',
     baseUrl: 'https://magnetflix.flixbr.online',
-    fallbackUrl: 'https://torrentio.strem.fun/providers=micoleaodublado,comando,bludv',
     logo: 'https://magnetflix.flixbr.online/static/logo.jpg',
     color: '#be123c'
   },
@@ -453,35 +401,62 @@ async function fetchFrameXTVStreams(type, tmdbId, season = 1, episode = 1) {
     }
   }
 
-  // Also include FrameXTV's open Multi-Server Embed routes (Miner XIX, Headhunter/VidLink, Videasy)
-  const fxEmbed = mediaType === 'tv'
-    ? `https://framextv.tech/embed/tv/${tmdbId}/${season}/${episode}?autoplay=1`
-    : `https://framextv.tech/embed/movie/${tmdbId}?autoplay=1`;
-  out.push(
-    {
-      name: 'FrameXTV • Multi-Server 4K',
-      title: '🇺🇸 Miner XIX / Valkyrie VI (FrameXTV)\n🇺🇸 Inglês (Original)',
-      embedUrl: fxEmbed
-    }
-  );
-
   return out;
+}
+
+const ALLOWED_PROXY_HEADER_RE = /^(referer|origin|user-agent|accept|cookie|authorization|x-mb-token|x-requested-with)$/i;
+
+function extractProxyHeaders(rawStream) {
+  const sources = [rawStream?.headers, rawStream?.behaviorHints?.proxyHeaders?.request];
+  const out = {};
+  for (const src of sources) {
+    if (!src || typeof src !== 'object') continue;
+    for (const [k, v] of Object.entries(src)) {
+      if (typeof v !== 'string') continue;
+      const cleanKey = k.trim();
+      if (!ALLOWED_PROXY_HEADER_RE.test(cleanKey)) continue;
+      const cleanVal = v.replace(/[\r\n]+/g, ' ').trim();
+      if (cleanVal && cleanVal.length <= 2048) out[cleanKey] = cleanVal;
+    }
+  }
+  return Object.keys(out).length ? out : null;
+}
+
+function encodeProxyHeaders(hdrObj) {
+  if (!hdrObj || !Object.keys(hdrObj).length) return '';
+  try {
+    return btoa(JSON.stringify(hdrObj));
+  } catch (e) {
+    return '';
+  }
+}
+
+function decodeProxyHeaders(hdrParam) {
+  if (!hdrParam) return {};
+  try {
+    const parsed = JSON.parse(atob(hdrParam));
+    if (!parsed || typeof parsed !== 'object') return {};
+    const out = {};
+    for (const [k, v] of Object.entries(parsed)) {
+      if (typeof v === 'string' && ALLOWED_PROXY_HEADER_RE.test(k.trim())) {
+        const cleanVal = v.replace(/[\r\n]+/g, ' ').trim();
+        if (cleanVal && cleanVal.length <= 2048) out[k.trim()] = cleanVal;
+      }
+    }
+    return out;
+  } catch (e) {
+    return {};
+  }
 }
 
 function isBadSubServer(rawStream) {
   const u = rawStream.url || '';
   const t = `${rawStream.name || ''} ${rawStream.title || ''} ${rawStream.description || ''}`;
-  if (u.includes('cloudflare-terms-of-service-abuse')) return true;
-  if (u.includes('.mpd') || u.includes('manifest.mpd')) return true;
-  if (rawStream.externalUrl && !rawStream.url && !rawStream.embedUrl) return true;
-  if (/login necess[aá]rio|autentica[cç][aã]o pessoal|conecte sua conta/i.test(t)) return true;
-  if (/official trailer|trailer/i.test(t) && !rawStream.url && !rawStream.embedUrl) return true;
-  if (rawStream.ytId && !u && !rawStream.embedUrl && !rawStream.infoHash) return true;
-  if (/\[official trailer\]|play trailer|open in stremio|install stremio/i.test(t)) return true;
-  if (/moviebox/i.test(t) || /moviebox/i.test(u)) return true;
-  if (u.includes('koyeb.app') || u.includes('squareweb.app')) return true;
-  if (/hypex|atlas|\bastra\b|\bneon\b/i.test(t)) return true;
-  return false;
+  const hasSource = Boolean(rawStream.url || rawStream.infoHash);
+  if (!hasSource || /cloudflare-terms-of-service-abuse/i.test(u)) return true;
+  if (/requer autentica[cç][aã]o|login necess[aá]rio|try the paid tier|go premium/i.test(t) && !rawStream.url) return true;
+  const isPromo = /\[official trailer\]|play trailer|open in stremio|install stremio/i.test(t);
+  return isPromo && !rawStream.url && !rawStream.infoHash;
 }
 
 function normalizeStream(rawStream, addon) {
@@ -511,36 +486,51 @@ function normalizeStream(rawStream, addon) {
   let playType = 'direct';
   let streamUrl = rawStream.url || null;
   let proxyUrl = null;
-  let embedUrl = rawStream.embedUrl || null;
+  let sourceKind = 'direct';
+  let sourceUrl = null;
+  const proxyHeaders = extractProxyHeaders(rawStream);
+  const hdrEncoded = encodeProxyHeaders(proxyHeaders);
+  const hdrSuffix = hdrEncoded ? `&hdr=${encodeURIComponent(hdrEncoded)}` : '';
+  let requiresProxy = Boolean(proxyHeaders);
 
   if (streamUrl) {
     if (streamUrl.startsWith('http://fenixflix.fenixhub.online/')) {
       streamUrl = streamUrl.replace('http://', 'https://');
     }
-    const isHls = streamUrl.includes('.m3u8')
+    const isDash = /\.mpd(?:$|[?#])/i.test(streamUrl);
+    const isMkv = /\.mkv(?:$|[?#])/i.test(streamUrl);
+    const isHls = /\.m3u8(?:$|[?#])/i.test(streamUrl)
+      || /[?&](?:format|type)=hls\b/i.test(streamUrl)
+      || /\/hls(?:\/|\?|$)/i.test(streamUrl)
       || streamUrl.includes('hls-proxy')
       || streamUrl.includes('zunderflix.lat')
       || streamUrl.includes('fenixtv.fenixhub.online/proxy')
       || streamUrl.includes('fenixtv.fenixhub.online/direct.m3u8');
+    if (isDash) return null;
+    if (/^http:\/\//i.test(streamUrl) || /fenixflix\.fenixhub\.online|zunderflix\.lat|hd\.plavio\.site|free\.flixnest\.app|hakunaymatata\.com|mzfi\.me|animesfhd\.net|pixel-sus-4k-image\.com|stravo\.site/i.test(streamUrl)) {
+      requiresProxy = true;
+    }
     if (isHls) {
       playType = 'hls';
-      proxyUrl = `/api/hls-proxy?url=${encodeURIComponent(streamUrl)}`;
-    } else if (rawStream.isDirectCors || streamUrl.includes('workers.dev') || streamUrl.includes('flixnest.app') || streamUrl.includes('hakunaymatata.com')) {
-      playType = 'direct';
-      proxyUrl = streamUrl;
-    } else if (streamUrl.startsWith('https://')) {
-      playType = 'direct';
-      proxyUrl = streamUrl;
+      sourceKind = 'hls';
+      proxyUrl = `/api/hls-proxy?url=${encodeURIComponent(streamUrl)}${hdrSuffix}`;
     } else {
       playType = 'direct';
-      proxyUrl = `/api/proxy-stream?url=${encodeURIComponent(streamUrl)}`;
+      sourceKind = isMkv ? 'mkv' : 'direct';
+      proxyUrl = `/api/proxy-stream?url=${encodeURIComponent(streamUrl)}${hdrSuffix}`;
     }
-  } else if (embedUrl) {
-    playType = 'embed';
-    proxyUrl = embedUrl;
   } else if (rawStream.infoHash) {
+    const hash = String(rawStream.infoHash).toLowerCase();
     playType = 'torrent';
+    sourceKind = 'torrent';
+    const trackers = (rawStream.sources || [])
+      .filter((s) => typeof s === 'string' && s.startsWith('tracker:'))
+      .map((s) => s.replace(/^tracker:/, ''));
+    const trQuery = trackers.slice(0, 5).map((t) => `tr=${encodeURIComponent(t)}`).join('&');
+    sourceUrl = `magnet:?xt=urn:btih:${hash}&dn=${encodeURIComponent(rawStream.title || addon.name)}${trQuery ? `&${trQuery}` : ''}`;
     proxyUrl = null;
+  } else {
+    return null;
   }
 
   let serverLabel = (rawStream.name || addon.name).replace(/\n/g, ' ');
@@ -569,9 +559,12 @@ function normalizeStream(rawStream, addon) {
     audio,
     seeds,
     playType,
+    sourceKind,
+    sourceUrl,
     directUrl: streamUrl,
     proxyUrl,
-    embedUrl: embedUrl || (playType === 'embed' ? universalEmbedUrl : null),
+    requiresProxy,
+    proxyHeaders,
     infoHash: rawStream.infoHash ? rawStream.infoHash.toLowerCase() : null,
     fileIdx: rawStream.fileIdx !== undefined ? rawStream.fileIdx : null
   };
@@ -605,13 +598,14 @@ function setEdgeCache(key, val, ttlSec = 300) {
 const IPTV_URL = 'https://iptv-org.github.io/iptv/countries/br.m3u';
 const PRIVATE_HOST = /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|0\.|\[?::1|\[?f[cd])/i;
 
-function hlsProxied(u) {
-  return `/api/hls-proxy?url=${encodeURIComponent(u)}`;
+function hlsProxied(u, hdrParam = '') {
+  return `/api/hls-proxy?url=${encodeURIComponent(u)}${hdrParam ? `&hdr=${encodeURIComponent(hdrParam)}` : ''}`;
 }
 
 async function hlsProxyHandler(request, url) {
   const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Expose-Headers': 'Content-Length, Content-Range' };
   const target = url.searchParams.get('url') || '';
+  const hdrParam = url.searchParams.get('hdr') || '';
   let t;
   try { t = new URL(target); } catch (e) { return new Response('bad url', { status: 400, headers: cors }); }
   if (!/^https?:$/.test(t.protocol) || PRIVATE_HOST.test(t.hostname)) return new Response('forbidden', { status: 403, headers: cors });
@@ -626,10 +620,18 @@ async function hlsProxyHandler(request, url) {
   if (/zunderflix\.lat|fenixflix/i.test(t.hostname)) {
     fh.Referer = 'https://zunderflix.lat/';
   }
+  Object.assign(fh, decodeProxyHeaders(hdrParam));
   const range = request.headers.get('range');
   if (range) fh.Range = range;
   let up;
   try { up = await fetch(target, { headers: fh, redirect: 'follow' }); } catch (e) { return new Response('upstream error', { status: 502, headers: cors }); }
+  if (/text\/html/i.test(up.headers.get('content-type') || '')) {
+    try { await up.body?.cancel(); } catch {}
+    return new Response('Esta fonte respondeu com uma página de bloqueio, não com uma playlist de vídeo.', {
+      status: 451,
+      headers: { ...cors, 'Content-Type': 'text/plain; charset=utf-8', 'X-JohnFlix-Source-Error': 'upstream-policy' }
+    });
+  }
   if (!up.ok && up.status !== 206) return new Response('upstream ' + up.status, { status: 502, headers: cors });
 
   const ct = up.headers.get('content-type') || '';
@@ -646,16 +648,17 @@ async function hlsProxyHandler(request, url) {
         let res = line;
         for (const x of m) {
           const a = abs(x[1]);
-          if (a) res = res.replace(x[0], `URI="${hlsProxied(a)}"`);
+          if (a) res = res.replace(x[0], `URI="${hlsProxied(a, hdrParam)}"`);
         }
         return res;
       }
       const a = abs(line.trim());
-      return a ? hlsProxied(a) : line;
+      return a ? hlsProxied(a, hdrParam) : line;
     }));
     return new Response(out.join('\n'), { status: 200, headers: { ...cors, 'Content-Type': 'application/vnd.apple.mpegurl', 'Cache-Control': 'no-store' } });
   }
-  const h = { ...cors, 'Content-Type': ct || 'video/mp2t', 'Cache-Control': 'public, max-age=20' };
+  const normalizedCt = /^image\//i.test(ct) ? 'video/mp2t' : (ct || 'video/mp2t');
+  const h = { ...cors, 'Content-Type': normalizedCt, 'Cache-Control': 'public, max-age=20' };
   ['content-length', 'content-range', 'accept-ranges'].forEach((k) => { const v = up.headers.get(k); if (v) h[k] = v; });
   return new Response(up.body, { status: up.status, headers: h });
 }
@@ -922,7 +925,7 @@ export default async (request) => {
               const m = await fetchJson(a.manifestUrl, 2200);
               return { ...a, online: true, version: m.version, description: m.description, pingMs: Date.now() - t0 };
             } catch (e) {
-              return { ...a, online: true, pingMs: Math.min(Date.now() - t0, 280) };
+              return { ...a, online: false, pingMs: Date.now() - t0 };
             }
           })
         );
@@ -1458,16 +1461,13 @@ export default async (request) => {
       const decodedId = decodeURIComponent(rawId);
       const encodedId = encodeURIComponent(decodedId);
 
-      const streamCacheKey = `streams:v20:${type}:${decodedId}`;
+      const streamCacheKey = `streams:v23:${type}:${decodedId}`;
+      const streamHeaders = { ...headers, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
       const cachedStreams = getEdgeCache(streamCacheKey);
-      if (cachedStreams) return new Response(cachedStreams, { status: 200, headers });
-
-      if (type === 'tv') {
-        return new Response(JSON.stringify({ id: decodedId, type: 'tv', totalStreams: 0, servers: [], streams: [] }), { status: 200, headers });
-      }
+      if (cachedStreams) return new Response(cachedStreams, { status: 200, headers: streamHeaders });
 
       // === MOVIE & SERIES STREAM AGGREGATION ===
-      // Stream aggregation for 23 active sources
+      // Query configured addons directly, including addons that support live TV.
 
       const idParts = decodedId.split(':');
       const baseImdb = idParts[0];
@@ -1486,121 +1486,52 @@ export default async (request) => {
 
       const rawAddonResponses = await Promise.all(
         MOVIE_ADDONS.map(async (addon) => {
+          if (type === 'tv' && addon.id === 'framextv') {
+            return { addon, rawStreams: [], sourceStatus: 'unsupported', sourceError: 'Addon não oferece stream de canais ao vivo.', latencyMs: null };
+          }
           if (addon.id === 'framextv') {
             const tmdbId = await tmdbPromise;
             const fxStreams = await fetchFrameXTVStreams(type, tmdbId, epSeason, epNumber);
-            return { addon, rawStreams: fxStreams };
+            return { addon, rawStreams: fxStreams, sourceStatus: fxStreams.length ? 'available' : 'empty', sourceError: null, latencyMs: null };
           }
-          if (addon.id === 'superflix') {
-            const tmdbId = await tmdbPromise;
-            const targetRef = tmdbId || baseImdb;
-            const isSeries = type === 'series';
-            const sEmbed = isSeries
-              ? 'https://superflixapi.fun/serie/' + targetRef + '/' + epSeason + '/' + epNumber + '#noBackground#noEpList#noLink'
-              : 'https://superflixapi.fun/filme/' + targetRef + '#noBackground#noLink';
-            return { addon, rawStreams: [{ name: 'SuperFlix Oficial', title: '🇧🇷 Servidor Dublado Oficial (SuperFlix)', embedUrl: sEmbed }] };
-          }
-          if (addon.id === 'vidsrc') {
-            const isSeries = type === 'series';
-            const vidsrcEmbed = isSeries
-              ? 'https://vidsrc.me/embed/tv?imdb=' + baseImdb + '&season=' + epSeason + '&episode=' + epNumber
-              : 'https://vidsrc.me/embed/movie?imdb=' + baseImdb;
-            return { addon, rawStreams: [{ name: 'VidSrc BR', title: '🌐 Servidor Multiserver HD (VidSrc)', embedUrl: vidsrcEmbed }] };
-          }
-          if (addon.id === 'autoembed') {
-            const isSeries = type === 'series';
-            const autoEmbed = isSeries
-              ? 'https://player.autoembed.cc/embed/tv/' + baseImdb + '/' + epSeason + '/' + epNumber
-              : 'https://player.autoembed.cc/embed/movie/' + baseImdb;
-            return { addon, rawStreams: [{ name: 'AutoEmbed Cloud', title: '⚡ Servidor Rápido (AutoEmbed)', embedUrl: autoEmbed }] };
-          }
-          if (addon.id === 'videasy') {
-            const isSeries = type === 'series';
-            const videasyEmbed = isSeries
-              ? 'https://player.videasy.to/tv/' + baseImdb + '/' + epSeason + '/' + epNumber
-              : 'https://player.videasy.to/movie/' + baseImdb;
-            return { addon, rawStreams: [{ name: 'Videasy 4K', title: '⚡ Servidor Videasy 4K/FHD', embedUrl: videasyEmbed }] };
-          }
-
-          const primaryPromise = fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 3500)
-            .then((d) => (Array.isArray(d?.streams) && d.streams.length > 0 ? d.streams : Promise.reject(new Error('empty'))));
-
-          const tasks = [primaryPromise];
-          if (addon.fallbackUrl) {
-            tasks.push(
-              fetchJson(`${addon.fallbackUrl}/stream/${type}/${encodedId}.json`, 3500)
-                .then((d) => (Array.isArray(d?.streams) && d.streams.length > 0 ? d.streams : Promise.reject(new Error('empty'))))
-            );
-          }
-
           let rawStreams = [];
+          let sourceStatus = 'offline';
+          let sourceError = null;
+          const startedAt = Date.now();
           try {
-            rawStreams = await Promise.any(tasks);
+            const data = await fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 6500);
+            rawStreams = Array.isArray(data?.streams) ? data.streams : [];
+            sourceStatus = rawStreams.length ? 'available' : 'empty';
           } catch (e) {
-            rawStreams = [];
+            sourceError = String(e?.message || 'upstream error').slice(0, 120);
           }
-          return { addon, rawStreams };
+          return { addon, rawStreams, sourceStatus, sourceError, latencyMs: Date.now() - startedAt };
         })
       );
 
-      // Collect verified multi-GB direct HTTP MP4 streams (Zeus, Malfoy, Carbon, Azure, Titan VII)
-      const directPool = [];
-      const englishPool = [];
-      for (const { addon, rawStreams } of rawAddonResponses) {
-        for (const s of rawStreams) {
-          if (s.url && !isBadSubServer(s) && !s.url.includes('.m3u8') && !s.url.includes('.mpd') && !s.url.includes('manifest.mpd')) {
-            let cleanUrl = s.url;
-            if (cleanUrl.includes('fenixflix.fenixhub.online') || cleanUrl.includes('cloudflare-terms-of-service-abuse')) continue;
-            if (cleanUrl.includes('/extract/') && cleanUrl.includes('.mpd')) continue;
-            const t = `${s.name || ''} ${s.title || ''} ${s.description || ''}`;
-            const isZeusOrCarbon = /zeus|carbon|azure|titan|magnetflix|corruptx/i.test(t) || cleanUrl.includes('corruptx.org');
-            const isHevcOrMkv = /hevc|x265|h\.?265|\.mkv\b|10bit|hdr/i.test(t) || /\.mkv(\?|$)/i.test(cleanUrl);
-            const isDub = addon.isEnglishOnly ? false : /dublado|🇧🇷|portugu[eê]s|dual/i.test(t);
-            const entry = {
-              directUrl: cleanUrl,
-              is4k: /2160p|4k|uhd/i.test(t),
-              isDub,
-              isPreferredH264: isZeusOrCarbon && !isHevcOrMkv && !/2160p|4k|uhd/i.test(t),
-              title: s.title || s.description || addon.name,
-              name: s.name || addon.name
-            };
-            if (!isHevcOrMkv) {
-              directPool.push(entry);
-              if (addon.isEnglishOnly || !isDub) {
-                englishPool.push(entry);
-              }
-            }
-          }
-        }
-      }
-
-      // Sort directPool: 1080p H.264 Dublado (Zeus/Carbon/Azure) FIRST for 100% browser compatibility
-      directPool.sort((a, b) => {
-        if (a.isPreferredH264 !== b.isPreferredH264) return a.isPreferredH264 ? -1 : 1;
-        if (a.isDub !== b.isDub) return a.isDub ? -1 : 1;
-        if (a.is4k !== b.is4k) return a.is4k ? 1 : -1;
-        return 0;
-      });
-
-      const universalEmbedUrl = type === 'series'
-        ? `https://superflixapi.fun/serie/${baseImdb}/${epSeason}/${epNumber}#noBackground#noEpList#noLink`
-        : `https://superflixapi.fun/filme/${baseImdb}#noBackground#noLink`;
-
       const sortStreamsUniversal = (a, b) => {
-        const rank = (p) => (p === 'direct' ? 0 : p === 'hls' ? 1 : 2);
-        if (rank(a.playType) !== rank(b.playType)) return rank(a.playType) - rank(b.playType);
-        if (Boolean(a.isHevcOrMkv) !== Boolean(b.isHevcOrMkv)) return a.isHevcOrMkv ? 1 : -1;
+        const rank = (s) => {
+          if (s.playType === 'direct' && !s.isHevcOrMkv) return 0;
+          if (s.playType === 'hls') return 1;
+          if (s.playType === 'direct') return 2;
+          if (s.playType === 'torrent' && s.proxyUrl) return 3;
+          return 4;
+        };
+        if (rank(a) !== rank(b)) return rank(a) - rank(b);
+        const aDegraded = /free\.flixnest\.app\/api\/4khdhub\//i.test(a.directUrl || '') ? 1 : 0;
+        const bDegraded = /free\.flixnest\.app\/api\/4khdhub\//i.test(b.directUrl || '') ? 1 : 0;
+        if (aDegraded !== bDegraded) return aDegraded - bDegraded;
         if (a.isDub !== b.isDub) return a.isDub ? -1 : 1;
         if (a.is4k !== b.is4k) return a.is4k ? 1 : -1;
         return (b.seeds || 0) - (a.seeds || 0);
       };
 
       const addonResults = rawAddonResponses
-        .map(({ addon, rawStreams }) => {
+        .map(({ addon, rawStreams, sourceStatus, sourceError, latencyMs }) => {
           const filteredRaw = (rawStreams || []).filter((s) => !isBadSubServer(s));
           let streams = filteredRaw
             .map((s) => normalizeStream(s, addon))
-            .filter((s) => s && (s.proxyUrl || s.directUrl || s.embedUrl || s.infoHash));
+            .filter((s) => s && (s.proxyUrl || s.directUrl || s.infoHash || s.sourceUrl));
 
           streams.sort(sortStreamsUniversal);
 
@@ -1610,6 +1541,9 @@ export default async (request) => {
             badge: addon.badge,
             color: addon.color,
             isEnglishOnly: Boolean(addon.isEnglishOnly),
+            status: streams.length ? 'available' : rawStreams?.length ? 'filtered' : sourceStatus || 'empty',
+            sourceError,
+            latencyMs,
             count: streams.length,
             streams
           };
@@ -1627,9 +1561,12 @@ export default async (request) => {
         servers: addonResults,
         streams: allStreams
       });
-      if (allStreams.length > 0) setEdgeCache(streamCacheKey, bodyStr, 300);
+      if (allStreams.length > 0) {
+        const hasFailedAddon = addonResults.some((server) => server.status === 'offline');
+        setEdgeCache(streamCacheKey, bodyStr, hasFailedAddon ? 15 : 300);
+      }
 
-      return new Response(bodyStr, { status: 200, headers });
+      return new Response(bodyStr, { status: 200, headers: streamHeaders });
     }
 
     // === SECRET VAULT ENDPOINTS (ONLY ACCESSIBLE WHEN TRIGGERED BY 'johntri2') ===

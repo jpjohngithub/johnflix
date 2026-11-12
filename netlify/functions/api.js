@@ -148,50 +148,6 @@ const ADDONS = [
     color: '#8b5cf6'
   },
   {
-    id: 'superflix',
-    name: 'SuperFlix Oficial',
-    badge: 'DUBLADO BR',
-    type: 'direct',
-    category: 'movie_series',
-    manifestUrl: 'https://superflixapi.fun/',
-    baseUrl: 'https://superflixapi.fun',
-    logo: 'https://superflixapi.fun/favicon.ico',
-    color: '#dc2626'
-  },
-  {
-    id: 'vidsrc',
-    name: 'VidSrc BR',
-    badge: 'MULTISERVER',
-    type: 'direct',
-    category: 'movie_series',
-    manifestUrl: 'https://vidsrc.sh/',
-    baseUrl: 'https://vidsrc.sh',
-    logo: 'https://vidsrc.me/favicon.ico',
-    color: '#06b6d4'
-  },
-  {
-    id: 'autoembed',
-    name: 'AutoEmbed Cloud',
-    badge: 'FAST CLOUD',
-    type: 'direct',
-    category: 'movie_series',
-    manifestUrl: 'https://player.autoembed.cc/',
-    baseUrl: 'https://player.autoembed.cc',
-    logo: 'https://autoembed.co/favicon.ico',
-    color: '#10b981'
-  },
-  {
-    id: 'videasy',
-    name: 'Videasy 4K',
-    badge: 'UNIVERSAL',
-    type: 'direct',
-    category: 'movie_series',
-    manifestUrl: 'https://player.videasy.to/',
-    baseUrl: 'https://player.videasy.to',
-    logo: 'https://player.videasy.to/favicon.ico',
-    color: '#f59e0b'
-  },
-  {
     id: 'flixstreams',
     name: 'Flix-Streams (Inglês)',
     badge: 'INGLÊS',
@@ -199,7 +155,7 @@ const ADDONS = [
     category: 'movie_series',
     isEnglishOnly: true,
     manifestUrl: 'https://flixnest.app/flix-streams/manifest.json',
-    baseUrl: 'https://flixnest.app/flix-streams',
+    baseUrl: 'https://flixnest.app/flix-streams/e30=',
     logo: 'https://flixnest.app/flix-streams/static/icon.png',
     color: '#06b6d4'
   },
@@ -381,6 +337,7 @@ const ADDONS = [
   }
 ];
 
+
 function fetchJson(targetUrl, timeoutMs = 8000, redirectsLeft = 5) {
   return new Promise((resolve, reject) => {
     if (redirectsLeft <= 0) return reject(new Error('Too many redirects'));
@@ -435,16 +392,57 @@ function fetchJson(targetUrl, timeoutMs = 8000, redirectsLeft = 5) {
   });
 }
 
+const ALLOWED_PROXY_HEADER_RE = /^(referer|origin|user-agent|accept|cookie|authorization|x-mb-token|x-requested-with)$/i;
+
+function extractProxyHeaders(rawStream) {
+  const sources = [rawStream?.headers, rawStream?.behaviorHints?.proxyHeaders?.request];
+  const out = {};
+  for (const src of sources) {
+    if (!src || typeof src !== 'object') continue;
+    for (const [k, v] of Object.entries(src)) {
+      if (typeof v !== 'string') continue;
+      const cleanKey = k.trim();
+      if (!ALLOWED_PROXY_HEADER_RE.test(cleanKey)) continue;
+      const cleanVal = v.replace(/[\r\n]+/g, ' ').trim();
+      if (cleanVal && cleanVal.length <= 2048) out[cleanKey] = cleanVal;
+    }
+  }
+  return Object.keys(out).length ? out : null;
+}
+
+function encodeProxyHeaders(hdrObj) {
+  if (!hdrObj || !Object.keys(hdrObj).length) return '';
+  try {
+    return Buffer.from(JSON.stringify(hdrObj), 'utf8').toString('base64');
+  } catch (e) {
+    return '';
+  }
+}
+
+function isBadSubServer(rawStream) {
+  const u = rawStream.url || '';
+  const t = `${rawStream.name || ''} ${rawStream.title || ''} ${rawStream.description || ''}`;
+  const hasSource = Boolean(rawStream.url || rawStream.infoHash);
+  if (!hasSource || /cloudflare-terms-of-service-abuse/i.test(u)) return true;
+  if (/requer autentica[cç][aã]o|login necess[aá]rio|try the paid tier|go premium/i.test(t) && !rawStream.url) return true;
+  const isPromo = /\[official trailer\]|play trailer|open in stremio|install stremio/i.test(t);
+  return isPromo && !rawStream.url && !rawStream.infoHash;
+}
+
 function normalizeStream(rawStream, addon) {
   const titleText = `${rawStream.name || ''} ${rawStream.title || ''} ${rawStream.description || ''}`;
   const is4k = /2160p|4k|uhd/i.test(titleText);
   const is1080p = /1080p|full\s*hd|fhd/i.test(titleText);
   const is720p = /720p|hd/i.test(titleText);
   const quality = is4k ? '4K UHD' : is1080p ? '1080p Full HD' : is720p ? '720p HD' : 'HD';
+  const isHevcOrMkv = /hevc|x265|h\.?265|\.mkv\b|10bit|hdr/i.test(titleText) || (rawStream.url && /\.mkv(\?|$)/i.test(rawStream.url));
 
-  const isDub = /dublado|🇧🇷|🇵🇹|portugu[eê]s|dual|pt-br|nacional|comando|bludv|mico/i.test(titleText);
+  const forceEn = Boolean(addon.isEnglishOnly);
+  const isDub = forceEn ? false : /dublado|🇧🇷|🇵🇹|portugu[eê]s|dual|pt-br|nacional|comando|bludv|mico/i.test(titleText);
   const isLeg = /legendado|🇺🇸|🇬🇧|leg\b|🧩/i.test(titleText);
-  const audio = isDub && isLeg ? 'Dual Áudio 🇧🇷/🇺🇸' : isDub ? 'Dublado PT-BR 🇧🇷' : isLeg ? 'Legendado PT-BR 💬' : 'Dublado / Dual 🇧🇷';
+  const audio = forceEn
+    ? 'Inglês (Original)'
+    : isDub && isLeg ? 'Dual Áudio 🇧🇷/🇺🇸' : isDub ? 'Dublado PT-BR 🇧🇷' : isLeg ? 'Legendado PT-BR 💬' : 'Dublado / Dual 🇧🇷';
 
   const seedMatch = titleText.match(/👤\s*(\d+)/);
   const seeds = seedMatch ? parseInt(seedMatch[1], 10) : null;
@@ -454,22 +452,38 @@ function normalizeStream(rawStream, addon) {
   let playType = 'direct';
   let sourceKind = 'direct';
   let sourceUrl = null;
+  const proxyHeaders = extractProxyHeaders(rawStream);
+  const hdrEncoded = encodeProxyHeaders(proxyHeaders);
+  const hdrSuffix = hdrEncoded ? `&hdr=${encodeURIComponent(hdrEncoded)}` : '';
+  let requiresProxy = Boolean(proxyHeaders);
+
   if (streamUrl) {
     if (streamUrl.startsWith('http://fenixflix.fenixhub.online/')) {
       streamUrl = streamUrl.replace('http://', 'https://');
     }
-    const isHls = /\.m3u8(?:$|[?#])/i.test(streamUrl);
+    if (/\.mpd(?:$|[?#])/i.test(streamUrl)) return null;
+    const isHls = /\.m3u8(?:$|[?#])/i.test(streamUrl)
+      || /[?&](?:format|type)=hls\b/i.test(streamUrl)
+      || /\/hls(?:\/|\?|$)/i.test(streamUrl)
+      || /zunderflix\.lat|fenixtv\.fenixhub\.online\/(?:proxy|direct\.m3u8)/i.test(streamUrl);
+    if (/^http:\/\//i.test(streamUrl) || /fenixflix\.fenixhub\.online|zunderflix\.lat|hd\.plavio\.site|free\.flixnest\.app|hakunaymatata\.com|mzfi\.me|animesfhd\.net|pixel-sus-4k-image\.com|stravo\.site/i.test(streamUrl)) {
+      requiresProxy = true;
+    }
     playType = isHls ? 'hls' : 'direct';
-    sourceKind = playType;
-    proxyUrl = isHls ? `/api/hls-proxy?url=${encodeURIComponent(streamUrl)}` : `/api/proxy-stream?url=${encodeURIComponent(streamUrl)}`;
+    sourceKind = isHls ? 'hls' : (/\.mkv(?:$|[?#])/i.test(streamUrl) ? 'mkv' : 'direct');
+    proxyUrl = isHls
+      ? `/api/hls-proxy?url=${encodeURIComponent(streamUrl)}${hdrSuffix}`
+      : `/api/proxy-stream?url=${encodeURIComponent(streamUrl)}${hdrSuffix}`;
   } else if (rawStream.infoHash) {
-    playType = 'unsupported';
+    const hash = String(rawStream.infoHash).toLowerCase();
+    playType = 'torrent';
     sourceKind = 'torrent';
-    sourceUrl = `magnet:?xt=urn:btih:${rawStream.infoHash}`;
-  } else if (rawStream.embedUrl) {
-    playType = 'unsupported';
-    sourceKind = 'external-player';
-    sourceUrl = rawStream.embedUrl;
+    const trackers = (rawStream.sources || [])
+      .filter((s) => typeof s === 'string' && s.startsWith('tracker:'))
+      .map((s) => s.replace(/^tracker:/, ''));
+    const trQuery = trackers.slice(0, 5).map((t) => `tr=${encodeURIComponent(t)}`).join('&');
+    sourceUrl = `magnet:?xt=urn:btih:${hash}&dn=${encodeURIComponent(rawStream.title || addon.name)}${trQuery ? `&${trQuery}` : ''}`;
+    proxyUrl = null;
   } else {
     return null;
   }
@@ -490,7 +504,9 @@ function normalizeStream(rawStream, addon) {
     rawName: rawStream.name || addon.name,
     rawTitle: (rawStream.title || '').replace(/\n/g, ' • '),
     quality,
+    isEnglishOnly: forceEn,
     is4k,
+    isHevcOrMkv: Boolean(isHevcOrMkv),
     isDub,
     audio,
     seeds,
@@ -499,7 +515,8 @@ function normalizeStream(rawStream, addon) {
     sourceUrl,
     directUrl: streamUrl,
     proxyUrl,
-    embedUrl: null,
+    requiresProxy,
+    proxyHeaders,
     infoHash: rawStream.infoHash ? rawStream.infoHash.toLowerCase() : null,
     fileIdx: rawStream.fileIdx !== undefined ? rawStream.fileIdx : null
   };
@@ -530,7 +547,7 @@ exports.handler = async (event) => {
               const m = await fetchJson(a.manifestUrl, 5000);
               return { ...a, online: true, version: m.version, description: m.description, pingMs: Date.now() - t0 };
             } catch (e) {
-              return { ...a, online: true, pingMs: Date.now() - t0 };
+              return { ...a, online: false, pingMs: Date.now() - t0 };
             }
           })
         );
@@ -635,7 +652,7 @@ exports.handler = async (event) => {
       }
     }
 
-    const streamMatch = rawPath.match(/^\/api\/streams\/(movie|series)\/(.+)$/);
+    const streamMatch = rawPath.match(/^\/api\/streams\/(movie|series|tv)\/(.+)$/);
     if (streamMatch) {
       const [, type, rawId] = streamMatch;
       const decodedId = decodeURIComponent(rawId);
@@ -645,40 +662,61 @@ exports.handler = async (event) => {
       const rawAddonResponses = await Promise.all(
         ADDONS.map(async (addon) => {
           let rawStreams = [];
+          let sourceStatus = 'offline';
+          let sourceError = null;
+          const startedAt = Date.now();
           try {
             const data = await fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 7500);
             if (Array.isArray(data?.streams)) rawStreams = data.streams;
-          } catch (e) {}
+            sourceStatus = rawStreams.length ? 'available' : 'empty';
+          } catch (e) {
+            sourceError = String(e?.message || 'upstream error').slice(0, 120);
+          }
 
-          return { addon, rawStreams };
+          return { addon, rawStreams, sourceStatus, sourceError, latencyMs: Date.now() - startedAt };
         })
       );
 
-      const addonResults = rawAddonResponses.map(({ addon, rawStreams }) => {
+      const sortStreamsUniversal = (a, b) => {
+        const rank = (s) => {
+          if (s.playType === 'direct' && !s.isHevcOrMkv) return 0;
+          if (s.playType === 'hls') return 1;
+          if (s.playType === 'direct') return 2;
+          if (s.playType === 'torrent' && s.proxyUrl) return 3;
+          return 4;
+        };
+        if (rank(a) !== rank(b)) return rank(a) - rank(b);
+        const aDegraded = /free\.flixnest\.app\/api\/4khdhub\//i.test(a.directUrl || '') ? 1 : 0;
+        const bDegraded = /free\.flixnest\.app\/api\/4khdhub\//i.test(b.directUrl || '') ? 1 : 0;
+        if (aDegraded !== bDegraded) return aDegraded - bDegraded;
+        if (a.isDub !== b.isDub) return a.isDub ? -1 : 1;
+        if (a.is4k !== b.is4k) return a.is4k ? 1 : -1;
+        return (b.seeds || 0) - (a.seeds || 0);
+      };
+
+      const addonResults = rawAddonResponses.map(({ addon, rawStreams, sourceStatus, sourceError, latencyMs }) => {
         const streams = rawStreams
+          .filter((s) => !isBadSubServer(s))
           .map((s) => normalizeStream(s, addon))
-          .filter(Boolean)
-          .filter((s) => s.proxyUrl || s.sourceUrl);
+          .filter((s) => s && (s.proxyUrl || s.directUrl || s.infoHash || s.sourceUrl));
+        streams.sort(sortStreamsUniversal);
 
         return {
           addonId: addon.id,
           addonName: addon.name,
           badge: addon.badge,
           color: addon.color,
+          isEnglishOnly: Boolean(addon.isEnglishOnly),
+          status: streams.length ? 'available' : rawStreams.length ? 'filtered' : sourceStatus,
+          sourceError,
+          latencyMs,
           count: streams.length,
           streams
         };
       });
 
       const allStreams = addonResults.flatMap((r) => r.streams);
-
-      // Sort: Direct Cloud streams first (FenixFlix Zeus/Malfoy, FrostStream, BestCine), Dublado first, 4K first
-      allStreams.sort((a, b) => {
-        if (a.playType !== b.playType) return a.playType === 'direct' ? -1 : 1;
-        if (a.isDub !== b.isDub) return a.isDub ? -1 : 1;
-        if (a.is4k !== b.is4k) return a.is4k ? -1 : 1;
-        return (b.seeds || 0) - (a.seeds || 0);
-      });
+      allStreams.sort(sortStreamsUniversal);
 
       return {
         statusCode: 200,
