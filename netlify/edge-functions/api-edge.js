@@ -543,6 +543,8 @@ function normalizeStream(rawStream, addon) {
   if (subServerMatch) {
     let cleanSub = subServerMatch[1].replace(/\bstremio\b/gi, '').replace(/https?:\/\/[^\s]+/gi, '').trim();
     serverLabel = `${addon.name} • ${cleanSub}`;
+  } else if (serverLabel && !serverLabel.toLowerCase().includes(addon.name.split(' ')[0].toLowerCase())) {
+    serverLabel = `${addon.name} • ${serverLabel}`;
   }
 
   return {
@@ -1465,7 +1467,7 @@ export default async (request) => {
       const encodedId = encodeURIComponent(decodedId);
 
       const isFast = url.searchParams.get('fast') === '1';
-      const streamCacheKey = `streams:v27:${type}:${decodedId}`;
+      const streamCacheKey = `streams:v28:${type}:${decodedId}`;
       const streamHeaders = { ...headers, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
       const cachedStreams = getEdgeCache(streamCacheKey);
       if (cachedStreams) return new Response(cachedStreams, { status: 200, headers: streamHeaders });

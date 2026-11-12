@@ -4573,12 +4573,15 @@
       `;
       return;
     }
-    state.currentStreams.forEach((s) => {
+    const playableOnly = state.currentStreams.filter(isStreamPlayableNow);
+    const drawerStreams = playableOnly.length > 0 ? playableOnly : state.currentStreams;
+    drawerStreams.forEach((s) => {
       const isCurrent = Boolean(state.currentStream && (
         state.currentStream === s
         || (s.proxyUrl && state.currentStream.proxyUrl === s.proxyUrl)
         || (s.infoHash && state.currentStream.infoHash === s.infoHash && s.addonId === state.currentStream.addonId)
       ));
+      const canPlayNow = isStreamPlayableNow(s);
       const item = document.createElement('div');
       item.className = `drawer-stream-row${isCurrent ? ' active' : ''}`;
       item.innerHTML = `
@@ -4587,11 +4590,11 @@
           <strong>${escapeHtml(s.serverLabel)}</strong>
           <span>${escapeHtml(s.audio || 'Dublado / Legendado')} • ${escapeHtml(s.quality || 'HD')}</span>
         </div>
-        <span class="drawer-stream-status">${isCurrent ? 'Reproduzindo' : 'Assistir'}</span>
+        <span class="drawer-stream-status">${isCurrent ? 'Reproduzindo' : (canPlayNow ? 'Assistir' : 'P2P / Stremio')}</span>
       `;
       item.addEventListener('click', (e) => {
         e.stopPropagation();
-        showToast(`Conectando: ${s.serverLabel}`);
+        showToast(canPlayNow ? `Conectando: ${s.serverLabel}` : `Torrent P2P (${s.addonName}): requer Stremio/P2P`);
         el.playerServerDrawer.classList.add('hidden');
         launchCloudPlayer(s, false);
       });
