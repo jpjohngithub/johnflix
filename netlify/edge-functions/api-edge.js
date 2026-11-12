@@ -82,8 +82,8 @@ const MOVIE_ADDONS = [
     badge: 'BRASIL',
     type: 'p2p',
     category: 'movie_series',
-    manifestUrl: 'https://94c8cb9f702d-brazuca-torrents.baby-beamup.club/manifest.json',
-    baseUrl: 'https://94c8cb9f702d-brazuca-torrents.baby-beamup.club',
+    manifestUrl: 'https://torrentio.strem.fun/brazuca/manifest.json',
+    baseUrl: 'https://torrentio.strem.fun/brazuca',
     logo: 'https://i.imgur.com/KVpfrAk.png',
     color: '#22c55e'
   },
@@ -383,13 +383,18 @@ async function fetchFrameXTVStreams(type, tmdbId, season = 1, episode = 1) {
           : `type=movie&id=${tmdbId}&provider=${prov}`;
         const data = await fetchJson(`https://api.framextv.tech/api/stream?${q}`, 2500);
         if (data?.success && Array.isArray(data.sources)) {
-          return data.sources.map((src) => ({
-            name: `FrameXTV • ${src.server || prov.toUpperCase()}`,
-            title: `🇺🇸 ${src.server || prov} (${src.quality || '1080p'})\n🇺🇸 Inglês (Original)`,
-            url: src.url,
-            isHls: Boolean(src.isHls || (src.url && (/\.m3u8|hybrows\.workers\.dev/i.test(src.url) || prov === 'bowler' || prov === 'giant'))),
-            isDirectCors: Boolean(src.skipProxy || (src.url && src.url.includes('workers.dev')))
-          }));
+          return data.sources.map((src) => {
+            const isHindi = /hindi/i.test(src.quality || '') || /hindi/i.test(src.server || '');
+            const langLabel = isHindi ? '🇮🇳 Hindi (Áudio Secundário)' : '🇺🇸 Inglês (Original)';
+            return {
+              name: `FrameXTV • ${src.server || prov.toUpperCase()}`,
+              title: `${isHindi ? '🇮🇳' : '🇺🇸'} ${src.server || prov} (${src.quality || '1080p'})\n${langLabel}`,
+              url: src.url,
+              isHls: Boolean(src.isHls || (src.url && (/\.m3u8|hybrows\.workers\.dev/i.test(src.url) || prov === 'bowler' || prov === 'giant'))),
+              isDirectCors: Boolean(src.skipProxy || (src.url && src.url.includes('workers.dev'))),
+              isHindi
+            };
+          });
         }
       } catch (e) {}
       return [];
@@ -1471,7 +1476,7 @@ export default async (request) => {
       const encodedId = encodeURIComponent(decodedId);
 
       const isFast = url.searchParams.get('fast') === '1';
-      const streamCacheKey = `streams:v29:${type}:${decodedId}`;
+      const streamCacheKey = `streams:v30:${type}:${decodedId}`;
       const streamHeaders = { ...headers, 'Cache-Control': 'no-store, no-cache, must-revalidate' };
       const cachedStreams = getEdgeCache(streamCacheKey);
       if (cachedStreams) return new Response(cachedStreams, { status: 200, headers: streamHeaders });
@@ -1553,7 +1558,7 @@ export default async (request) => {
       if (isFast) {
         await Promise.race([
           Promise.all(addonTasks),
-          new Promise((resolve) => setTimeout(resolve, 2200))
+          new Promise((resolve) => setTimeout(resolve, 3800))
         ]);
       } else {
         await Promise.all(addonTasks);
@@ -1571,7 +1576,7 @@ export default async (request) => {
           return 4;
         };
         if (rank(a) !== rank(b)) return rank(a) - rank(b);
-        const isDegraded = (s) => (/free\.flixnest\.app\/api\/(?:4khdhub|hdhub4u)\//i.test(s.directUrl || '') || /\b(?:badger|cinejoy|netmirror|multimovies|cinezo)\b|dbonline\.tech-cdn\.top/i.test(`${s.serverLabel || ''} ${s.directUrl || ''}`)) ? 1 : 0;
+        const isDegraded = (s) => (s.isHindi || /free\.flixnest\.app\/api\/(?:4khdhub|hdhub4u)\//i.test(s.directUrl || '') || /\b(?:badger|cinejoy|netmirror|multimovies|cinezo)\b|dbonline\.tech-cdn\.top/i.test(`${s.serverLabel || ''} ${s.directUrl || ''}`)) ? 1 : 0;
         const aDegraded = isDegraded(a);
         const bDegraded = isDegraded(b);
         if (aDegraded !== bDegraded) return aDegraded - bDegraded;

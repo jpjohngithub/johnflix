@@ -85,8 +85,8 @@ const ADDONS = [
     badge: 'BRASIL',
     type: 'p2p',
     category: 'movie_series',
-    manifestUrl: 'https://94c8cb9f702d-brazuca-torrents.baby-beamup.club/manifest.json',
-    baseUrl: 'https://94c8cb9f702d-brazuca-torrents.baby-beamup.club',
+    manifestUrl: 'https://torrentio.strem.fun/brazuca/manifest.json',
+    baseUrl: 'https://torrentio.strem.fun/brazuca',
     logo: 'https://i.imgur.com/KVpfrAk.png',
     color: '#22c55e'
   },
@@ -687,7 +687,7 @@ exports.handler = async (event) => {
           return 4;
         };
         if (rank(a) !== rank(b)) return rank(a) - rank(b);
-        const isDegraded = (s) => (/free\.flixnest\.app\/api\/(?:4khdhub|hdhub4u)\//i.test(s.directUrl || '') || /\b(?:badger|cinejoy|netmirror|multimovies|cinezo)\b|dbonline\.tech-cdn\.top/i.test(`${s.serverLabel || ''} ${s.directUrl || ''}`)) ? 1 : 0;
+        const isDegraded = (s) => (s.isHindi || /free\.flixnest\.app\/api\/(?:4khdhub|hdhub4u)\//i.test(s.directUrl || '') || /\b(?:badger|cinejoy|netmirror|multimovies|cinezo)\b|dbonline\.tech-cdn\.top/i.test(`${s.serverLabel || ''} ${s.directUrl || ''}`)) ? 1 : 0;
         const aDegraded = isDegraded(a);
         const bDegraded = isDegraded(b);
         if (aDegraded !== bDegraded) return aDegraded - bDegraded;
