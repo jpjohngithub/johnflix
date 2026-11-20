@@ -4291,7 +4291,7 @@
     }
 
   function isStreamPlayableNow(s) {
-    return Boolean(s && (['direct', 'hls'].includes(s.playType) || (s.playType === 'torrent' && Boolean(s.proxyUrl))));
+    return Boolean(s && (['direct', 'hls'].includes(s.playType) || s.playType === 'torrent'));
   }
 
   function pickBestPlayableStream(streams) {
@@ -4304,10 +4304,8 @@
     const key = getStreamKey(failedStream);
     if (key) failedStreamKeys.add(key);
 
-    // Automatic failover only tries URLs the native <video> element can use.
-    // Magnets without a local stream endpoint and DASH entries remain diagnostic only.
     const candidates = (state.currentStreams || []).filter((s) =>
-      ['direct', 'hls'].includes(s.playType) || (s.playType === 'torrent' && Boolean(s.proxyUrl))
+      ['direct', 'hls', 'torrent'].includes(s.playType)
     );
     // Prefer same audio language first, then any working stream
     const nextSameLang = candidates.find((s) => !failedStreamKeys.has(getStreamKey(s)) && Boolean(s.isDub) === Boolean(failedStream?.isDub));
@@ -4357,10 +4355,19 @@
 
   let blackScreenWatchdogTimer = null;
   let playerBufferStallTimer = null;
+  let activeWebTorrent = null;
+  function stopWebTorrent() {
+    if (activeWebTorrent) {
+      try { activeWebTorrent.destroy(); } catch (_) {}
+      activeWebTorrent = null;
+    }
+  }
+
   function clearVideoHandlers() {
     clearTimeout(playerStallTimer);
     clearTimeout(blackScreenWatchdogTimer);
     clearTimeout(playerBufferStallTimer);
+    stopWebTorrent();
     if (hlsInstance) {
       try { hlsInstance.destroy(); } catch (_) {}
       hlsInstance = null;
@@ -4398,7 +4405,7 @@
     el.playerTitle.textContent = `${state.currentItem ? state.currentItem.name : 'Reproduzindo'}${epSuffix}`;
 
     el.playerLoader.classList.remove('hidden');
-    el.playerLoaderTitle.textContent = isAutoFailover ? 'Alternando para servidor compatível...' : 'Iniciando reprodução rápida...';
+    el.playerLoaderTitle.textContent = isAutoFailover ? 'Alternando para servidor compatível...' : 'Iniciando reprodução nativa...';
     el.playerLoaderSub.textContent = `${stream.serverLabel} • ${stream.quality}`;
     if (el.playerLoaderSwitchBtn) el.playerLoaderSwitchBtn.classList.add('hidden');
     if (el.playerLoaderStremioBtn) el.playerLoaderStremioBtn.classList.add('hidden');
@@ -4409,43 +4416,117 @@
 
     renderPlayerDrawer(stream);
 
-    // If a P2P/torrent stream is picked in a browser without local streaming proxy, auto-bridge to the best working cloud stream
+    // Native P2P Player resolution
     if (stream.playType === 'torrent' && !stream.proxyUrl) {
-      const bestPlayable = (state.currentStreams || []).find((s) => isStreamPlayableNow(s) && !failedStreamKeys.has(getStreamKey(s)));
-      if (bestPlayable) {
-        showToast(`Conectando via Nuvem Direta (${bestPlayable.serverLabel})`);
-        launchCloudPlayer(bestPlayable, movie, episode);
-        return;
+      const stremioLocal = `http://127.0.0.1:11470/${stream.infoHash}/${stream.fileIdx !== null && stream.fileIdx !== undefined ? stream.fileIdx : 0}`;
+      const stremioDeepLink = `stremio:///detail/${state.currentItem?.type || 'movie'}/${state.currentItem?.id || ''}`;
+      const magnetLink = stream.sourceUrl || (stream.infoHash ? `magnet:?xt=urn:btih:${stream.infoHash}` : '');
+
+      if (el.playerLoaderStremioBtn) {
+        el.playerLoaderStremioBtn.href = stremioDeepLink;
+        el.playerLoaderStremioBtn.classList.remove('hidden');
       }
+      if (el.playerLoaderMagnetBtn && magnetLink) {
+        el.playerLoaderMagnetBtn.href = magnetLink;
+        el.playerLoaderMagnetBtn.classList.remove('hidden');
+      }
+
+      el.cloudVideo.classList.remove('hidden');
+      el.playerLoaderTitle.textContent = 'Conectando ao player P2P nativo...';
+      el.playerLoaderSub.textContent = `${stream.serverLabel} • Buscando rota...`;
+
+      // 1. Probe local Stremio streaming service
+      const localProbe = fetch('http://127.0.0.1:11470/stats.json', { signal: AbortSignal.timeout ? AbortSignal.timeout(900) : undefined })
+        .then(() => true)
+        .catch(() => false);
+
+      localProbe.then((hasLocal) => {
+        if (state.currentStream !== stream) return;
+        if (hasLocal) {
+          stream.proxyUrl = stremioLocal;
+          el.cloudVideo.src = stremioLocal;
+          el.cloudVideo.load();
+          startVideoPlayback();
+          return;
+        }
+
+        // 2. Try in-browser WebTorrent if available
+        if (typeof window.WebTorrent === 'function') {
+          try {
+            stopWebTorrent();
+            const wt = new window.WebTorrent();
+            activeWebTorrent = wt;
+            const trackers = [
+              'wss://tracker.openwebtorrent.com',
+              'wss://tracker.btorrent.xyz',
+              'wss://tracker.fastcast.nz'
+            ];
+            const magnetWithTrackers = `${magnetLink}&tr=${trackers.map(encodeURIComponent).join('&tr=')}`;
+            el.playerLoaderSub.textContent = `${stream.serverLabel} • Conectando a peers WebTorrent...`;
+
+            wt.add(magnetWithTrackers, { announce: trackers }, (torrent) => {
+              if (state.currentStream !== stream) {
+                try { torrent.destroy(); } catch (_) {}
+                return;
+              }
+              const file = (stream.fileIdx !== null && stream.fileIdx !== undefined && torrent.files[stream.fileIdx])
+                ? torrent.files[stream.fileIdx]
+                : torrent.files.find((f) => /\.(mp4|mkv|webm|avi)$/i.test(f.name)) || torrent.files[0];
+
+              if (file) {
+                file.renderTo(el.cloudVideo, { autoplay: true }, (err) => {
+                  if (err) retrySourceOrNext();
+                  else hideLoader();
+                });
+                torrent.on('download', () => {
+                  if (state.currentStream === stream && torrent.downloadSpeed > 20000) {
+                    hideLoader();
+                  }
+                });
+              }
+            });
+
+            // 3. Fallback: if after 5s WebTorrent has 0 peers, auto-bridge to cloud mirror
+            setTimeout(() => {
+              if (state.currentStream === stream && (!wt.torrents[0] || wt.torrents[0].numPeers === 0)) {
+                const cloudAlt = (state.currentStreams || []).find((s) => ['direct', 'hls'].includes(s.playType) && !failedStreamKeys.has(getStreamKey(s)));
+                if (cloudAlt) {
+                  showToast(`Redirecionando para servidor em nuvem direto (${cloudAlt.serverLabel})`);
+                  launchCloudPlayer(cloudAlt, true);
+                } else {
+                  el.playerLoaderTitle.textContent = 'Aguardando peers P2P...';
+                  el.playerLoaderSub.textContent = 'Dica: Você pode abrir no Stremio ou escolher outro servidor.';
+                  if (el.playerLoaderSwitchBtn) el.playerLoaderSwitchBtn.classList.remove('hidden');
+                }
+              }
+            }, 5000);
+            return;
+          } catch (_) {}
+        }
+
+        // 4. Instant cloud fallback if WebTorrent unavailable
+        const cloudAlt = (state.currentStreams || []).find((s) => ['direct', 'hls'].includes(s.playType) && !failedStreamKeys.has(getStreamKey(s)));
+        if (cloudAlt) {
+          showToast(`Conectando via Nuvem Direta (${cloudAlt.serverLabel})`);
+          launchCloudPlayer(cloudAlt, true);
+        } else {
+          el.playerLoaderTitle.textContent = 'Fonte P2P';
+          el.playerLoaderSub.textContent = 'Abra no app Stremio ou selecione outra fonte.';
+          if (el.playerLoaderSwitchBtn) el.playerLoaderSwitchBtn.classList.remove('hidden');
+        }
+      });
+      return;
     }
 
-    const canPlayTorrent = stream.playType === 'torrent' && Boolean(stream.proxyUrl);
-    const nativePlayable = ['direct', 'hls'].includes(stream.playType) || canPlayTorrent;
+    const nativePlayable = ['direct', 'hls'].includes(stream.playType) || Boolean(stream.proxyUrl);
     if (!nativePlayable) {
       el.cloudVideo.pause();
       el.cloudVideo.removeAttribute('src');
       el.cloudVideo.load();
       el.cloudVideo.classList.add('hidden');
       el.playerLoader.classList.remove('hidden');
-      if (stream.playType === 'torrent') {
-        el.playerLoaderTitle.textContent = 'Fonte P2P (Torrent / Stremio)';
-        el.playerLoaderSub.textContent = 'Esta fonte P2P requer cliente local. Abra diretamente no Stremio ou app de Torrent:';
-        const stremioUrl = `stremio:///detail/${movie?.type || state.currentItem?.type || 'movie'}/${movie?.id || state.currentItem?.id || ''}`;
-        const magnetUrl = stream.sourceUrl || (stream.infoHash ? `magnet:?xt=urn:btih:${stream.infoHash}` : '');
-        if (el.playerLoaderStremioBtn) {
-          el.playerLoaderStremioBtn.href = stremioUrl;
-          el.playerLoaderStremioBtn.classList.remove('hidden');
-        }
-        if (el.playerLoaderMagnetBtn && magnetUrl) {
-          el.playerLoaderMagnetBtn.href = magnetUrl;
-          el.playerLoaderMagnetBtn.classList.remove('hidden');
-        }
-      } else {
-        el.playerLoaderTitle.textContent = stream.sourceKind === 'dash' ? 'Formato DASH incompatível' : 'Formato incompatível';
-        el.playerLoaderSub.textContent = 'O navegador não consegue reproduzir este formato diretamente. Escolha outra fonte.';
-        if (el.playerLoaderStremioBtn) el.playerLoaderStremioBtn.classList.add('hidden');
-        if (el.playerLoaderMagnetBtn) el.playerLoaderMagnetBtn.classList.add('hidden');
-      }
+      el.playerLoaderTitle.textContent = 'Formato incompatível';
+      el.playerLoaderSub.textContent = 'O navegador não consegue reproduzir este formato diretamente. Escolha outra fonte.';
       if (el.playerLoaderSwitchBtn) el.playerLoaderSwitchBtn.classList.remove('hidden');
       return;
     }
