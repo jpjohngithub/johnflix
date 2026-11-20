@@ -143,8 +143,6 @@
     playerLoaderTitle: document.getElementById('playerLoaderTitle'),
     playerLoaderSub: document.getElementById('playerLoaderSub'),
     playerLoaderSwitchBtn: document.getElementById('playerLoaderSwitchBtn'),
-    playerLoaderStremioBtn: document.getElementById('playerLoaderStremioBtn'),
-    playerLoaderMagnetBtn: document.getElementById('playerLoaderMagnetBtn'),
     playerServerDrawer: document.getElementById('playerServerDrawer'),
     closeDrawerBtn: document.getElementById('closeDrawerBtn'),
     playerDrawerList: document.getElementById('playerDrawerList'),
@@ -4408,8 +4406,6 @@
     el.playerLoaderTitle.textContent = isAutoFailover ? 'Alternando para servidor compatível...' : 'Iniciando reprodução nativa...';
     el.playerLoaderSub.textContent = `${stream.serverLabel} • ${stream.quality}`;
     if (el.playerLoaderSwitchBtn) el.playerLoaderSwitchBtn.classList.add('hidden');
-    if (el.playerLoaderStremioBtn) el.playerLoaderStremioBtn.classList.add('hidden');
-    if (el.playerLoaderMagnetBtn) el.playerLoaderMagnetBtn.classList.add('hidden');
 
     if (stream.playType === 'torrent' && stream.proxyUrl) startTorrentTelemetry(stream.infoHash);
     else stopTorrentTelemetry();
@@ -4418,25 +4414,13 @@
 
     // Native P2P Player resolution
     if (stream.playType === 'torrent' && !stream.proxyUrl) {
-      const stremioLocal = `http://127.0.0.1:11470/${stream.infoHash}/${stream.fileIdx !== null && stream.fileIdx !== undefined ? stream.fileIdx : 0}`;
-      const stremioDeepLink = `stremio:///detail/${state.currentItem?.type || 'movie'}/${state.currentItem?.id || ''}`;
-      const magnetLink = stream.sourceUrl || (stream.infoHash ? `magnet:?xt=urn:btih:${stream.infoHash}` : '');
-
-      if (el.playerLoaderStremioBtn) {
-        el.playerLoaderStremioBtn.href = stremioDeepLink;
-        el.playerLoaderStremioBtn.classList.remove('hidden');
-      }
-      if (el.playerLoaderMagnetBtn && magnetLink) {
-        el.playerLoaderMagnetBtn.href = magnetLink;
-        el.playerLoaderMagnetBtn.classList.remove('hidden');
-      }
-
       el.cloudVideo.classList.remove('hidden');
-      el.playerLoaderTitle.textContent = 'Conectando ao player P2P nativo...';
-      el.playerLoaderSub.textContent = `${stream.serverLabel} • Buscando rota...`;
+      el.playerLoaderTitle.textContent = 'Carregando stream nativo...';
+      el.playerLoaderSub.textContent = `${stream.serverLabel} • Otimizando conexão...`;
 
-      // 1. Probe local Stremio streaming service
-      const localProbe = fetch('http://127.0.0.1:11470/stats.json', { signal: AbortSignal.timeout ? AbortSignal.timeout(900) : undefined })
+      // 1. Silent probe for local background streaming engine
+      const stremioLocal = `http://127.0.0.1:11470/${stream.infoHash}/${stream.fileIdx !== null && stream.fileIdx !== undefined ? stream.fileIdx : 0}`;
+      const localProbe = fetch('http://127.0.0.1:11470/stats.json', { signal: AbortSignal.timeout ? AbortSignal.timeout(800) : undefined })
         .then(() => true)
         .catch(() => false);
 
@@ -4450,7 +4434,44 @@
           return;
         }
 
-        // 2. Try in-browser WebTorrent if available
+        // 2. Find matching cloud stream mirror with same audio language
+        const matchCloud = (state.currentStreams || []).find((s) =>
+          ['direct', 'hls'].includes(s.playType) &&
+          !failedStreamKeys.has(getStreamKey(s)) &&
+          Boolean(s.isDub) === Boolean(stream.isDub)
+        ) || (state.currentStreams || []).find((s) =>
+          ['direct', 'hls'].includes(s.playType) &&
+          !failedStreamKeys.has(getStreamKey(s))
+        );
+
+        if (matchCloud) {
+          // Play directly through native video element under the selected server's name
+          const cloudSrc = matchCloud.proxyUrl || matchCloud.directUrl;
+          if (cloudSrc) {
+            el.playerLoaderSub.textContent = `${stream.serverLabel} • Conexão estabelecida`;
+            if (matchCloud.playType === 'hls' || /\.m3u8(?:$|[?#])/i.test(cloudSrc)) {
+              if (window.Hls && Hls.isSupported()) {
+                if (hlsInstance) try { hlsInstance.destroy(); } catch (_) {}
+                hlsInstance = new Hls({ enableWorker: true, lowLatencyMode: true });
+                hlsInstance.loadSource(cloudSrc);
+                hlsInstance.attachMedia(el.cloudVideo);
+                hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => startVideoPlayback());
+                hlsInstance.on(Hls.Events.ERROR, () => retrySourceOrNext());
+              } else if (el.cloudVideo.canPlayType('application/vnd.apple.mpegurl')) {
+                el.cloudVideo.src = cloudSrc;
+                el.cloudVideo.load();
+                startVideoPlayback();
+              }
+            } else {
+              el.cloudVideo.src = cloudSrc;
+              el.cloudVideo.load();
+              startVideoPlayback();
+            }
+            return;
+          }
+        }
+
+        // 3. In-browser WebTorrent if no cloud mirror was found
         if (typeof window.WebTorrent === 'function') {
           try {
             stopWebTorrent();
@@ -4461,8 +4482,9 @@
               'wss://tracker.btorrent.xyz',
               'wss://tracker.fastcast.nz'
             ];
+            const magnetLink = stream.sourceUrl || `magnet:?xt=urn:btih:${stream.infoHash}`;
             const magnetWithTrackers = `${magnetLink}&tr=${trackers.map(encodeURIComponent).join('&tr=')}`;
-            el.playerLoaderSub.textContent = `${stream.serverLabel} • Conectando a peers WebTorrent...`;
+            el.playerLoaderSub.textContent = `${stream.serverLabel} • Conectando à rede...`;
 
             wt.add(magnetWithTrackers, { announce: trackers }, (torrent) => {
               if (state.currentStream !== stream) {
@@ -4486,34 +4508,21 @@
               }
             });
 
-            // 3. Fallback: if after 5s WebTorrent has 0 peers, auto-bridge to cloud mirror
             setTimeout(() => {
               if (state.currentStream === stream && (!wt.torrents[0] || wt.torrents[0].numPeers === 0)) {
-                const cloudAlt = (state.currentStreams || []).find((s) => ['direct', 'hls'].includes(s.playType) && !failedStreamKeys.has(getStreamKey(s)));
-                if (cloudAlt) {
-                  showToast(`Redirecionando para servidor em nuvem direto (${cloudAlt.serverLabel})`);
-                  launchCloudPlayer(cloudAlt, true);
-                } else {
-                  el.playerLoaderTitle.textContent = 'Aguardando peers P2P...';
-                  el.playerLoaderSub.textContent = 'Dica: Você pode abrir no Stremio ou escolher outro servidor.';
-                  if (el.playerLoaderSwitchBtn) el.playerLoaderSwitchBtn.classList.remove('hidden');
-                }
+                el.playerLoaderTitle.textContent = 'Carregando buffer...';
+                el.playerLoaderSub.textContent = 'Buscando peers com maior taxa de envio...';
+                if (el.playerLoaderSwitchBtn) el.playerLoaderSwitchBtn.classList.remove('hidden');
               }
-            }, 5000);
+            }, 6000);
             return;
           } catch (_) {}
         }
 
-        // 4. Instant cloud fallback if WebTorrent unavailable
-        const cloudAlt = (state.currentStreams || []).find((s) => ['direct', 'hls'].includes(s.playType) && !failedStreamKeys.has(getStreamKey(s)));
-        if (cloudAlt) {
-          showToast(`Conectando via Nuvem Direta (${cloudAlt.serverLabel})`);
-          launchCloudPlayer(cloudAlt, true);
-        } else {
-          el.playerLoaderTitle.textContent = 'Fonte P2P';
-          el.playerLoaderSub.textContent = 'Abra no app Stremio ou selecione outra fonte.';
-          if (el.playerLoaderSwitchBtn) el.playerLoaderSwitchBtn.classList.remove('hidden');
-        }
+        // 4. Default loader if no peers and no cloud mirrors
+        el.playerLoaderTitle.textContent = 'Aguardando transmissão...';
+        el.playerLoaderSub.textContent = 'Sem sementes ativas no momento.';
+        if (el.playerLoaderSwitchBtn) el.playerLoaderSwitchBtn.classList.remove('hidden');
       });
       return;
     }
@@ -4535,8 +4544,6 @@
     let playbackStarted = false;
     const hideLoader = () => {
       el.playerLoader.classList.add('hidden');
-      if (el.playerLoaderStremioBtn) el.playerLoaderStremioBtn.classList.add('hidden');
-      if (el.playerLoaderMagnetBtn) el.playerLoaderMagnetBtn.classList.add('hidden');
     };
 
     const resumeAt = state.pendingResume > 5 ? state.pendingResume : 0;
