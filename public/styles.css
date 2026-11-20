@@ -1193,6 +1193,50 @@ html, body {
   color: #e9d5ff;
 }
 
+.switch-server-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.sources-arrow-hint {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 50%;
+  transform: translateX(50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.95), rgba(99, 102, 241, 0.95));
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  box-shadow: 0 4px 22px rgba(168, 85, 247, 0.65), 0 0 12px rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+  z-index: 100;
+  white-space: nowrap;
+  animation: hintBounceUp 1.2s infinite ease-in-out;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+.sources-arrow-hint.hidden {
+  display: none !important;
+}
+@keyframes hintBounceUp {
+  0%, 100% {
+    transform: translateX(50%) translateY(0);
+  }
+  50% {
+    transform: translateX(50%) translateY(-6px);
+  }
+}
+.sources-arrow-hint .hint-arrow {
+  color: #fff;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.8));
+}
+
 .player-stage {
   position: relative;
   width: 100%;
@@ -2126,15 +2170,24 @@ html, body {
   border-color: #c084fc;
 }
 
+:root {
+  --top10-poster-w: 174px;
+}
+
 /* Top 10 Ranked Cards Row (Uniform Card Height + Sculptural Vector Numbers) */
 .media-card.top10-card {
-  flex: 0 0 242px;
+  flex: 0 0 auto !important;
+  width: auto !important;
   background: transparent;
   border: none;
   padding-left: 68px;
   position: relative;
   overflow: visible;
   display: block;
+}
+.media-card.top10-card:has(.top10-rank-svg.wide),
+.media-card.top10-card.top10-wide {
+  padding-left: 116px;
 }
 .media-card.top10-card:hover {
   box-shadow: none;
@@ -2153,11 +2206,15 @@ html, body {
   filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.85));
   transition: transform 0.3s ease;
 }
+.top10-rank-svg.wide {
+  width: 148px;
+}
 .media-card.top10-card:hover .top10-rank-svg {
   transform: scale(1.04) translateX(-3px);
 }
 .media-card.top10-card .card-inner-box {
-  width: 100%;
+  width: var(--top10-poster-w, 174px) !important;
+  flex: 0 0 var(--top10-poster-w, 174px) !important;
   border-radius: 10px;
   background: var(--bg-card);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -2227,9 +2284,15 @@ html, body {
     max-width: 210px;
     max-height: 68px;
   }
+  :root {
+    --top10-poster-w: 128px;
+  }
   .media-card.top10-card {
-    flex: 0 0 176px;
     padding-left: 48px;
+  }
+  .media-card.top10-card:has(.top10-rank-svg.wide),
+  .media-card.top10-card.top10-wide {
+    padding-left: 82px;
   }
   .top10-rank-svg {
     width: 68px;
@@ -2237,13 +2300,32 @@ html, body {
     bottom: 34px;
     left: -4px;
   }
+  .top10-rank-svg.wide {
+    width: 104px;
+  }
 }
 
-.media-card.top10-card:has(.top10-rank-svg.wide) { padding-left: 118px; flex-basis: 292px; }
-.top10-rank-svg.wide { width: 150px; }
 .card-info { min-height: 52px; }
 .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; margin-bottom: 12px; font-size: 0.9rem; color: #cbd5e1; }
-@media (max-width: 768px) { .media-card.top10-card:has(.top10-rank-svg.wide) { padding-left: 80px; flex-basis: 208px; } .top10-rank-svg.wide { width: 98px; } }
+@media (max-width: 768px) {
+  :root {
+    --top10-poster-w: 114px;
+  }
+  .media-card.top10-card {
+    padding-left: 40px;
+  }
+  .media-card.top10-card:has(.top10-rank-svg.wide),
+  .media-card.top10-card.top10-wide {
+    padding-left: 68px;
+  }
+  .top10-rank-svg {
+    width: 58px;
+    height: 102px;
+  }
+  .top10-rank-svg.wide {
+    width: 88px;
+  }
+}
 
 /* ==========================================================================
    PREMIUM POLISH — cards, details modal, server list
@@ -5666,13 +5748,15 @@ html, body {
   .media-card {
     flex: 0 0 144px !important;
   }
-  .media-card.top10-card {
-    flex: 0 0 184px !important;
-    padding-left: 52px !important;
+  :root {
+    --top10-poster-w: 114px;
   }
-  .media-card.top10-card:has(.top10-rank-svg.wide) {
-    flex: 0 0 205px !important;
-    padding-left: 72px !important;
+  .media-card.top10-card {
+    padding-left: 42px !important;
+  }
+  .media-card.top10-card:has(.top10-rank-svg.wide),
+  .media-card.top10-card.top10-wide {
+    padding-left: 68px !important;
   }
   .card-poster-wrap {
     border-radius: 12px !important;

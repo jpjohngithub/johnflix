@@ -15,7 +15,7 @@
   <link rel="dns-prefetch" href="https://fenixflix.fenixhub.online" />
   <link rel="dns-prefetch" href="https://v3-cinemeta.strem.io" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/styles.css?v=20261120_native_v2" />
+  <link rel="stylesheet" href="/styles.css?v=20261120_top10_arrow_dl_v1" />
   <script>
     (function () {
       if ('serviceWorker' in navigator) {
@@ -426,9 +426,17 @@
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
           </svg>
         </button>
-        <button class="btn btn-glass btn-sm player-icon-btn" id="switchServerBtn" title="Servidores e Fontes" aria-label="Fontes">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="2" y="3" width="20" height="7" rx="2"/><rect x="2" y="14" width="20" height="7" rx="2"/><circle cx="6" cy="6.5" r="1" fill="currentColor"/><circle cx="6" cy="17.5" r="1" fill="currentColor"/></svg>
-        </button>
+        <div class="switch-server-wrapper">
+          <button class="btn btn-glass btn-sm player-icon-btn" id="switchServerBtn" title="Servidores e Fontes" aria-label="Fontes">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="2" y="3" width="20" height="7" rx="2"/><rect x="2" y="14" width="20" height="7" rx="2"/><circle cx="6" cy="6.5" r="1" fill="currentColor"/><circle cx="6" cy="17.5" r="1" fill="currentColor"/></svg>
+          </button>
+          <div class="sources-arrow-hint hidden" id="sourcesArrowHint" aria-hidden="true">
+            <svg class="hint-arrow" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3">
+              <path d="M12 19V5M5 12l7-7 7 7"/>
+            </svg>
+            <span>Fontes</span>
+          </div>
+        </div>
         <button class="btn btn-glass btn-sm player-icon-btn" id="playerFullscreenBtn" title="Tela Cheia" aria-label="Tela Cheia">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
             <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
@@ -515,6 +523,6 @@
   <script defer src="https://cdn.jsdelivr.net/npm/webtorrent@latest/webtorrent.min.js"></script>
   <script defer src="/config.js?v=20261120_native_v2"></script>
   <script defer src="/vendor/hls.min.js?v=1.7.4"></script>
-  <script defer src="/app.js?v=20261120_native_v2"></script>
+  <script defer src="/app.js?v=20261120_top10_arrow_dl_v1"></script>
 </body>
 </html>

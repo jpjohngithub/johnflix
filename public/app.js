@@ -143,6 +143,7 @@
     playerLoaderTitle: document.getElementById('playerLoaderTitle'),
     playerLoaderSub: document.getElementById('playerLoaderSub'),
     playerLoaderSwitchBtn: document.getElementById('playerLoaderSwitchBtn'),
+    sourcesArrowHint: document.getElementById('sourcesArrowHint'),
     playerServerDrawer: document.getElementById('playerServerDrawer'),
     closeDrawerBtn: document.getElementById('closeDrawerBtn'),
     playerDrawerList: document.getElementById('playerDrawerList'),
@@ -645,6 +646,7 @@
     if (el.playerDownloadBtn) el.playerDownloadBtn.addEventListener('click', () => downloadCurrentMedia());
     el.switchServerBtn.addEventListener('click', (e) => {
       e.stopPropagation();
+      if (el.sourcesArrowHint) el.sourcesArrowHint.classList.add('hidden');
       renderPlayerDrawer();
       el.playerServerDrawer.classList.toggle('hidden');
       showPlayerHud();
@@ -2598,7 +2600,8 @@
 
   function createMediaCard(item, opts = {}) {
     const card = document.createElement('article');
-    card.className = opts.isTop10 ? 'media-card top10-card' : 'media-card';
+    const isWideTop10 = Boolean(opts.isTop10 && opts.rank && Number(opts.rank) >= 10);
+    card.className = opts.isTop10 ? `media-card top10-card${isWideTop10 ? ' top10-wide' : ''}` : 'media-card';
     card.setAttribute('tabindex', '0');
     card.setAttribute('role', 'button');
 
@@ -3435,6 +3438,7 @@
       const bestFastPlayable = state.currentStreams.find(isStreamPlayableNow);
       if (wantAutoPlay) {
         state.pendingAutoPlay = false;
+        state.autoPlayTesting = true;
         if (bestFastPlayable) {
           launchCloudPlayer(bestFastPlayable);
         } else if (data?.hasPending) {
@@ -3913,21 +3917,82 @@
     }
   }
 
-  function downloadCurrentMedia() {
+  async function downloadCurrentMedia() {
     const stream = state.currentStream || state.currentStreams?.[0];
-    const dlUrl = stream?.directUrl || stream?.proxyUrl;
-    if (!dlUrl) {
-      showToast('Link direto não disponível para download no momento.');
+    const item = state.currentItem;
+    const epSuffix = item?.type === 'series' && state.currentSeason && state.currentEpisode
+      ? ` - T${state.currentSeason}E${state.currentEpisode}`
+      : '';
+    const cleanName = `${item ? (item.name || item.title || 'video') : 'video'}${epSuffix}`.replace(/[/\\?%*:|"<>]/g, '_');
+
+    // 1. Check if HTML5 video has an active non-blob direct playback source
+    const currentVideoSrc = el.cloudVideo ? (el.cloudVideo.currentSrc || el.cloudVideo.src || '') : '';
+    let downloadUrl = null;
+
+    if (stream?.directUrl && !/\.m3u8(?:$|[?#])/i.test(stream.directUrl)) {
+      downloadUrl = stream.proxyUrl || stream.directUrl;
+    } else if (currentVideoSrc && !currentVideoSrc.startsWith('blob:') && !currentVideoSrc.includes('.m3u8')) {
+      downloadUrl = currentVideoSrc;
+    } else {
+      // Find matching direct MP4 candidate in current streams list
+      const directCandidate = (state.currentStreams || []).find((s) =>
+        s.directUrl && !/\.m3u8(?:$|[?#])/i.test(s.directUrl)
+      );
+      if (directCandidate) {
+        downloadUrl = directCandidate.proxyUrl || directCandidate.directUrl;
+      }
+    }
+
+    // 2. If it is a torrent stream and no direct MP4 was found
+    if (!downloadUrl && stream?.playType === 'torrent') {
+      const magnet = stream.sourceUrl || (stream.infoHash ? `magnet:?xt=urn:btih:${stream.infoHash}&dn=${encodeURIComponent(cleanName)}` : '');
+      if (magnet) {
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(magnet);
+            showToast('Link Magnet copiado! Abrindo download... 📥');
+          } else {
+            showToast('Iniciando download Torrent... 📥');
+          }
+        } catch (_) {
+          showToast('Iniciando download Torrent... 📥');
+        }
+        window.location.href = magnet;
+        return;
+      }
+    }
+
+    // 3. If a direct/proxied MP4/video URL is available
+    if (downloadUrl) {
+      showToast('Iniciando download do vídeo... 📥');
+      const a = document.createElement('a');
+      const fullUrl = downloadUrl.startsWith('http') ? downloadUrl : `${window.location.origin}${downloadUrl}`;
+      a.href = fullUrl;
+      a.download = `${cleanName}.mp4`;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => a.remove(), 1200);
       return;
     }
-    const a = document.createElement('a');
-    a.href = dlUrl;
-    a.target = '_blank';
-    a.download = `${state.currentItem?.name || 'video'}.mp4`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    showToast('Download iniciado! 📥');
+
+    // 4. If HLS stream (.m3u8), download playlist file
+    const hlsUrl = stream?.proxyUrl || stream?.directUrl || currentVideoSrc;
+    if (hlsUrl) {
+      const a = document.createElement('a');
+      const fullUrl = hlsUrl.startsWith('http') ? hlsUrl : `${window.location.origin}${hlsUrl}`;
+      a.href = fullUrl;
+      a.download = `${cleanName}.m3u8`;
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => a.remove(), 1200);
+      showToast('Download da playlist de vídeo (.m3u8) iniciado! 📥');
+      return;
+    }
+
+    showToast('Link de download indisponível para esta fonte.');
   }
 
   function syncMediaToCastSession() {
@@ -4361,10 +4426,23 @@
     }
   }
 
+  let autoPlayTestingTimer = null;
+  let sourcesHintTimer = null;
+
+  function showSourcesArrowHint() {
+    if (!el.sourcesArrowHint) return;
+    el.sourcesArrowHint.classList.remove('hidden');
+    clearTimeout(sourcesHintTimer);
+    sourcesHintTimer = setTimeout(() => {
+      if (el.sourcesArrowHint) el.sourcesArrowHint.classList.add('hidden');
+    }, 6000);
+  }
+
   function clearVideoHandlers() {
     clearTimeout(playerStallTimer);
     clearTimeout(blackScreenWatchdogTimer);
     clearTimeout(playerBufferStallTimer);
+    clearTimeout(autoPlayTestingTimer);
     stopWebTorrent();
     if (hlsInstance) {
       try { hlsInstance.destroy(); } catch (_) {}
@@ -4406,6 +4484,15 @@
     el.playerLoaderTitle.textContent = isAutoFailover ? 'Alternando para servidor compatível...' : 'Iniciando reprodução nativa...';
     el.playerLoaderSub.textContent = `${stream.serverLabel} • ${stream.quality}`;
     if (el.playerLoaderSwitchBtn) el.playerLoaderSwitchBtn.classList.add('hidden');
+
+    if (state.autoPlayTesting) {
+      clearTimeout(autoPlayTestingTimer);
+      autoPlayTestingTimer = setTimeout(() => {
+        if (state.autoPlayTesting && state.currentStream === stream) {
+          tryNextWorkingStream(stream);
+        }
+      }, 3400);
+    }
 
     if (stream.playType === 'torrent' && stream.proxyUrl) startTorrentTelemetry(stream.infoHash);
     else stopTorrentTelemetry();
@@ -4544,6 +4631,11 @@
     let playbackStarted = false;
     const hideLoader = () => {
       el.playerLoader.classList.add('hidden');
+      if (state.autoPlayTesting) {
+        state.autoPlayTesting = false;
+        clearTimeout(autoPlayTestingTimer);
+        showSourcesArrowHint();
+      }
     };
 
     const resumeAt = state.pendingResume > 5 ? state.pendingResume : 0;
@@ -4788,6 +4880,9 @@
     clearTimeout(playerHudTimer);
     clearVideoHandlers();
     stopTorrentTelemetry();
+    state.autoPlayTesting = false;
+    clearTimeout(autoPlayTestingTimer);
+    if (el.sourcesArrowHint) el.sourcesArrowHint.classList.add('hidden');
     hideNextEpisodePrompt();
     state.nextEpisodeDismissed = false;
     if (el.switchServerBtn) el.switchServerBtn.classList.remove('hidden');
