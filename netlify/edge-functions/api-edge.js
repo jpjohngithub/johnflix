@@ -1629,12 +1629,13 @@ export default async (request) => {
       await Promise.all(addonTasks);
 
       const availablePool = addonResultsState
-        .filter((e) => ['fenixflix', 'plaviohd', 'brazuca', 'torrentio', 'nightknight', 'magneto', 'micoleao'].includes(e.addon.id) && Array.isArray(e.rawStreams) && e.rawStreams.length > 0)
-        .flatMap((e) => e.rawStreams);
+        .filter((e) => ['fenixflix', 'plaviohd', 'brazuca', 'torrentio', 'nightknight', 'magneto', 'micoleao'].includes(e.addon.id) && Array.isArray(e.rawStreams))
+        .flatMap((e) => (e.rawStreams || []).filter((s) => !isBadSubServer(s)));
 
       addonResultsState.forEach((entry) => {
         const aId = entry.addon.id;
-        if ((!entry.rawStreams || entry.rawStreams.length === 0) && availablePool.length > 0) {
+        const validCount = (entry.rawStreams || []).filter((s) => !isBadSubServer(s)).length;
+        if (validCount === 0 && availablePool.length > 0) {
           if (aId === 'froststream') {
             const highDef = availablePool.filter((s) => /2160p|4k|1080p|fhd/i.test(`${s.name || ''} ${s.title || ''}`));
             const selected = (highDef.length ? highDef : availablePool).slice(0, 15);
@@ -1642,6 +1643,15 @@ export default async (request) => {
               ...s,
               name: 'FrostStream\nHDR 4K',
               title: (s.title || '').replace(/^(?:Torrentio|Brazuca|PlavioHD|FenixFlix)/i, 'FrostStream')
+            }));
+            entry.sourceStatus = 'available';
+          } else if (aId === 'fenixflix') {
+            const cloudStreams = availablePool.filter((s) => s.url && !s.infoHash);
+            const selected = (cloudStreams.length ? cloudStreams : availablePool).slice(0, 15);
+            entry.rawStreams = selected.map((s) => ({
+              ...s,
+              name: 'FenixFlix\n1080p Cloud',
+              title: (s.title || '').replace(/^(?:Torrentio|Brazuca|PlavioHD|NightKnight)/i, 'FenixFlix')
             }));
             entry.sourceStatus = 'available';
           } else if (aId === 'bestcine') {
