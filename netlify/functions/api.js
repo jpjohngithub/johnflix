@@ -415,6 +415,7 @@ function isBadSubServer(rawStream) {
   if (!hasSource || /cloudflare-terms-of-service-abuse/i.test(u)) return true;
   if (/bigtits|porn|xxx|erotic|adult\b|sex\b|sample\.mp4|fake[_-]?stream/i.test(`${u} ${t}`)) return true;
   if (/\b(?:cinejoy|netmirror|multimovies|cinezo|4khdhub)\b|dbonline\.tech-cdn\.top/i.test(`${t} ${u}`)) return true;
+  if (/\b(?:fcxmb\.com|flonub\.com)\b/i.test(u)) return true;
   if (/requer autentica[cç][aã]o|login necess[aá]rio|m[eé]todo n[aã]o autorizado|try the paid tier|go premium/i.test(t) && !rawStream.url) return true;
   const isPromo = /\[official trailer\]|play trailer|open in stremio|install stremio/i.test(t);
   return isPromo && !rawStream.url && !rawStream.infoHash;
@@ -683,69 +684,88 @@ exports.handler = async (event) => {
       const activeAddons = ADDONS;
       const timeoutLimit = isFast ? 2800 : 4200;
 
-      // Fetch only streams returned by the configured addon.
-      const rawAddonResponses = await Promise.all(
-        activeAddons.map(async (addon) => {
-          let rawStreams = [];
-          let sourceStatus = 'offline';
-          let sourceError = null;
-          const startedAt = Date.now();
+      // Fetch streams across all configured addons
+      const rawAddonTasks = activeAddons.map(async (addon) => {
+        let rawStreams = [];
+        let sourceStatus = 'offline';
+        let sourceError = null;
+        const startedAt = Date.now();
 
-          if (addon.id === 'tvdb_search') {
-            return { addon, rawStreams: [], sourceStatus: 'unsupported', sourceError: 'Catálogo de busca', latencyMs: 0 };
-          }
-          if (addon.id === 'magneto') {
-            try {
-              const data = await fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, isFast ? 2000 : 2800).catch(() => null);
-              if (Array.isArray(data?.streams) && data.streams.length > 0) rawStreams = data.streams.filter(s => !isBadSubServer(s));
-            } catch (_) {}
-            if (!rawStreams.length) {
-              try {
-                const tbData = await fetchJson(`https://torrentio.strem.fun/providers=micoleaodublado,comando,bludv,lapumia,ondebaixa/stream/${type}/${encodedId}.json`, isFast ? 2200 : 3800).catch(() => null);
-                if (Array.isArray(tbData?.streams)) {
-                  rawStreams = tbData.streams.slice(0, 35).map(s => ({
-                    ...s,
-                    name: 'Magneto',
-                    title: (s.title || '').replace(/^Torrentio/i, 'Magneto')
-                  }));
-                }
-              } catch (_) {}
-            }
-            sourceStatus = rawStreams.length ? 'available' : 'empty';
-            return { addon, rawStreams, sourceStatus, sourceError: null, latencyMs: Date.now() - startedAt };
-          }
-          if (addon.id === 'micoleao') {
-            try {
-              const data = await fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, isFast ? 2000 : 2800).catch(() => null);
-              if (Array.isArray(data?.streams) && data.streams.length > 0) rawStreams = data.streams.filter(s => !isBadSubServer(s));
-            } catch (_) {}
-            if (!rawStreams.length) {
-              try {
-                const tbData = await fetchJson(`https://torrentio.strem.fun/providers=micoleaodublado/stream/${type}/${encodedId}.json`, isFast ? 2200 : 3800).catch(() => null);
-                if (Array.isArray(tbData?.streams)) {
-                  rawStreams = tbData.streams.slice(0, 35).map(s => ({
-                    ...s,
-                    name: 'Mico-Leão Dublado',
-                    title: (s.title || '').replace(/^Torrentio/i, 'Mico-Leão')
-                  }));
-                }
-              } catch (_) {}
-            }
-            sourceStatus = rawStreams.length ? 'available' : 'empty';
-            return { addon, rawStreams, sourceStatus, sourceError: null, latencyMs: Date.now() - startedAt };
-          }
-
+        if (addon.id === 'tvdb_search') {
+          return { addon, rawStreams: [], sourceStatus: 'unsupported', sourceError: 'Catálogo de busca', latencyMs: 0 };
+        }
+        if (addon.id === 'magneto') {
           try {
-            const data = await fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, timeoutLimit);
-            if (Array.isArray(data?.streams)) rawStreams = data.streams.filter(s => !isBadSubServer(s));
-            sourceStatus = rawStreams.length ? 'available' : 'empty';
-          } catch (e) {
-            sourceError = String(e?.message || 'upstream error').slice(0, 120);
+            const data = await fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, isFast ? 2000 : 2800).catch(() => null);
+            if (Array.isArray(data?.streams) && data.streams.length > 0) rawStreams = data.streams.filter(s => !isBadSubServer(s));
+          } catch (_) {}
+          if (!rawStreams.length) {
+            try {
+              const tbData = await fetchJson(`https://torrentio.strem.fun/providers=micoleaodublado,comando,bludv,lapumia,ondebaixa/stream/${type}/${encodedId}.json`, isFast ? 2200 : 3800).catch(() => null);
+              if (Array.isArray(tbData?.streams)) {
+                rawStreams = tbData.streams.slice(0, 35).map(s => ({
+                  ...s,
+                  name: 'Magneto',
+                  title: (s.title || '').replace(/^Torrentio/i, 'Magneto')
+                }));
+              }
+            } catch (_) {}
           }
+          sourceStatus = rawStreams.length ? 'available' : 'empty';
+          return { addon, rawStreams, sourceStatus, sourceError: null, latencyMs: Date.now() - startedAt };
+        }
+        if (addon.id === 'micoleao') {
+          try {
+            const data = await fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, isFast ? 2000 : 2800).catch(() => null);
+            if (Array.isArray(data?.streams) && data.streams.length > 0) rawStreams = data.streams.filter(s => !isBadSubServer(s));
+          } catch (_) {}
+          if (!rawStreams.length) {
+            try {
+              const tbData = await fetchJson(`https://torrentio.strem.fun/providers=micoleaodublado/stream/${type}/${encodedId}.json`, isFast ? 2200 : 3800).catch(() => null);
+              if (Array.isArray(tbData?.streams)) {
+                rawStreams = tbData.streams.slice(0, 35).map(s => ({
+                  ...s,
+                  name: 'Mico-Leão Dublado',
+                  title: (s.title || '').replace(/^Torrentio/i, 'Mico-Leão')
+                }));
+              }
+            } catch (_) {}
+          }
+          sourceStatus = rawStreams.length ? 'available' : 'empty';
+          return { addon, rawStreams, sourceStatus, sourceError: null, latencyMs: Date.now() - startedAt };
+        }
 
-          return { addon, rawStreams, sourceStatus, sourceError, latencyMs: Date.now() - startedAt };
-        })
-      );
+        try {
+          const data = await fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, timeoutLimit);
+          if (Array.isArray(data?.streams)) rawStreams = data.streams.filter(s => !isBadSubServer(s));
+          sourceStatus = rawStreams.length ? 'available' : 'empty';
+        } catch (e) {
+          sourceError = String(e?.message || 'upstream error').slice(0, 120);
+        }
+
+        return { addon, rawStreams, sourceStatus, sourceError, latencyMs: Date.now() - startedAt };
+      });
+
+      let rawAddonResponses = [];
+      if (isFast) {
+        const fastCoreIds = new Set(['brazuca', 'torrentio', 'fenixflix', 'plaviohd', 'magneto', 'micoleao']);
+        const coreTasks = activeAddons.map((addon, idx) => fastCoreIds.has(addon.id) ? rawAddonTasks[idx] : null).filter(Boolean);
+        await Promise.race([
+          Promise.all(coreTasks),
+          new Promise((r) => setTimeout(r, 900))
+        ]);
+        rawAddonResponses = await Promise.all(
+          rawAddonTasks.map((p, idx) => {
+            const addon = activeAddons[idx];
+            return Promise.race([
+              p,
+              new Promise((resolve) => setTimeout(() => resolve({ addon, rawStreams: [], sourceStatus: 'loading', sourceError: null, latencyMs: 900 }), 0))
+            ]);
+          })
+        );
+      } else {
+        rawAddonResponses = await Promise.all(rawAddonTasks);
+      }
 
       const availablePool = rawAddonResponses
         .filter((e) => ['fenixflix', 'plaviohd', 'brazuca', 'torrentio', 'nightknight', 'magneto', 'micoleao', 'bestcine', 'froststream'].includes(e.addon.id) && Array.isArray(e.rawStreams))

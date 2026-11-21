@@ -4769,7 +4769,7 @@
           return;
         }
         tryNextWorkingStream(stream);
-      }, 7500);
+      }, 3800);
     }
 
     if (stream.playType === 'torrent' && stream.proxyUrl) startTorrentTelemetry(stream.infoHash);
@@ -4989,7 +4989,7 @@
         if (state.currentStream === stream && !el.playerOverlay.classList.contains('hidden') && el.cloudVideo.currentTime < 1) {
           retrySourceOrNext();
         }
-      }, 10000);
+      }, 3500);
     };
     el.cloudVideo.onplay = () => {
       clearTimeout(autoPlayTestingTimer);
@@ -5009,7 +5009,7 @@
     };
 
     // Anti-Black-Screen Watchdog: verifies video frames actually decode and advance
-    const stallLimit = state.currentItem?.type === 'tv' ? 18000 : 12000;
+    const stallLimit = state.currentItem?.type === 'tv' ? 9000 : 4800;
     blackScreenWatchdogTimer = setTimeout(() => {
       if (state.currentStream !== stream || el.playerOverlay.classList.contains('hidden')) return;
       if (!el.cloudVideo.classList.contains('hidden')) {
@@ -5024,7 +5024,7 @@
       if (state.currentStream === stream && !playbackStarted && !el.playerOverlay.classList.contains('hidden')) {
         retrySourceOrNext();
       }
-    }, stallLimit + 800);
+    }, stallLimit + 400);
 
     // Subtitles auto-fetch via LegendasBR
     Array.from(el.cloudVideo.querySelectorAll('track')).forEach((t) => t.remove());
@@ -5096,7 +5096,14 @@
       const hlsUrl = stream.proxyUrl || stream.directUrl;
       if (window.Hls && window.Hls.isSupported()) {
         let hlsMediaRecoveries = 0;
-        hlsInstance = new window.Hls({ enableWorker: true, lowLatencyMode: false, backBufferLength: 60 });
+        hlsInstance = new window.Hls({
+          enableWorker: true,
+          lowLatencyMode: false,
+          backBufferLength: 30,
+          maxBufferLength: 30,
+          maxMaxBufferLength: 60,
+          startFragPrefetch: true
+        });
         hlsInstance.loadSource(hlsUrl);
         hlsInstance.attachMedia(el.cloudVideo);
         hlsInstance.on(window.Hls.Events.MANIFEST_PARSED, startVideoPlayback);
@@ -5129,6 +5136,7 @@
     // Keep the addon's own URL as the primary stream. The in-site Range proxy is
     // a same-source fallback for hosts that require it, never a replacement source.
     el.cloudVideo.pause();
+    el.cloudVideo.preload = 'auto';
     el.cloudVideo.onerror = retrySourceOrNext;
     el.cloudVideo.src = (stream.playType === 'torrent' ? stream.proxyUrl : primaryDirectSrc);
     el.cloudVideo.load();
