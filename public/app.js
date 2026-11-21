@@ -4528,9 +4528,17 @@
   let playerStallTimer = null;
   const failedStreamKeys = new Set();
 
-    function getStreamKey(s) {
-      return s ? (s.directUrl || s.proxyUrl || s.sourceUrl || s.infoHash || s.serverLabel || '') : '';
-    }
+  function getStreamKey(s) {
+    if (!s) return '';
+    const base = s.directUrl || s.proxyUrl || s.sourceUrl || s.infoHash || s.serverLabel || '';
+    const idx = (s.fileIdx !== undefined && s.fileIdx !== null) ? `:${s.fileIdx}` : '';
+    const q = s.quality ? `:${s.quality}` : '';
+    const rel = s.releaseTitle ? `:${s.releaseTitle}` : '';
+    const aud = s.audio ? `:${s.audio}` : '';
+    const ch = s.audioChannels ? `:${s.audioChannels}` : '';
+    const hdr = s.hdrTag ? `:${s.hdrTag}` : '';
+    return `${base}${idx}${q}${rel}${aud}${ch}${hdr}`;
+  }
 
   function cleanTitleTokens(str) {
     return String(str || '')
@@ -4550,13 +4558,12 @@
     if (/bigtits|porn|xxx|erotic|adult\b|sex\b|fake[_-]?stream|sample\.mp4/i.test(rawText)) return false;
     if (/cloudflare-terms-of-service-abuse/i.test(rawText)) return false;
 
-    // Validação de ano para evitar carregar outro filme (ex: Buddy 1997/2024 vs Buddy 2026)
-    const itemYear = parseInt(item?.year || item?.releaseInfo || state.currentMeta?.year, 10);
-    if (Number.isFinite(itemYear) && itemYear >= 1940 && itemYear <= 2035) {
-      const streamYearMatch = (stream.rawTitle || stream.releaseTitle || '').match(/\b(19\d\d|20\d\d)\b/);
-      if (streamYearMatch) {
-        const streamYear = parseInt(streamYearMatch[1], 10);
-        if (Math.abs(streamYear - itemYear) > 1) {
+    // Validação de ano apenas para filmes quando houver ano estrito
+    if (item?.type === 'movie') {
+      const itemYear = parseInt(item?.year || item?.releaseInfo || state.currentMeta?.year, 10);
+      if (Number.isFinite(itemYear) && itemYear >= 1940 && itemYear <= 2035) {
+        const titleYears = Array.from((stream.rawTitle || stream.releaseTitle || '').matchAll(/\b(19\d\d|20\d\d)\b/g)).map((m) => parseInt(m[1], 10));
+        if (titleYears.length > 0 && !titleYears.some((y) => Math.abs(y - itemYear) <= 1)) {
           return false;
         }
       }

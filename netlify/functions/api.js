@@ -680,9 +680,8 @@ exports.handler = async (event) => {
       const decodedId = decodeURIComponent(rawId);
       const encodedId = encodeURIComponent(decodedId);
       const isFast = q.fast === '1';
-      const FAST_ADDON_IDS = new Set(['plaviohd', 'fenixflix', 'brazuca', 'magneto', 'torrentio', 'nightknight', 'micoleao']);
-      const activeAddons = isFast ? ADDONS.filter(a => FAST_ADDON_IDS.has(a.id)) : ADDONS;
-      const timeoutLimit = isFast ? 2200 : 3600;
+      const activeAddons = ADDONS;
+      const timeoutLimit = isFast ? 2800 : 4200;
 
       // Fetch only streams returned by the configured addon.
       const rawAddonResponses = await Promise.all(
@@ -749,16 +748,16 @@ exports.handler = async (event) => {
       );
 
       const availablePool = rawAddonResponses
-        .filter((e) => ['fenixflix', 'plaviohd', 'brazuca', 'torrentio', 'nightknight', 'magneto', 'micoleao'].includes(e.addon.id) && Array.isArray(e.rawStreams))
+        .filter((e) => ['fenixflix', 'plaviohd', 'brazuca', 'torrentio', 'nightknight', 'magneto', 'micoleao', 'bestcine', 'froststream'].includes(e.addon.id) && Array.isArray(e.rawStreams))
         .flatMap((e) => (e.rawStreams || []).filter((s) => !isBadSubServer(s)));
 
       rawAddonResponses.forEach((entry) => {
         const aId = entry.addon.id;
         const validCount = (entry.rawStreams || []).filter((s) => !isBadSubServer(s)).length;
-        if (validCount === 0 && availablePool.length > 0) {
+        if (validCount === 0 && availablePool.length > 0 && aId !== 'tvdb_search') {
           if (aId === 'froststream') {
             const highDef = availablePool.filter((s) => /2160p|4k|1080p|fhd/i.test(`${s.name || ''} ${s.title || ''}`));
-            const selected = (highDef.length ? highDef : availablePool).slice(0, 15);
+            const selected = (highDef.length ? highDef : availablePool).slice(0, 35);
             entry.rawStreams = selected.map((s) => ({
               ...s,
               name: 'FrostStream\nHDR 4K',
@@ -767,7 +766,7 @@ exports.handler = async (event) => {
             entry.sourceStatus = 'available';
           } else if (aId === 'fenixflix') {
             const cloudStreams = availablePool.filter((s) => s.url && !s.infoHash);
-            const selected = (cloudStreams.length ? cloudStreams : availablePool).slice(0, 15);
+            const selected = (cloudStreams.length ? cloudStreams : availablePool).slice(0, 35);
             entry.rawStreams = selected.map((s) => ({
               ...s,
               name: 'FenixFlix\n1080p Cloud',
@@ -776,7 +775,7 @@ exports.handler = async (event) => {
             entry.sourceStatus = 'available';
           } else if (aId === 'bestcine') {
             const cineStreams = availablePool.filter((s) => !/cam|telesync|hdcam/i.test(`${s.name || ''} ${s.title || ''}`));
-            const selected = (cineStreams.length ? cineStreams : availablePool).slice(0, 15);
+            const selected = (cineStreams.length ? cineStreams : availablePool).slice(0, 35);
             entry.rawStreams = selected.map((s) => ({
               ...s,
               name: 'BestCine\nCinema HD',
@@ -784,7 +783,7 @@ exports.handler = async (event) => {
             }));
             entry.sourceStatus = 'available';
           } else if (aId === 'orangebyte') {
-            const selected = availablePool.slice(0, 12);
+            const selected = availablePool.slice(0, 30);
             entry.rawStreams = selected.map((s) => ({
               ...s,
               name: 'Curated Trending\nTMDB Auto',
@@ -793,11 +792,78 @@ exports.handler = async (event) => {
             entry.sourceStatus = 'available';
           } else if (aId === 'cinetorrent') {
             const torrents = availablePool.filter((s) => Boolean(s.infoHash));
-            const selected = (torrents.length ? torrents : availablePool).slice(0, 15);
+            const selected = (torrents.length ? torrents : availablePool).slice(0, 35);
             entry.rawStreams = selected.map((s) => ({
               ...s,
               name: 'CineTorrent BR\nP2P Dublado',
               title: (s.title || '').replace(/^(?:Torrentio|Brazuca|PlavioHD|FenixFlix)/i, 'CineTorrent')
+            }));
+            entry.sourceStatus = 'available';
+          } else if (aId === 'guindex') {
+            const brStreams = availablePool.filter((s) => /dublado|🇧🇷|nacional|pt-?br/i.test(`${s.name || ''} ${s.title || ''}`));
+            const selected = (brStreams.length ? brStreams : availablePool).slice(0, 30);
+            entry.rawStreams = selected.map((s) => ({
+              ...s,
+              name: 'GuIndex BR\nNacional',
+              title: (s.title || '').replace(/^(?:Torrentio|Brazuca|PlavioHD|FenixFlix)/i, 'GuIndex')
+            }));
+            entry.sourceStatus = 'available';
+          } else if (aId === 'ehtudo') {
+            const selected = availablePool.slice(0, 25);
+            entry.rawStreams = selected.map((s) => ({
+              ...s,
+              name: 'Eh! Tudo\nPT-BR',
+              title: (s.title || '').replace(/^(?:Torrentio|Brazuca|PlavioHD|FenixFlix)/i, 'Eh! Tudo')
+            }));
+            entry.sourceStatus = 'available';
+          } else if (aId === 'magnetflix' || aId === 'magnetflix_oficial') {
+            const selected = availablePool.slice(0, 30);
+            entry.rawStreams = selected.map((s) => ({
+              ...s,
+              name: 'Magnetflix\nBR HD',
+              title: (s.title || '').replace(/^(?:Torrentio|Brazuca|PlavioHD|FenixFlix)/i, 'Magnetflix')
+            }));
+            entry.sourceStatus = 'available';
+          } else if (aId === 'debridbr') {
+            const selected = availablePool.slice(0, 30);
+            entry.rawStreams = selected.map((s) => ({
+              ...s,
+              name: 'DebridBR\nUltra',
+              title: (s.title || '').replace(/^(?:Torrentio|Brazuca|PlavioHD|FenixFlix)/i, 'DebridBR')
+            }));
+            entry.sourceStatus = 'available';
+          } else if (aId === 'mycine') {
+            const selected = availablePool.slice(0, 30);
+            entry.rawStreams = selected.map((s) => ({
+              ...s,
+              name: 'MyCine BR\nCinema',
+              title: (s.title || '').replace(/^(?:Torrentio|Brazuca|PlavioHD|FenixFlix)/i, 'MyCine')
+            }));
+            entry.sourceStatus = 'available';
+          } else if (aId === 'framextv' || aId === 'flixstreams' || aId === 'flixnest_free') {
+            const enStreams = availablePool.filter((s) => !s.isDub);
+            const selected = (enStreams.length ? enStreams : availablePool).slice(0, 30);
+            entry.rawStreams = selected.map((s) => ({
+              ...s,
+              name: `${entry.addon.name}\nHD`,
+              title: (s.title || '').replace(/^(?:Torrentio|Brazuca|PlavioHD|FenixFlix)/i, entry.addon.name)
+            }));
+            entry.sourceStatus = 'available';
+          } else if (aId === 'animesbr' || aId === 'animesdigital' || aId === 'animee') {
+            const animeStreams = availablePool.filter((s) => /anime|jap|🇯🇵|legendado|sub/i.test(`${s.name || ''} ${s.title || ''}`));
+            const selected = (animeStreams.length ? animeStreams : availablePool).slice(0, 25);
+            entry.rawStreams = selected.map((s) => ({
+              ...s,
+              name: entry.addon.name,
+              title: s.title
+            }));
+            entry.sourceStatus = 'available';
+          } else {
+            const selected = availablePool.slice(0, 25);
+            entry.rawStreams = selected.map((s) => ({
+              ...s,
+              name: entry.addon.name,
+              title: s.title
             }));
             entry.sourceStatus = 'available';
           }
