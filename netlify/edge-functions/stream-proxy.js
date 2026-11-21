@@ -180,11 +180,11 @@ export default async (request, context) => {
     }
 
     const ct = (resHeaders.get('content-type') || '').toLowerCase();
-    if (!ct || ct.includes('text/plain') || ct.includes('octet-stream')) {
+    if (!ct || ct.includes('text/plain') || ct.includes('octet-stream') || ct.includes('matroska')) {
       const pathname = new URL(currentUrl).pathname.toLowerCase();
       const ext = pathname.match(/\.(mp4|m4v|webm|mkv|ts|mp3|aac|m4a)$/)?.[1];
-      const mime = ({ mp4: 'video/mp4', m4v: 'video/mp4', webm: 'video/webm', mkv: 'video/x-matroska', ts: 'video/mp2t', mp3: 'audio/mpeg', aac: 'audio/aac', m4a: 'audio/mp4' })[ext];
-      if (mime) resHeaders.set('content-type', mime);
+      const mime = ({ mp4: 'video/mp4', m4v: 'video/mp4', webm: 'video/webm', mkv: 'video/mp4', ts: 'video/mp2t', mp3: 'audio/mpeg', aac: 'audio/aac', m4a: 'audio/mp4' })[ext] || 'video/mp4';
+      resHeaders.set('content-type', mime);
     }
     if (!resHeaders.has('accept-ranges')) {
       resHeaders.set('accept-ranges', 'bytes');

@@ -4544,9 +4544,24 @@
 
   function isStreamRelevant(stream, item) {
     if (!stream) return false;
+    if (item?.type === 'tv') return true;
+
     const rawText = `${stream.rawTitle || ''} ${stream.serverLabel || ''} ${stream.directUrl || ''} ${stream.sourceUrl || ''}`.toLowerCase();
     if (/bigtits|porn|xxx|erotic|adult\b|sex\b|fake[_-]?stream|sample\.mp4/i.test(rawText)) return false;
     if (/cloudflare-terms-of-service-abuse/i.test(rawText)) return false;
+
+    // Validação de ano para evitar carregar outro filme (ex: Buddy 1997/2024 vs Buddy 2026)
+    const itemYear = parseInt(item?.year || item?.releaseInfo || state.currentMeta?.year, 10);
+    if (Number.isFinite(itemYear) && itemYear >= 1940 && itemYear <= 2035) {
+      const streamYearMatch = (stream.rawTitle || stream.releaseTitle || '').match(/\b(19\d\d|20\d\d)\b/);
+      if (streamYearMatch) {
+        const streamYear = parseInt(streamYearMatch[1], 10);
+        if (Math.abs(streamYear - itemYear) > 1) {
+          return false;
+        }
+      }
+    }
+
     return Boolean(stream.proxyUrl || stream.directUrl || stream.infoHash || stream.sourceUrl);
   }
 
@@ -4565,10 +4580,6 @@
 
   function isStreamPlayableNow(s) {
     if (!s || !isStreamRelevant(s, state.currentItem)) return false;
-    // On devices without native HEVC hardware decoder, direct HEVC/x265 streams will play as audio-only black screen
-    if (!clientSupportsHevc && s.isHevcOrMkv && s.playType === 'direct') {
-      return false;
-    }
     return ['direct', 'hls', 'torrent'].includes(s.playType);
   }
 
@@ -4576,19 +4587,30 @@
     if (!Array.isArray(streams) || !streams.length) return null;
     const relevant = streams.filter((s) => isStreamRelevant(s, state.currentItem));
     if (!relevant.length) return null;
-    const compatible = relevant.filter(isStreamPlayableNow);
-    const pool = compatible.length ? compatible : relevant;
 
-    // 1. Instant Cloud Direct / HLS stream (Dublado) - connects in <400ms!
-    const directDub = pool.find((s) => ['direct', 'hls'].includes(s.playType) && s.isDub);
+    // 1. Prioriza correspondência exata de ano para nunca trocar o filme selecionado
+    const itemYear = parseInt(state.currentItem?.year || state.currentItem?.releaseInfo || state.currentMeta?.year, 10);
+    const yearMatched = Number.isFinite(itemYear) && itemYear >= 1940
+      ? relevant.filter((s) => {
+          const m = (s.rawTitle || s.releaseTitle || '').match(/\b(19\d\d|20\d\d)\b/);
+          return m ? Math.abs(parseInt(m[1], 10) - itemYear) <= 1 : false;
+        })
+      : [];
+    const pool = yearMatched.length ? yearMatched : relevant;
+
+    // 2. Se o dispositivo atual não suportar HEVC, prioriza H.264 nativo para evitar tela preta
+    const compatible = !clientSupportsHevc ? pool.filter((s) => !s.isHevcOrMkv) : pool;
+    const activePool = compatible.length ? compatible : pool;
+
+    // 3. Nuvem Direta / HLS (Dublado primeiro, <400ms)
+    const directDub = activePool.find((s) => ['direct', 'hls'].includes(s.playType) && s.isDub);
     if (directDub) return directDub;
 
-    // 2. Any Instant Cloud Direct / HLS stream - connects in <400ms!
-    const directAny = pool.find((s) => ['direct', 'hls'].includes(s.playType));
+    const directAny = activePool.find((s) => ['direct', 'hls'].includes(s.playType));
     if (directAny) return directAny;
 
-    // 3. Fallback to P2P Torrent (Dublado first)
-    return pool.find((s) => s.isDub) || pool[0];
+    // 4. Fallback P2P Torrent (Dublado primeiro)
+    return activePool.find((s) => s.isDub) || activePool[0];
   }
 
   function tryNextWorkingStream(failedStream, forceFailover = false) {
@@ -4908,14 +4930,47 @@
       hideLoader();
       applyResume();
       setTimeout(() => {
-        if (state.currentStream === stream && !el.playerOverlay.classList.contains('hidden') && !el.cloudVideo.paused && el.cloudVideo.currentTime > 1.2) {
+        if (state.currentStream === stream && !el.playerOverlay.classList.contains('hidden') && !el.cloudVideo.paused && el.cloudVideo.currentTime > 0.8) {
           const isBlackScreen = el.cloudVideo.videoWidth === 0 && el.cloudVideo.videoHeight === 0 && state.currentItem?.type !== 'tv';
           if (isBlackScreen) {
-            showToast('Formato de vídeo incompatível com seu dispositivo (tela preta). Alternando para fonte compatível (H.264)...');
+            // Find a compatible H.264 stream so any device gets full picture natively
+            const mirror = (state.currentStreams || []).find((s) =>
+              s !== stream &&
+              !failedStreamKeys.has(getStreamKey(s)) &&
+              !s.isHevcOrMkv &&
+              ['direct', 'hls'].includes(s.playType)
+            ) || (state.currentStreams || []).find((s) =>
+              s !== stream &&
+              !failedStreamKeys.has(getStreamKey(s)) &&
+              ['direct', 'hls'].includes(s.playType)
+            );
+
+            if (mirror) {
+              showToast('Dispositivo sem decodificador HEVC. Adaptando para reprodução nativa...');
+              const targetSrc = mirror.proxyUrl || mirror.directUrl;
+              if (targetSrc) {
+                state.currentStream = mirror;
+                if (el.playerLoaderSub) el.playerLoaderSub.textContent = `${mirror.serverLabel} • Modo Compatível`;
+                if (mirror.playType === 'hls' || /\.m3u8(?:$|[?#])/i.test(targetSrc)) {
+                  if (window.Hls && Hls.isSupported()) {
+                    if (hlsInstance) try { hlsInstance.destroy(); } catch (_) {}
+                    hlsInstance = new Hls({ enableWorker: true, lowLatencyMode: true });
+                    hlsInstance.loadSource(targetSrc);
+                    hlsInstance.attachMedia(el.cloudVideo);
+                    hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => startVideoPlayback());
+                  }
+                } else {
+                  el.cloudVideo.src = targetSrc;
+                  el.cloudVideo.load();
+                  startVideoPlayback();
+                }
+                return;
+              }
+            }
             retrySourceOrNext(true);
           }
         }
-      }, 2400);
+      }, 1500);
     };
 
     el.cloudVideo.onloadedmetadata = () => { applyResume(); hideLoader(); };
