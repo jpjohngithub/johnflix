@@ -704,8 +704,24 @@
     });
     el.cloudVideo.addEventListener('canplay', () => {
       el.playerLoader.classList.add('hidden');
+      if (state.autoPlayTesting && el.cloudVideo.currentTime > 0) {
+        state.autoPlayTesting = false;
+        clearTimeout(autoPlayTestingTimer);
+      }
     });
     el.cloudVideo.addEventListener('timeupdate', () => {
+      if (el.cloudVideo.currentTime > 0.2) {
+        if (state.autoPlayTesting) {
+          state.autoPlayTesting = false;
+          clearTimeout(autoPlayTestingTimer);
+        }
+        clearTimeout(playerStallTimer);
+        clearTimeout(blackScreenWatchdogTimer);
+        clearTimeout(playerBufferStallTimer);
+        if (el.playerLoader && !el.playerLoader.classList.contains('hidden')) {
+          el.playerLoader.classList.add('hidden');
+        }
+      }
       if (state.currentItem && el.cloudVideo.currentTime > 5) {
         saveContinueWatching(state.currentItem, el.cloudVideo.currentTime, el.cloudVideo.duration);
       }
@@ -3610,7 +3626,9 @@
             renderStreamsList();
             renderPlayerDrawer();
 
+            const isCurrentlyPlaying = el.cloudVideo && !el.cloudVideo.paused && el.cloudVideo.currentTime > 0.1;
             const fastFailedAll = wantAutoPlay
+              && !isCurrentlyPlaying
               && state.currentStreams.length > fastCount
               && el.playerLoader
               && !el.playerLoader.classList.contains('hidden')
@@ -3618,7 +3636,7 @@
               && !el.playerLoaderSwitchBtn.classList.contains('hidden');
 
             const nextPlayable = state.currentStreams.find((s) => isStreamPlayableNow(s) && !failedStreamKeys.has(getStreamKey(s)));
-            if (needsAutoPlayAfterFull || (fastFailedAll && nextPlayable)) {
+            if (!isCurrentlyPlaying && (needsAutoPlayAfterFull || (fastFailedAll && nextPlayable))) {
               if (nextPlayable) {
                 launchCloudPlayer(nextPlayable);
               } else if (state.currentStreams.length > 0) {
@@ -3630,7 +3648,8 @@
           })
           .catch(() => {
             if (currentLoadTargetId !== targetId) return;
-            if (needsAutoPlayAfterFull) tryNextWorkingStream(null);
+            const isCurrentlyPlaying = el.cloudVideo && !el.cloudVideo.paused && el.cloudVideo.currentTime > 0.1;
+            if (!isCurrentlyPlaying && needsAutoPlayAfterFull) tryNextWorkingStream(null);
           });
       }
     } catch (err) {
@@ -4540,6 +4559,18 @@
 
   function tryNextWorkingStream(failedStream) {
     if (failedStream && state.currentStream !== failedStream) return false;
+    // Disarm and prevent switching if video is already actively playing and progressing
+    if (el.cloudVideo && !el.cloudVideo.paused && el.cloudVideo.currentTime > 0.2) {
+      state.autoPlayTesting = false;
+      clearTimeout(autoPlayTestingTimer);
+      clearTimeout(playerStallTimer);
+      clearTimeout(blackScreenWatchdogTimer);
+      clearTimeout(playerBufferStallTimer);
+      if (el.playerLoader && !el.playerLoader.classList.contains('hidden')) {
+        el.playerLoader.classList.add('hidden');
+      }
+      return false;
+    }
     const key = getStreamKey(failedStream);
     if (key) failedStreamKeys.add(key);
 
@@ -4664,10 +4695,14 @@
     if (state.autoPlayTesting) {
       clearTimeout(autoPlayTestingTimer);
       autoPlayTestingTimer = setTimeout(() => {
-        if (state.autoPlayTesting && state.currentStream === stream) {
-          tryNextWorkingStream(stream);
+        if (!state.autoPlayTesting || state.currentStream !== stream) return;
+        if (el.cloudVideo && (!el.cloudVideo.paused || el.cloudVideo.currentTime > 0.1 || el.cloudVideo.readyState >= 3)) {
+          state.autoPlayTesting = false;
+          clearTimeout(autoPlayTestingTimer);
+          return;
         }
-      }, 3400);
+        tryNextWorkingStream(stream);
+      }, 7500);
     }
 
     if (stream.playType === 'torrent' && stream.proxyUrl) startTorrentTelemetry(stream.infoHash);
@@ -4836,12 +4871,14 @@
       hideLoader();
       applyResume();
       setTimeout(() => {
-        if (state.currentStream === stream && !el.playerOverlay.classList.contains('hidden') && !el.cloudVideo.paused && el.cloudVideo.currentTime > 0.4) {
+        if (state.currentStream === stream && !el.playerOverlay.classList.contains('hidden') && !el.cloudVideo.paused && el.cloudVideo.currentTime > 2.5) {
           if (el.cloudVideo.videoWidth === 0 && el.cloudVideo.videoHeight === 0 && state.currentItem?.type !== 'tv') {
-            retrySourceOrNext();
+            if (stream.isHevcOrMkv && !window.MediaSource?.isTypeSupported?.('video/mp4; codecs="hvc1.1.6.L93.B0"')) {
+              retrySourceOrNext();
+            }
           }
         }
-      }, 900);
+      }, 3500);
     };
 
     el.cloudVideo.onloadedmetadata = () => { applyResume(); hideLoader(); };
@@ -4854,10 +4891,20 @@
         }
       }, 10000);
     };
+    el.cloudVideo.onplay = () => {
+      clearTimeout(autoPlayTestingTimer);
+      if (el.cloudVideo.currentTime > 0.1) {
+        state.autoPlayTesting = false;
+      }
+    };
     el.cloudVideo.onplaying = () => {
       playbackStarted = true;
+      state.autoPlayTesting = false;
+      clearTimeout(autoPlayTestingTimer);
       clearTimeout(playerStallTimer);
       clearTimeout(playerBufferStallTimer);
+      clearTimeout(blackScreenWatchdogTimer);
+      hideLoader();
       verifyVideoTrack();
     };
 
@@ -4866,7 +4913,7 @@
     blackScreenWatchdogTimer = setTimeout(() => {
       if (state.currentStream !== stream || el.playerOverlay.classList.contains('hidden')) return;
       if (!el.cloudVideo.classList.contains('hidden')) {
-        const hasFrames = el.cloudVideo.currentTime > 0.1 && el.cloudVideo.videoWidth > 0;
+        const hasFrames = (el.cloudVideo.currentTime > 0.2 && !el.cloudVideo.paused) || el.cloudVideo.videoWidth > 0;
         if (!hasFrames) {
           retrySourceOrNext();
         }
