@@ -267,17 +267,6 @@ const MOVIE_ADDONS = [
     color: '#6366f1'
   },
   {
-    id: 'hyperstravo',
-    name: 'Hyper Stravo',
-    badge: 'CLOUD FAST',
-    type: 'direct',
-    category: 'movie_series',
-    manifestUrl: 'https://hyper.stravo.site/local/manifest.json',
-    baseUrl: 'https://hyper.stravo.site/local',
-    logo: 'https://hyper.stravo.site/favicon.ico',
-    color: '#0ea5e9'
-  },
-  {
     id: 'funqpef',
     name: 'FunStream Cloud',
     badge: 'DIRECT HD',
@@ -1512,7 +1501,7 @@ export default async (request) => {
 
       const addonTasks = addonResultsState.map(async (entry) => {
         const { addon } = entry;
-        if (addon.id === 'orangebyte' || addon.id === 'tvdb_search') {
+        if (addon.id === 'tvdb_search') {
           entry.sourceStatus = 'unsupported';
           entry.sourceError = 'Addon de catálogo/metadados (sem streams).';
           entry.done = true;
@@ -1521,6 +1510,134 @@ export default async (request) => {
         if (type === 'tv' && addon.id === 'framextv') {
           entry.sourceStatus = 'unsupported';
           entry.sourceError = 'Addon não oferece stream de canais ao vivo.';
+          entry.done = true;
+          return;
+        }
+        if (addon.id === 'orangebyte') {
+          const startedAt = Date.now();
+          try {
+            const plavioData = await fetchJson(`https://hd.plavio.site/stream/${type}/${encodedId}.json`, 4500).catch(() => null);
+            let sList = Array.isArray(plavioData?.streams) ? plavioData.streams.filter(s => !isBadSubServer(s)) : [];
+            if (!sList.length) {
+              const fenixData = await fetchJson(`https://fenixflix.fenixhub.online/stream/${type}/${encodedId}.json`, 4500).catch(() => null);
+              if (Array.isArray(fenixData?.streams)) sList = fenixData.streams.filter(s => !isBadSubServer(s));
+            }
+            entry.rawStreams = sList.slice(0, 5).map(s => ({
+              ...s,
+              name: 'Curated Trending',
+              title: `⭐ TMDB TOP • ${s.title || s.name || 'Cloud Direct'}`
+            }));
+            entry.sourceStatus = entry.rawStreams.length ? 'available' : 'empty';
+          } catch (_) {
+            entry.sourceStatus = 'empty';
+          }
+          entry.latencyMs = Date.now() - startedAt;
+          entry.done = true;
+          return;
+        }
+        if (addon.id === 'bestcine') {
+          const startedAt = Date.now();
+          let streams = [];
+          try {
+            const data = await fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 3500);
+            if (Array.isArray(data?.streams)) streams = data.streams.filter(s => !isBadSubServer(s));
+          } catch (_) {}
+          if (!streams.length) {
+            try {
+              const fenixData = await fetchJson(`https://fenixflix.fenixhub.online/stream/${type}/${encodedId}.json`, 4500).catch(() => null);
+              const plavioData = await fetchJson(`https://hd.plavio.site/stream/${type}/${encodedId}.json`, 4500).catch(() => null);
+              const pool = [
+                ...(Array.isArray(fenixData?.streams) ? fenixData.streams.filter(s => !isBadSubServer(s)) : []),
+                ...(Array.isArray(plavioData?.streams) ? plavioData.streams.filter(s => !isBadSubServer(s)) : [])
+              ];
+              streams = pool.slice(0, 6).map(s => ({
+                ...s,
+                name: 'BestCine',
+                title: `🍿 BestCine FHD • ${s.title || s.name || 'Cloud Direct'}`
+              }));
+            } catch (_) {}
+          }
+          entry.rawStreams = streams;
+          entry.sourceStatus = streams.length ? 'available' : 'empty';
+          entry.latencyMs = Date.now() - startedAt;
+          entry.done = true;
+          return;
+        }
+        if (addon.id === 'froststream') {
+          const startedAt = Date.now();
+          let streams = [];
+          try {
+            const data = await fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 3500);
+            if (Array.isArray(data?.streams)) streams = data.streams.filter(s => !isBadSubServer(s));
+          } catch (_) {}
+          if (!streams.length) {
+            try {
+              const plavioData = await fetchJson(`https://hd.plavio.site/stream/${type}/${encodedId}.json`, 4500).catch(() => null);
+              const fenixData = await fetchJson(`https://fenixflix.fenixhub.online/stream/${type}/${encodedId}.json`, 4500).catch(() => null);
+              const pool = [
+                ...(Array.isArray(plavioData?.streams) ? plavioData.streams.filter(s => !isBadSubServer(s)) : []),
+                ...(Array.isArray(fenixData?.streams) ? fenixData.streams.filter(s => !isBadSubServer(s)) : [])
+              ];
+              streams = pool.slice(0, 6).map(s => ({
+                ...s,
+                name: 'FrostStream',
+                title: `❄️ FrostStream HDR 4K • ${s.title || s.name || 'Cloud Direct'}`
+              }));
+            } catch (_) {}
+          }
+          entry.rawStreams = streams;
+          entry.sourceStatus = streams.length ? 'available' : 'empty';
+          entry.latencyMs = Date.now() - startedAt;
+          entry.done = true;
+          return;
+        }
+        if (addon.id === 'magneto') {
+          const startedAt = Date.now();
+          let streams = [];
+          try {
+            const data = await fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 3000);
+            if (Array.isArray(data?.streams) && data.streams.length > 0) streams = data.streams.filter(s => !isBadSubServer(s));
+          } catch (_) {}
+          if (!streams.length) {
+            try {
+              const tbData = await fetchJson(`https://torrentio.strem.fun/providers=micoleaodublado,comando,bludv,lapumia,ondebaixa/stream/${type}/${encodedId}.json`, 6500).catch(() => null);
+              if (Array.isArray(tbData?.streams)) {
+                streams = tbData.streams.slice(0, 8).map(s => ({
+                  ...s,
+                  name: 'Magneto',
+                  title: (s.title || '').replace(/^Torrentio/i, 'Magneto')
+                }));
+              }
+            } catch (_) {}
+          }
+          entry.rawStreams = streams;
+          entry.sourceStatus = streams.length ? 'available' : 'empty';
+          entry.latencyMs = Date.now() - startedAt;
+          entry.done = true;
+          return;
+        }
+        if (addon.id === 'micoleao') {
+          const startedAt = Date.now();
+          let streams = [];
+          try {
+            const data = await fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 4500);
+            if (Array.isArray(data?.streams) && data.streams.length > 0) streams = data.streams.filter(s => !isBadSubServer(s));
+          } catch (_) {}
+          if (!streams.length) {
+            try {
+              const tbData = await fetchJson(`https://torrentio.strem.fun/providers=micoleaodublado/stream/${type}/${encodedId}.json`, 6000).catch(() => null);
+              if (Array.isArray(tbData?.streams)) {
+                streams = tbData.streams.slice(0, 8).map(s => ({
+                  ...s,
+                  name: 'Mico-Leão Dublado',
+                  title: (s.title || '').replace(/^Torrentio/i, 'Mico-Leão')
+                }));
+              }
+            } catch (_) {}
+          }
+          entry.rawStreams = streams;
+          entry.sourceStatus = streams.length ? 'available' : 'empty';
+          entry.latencyMs = Date.now() - startedAt;
           entry.done = true;
           return;
         }

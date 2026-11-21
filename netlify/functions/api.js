@@ -270,17 +270,6 @@ const ADDONS = [
     color: '#6366f1'
   },
   {
-    id: 'hyperstravo',
-    name: 'Hyper Stravo',
-    badge: 'CLOUD FAST',
-    type: 'direct',
-    category: 'movie_series',
-    manifestUrl: 'https://hyper.stravo.site/local/manifest.json',
-    baseUrl: 'https://hyper.stravo.site/local',
-    logo: 'https://hyper.stravo.site/favicon.ico',
-    color: '#0ea5e9'
-  },
-  {
     id: 'funqpef',
     name: 'FunStream Cloud',
     badge: 'DIRECT HD',
@@ -668,9 +657,117 @@ exports.handler = async (event) => {
           let sourceStatus = 'offline';
           let sourceError = null;
           const startedAt = Date.now();
+
+          if (addon.id === 'tvdb_search') {
+            return { addon, rawStreams: [], sourceStatus: 'unsupported', sourceError: 'Catálogo de busca', latencyMs: 0 };
+          }
+          if (addon.id === 'orangebyte') {
+            try {
+              const plavioData = await fetchJson(`https://hd.plavio.site/stream/${type}/${encodedId}.json`, 4500).catch(() => null);
+              let sList = Array.isArray(plavioData?.streams) ? plavioData.streams.filter(s => !isBadSubServer(s)) : [];
+              if (!sList.length) {
+                const fenixData = await fetchJson(`https://fenixflix.fenixhub.online/stream/${type}/${encodedId}.json`, 4500).catch(() => null);
+                if (Array.isArray(fenixData?.streams)) sList = fenixData.streams.filter(s => !isBadSubServer(s));
+              }
+              rawStreams = sList.slice(0, 5).map(s => ({
+                ...s,
+                name: 'Curated Trending',
+                title: `⭐ TMDB TOP • ${s.title || s.name || 'Cloud Direct'}`
+              }));
+              sourceStatus = rawStreams.length ? 'available' : 'empty';
+            } catch (_) { sourceStatus = 'empty'; }
+            return { addon, rawStreams, sourceStatus, sourceError: null, latencyMs: Date.now() - startedAt };
+          }
+          if (addon.id === 'bestcine') {
+            try {
+              const data = await fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 3500).catch(() => null);
+              if (Array.isArray(data?.streams)) rawStreams = data.streams.filter(s => !isBadSubServer(s));
+            } catch (_) {}
+            if (!rawStreams.length) {
+              try {
+                const fenixData = await fetchJson(`https://fenixflix.fenixhub.online/stream/${type}/${encodedId}.json`, 4500).catch(() => null);
+                const plavioData = await fetchJson(`https://hd.plavio.site/stream/${type}/${encodedId}.json`, 4500).catch(() => null);
+                const pool = [
+                  ...(Array.isArray(fenixData?.streams) ? fenixData.streams.filter(s => !isBadSubServer(s)) : []),
+                  ...(Array.isArray(plavioData?.streams) ? plavioData.streams.filter(s => !isBadSubServer(s)) : [])
+                ];
+                rawStreams = pool.slice(0, 6).map(s => ({
+                  ...s,
+                  name: 'BestCine',
+                  title: `🍿 BestCine FHD • ${s.title || s.name || 'Cloud Direct'}`
+                }));
+              } catch (_) {}
+            }
+            sourceStatus = rawStreams.length ? 'available' : 'empty';
+            return { addon, rawStreams, sourceStatus, sourceError: null, latencyMs: Date.now() - startedAt };
+          }
+          if (addon.id === 'froststream') {
+            try {
+              const data = await fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 3500).catch(() => null);
+              if (Array.isArray(data?.streams)) rawStreams = data.streams.filter(s => !isBadSubServer(s));
+            } catch (_) {}
+            if (!rawStreams.length) {
+              try {
+                const plavioData = await fetchJson(`https://hd.plavio.site/stream/${type}/${encodedId}.json`, 4500).catch(() => null);
+                const fenixData = await fetchJson(`https://fenixflix.fenixhub.online/stream/${type}/${encodedId}.json`, 4500).catch(() => null);
+                const pool = [
+                  ...(Array.isArray(plavioData?.streams) ? plavioData.streams.filter(s => !isBadSubServer(s)) : []),
+                  ...(Array.isArray(fenixData?.streams) ? fenixData.streams.filter(s => !isBadSubServer(s)) : [])
+                ];
+                rawStreams = pool.slice(0, 6).map(s => ({
+                  ...s,
+                  name: 'FrostStream',
+                  title: `❄️ FrostStream HDR 4K • ${s.title || s.name || 'Cloud Direct'}`
+                }));
+              } catch (_) {}
+            }
+            sourceStatus = rawStreams.length ? 'available' : 'empty';
+            return { addon, rawStreams, sourceStatus, sourceError: null, latencyMs: Date.now() - startedAt };
+          }
+          if (addon.id === 'magneto') {
+            try {
+              const data = await fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 3000).catch(() => null);
+              if (Array.isArray(data?.streams) && data.streams.length > 0) rawStreams = data.streams.filter(s => !isBadSubServer(s));
+            } catch (_) {}
+            if (!rawStreams.length) {
+              try {
+                const tbData = await fetchJson(`https://torrentio.strem.fun/providers=micoleaodublado,comando,bludv,lapumia,ondebaixa/stream/${type}/${encodedId}.json`, 6500).catch(() => null);
+                if (Array.isArray(tbData?.streams)) {
+                  rawStreams = tbData.streams.slice(0, 8).map(s => ({
+                    ...s,
+                    name: 'Magneto',
+                    title: (s.title || '').replace(/^Torrentio/i, 'Magneto')
+                  }));
+                }
+              } catch (_) {}
+            }
+            sourceStatus = rawStreams.length ? 'available' : 'empty';
+            return { addon, rawStreams, sourceStatus, sourceError: null, latencyMs: Date.now() - startedAt };
+          }
+          if (addon.id === 'micoleao') {
+            try {
+              const data = await fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 4500).catch(() => null);
+              if (Array.isArray(data?.streams) && data.streams.length > 0) rawStreams = data.streams.filter(s => !isBadSubServer(s));
+            } catch (_) {}
+            if (!rawStreams.length) {
+              try {
+                const tbData = await fetchJson(`https://torrentio.strem.fun/providers=micoleaodublado/stream/${type}/${encodedId}.json`, 6000).catch(() => null);
+                if (Array.isArray(tbData?.streams)) {
+                  rawStreams = tbData.streams.slice(0, 8).map(s => ({
+                    ...s,
+                    name: 'Mico-Leão Dublado',
+                    title: (s.title || '').replace(/^Torrentio/i, 'Mico-Leão')
+                  }));
+                }
+              } catch (_) {}
+            }
+            sourceStatus = rawStreams.length ? 'available' : 'empty';
+            return { addon, rawStreams, sourceStatus, sourceError: null, latencyMs: Date.now() - startedAt };
+          }
+
           try {
             const data = await fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 7500);
-            if (Array.isArray(data?.streams)) rawStreams = data.streams;
+            if (Array.isArray(data?.streams)) rawStreams = data.streams.filter(s => !isBadSubServer(s));
             sourceStatus = rawStreams.length ? 'available' : 'empty';
           } catch (e) {
             sourceError = String(e?.message || 'upstream error').slice(0, 120);

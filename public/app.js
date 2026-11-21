@@ -1789,10 +1789,156 @@
     }
   }
 
+  function setupReorderDragAndDrop(container, { getItems, onReorder }) {
+    if (!container) return;
+    const cards = container.querySelectorAll('.media-card.is-draggable');
+    let draggedCard = null;
+    let touchSourceCard = null;
+    let touchHoldTimer = null;
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let isTouchDragging = false;
+
+    cards.forEach((card) => {
+      // HTML5 Drag and Drop (Mouse / Desktop)
+      card.addEventListener('dragstart', (e) => {
+        draggedCard = card;
+        card.classList.add('is-dragging');
+        card.dataset.dragged = 'true';
+        if (e.dataTransfer) {
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', card.dataset.index || '0');
+        }
+      });
+
+      card.addEventListener('dragend', () => {
+        if (draggedCard) draggedCard.classList.remove('is-dragging');
+        draggedCard = null;
+        container.querySelectorAll('.drag-over').forEach((el) => el.classList.remove('drag-over'));
+        setTimeout(() => {
+          if (card.dataset.dragged) delete card.dataset.dragged;
+        }, 120);
+      });
+
+      card.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+        if (draggedCard && draggedCard !== card) {
+          card.classList.add('drag-over');
+        }
+      });
+
+      card.addEventListener('dragleave', () => {
+        card.classList.remove('drag-over');
+      });
+
+      card.addEventListener('drop', (e) => {
+        e.preventDefault();
+        card.classList.remove('drag-over');
+        if (!draggedCard || draggedCard === card) return;
+
+        const fromIdx = parseInt(draggedCard.dataset.index, 10);
+        const toIdx = parseInt(card.dataset.index, 10);
+        if (!isNaN(fromIdx) && !isNaN(toIdx) && fromIdx !== toIdx) {
+          const list = [...getItems()];
+          const [moved] = list.splice(fromIdx, 1);
+          list.splice(toIdx, 0, moved);
+          onReorder(list);
+          showToast('Posição atualizada! 📌');
+        }
+      });
+
+      // Mobile / Touch Drag and Drop
+      card.addEventListener('touchstart', (e) => {
+        const touch = e.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+        touchSourceCard = card;
+        isTouchDragging = false;
+
+        touchHoldTimer = setTimeout(() => {
+          isTouchDragging = true;
+          card.classList.add('is-dragging');
+          card.dataset.dragged = 'true';
+          if (navigator.vibrate) navigator.vibrate(35);
+        }, 220);
+      }, { passive: true });
+
+      card.addEventListener('touchmove', (e) => {
+        const touch = e.touches[0];
+        const dx = Math.abs(touch.clientX - touchStartX);
+        const dy = Math.abs(touch.clientY - touchStartY);
+        if (!isTouchDragging && (dx > 12 || dy > 12)) {
+          clearTimeout(touchHoldTimer);
+          return;
+        }
+        if (isTouchDragging) {
+          if (e.cancelable) e.preventDefault();
+          const elem = document.elementFromPoint(touch.clientX, touch.clientY);
+          const targetCard = elem?.closest('.media-card.is-draggable');
+          container.querySelectorAll('.drag-over').forEach((el) => {
+            if (el !== targetCard) el.classList.remove('drag-over');
+          });
+          if (targetCard && targetCard !== touchSourceCard && targetCard.parentNode === container) {
+            targetCard.classList.add('drag-over');
+          }
+        }
+      }, { passive: false });
+
+      card.addEventListener('touchend', (e) => {
+        clearTimeout(touchHoldTimer);
+        if (isTouchDragging && touchSourceCard) {
+          touchSourceCard.classList.remove('is-dragging');
+          const lastTouch = e.changedTouches[0];
+          const elem = document.elementFromPoint(lastTouch.clientX, lastTouch.clientY);
+          const targetCard = elem?.closest('.media-card.is-draggable');
+          container.querySelectorAll('.drag-over').forEach((el) => el.classList.remove('drag-over'));
+
+          if (targetCard && targetCard !== touchSourceCard && targetCard.parentNode === container) {
+            const fromIdx = parseInt(touchSourceCard.dataset.index, 10);
+            const toIdx = parseInt(targetCard.dataset.index, 10);
+            if (!isNaN(fromIdx) && !isNaN(toIdx) && fromIdx !== toIdx) {
+              const list = [...getItems()];
+              const [moved] = list.splice(fromIdx, 1);
+              list.splice(toIdx, 0, moved);
+              onReorder(list);
+              showToast('Posição atualizada! 📌');
+            }
+          }
+          setTimeout(() => {
+            if (touchSourceCard) delete touchSourceCard.dataset.dragged;
+            touchSourceCard = null;
+            isTouchDragging = false;
+          }, 150);
+        } else {
+          touchSourceCard = null;
+          isTouchDragging = false;
+        }
+      });
+
+      card.addEventListener('touchcancel', () => {
+        clearTimeout(touchHoldTimer);
+        if (touchSourceCard) {
+          touchSourceCard.classList.remove('is-dragging');
+          delete touchSourceCard.dataset.dragged;
+        }
+        container.querySelectorAll('.drag-over').forEach((el) => el.classList.remove('drag-over'));
+        touchSourceCard = null;
+        isTouchDragging = false;
+      });
+    });
+  }
+
   function renderWatchlistSubView(container) {
     const wrap = document.createElement('div');
     wrap.className = 'watchlist-subview';
     wrap.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:0 4px;">
+        <span style="font-size:0.85rem;color:var(--text-muted);display:inline-flex;align-items:center;gap:6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M10 9h4V6h3l-5-5-5 5h3v3zm-1 1H6V7l-5 5 5 5v-3h3v-4zm14 2l-5-5v3h-3v4h3v3l5-5zm-9 3h-4v3H7l5 5 5-5h-3v-3z"/></svg>
+          Arraste os títulos para reorganizar a ordem dos favoritos
+        </span>
+      </div>
       <div class="media-grid" id="myListGrid"></div>
     `;
     container.appendChild(wrap);
@@ -1804,7 +1950,18 @@
         renderCatalogRows();
       });
     } else {
-      state.myList.forEach((item) => grid.appendChild(createMediaCard(item, { allowRemoveMyList: true })));
+      state.myList.forEach((item, idx) => {
+        grid.appendChild(createMediaCard(item, { allowRemoveMyList: true, isMyListDrag: true, myListIndex: idx }));
+      });
+      setupReorderDragAndDrop(grid, {
+        getItems: () => state.myList,
+        onReorder: (newList) => {
+          state.myList = newList;
+          localStorage.setItem('johnflix_mylist', JSON.stringify(state.myList));
+          updateBadges();
+          renderCatalogRows();
+        }
+      });
     }
   }
 
@@ -2193,7 +2350,15 @@
         slider.innerHTML = `<p style="color:var(--text-muted);font-size:0.85rem;">Playlist vazia. Adicione filmes ou episódios de séries pelo ícone de salvar.</p>`;
       } else {
         pl.items.forEach((entry, idx) => {
-          slider.appendChild(createMediaCard(entry, { playlistId: pl.id, playlistIndex: idx }));
+          slider.appendChild(createMediaCard(entry, { playlistId: pl.id, playlistIndex: idx, isPlaylistDrag: true }));
+        });
+        setupReorderDragAndDrop(slider, {
+          getItems: () => pl.items,
+          onReorder: (newList) => {
+            pl.items = newList;
+            savePlaylists();
+            renderCatalogRows();
+          }
         });
       }
       wrap.appendChild(block);
@@ -2605,6 +2770,12 @@
     card.setAttribute('tabindex', '0');
     card.setAttribute('role', 'button');
 
+    if (opts.isMyListDrag || opts.isPlaylistDrag) {
+      card.setAttribute('draggable', 'true');
+      card.classList.add('is-draggable');
+      card.dataset.index = String(opts.myListIndex !== undefined ? opts.myListIndex : (opts.playlistIndex !== undefined ? opts.playlistIndex : 0));
+    }
+
     const isTv = item.type === 'tv';
     if (isTv && (!item.poster || item.poster.includes('wikimedia') || item.poster.includes('placehold'))) {
       item.poster = getTvPosterSvg(item);
@@ -2719,6 +2890,10 @@
     card.addEventListener('touchstart', triggerPrefetch, { once: true, passive: true });
 
     card.addEventListener('click', () => {
+      if (card.dataset.dragged === 'true') {
+        delete card.dataset.dragged;
+        return;
+      }
       if (opts.playlistId) {
         state.activeLoopPlaylistId = opts.playlistId;
         state.activeLoopIndex = opts.playlistIndex || 0;
@@ -3565,12 +3740,12 @@
       card.setAttribute('role', 'button');
       const seedsTag = stream.seeds ? ` · ${stream.seeds}` : '';
       const sourceHint = stream.playType === 'torrent'
-        ? (stream.proxyUrl ? ' • Torrent (player do JohnFlix)' : ' • Magnet (indisponível neste ambiente)')
+        ? ' • P2P / Player Nativo'
         : stream.playType === 'unsupported'
           ? ` • ${stream.sourceKind === 'dash' ? 'DASH' : 'formato não suportado'}`
           : '';
       const audioText = `${stream.audio || ''}${seedsTag}${sourceHint}`;
-      const qualityLabel = stream.playType === 'torrent' ? 'TORRENT' : stream.playType === 'unsupported' ? 'INDISP.' : stream.quality;
+      const qualityLabel = stream.playType === 'torrent' ? `${stream.quality} · P2P` : stream.playType === 'unsupported' ? 'INDISP.' : stream.quality;
 
       card.innerHTML = `
         <span class="stream-dot" style="background:${stream.addonColor}"></span>
@@ -4568,6 +4743,8 @@
         ) || (state.currentStreams || []).find((s) =>
           ['direct', 'hls'].includes(s.playType) &&
           !failedStreamKeys.has(getStreamKey(s))
+        ) || (state.currentStreams || []).find((s) =>
+          ['direct', 'hls'].includes(s.playType)
         );
 
         if (matchCloud) {

@@ -7110,6 +7110,47 @@ html[data-nav-style="text"] .nav-link .nav-text {
   gap: 10px;
 }
 
+/* Drag and Drop Reordering */
+.media-card.is-draggable {
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.media-card.is-draggable:active {
+  cursor: grabbing;
+}
+.media-card.is-draggable .card-inner-box::after {
+  content: '⠿';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 6;
+}
+.media-card.is-draggable:hover .card-inner-box::after {
+  opacity: 0.85;
+}
+.media-card.is-dragging {
+  opacity: 0.35 !important;
+  transform: scale(0.96) !important;
+  outline: 2px dashed var(--purple-bright) !important;
+  outline-offset: 2px;
+}
+.media-card.drag-over {
+  outline: 2px solid var(--purple-bright) !important;
+  box-shadow: 0 0 18px rgba(168, 85, 247, 0.6) !important;
+  transform: translateY(-4px) scale(1.02) !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
 
 
 
