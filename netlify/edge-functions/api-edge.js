@@ -1520,7 +1520,11 @@ export default async (request) => {
         }
       })();
 
-      const addonResultsState = MOVIE_ADDONS.map((addon) => ({
+      const FAST_ADDON_IDS = new Set(['plaviohd', 'fenixflix', 'brazuca', 'magneto', 'torrentio', 'nightknight', 'micoleao']);
+      const activeAddons = isFast ? MOVIE_ADDONS.filter(a => FAST_ADDON_IDS.has(a.id)) : MOVIE_ADDONS;
+      const timeoutLimit = isFast ? 2200 : 3600;
+
+      const addonResultsState = activeAddons.map((addon) => ({
         addon,
         rawStreams: [],
         sourceStatus: 'loading',
@@ -1557,12 +1561,12 @@ export default async (request) => {
           const startedAt = Date.now();
           let streams = [];
           try {
-            const data = await fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 3000);
+            const data = await fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, isFast ? 2000 : 2800);
             if (Array.isArray(data?.streams) && data.streams.length > 0) streams = data.streams.filter(s => !isBadSubServer(s));
           } catch (_) {}
           if (!streams.length) {
             try {
-              const tbData = await fetchJson(`https://torrentio.strem.fun/providers=micoleaodublado,comando,bludv,lapumia,ondebaixa/stream/${type}/${encodedId}.json`, 6500).catch(() => null);
+              const tbData = await fetchJson(`https://torrentio.strem.fun/providers=micoleaodublado,comando,bludv,lapumia,ondebaixa/stream/${type}/${encodedId}.json`, isFast ? 2200 : 3800).catch(() => null);
               if (Array.isArray(tbData?.streams)) {
                 streams = tbData.streams.slice(0, 35).map(s => ({
                   ...s,
@@ -1582,12 +1586,12 @@ export default async (request) => {
           const startedAt = Date.now();
           let streams = [];
           try {
-            const data = await fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 4500);
+            const data = await fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, isFast ? 2000 : 2800);
             if (Array.isArray(data?.streams) && data.streams.length > 0) streams = data.streams.filter(s => !isBadSubServer(s));
           } catch (_) {}
           if (!streams.length) {
             try {
-              const tbData = await fetchJson(`https://torrentio.strem.fun/providers=micoleaodublado/stream/${type}/${encodedId}.json`, 6000).catch(() => null);
+              const tbData = await fetchJson(`https://torrentio.strem.fun/providers=micoleaodublado/stream/${type}/${encodedId}.json`, isFast ? 2200 : 3800).catch(() => null);
               if (Array.isArray(tbData?.streams)) {
                 streams = tbData.streams.slice(0, 35).map(s => ({
                   ...s,
@@ -1605,7 +1609,7 @@ export default async (request) => {
         }
         const startedAt = Date.now();
         try {
-          const data = await fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 9500);
+          const data = await fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, timeoutLimit);
           entry.rawStreams = Array.isArray(data?.streams) ? data.streams : [];
           if (entry.rawStreams.length === 0 && (addon.id === 'pleiades' || addon.id === 'plaviohd' || addon.id === 'fenixflix' || addon.id === 'debridbr' || addon.id === 'ehtudo') && type !== 'tv') {
             const tmdbId = await tmdbPromise;
@@ -1685,7 +1689,7 @@ export default async (request) => {
       });
 
       const rawAddonResponses = addonResultsState.map((e) => ({ ...e }));
-      const hasPending = false;
+      const hasPending = Boolean(isFast);
 
       const sortStreamsUniversal = (a, b) => {
         const rank = (s) => {

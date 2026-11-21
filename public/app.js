@@ -3578,7 +3578,8 @@
 
     try {
       const item = state.currentItem;
-      const data = await prefetchStreams(type, targetId, item, { fast: false });
+      const wantAutoPlay = Boolean(autoPlayFirst || state.pendingAutoPlay);
+      const data = await prefetchStreams(type, targetId, item, { fast: wantAutoPlay });
       if (currentLoadTargetId !== targetId) return;
       el.streamsLoading.classList.add('hidden');
 
@@ -3594,9 +3595,8 @@
       renderStreamsList();
       renderPlayerDrawer();
 
-      const wantAutoPlay = Boolean(autoPlayFirst || state.pendingAutoPlay);
       let needsAutoPlayAfterFull = false;
-      const bestFastPlayable = state.currentStreams.find(isStreamPlayableNow);
+      const bestFastPlayable = pickBestPlayableStream(state.currentStreams);
       if (wantAutoPlay) {
         state.pendingAutoPlay = false;
         state.autoPlayTesting = true;
@@ -4577,10 +4577,18 @@
     const relevant = streams.filter((s) => isStreamRelevant(s, state.currentItem));
     if (!relevant.length) return null;
     const compatible = relevant.filter(isStreamPlayableNow);
-    if (compatible.length) {
-      return compatible.find((s) => s.isDub) || compatible[0];
-    }
-    return relevant[0];
+    const pool = compatible.length ? compatible : relevant;
+
+    // 1. Instant Cloud Direct / HLS stream (Dublado) - connects in <400ms!
+    const directDub = pool.find((s) => ['direct', 'hls'].includes(s.playType) && s.isDub);
+    if (directDub) return directDub;
+
+    // 2. Any Instant Cloud Direct / HLS stream - connects in <400ms!
+    const directAny = pool.find((s) => ['direct', 'hls'].includes(s.playType));
+    if (directAny) return directAny;
+
+    // 3. Fallback to P2P Torrent (Dublado first)
+    return pool.find((s) => s.isDub) || pool[0];
   }
 
   function tryNextWorkingStream(failedStream, forceFailover = false) {
@@ -4747,7 +4755,7 @@
 
       // 1. Silent probe for local background streaming engine
       const stremioLocal = `http://127.0.0.1:11470/${stream.infoHash}/${stream.fileIdx !== null && stream.fileIdx !== undefined ? stream.fileIdx : 0}`;
-      const localProbe = fetch('http://127.0.0.1:11470/stats.json', { signal: AbortSignal.timeout ? AbortSignal.timeout(800) : undefined })
+      const localProbe = fetch('http://127.0.0.1:11470/stats.json', { signal: AbortSignal.timeout ? AbortSignal.timeout(180) : undefined })
         .then(() => true)
         .catch(() => false);
 
