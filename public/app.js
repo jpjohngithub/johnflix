@@ -3727,14 +3727,13 @@
       card.className = 'stream-item';
       card.setAttribute('tabindex', '0');
       card.setAttribute('role', 'button');
-      const seedsTag = stream.seeds ? ` · 👤 ${stream.seeds}` : '';
+      const seedsTag = stream.seeds ? `👤 ${stream.seeds}` : '';
       const sourceHint = stream.playType === 'torrent'
-        ? ' • P2P'
+        ? 'P2P'
         : stream.playType === 'unsupported'
-          ? ` • ${stream.sourceKind === 'dash' ? 'DASH' : 'formato não suportado'}`
+          ? (stream.sourceKind === 'dash' ? 'DASH' : 'indisponível')
           : '';
-      const audioText = `${stream.audio || ''}${seedsTag}${sourceHint}`;
-      const qualityLabel = stream.playType === 'torrent' ? `${stream.quality} · P2P` : stream.playType === 'unsupported' ? 'INDISP.' : stream.quality;
+      const streamInfoText = [seedsTag, sourceHint].filter(Boolean).join(' · ');
 
       const metaBadges = [];
       if (stream.size) metaBadges.push(`<span class="stream-badge-tag tag-size">💾 ${escapeHtml(stream.size)}</span>`);
@@ -3746,18 +3745,20 @@
         ? `<span class="stream-release-name">${escapeHtml(stream.releaseTitle)}</span>`
         : '';
       const badgesRow = metaBadges.length ? `<div class="stream-badges-row">${metaBadges.join('')}</div>` : '';
+      const infoRow = (streamInfoText || badgesRow)
+        ? `<div class="stream-audio-row">
+            ${streamInfoText ? `<span class="stream-audio">${escapeHtml(streamInfoText)}</span>` : ''}
+            ${badgesRow}
+          </div>`
+        : '';
 
       card.innerHTML = `
         <span class="stream-dot" style="background:${stream.addonColor || 'var(--purple-bright)'}"></span>
         <div class="stream-main">
           <span class="stream-server-name">${escapeHtml(stream.serverLabel)}</span>
           ${releaseRow}
-          <div class="stream-audio-row">
-            <span class="stream-audio ${stream.isEnglishOnly ? 'is-en' : ''}">${escapeHtml(audioText)}</span>
-            ${badgesRow}
-          </div>
+          ${infoRow}
         </div>
-        <span class="stream-quality">${escapeHtml(qualityLabel)}</span>
         <span class="stream-play-ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 9-14 9V3z"/></svg></span>
       `;
 
@@ -4755,7 +4756,7 @@
 
     el.playerLoader.classList.remove('hidden');
     el.playerLoaderTitle.textContent = isAutoFailover ? 'Alternando para servidor compatível...' : 'Iniciando reprodução nativa...';
-    el.playerLoaderSub.textContent = `${stream.serverLabel} • ${stream.quality}`;
+    el.playerLoaderSub.textContent = stream.serverLabel;
     if (el.playerLoaderSwitchBtn) el.playerLoaderSwitchBtn.classList.add('hidden');
 
     if (state.autoPlayTesting) {
@@ -5162,9 +5163,10 @@
       const extraMeta = [
         s.size ? `💾 ${s.size}` : null,
         s.hdrTag ? `✨ ${s.hdrTag}` : null,
-        s.audioChannels ? `🔊 ${s.audioChannels}` : null
+        s.audioChannels ? `🔊 ${s.audioChannels}` : null,
+        s.seeds ? `👤 ${s.seeds}` : null
       ].filter(Boolean).join(' • ');
-      const subInfo = `${s.audio || 'Dublado / Legendado'} • ${s.quality || 'HD'}${extraMeta ? ` • ${extraMeta}` : ''}`;
+      const subInfo = extraMeta || (s.playType === 'torrent' ? 'P2P' : '');
       const releaseRow = (s.releaseTitle && s.releaseTitle !== s.serverLabel)
         ? `<small class="drawer-stream-sub">${escapeHtml(s.releaseTitle)}</small>`
         : '';
@@ -5172,7 +5174,7 @@
         <span class="stream-dot" style="background:${s.addonColor || 'var(--purple-bright)'}"></span>
         <div class="drawer-stream-info">
           <strong>${escapeHtml(s.serverLabel)}</strong>
-          <span>${escapeHtml(subInfo)}</span>
+          ${subInfo ? `<span>${escapeHtml(subInfo)}</span>` : ''}
           ${releaseRow}
         </div>
         <span class="drawer-stream-status">${isCurrent ? 'Reproduzindo' : (canPlayNow ? 'Assistir' : 'P2P (Local/Stremio)')}</span>
