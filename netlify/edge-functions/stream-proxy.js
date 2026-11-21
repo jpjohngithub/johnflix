@@ -43,7 +43,7 @@ export default async (request, context) => {
     });
   }
 
-  if (/\b(?:badger|cinejoy|netmirror|multimovies|cinezo)\b|dbonline\.tech-cdn\.top/i.test(targetUrl)) {
+  if (/\b(?:cinejoy|netmirror|multimovies|cinezo)\b|dbonline\.tech-cdn\.top/i.test(targetUrl)) {
     return new Response('Fonte desativada devido a bloqueio do provedor upstream.', {
       status: 451,
       headers: {

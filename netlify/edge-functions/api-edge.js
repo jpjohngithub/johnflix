@@ -1513,99 +1513,12 @@ export default async (request) => {
           entry.done = true;
           return;
         }
-        if (addon.id === 'orangebyte') {
+        if (addon.id === 'framextv') {
           const startedAt = Date.now();
-          try {
-            const tmdbId = await tmdbPromise;
-            const tmdbTarget = tmdbId ? (type === 'series' ? `tmdb:${tmdbId}:${epSeason}:${epNumber}` : `tmdb:${tmdbId}`) : null;
-            let sList = [];
-            const plavioData = await fetchJson(`https://hd.plavio.site/stream/${type}/${encodedId}.json`, 4500).catch(() => null);
-            if (Array.isArray(plavioData?.streams)) sList = plavioData.streams.filter(s => !isBadSubServer(s));
-            if (!sList.length && tmdbTarget) {
-              const tmdbData = await fetchJson(`https://hd.plavio.site/stream/${type}/${encodeURIComponent(tmdbTarget)}.json`, 4500).catch(() => null);
-              if (Array.isArray(tmdbData?.streams)) sList = tmdbData.streams.filter(s => !isBadSubServer(s));
-            }
-            if (!sList.length) {
-              const fenixData = await fetchJson(`https://fenixflix.fenixhub.online/stream/${type}/${encodedId}.json`, 4500).catch(() => null);
-              if (Array.isArray(fenixData?.streams)) sList = fenixData.streams.filter(s => !isBadSubServer(s));
-            }
-            entry.rawStreams = sList.slice(0, 8).map(s => ({
-              ...s,
-              name: 'Curated Trending',
-              title: `⭐ TMDB TOP • ${s.title || s.name || 'Cloud Direct'}`
-            }));
-            entry.sourceStatus = entry.rawStreams.length ? 'available' : 'empty';
-          } catch (_) {
-            entry.sourceStatus = 'empty';
-          }
-          entry.latencyMs = Date.now() - startedAt;
-          entry.done = true;
-          return;
-        }
-        if (addon.id === 'bestcine') {
-          const startedAt = Date.now();
-          let streams = [];
-          try {
-            const data = await fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 3500);
-            if (Array.isArray(data?.streams)) streams = data.streams.filter(s => !isBadSubServer(s));
-          } catch (_) {}
-          if (!streams.length) {
-            try {
-              const tmdbId = await tmdbPromise;
-              const tmdbTarget = tmdbId ? (type === 'series' ? `tmdb:${tmdbId}:${epSeason}:${epNumber}` : `tmdb:${tmdbId}`) : null;
-              const fenixData = await fetchJson(`https://fenixflix.fenixhub.online/stream/${type}/${encodedId}.json`, 4500).catch(() => null);
-              const plavioData = await fetchJson(`https://hd.plavio.site/stream/${type}/${encodedId}.json`, 4500).catch(() => null);
-              let pool = [
-                ...(Array.isArray(fenixData?.streams) ? fenixData.streams.filter(s => !isBadSubServer(s)) : []),
-                ...(Array.isArray(plavioData?.streams) ? plavioData.streams.filter(s => !isBadSubServer(s)) : [])
-              ];
-              if (!pool.length && tmdbTarget) {
-                const tmdbData = await fetchJson(`https://hd.plavio.site/stream/${type}/${encodeURIComponent(tmdbTarget)}.json`, 4500).catch(() => null);
-                if (Array.isArray(tmdbData?.streams)) pool = tmdbData.streams.filter(s => !isBadSubServer(s));
-              }
-              streams = pool.slice(0, 8).map(s => ({
-                ...s,
-                name: 'BestCine',
-                title: `🍿 BestCine FHD • ${s.title || s.name || 'Cloud Direct'}`
-              }));
-            } catch (_) {}
-          }
-          entry.rawStreams = streams;
-          entry.sourceStatus = streams.length ? 'available' : 'empty';
-          entry.latencyMs = Date.now() - startedAt;
-          entry.done = true;
-          return;
-        }
-        if (addon.id === 'froststream') {
-          const startedAt = Date.now();
-          let streams = [];
-          try {
-            const data = await fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 3500);
-            if (Array.isArray(data?.streams)) streams = data.streams.filter(s => !isBadSubServer(s));
-          } catch (_) {}
-          if (!streams.length) {
-            try {
-              const tmdbId = await tmdbPromise;
-              const tmdbTarget = tmdbId ? (type === 'series' ? `tmdb:${tmdbId}:${epSeason}:${epNumber}` : `tmdb:${tmdbId}`) : null;
-              const plavioData = await fetchJson(`https://hd.plavio.site/stream/${type}/${encodedId}.json`, 4500).catch(() => null);
-              const fenixData = await fetchJson(`https://fenixflix.fenixhub.online/stream/${type}/${encodedId}.json`, 4500).catch(() => null);
-              let pool = [
-                ...(Array.isArray(plavioData?.streams) ? plavioData.streams.filter(s => !isBadSubServer(s)) : []),
-                ...(Array.isArray(fenixData?.streams) ? fenixData.streams.filter(s => !isBadSubServer(s)) : [])
-              ];
-              if (!pool.length && tmdbTarget) {
-                const tmdbData = await fetchJson(`https://hd.plavio.site/stream/${type}/${encodeURIComponent(tmdbTarget)}.json`, 4500).catch(() => null);
-                if (Array.isArray(tmdbData?.streams)) pool = tmdbData.streams.filter(s => !isBadSubServer(s));
-              }
-              streams = pool.slice(0, 8).map(s => ({
-                ...s,
-                name: 'FrostStream',
-                title: `❄️ FrostStream HDR 4K • ${s.title || s.name || 'Cloud Direct'}`
-              }));
-            } catch (_) {}
-          }
-          entry.rawStreams = streams;
-          entry.sourceStatus = streams.length ? 'available' : 'empty';
+          const tmdbId = await tmdbPromise;
+          const fxStreams = await fetchFrameXTVStreams(type, tmdbId, epSeason, epNumber);
+          entry.rawStreams = fxStreams;
+          entry.sourceStatus = fxStreams.length ? 'available' : 'empty';
           entry.latencyMs = Date.now() - startedAt;
           entry.done = true;
           return;
@@ -1621,7 +1534,7 @@ export default async (request) => {
             try {
               const tbData = await fetchJson(`https://torrentio.strem.fun/providers=micoleaodublado,comando,bludv,lapumia,ondebaixa/stream/${type}/${encodedId}.json`, 6500).catch(() => null);
               if (Array.isArray(tbData?.streams)) {
-                streams = tbData.streams.slice(0, 8).map(s => ({
+                streams = tbData.streams.slice(0, 10).map(s => ({
                   ...s,
                   name: 'Magneto',
                   title: (s.title || '').replace(/^Torrentio/i, 'Magneto')
@@ -1646,7 +1559,7 @@ export default async (request) => {
             try {
               const tbData = await fetchJson(`https://torrentio.strem.fun/providers=micoleaodublado/stream/${type}/${encodedId}.json`, 6000).catch(() => null);
               if (Array.isArray(tbData?.streams)) {
-                streams = tbData.streams.slice(0, 8).map(s => ({
+                streams = tbData.streams.slice(0, 10).map(s => ({
                   ...s,
                   name: 'Mico-Leão Dublado',
                   title: (s.title || '').replace(/^Torrentio/i, 'Mico-Leão')
@@ -1656,16 +1569,6 @@ export default async (request) => {
           }
           entry.rawStreams = streams;
           entry.sourceStatus = streams.length ? 'available' : 'empty';
-          entry.latencyMs = Date.now() - startedAt;
-          entry.done = true;
-          return;
-        }
-        if (addon.id === 'framextv') {
-          const startedAt = Date.now();
-          const tmdbId = await tmdbPromise;
-          const fxStreams = await fetchFrameXTVStreams(type, tmdbId, epSeason, epNumber);
-          entry.rawStreams = fxStreams;
-          entry.sourceStatus = fxStreams.length ? 'available' : 'empty';
           entry.latencyMs = Date.now() - startedAt;
           entry.done = true;
           return;
@@ -1707,7 +1610,7 @@ export default async (request) => {
           return 4;
         };
         if (rank(a) !== rank(b)) return rank(a) - rank(b);
-        const isDegraded = (s) => (s.isHindi || /free\.flixnest\.app\/api\/(?:4khdhub|hdhub4u)\//i.test(s.directUrl || '') || /\b(?:badger|cinejoy|netmirror|multimovies|cinezo)\b|dbonline\.tech-cdn\.top/i.test(`${s.serverLabel || ''} ${s.directUrl || ''}`)) ? 1 : 0;
+        const isDegraded = (s) => (s.isHindi || /free\.flixnest\.app\/api\/(?:4khdhub|hdhub4u)\//i.test(s.directUrl || '') || /\b(?:cinejoy|netmirror|multimovies|cinezo)\b|dbonline\.tech-cdn\.top/i.test(`${s.serverLabel || ''} ${s.directUrl || ''}`)) ? 1 : 0;
         const aDegraded = isDegraded(a);
         const bDegraded = isDegraded(b);
         if (aDegraded !== bDegraded) return aDegraded - bDegraded;
