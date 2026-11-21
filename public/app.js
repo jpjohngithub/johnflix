@@ -3417,7 +3417,7 @@
 
     try {
       const item = state.currentItem;
-      const data = await prefetchStreams(type, targetId, item, { fast: true });
+      const data = await prefetchStreams(type, targetId, item, { fast: false });
       if (currentLoadTargetId !== targetId) return;
       el.streamsLoading.classList.add('hidden');
 

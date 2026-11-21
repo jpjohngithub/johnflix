@@ -1556,17 +1556,10 @@ export default async (request) => {
         entry.done = true;
       });
 
-      if (isFast) {
-        await Promise.race([
-          Promise.all(addonTasks),
-          new Promise((resolve) => setTimeout(resolve, 3800))
-        ]);
-      } else {
-        await Promise.all(addonTasks);
-      }
+      await Promise.all(addonTasks);
 
       const rawAddonResponses = addonResultsState.map((e) => ({ ...e }));
-      const hasPending = isFast && rawAddonResponses.some((e) => !e.done);
+      const hasPending = false;
 
       const sortStreamsUniversal = (a, b) => {
         const rank = (s) => {
