@@ -3705,20 +3705,35 @@
       card.className = 'stream-item';
       card.setAttribute('tabindex', '0');
       card.setAttribute('role', 'button');
-      const seedsTag = stream.seeds ? ` · ${stream.seeds}` : '';
+      const seedsTag = stream.seeds ? ` · 👤 ${stream.seeds}` : '';
       const sourceHint = stream.playType === 'torrent'
-        ? ' • P2P / Player Nativo'
+        ? ' • P2P'
         : stream.playType === 'unsupported'
           ? ` • ${stream.sourceKind === 'dash' ? 'DASH' : 'formato não suportado'}`
           : '';
       const audioText = `${stream.audio || ''}${seedsTag}${sourceHint}`;
       const qualityLabel = stream.playType === 'torrent' ? `${stream.quality} · P2P` : stream.playType === 'unsupported' ? 'INDISP.' : stream.quality;
 
+      const metaBadges = [];
+      if (stream.size) metaBadges.push(`<span class="stream-badge-tag tag-size">💾 ${escapeHtml(stream.size)}</span>`);
+      if (stream.hdrTag) metaBadges.push(`<span class="stream-badge-tag tag-hdr">✨ ${escapeHtml(stream.hdrTag)}</span>`);
+      if (stream.audioChannels) metaBadges.push(`<span class="stream-badge-tag tag-channels">🔊 ${escapeHtml(stream.audioChannels)}</span>`);
+      if (stream.codec) metaBadges.push(`<span class="stream-badge-tag tag-codec">${escapeHtml(stream.codec)}</span>`);
+
+      const releaseRow = (stream.releaseTitle && stream.releaseTitle !== stream.serverLabel)
+        ? `<span class="stream-release-name">${escapeHtml(stream.releaseTitle)}</span>`
+        : '';
+      const badgesRow = metaBadges.length ? `<div class="stream-badges-row">${metaBadges.join('')}</div>` : '';
+
       card.innerHTML = `
-        <span class="stream-dot" style="background:${stream.addonColor}"></span>
+        <span class="stream-dot" style="background:${stream.addonColor || 'var(--purple-bright)'}"></span>
         <div class="stream-main">
           <span class="stream-server-name">${escapeHtml(stream.serverLabel)}</span>
-          <span class="stream-audio ${stream.isEnglishOnly ? 'is-en' : ''}">${escapeHtml(audioText)}</span>
+          ${releaseRow}
+          <div class="stream-audio-row">
+            <span class="stream-audio ${stream.isEnglishOnly ? 'is-en' : ''}">${escapeHtml(audioText)}</span>
+            ${badgesRow}
+          </div>
         </div>
         <span class="stream-quality">${escapeHtml(qualityLabel)}</span>
         <span class="stream-play-ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 9-14 9V3z"/></svg></span>
@@ -4998,11 +5013,21 @@
       const item = document.createElement('div');
       item.className = `drawer-stream-row${isCurrent ? ' active' : ''}`;
       if (!canPlayNow) item.style.opacity = '0.52';
+      const extraMeta = [
+        s.size ? `💾 ${s.size}` : null,
+        s.hdrTag ? `✨ ${s.hdrTag}` : null,
+        s.audioChannels ? `🔊 ${s.audioChannels}` : null
+      ].filter(Boolean).join(' • ');
+      const subInfo = `${s.audio || 'Dublado / Legendado'} • ${s.quality || 'HD'}${extraMeta ? ` • ${extraMeta}` : ''}`;
+      const releaseRow = (s.releaseTitle && s.releaseTitle !== s.serverLabel)
+        ? `<small class="drawer-stream-sub">${escapeHtml(s.releaseTitle)}</small>`
+        : '';
       item.innerHTML = `
         <span class="stream-dot" style="background:${s.addonColor || 'var(--purple-bright)'}"></span>
         <div class="drawer-stream-info">
           <strong>${escapeHtml(s.serverLabel)}</strong>
-          <span>${escapeHtml(s.audio || 'Dublado / Legendado')} • ${escapeHtml(s.quality || 'HD')}</span>
+          <span>${escapeHtml(subInfo)}</span>
+          ${releaseRow}
         </div>
         <span class="drawer-stream-status">${isCurrent ? 'Reproduzindo' : (canPlayNow ? 'Assistir' : 'P2P (Local/Stremio)')}</span>
       `;

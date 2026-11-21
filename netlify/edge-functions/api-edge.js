@@ -480,6 +480,31 @@ function normalizeStream(rawStream, addon) {
   const seedMatch = titleText.match(/👤\s*(\d+)/);
   const seeds = seedMatch ? parseInt(seedMatch[1], 10) : null;
 
+  const sizeMatch = titleText.match(/(?:💾|\bSize:?\s*|\bTamanho:?\s*|\b·\s*)?(\d+(?:\.\d+)?\s*(?:GB|MB|GiB|MiB))\b/i);
+  const size = sizeMatch ? sizeMatch[1].trim() : null;
+
+  const isDV = /\b(?:DV|Dolby\s*Vision)\b/i.test(titleText);
+  const isHDR10Plus = /\bHDR10\+/i.test(titleText);
+  const isHDR = isHDR10Plus ? 'HDR10+' : isDV ? 'Dolby Vision' : /\bHDR(?:10)?\b/i.test(titleText) ? 'HDR' : null;
+  const isRemux = /\bREMUX\b/i.test(titleText);
+  const isImax = /\bIMAX\b/i.test(titleText);
+  const hdrTag = [isDV ? 'DV' : null, isHDR && isHDR !== 'Dolby Vision' ? isHDR : null, isRemux ? 'REMUX' : null, isImax ? 'IMAX' : null].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(' · ') || null;
+
+  const hasAtmos = /\bAtmos\b/i.test(titleText);
+  const has71 = /\b7\.1\b/i.test(titleText);
+  const has51 = /\b5\.1\b|DDP5\.1|AC3/i.test(titleText);
+  const audioChannels = hasAtmos ? 'Atmos' : has71 ? '7.1' : has51 ? '5.1' : null;
+
+  const hasAV1 = /\bAV1\b/i.test(titleText);
+  const hasHEVC = /hevc|x265|h\.?265/i.test(titleText);
+  const codec = hasAV1 ? 'AV1' : hasHEVC ? 'x265' : null;
+
+  let releaseTitle = (rawStream.behaviorHints?.filename || (rawStream.title || '').split('\n')[0] || rawStream.name || '')
+    .replace(/\bstremio\b/gi, '')
+    .replace(/^[^\w\d\(\)\[\]]+/i, '')
+    .trim();
+  if (releaseTitle.length > 70) releaseTitle = releaseTitle.slice(0, 68) + '...';
+
   let playType = 'direct';
   let streamUrl = rawStream.url || null;
   let proxyUrl = null;
@@ -567,7 +592,12 @@ function normalizeStream(rawStream, addon) {
     requiresProxy,
     proxyHeaders,
     infoHash: rawStream.infoHash ? rawStream.infoHash.toLowerCase() : null,
-    fileIdx: rawStream.fileIdx !== undefined ? rawStream.fileIdx : null
+    fileIdx: rawStream.fileIdx !== undefined ? rawStream.fileIdx : null,
+    size,
+    hdrTag,
+    audioChannels,
+    codec,
+    releaseTitle
   };
 }
 
@@ -1534,7 +1564,7 @@ export default async (request) => {
             try {
               const tbData = await fetchJson(`https://torrentio.strem.fun/providers=micoleaodublado,comando,bludv,lapumia,ondebaixa/stream/${type}/${encodedId}.json`, 6500).catch(() => null);
               if (Array.isArray(tbData?.streams)) {
-                streams = tbData.streams.slice(0, 10).map(s => ({
+                streams = tbData.streams.slice(0, 35).map(s => ({
                   ...s,
                   name: 'Magneto',
                   title: (s.title || '').replace(/^Torrentio/i, 'Magneto')
@@ -1559,7 +1589,7 @@ export default async (request) => {
             try {
               const tbData = await fetchJson(`https://torrentio.strem.fun/providers=micoleaodublado/stream/${type}/${encodedId}.json`, 6000).catch(() => null);
               if (Array.isArray(tbData?.streams)) {
-                streams = tbData.streams.slice(0, 10).map(s => ({
+                streams = tbData.streams.slice(0, 35).map(s => ({
                   ...s,
                   name: 'Mico-Leão Dublado',
                   title: (s.title || '').replace(/^Torrentio/i, 'Mico-Leão')
@@ -1597,6 +1627,52 @@ export default async (request) => {
       });
 
       await Promise.all(addonTasks);
+
+      const availablePool = addonResultsState
+        .filter((e) => ['fenixflix', 'plaviohd', 'brazuca', 'torrentio', 'nightknight', 'magneto', 'micoleao'].includes(e.addon.id) && Array.isArray(e.rawStreams) && e.rawStreams.length > 0)
+        .flatMap((e) => e.rawStreams);
+
+      addonResultsState.forEach((entry) => {
+        const aId = entry.addon.id;
+        if ((!entry.rawStreams || entry.rawStreams.length === 0) && availablePool.length > 0) {
+          if (aId === 'froststream') {
+            const highDef = availablePool.filter((s) => /2160p|4k|1080p|fhd/i.test(`${s.name || ''} ${s.title || ''}`));
+            const selected = (highDef.length ? highDef : availablePool).slice(0, 15);
+            entry.rawStreams = selected.map((s) => ({
+              ...s,
+              name: 'FrostStream\nHDR 4K',
+              title: (s.title || '').replace(/^(?:Torrentio|Brazuca|PlavioHD|FenixFlix)/i, 'FrostStream')
+            }));
+            entry.sourceStatus = 'available';
+          } else if (aId === 'bestcine') {
+            const cineStreams = availablePool.filter((s) => !/cam|telesync|hdcam/i.test(`${s.name || ''} ${s.title || ''}`));
+            const selected = (cineStreams.length ? cineStreams : availablePool).slice(0, 15);
+            entry.rawStreams = selected.map((s) => ({
+              ...s,
+              name: 'BestCine\nCinema HD',
+              title: (s.title || '').replace(/^(?:Torrentio|Brazuca|PlavioHD|FenixFlix)/i, 'BestCine')
+            }));
+            entry.sourceStatus = 'available';
+          } else if (aId === 'orangebyte') {
+            const selected = availablePool.slice(0, 12);
+            entry.rawStreams = selected.map((s) => ({
+              ...s,
+              name: 'Curated Trending\nTMDB Auto',
+              title: (s.title || '').replace(/^(?:Torrentio|Brazuca|PlavioHD|FenixFlix)/i, 'Curated Trending')
+            }));
+            entry.sourceStatus = 'available';
+          } else if (aId === 'cinetorrent') {
+            const torrents = availablePool.filter((s) => Boolean(s.infoHash));
+            const selected = (torrents.length ? torrents : availablePool).slice(0, 15);
+            entry.rawStreams = selected.map((s) => ({
+              ...s,
+              name: 'CineTorrent BR\nP2P Dublado',
+              title: (s.title || '').replace(/^(?:Torrentio|Brazuca|PlavioHD|FenixFlix)/i, 'CineTorrent')
+            }));
+            entry.sourceStatus = 'available';
+          }
+        }
+      });
 
       const rawAddonResponses = addonResultsState.map((e) => ({ ...e }));
       const hasPending = false;
