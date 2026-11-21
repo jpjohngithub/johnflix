@@ -1516,13 +1516,20 @@ export default async (request) => {
         if (addon.id === 'orangebyte') {
           const startedAt = Date.now();
           try {
+            const tmdbId = await tmdbPromise;
+            const tmdbTarget = tmdbId ? (type === 'series' ? `tmdb:${tmdbId}:${epSeason}:${epNumber}` : `tmdb:${tmdbId}`) : null;
+            let sList = [];
             const plavioData = await fetchJson(`https://hd.plavio.site/stream/${type}/${encodedId}.json`, 4500).catch(() => null);
-            let sList = Array.isArray(plavioData?.streams) ? plavioData.streams.filter(s => !isBadSubServer(s)) : [];
+            if (Array.isArray(plavioData?.streams)) sList = plavioData.streams.filter(s => !isBadSubServer(s));
+            if (!sList.length && tmdbTarget) {
+              const tmdbData = await fetchJson(`https://hd.plavio.site/stream/${type}/${encodeURIComponent(tmdbTarget)}.json`, 4500).catch(() => null);
+              if (Array.isArray(tmdbData?.streams)) sList = tmdbData.streams.filter(s => !isBadSubServer(s));
+            }
             if (!sList.length) {
               const fenixData = await fetchJson(`https://fenixflix.fenixhub.online/stream/${type}/${encodedId}.json`, 4500).catch(() => null);
               if (Array.isArray(fenixData?.streams)) sList = fenixData.streams.filter(s => !isBadSubServer(s));
             }
-            entry.rawStreams = sList.slice(0, 5).map(s => ({
+            entry.rawStreams = sList.slice(0, 8).map(s => ({
               ...s,
               name: 'Curated Trending',
               title: `⭐ TMDB TOP • ${s.title || s.name || 'Cloud Direct'}`
@@ -1544,13 +1551,19 @@ export default async (request) => {
           } catch (_) {}
           if (!streams.length) {
             try {
+              const tmdbId = await tmdbPromise;
+              const tmdbTarget = tmdbId ? (type === 'series' ? `tmdb:${tmdbId}:${epSeason}:${epNumber}` : `tmdb:${tmdbId}`) : null;
               const fenixData = await fetchJson(`https://fenixflix.fenixhub.online/stream/${type}/${encodedId}.json`, 4500).catch(() => null);
               const plavioData = await fetchJson(`https://hd.plavio.site/stream/${type}/${encodedId}.json`, 4500).catch(() => null);
-              const pool = [
+              let pool = [
                 ...(Array.isArray(fenixData?.streams) ? fenixData.streams.filter(s => !isBadSubServer(s)) : []),
                 ...(Array.isArray(plavioData?.streams) ? plavioData.streams.filter(s => !isBadSubServer(s)) : [])
               ];
-              streams = pool.slice(0, 6).map(s => ({
+              if (!pool.length && tmdbTarget) {
+                const tmdbData = await fetchJson(`https://hd.plavio.site/stream/${type}/${encodeURIComponent(tmdbTarget)}.json`, 4500).catch(() => null);
+                if (Array.isArray(tmdbData?.streams)) pool = tmdbData.streams.filter(s => !isBadSubServer(s));
+              }
+              streams = pool.slice(0, 8).map(s => ({
                 ...s,
                 name: 'BestCine',
                 title: `🍿 BestCine FHD • ${s.title || s.name || 'Cloud Direct'}`
@@ -1572,13 +1585,19 @@ export default async (request) => {
           } catch (_) {}
           if (!streams.length) {
             try {
+              const tmdbId = await tmdbPromise;
+              const tmdbTarget = tmdbId ? (type === 'series' ? `tmdb:${tmdbId}:${epSeason}:${epNumber}` : `tmdb:${tmdbId}`) : null;
               const plavioData = await fetchJson(`https://hd.plavio.site/stream/${type}/${encodedId}.json`, 4500).catch(() => null);
               const fenixData = await fetchJson(`https://fenixflix.fenixhub.online/stream/${type}/${encodedId}.json`, 4500).catch(() => null);
-              const pool = [
+              let pool = [
                 ...(Array.isArray(plavioData?.streams) ? plavioData.streams.filter(s => !isBadSubServer(s)) : []),
                 ...(Array.isArray(fenixData?.streams) ? fenixData.streams.filter(s => !isBadSubServer(s)) : [])
               ];
-              streams = pool.slice(0, 6).map(s => ({
+              if (!pool.length && tmdbTarget) {
+                const tmdbData = await fetchJson(`https://hd.plavio.site/stream/${type}/${encodeURIComponent(tmdbTarget)}.json`, 4500).catch(() => null);
+                if (Array.isArray(tmdbData?.streams)) pool = tmdbData.streams.filter(s => !isBadSubServer(s));
+              }
+              streams = pool.slice(0, 8).map(s => ({
                 ...s,
                 name: 'FrostStream',
                 title: `❄️ FrostStream HDR 4K • ${s.title || s.name || 'Cloud Direct'}`
@@ -1655,7 +1674,7 @@ export default async (request) => {
         try {
           const data = await fetchJson(`${addon.baseUrl}/stream/${type}/${encodedId}.json`, 9500);
           entry.rawStreams = Array.isArray(data?.streams) ? data.streams : [];
-          if (entry.rawStreams.length === 0 && (addon.id === 'pleiades' || addon.id === 'plaviohd') && type !== 'tv') {
+          if (entry.rawStreams.length === 0 && (addon.id === 'pleiades' || addon.id === 'plaviohd' || addon.id === 'fenixflix' || addon.id === 'debridbr' || addon.id === 'ehtudo') && type !== 'tv') {
             const tmdbId = await tmdbPromise;
             if (tmdbId) {
               const tmdbTarget = type === 'series' ? `tmdb:${tmdbId}:${epSeason}:${epNumber}` : `tmdb:${tmdbId}`;

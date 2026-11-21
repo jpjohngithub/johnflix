@@ -4506,31 +4506,11 @@
   }
 
   function isStreamRelevant(stream, item) {
-    if (!stream || !item) return true;
-    if (item.type === 'tv') return true;
-
-    const rawText = `${stream.rawTitle || ''} ${stream.serverLabel || ''} ${stream.directUrl || ''}`.toLowerCase();
-    if (/bigtits|porn|xxx|erotic|adult\b|fake[_-]?stream|sample\.mp4/i.test(rawText)) return false;
-
-    // Reject FrameXTV generic provider streams that collide with other titles
-    if (stream.addonId === 'framextv' && /\b(?:giant|bowler|citadel|titan)\b/i.test(rawText)) {
-      const itemName = (item.name || '').toLowerCase();
-      if (!itemName.includes('giant') && !itemName.includes('bowler') && !itemName.includes('citadel') && !itemName.includes('titan')) {
-        return false;
-      }
-    }
-
-    const allNames = [item.name, item.originalName, state.currentMeta?.name].filter(Boolean);
-    const itemTokens = Array.from(new Set(allNames.flatMap(cleanTitleTokens)));
-    if (!itemTokens.length) return true;
-
-    const rawTitle = (stream.rawTitle || '').replace(/[\r\n]+/g, ' ');
-    const streamTokens = cleanTitleTokens(rawTitle);
-    if (!streamTokens.length) return true;
-
-    return itemTokens.some((it) =>
-      streamTokens.some((st) => st.includes(it) || it.includes(st) || (st.length >= 5 && it.length >= 5 && st.slice(0, 5) === it.slice(0, 5)))
-    );
+    if (!stream) return false;
+    const rawText = `${stream.rawTitle || ''} ${stream.serverLabel || ''} ${stream.directUrl || ''} ${stream.sourceUrl || ''}`.toLowerCase();
+    if (/bigtits|porn|xxx|erotic|adult\b|sex\b|fake[_-]?stream|sample\.mp4/i.test(rawText)) return false;
+    if (/cloudflare-terms-of-service-abuse/i.test(rawText)) return false;
+    return Boolean(stream.proxyUrl || stream.directUrl || stream.infoHash || stream.sourceUrl);
   }
 
   function isStreamPlayableNow(s) {

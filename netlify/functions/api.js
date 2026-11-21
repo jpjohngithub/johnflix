@@ -663,13 +663,14 @@ exports.handler = async (event) => {
           }
           if (addon.id === 'orangebyte') {
             try {
+              let sList = [];
               const plavioData = await fetchJson(`https://hd.plavio.site/stream/${type}/${encodedId}.json`, 4500).catch(() => null);
-              let sList = Array.isArray(plavioData?.streams) ? plavioData.streams.filter(s => !isBadSubServer(s)) : [];
+              if (Array.isArray(plavioData?.streams)) sList = plavioData.streams.filter(s => !isBadSubServer(s));
               if (!sList.length) {
                 const fenixData = await fetchJson(`https://fenixflix.fenixhub.online/stream/${type}/${encodedId}.json`, 4500).catch(() => null);
                 if (Array.isArray(fenixData?.streams)) sList = fenixData.streams.filter(s => !isBadSubServer(s));
               }
-              rawStreams = sList.slice(0, 5).map(s => ({
+              rawStreams = sList.slice(0, 8).map(s => ({
                 ...s,
                 name: 'Curated Trending',
                 title: `⭐ TMDB TOP • ${s.title || s.name || 'Cloud Direct'}`
@@ -691,7 +692,7 @@ exports.handler = async (event) => {
                   ...(Array.isArray(fenixData?.streams) ? fenixData.streams.filter(s => !isBadSubServer(s)) : []),
                   ...(Array.isArray(plavioData?.streams) ? plavioData.streams.filter(s => !isBadSubServer(s)) : [])
                 ];
-                rawStreams = pool.slice(0, 6).map(s => ({
+                rawStreams = pool.slice(0, 8).map(s => ({
                   ...s,
                   name: 'BestCine',
                   title: `🍿 BestCine FHD • ${s.title || s.name || 'Cloud Direct'}`
@@ -714,7 +715,7 @@ exports.handler = async (event) => {
                   ...(Array.isArray(plavioData?.streams) ? plavioData.streams.filter(s => !isBadSubServer(s)) : []),
                   ...(Array.isArray(fenixData?.streams) ? fenixData.streams.filter(s => !isBadSubServer(s)) : [])
                 ];
-                rawStreams = pool.slice(0, 6).map(s => ({
+                rawStreams = pool.slice(0, 8).map(s => ({
                   ...s,
                   name: 'FrostStream',
                   title: `❄️ FrostStream HDR 4K • ${s.title || s.name || 'Cloud Direct'}`
