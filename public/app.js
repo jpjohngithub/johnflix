@@ -36,7 +36,7 @@
     playlists: JSON.parse(localStorage.getItem('johnflix_playlists') || '[]'),
     continueWatching: JSON.parse(localStorage.getItem('johnflix_cw') || '[]'),
     prevFilter: 'all',
-    myListSubTab: 'swipe',
+    myListSubTab: 'watchlist',
     swipeGenres: [],
     swipeSort: 'popular',
     swipeTypeFilter: 'all',
@@ -810,30 +810,6 @@
 
       const tag = (e.target && e.target.tagName) ? e.target.tagName.toUpperCase() : '';
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-
-      // Swipe mode keys
-      if (
-        state.activeFilter === 'mylist' &&
-        state.myListSubTab === 'swipe' &&
-        el.playerOverlay.classList.contains('hidden') &&
-        el.detailsModal.classList.contains('hidden') &&
-        el.playlistModal.classList.contains('hidden')
-      ) {
-        if (e.key === 'ArrowLeft') {
-          e.preventDefault();
-          triggerSwipeDecision('skip');
-        } else if (e.key === 'ArrowRight') {
-          e.preventDefault();
-          triggerSwipeDecision('like');
-        } else if (e.key === 'ArrowDown') {
-          e.preventDefault();
-          toggleSwipeTechSheet();
-        } else if ((e.key === 'Backspace' || (e.key.toLowerCase() === 'z' && (e.ctrlKey || e.metaKey)))) {
-          e.preventDefault();
-          undoLastSwipeDecision();
-        }
-        return;
-      }
 
       // Smart TV Spatial D-Pad Navigation
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
@@ -1757,9 +1733,6 @@
     hub.innerHTML = `
       <div class="mylist-hub-header">
         <div class="mylist-subtabs" role="tablist">
-          <button type="button" class="mylist-subtab ${state.myListSubTab === 'swipe' ? 'active' : ''}" data-subtab="swipe">
-            <span>TinderFlix</span>
-          </button>
           <button type="button" class="mylist-subtab ${state.myListSubTab === 'watchlist' ? 'active' : ''}" data-subtab="watchlist">
             <span>Minha Lista (${state.myList.length})</span>
           </button>
@@ -1780,12 +1753,10 @@
     });
 
     const body = hub.querySelector('#myListHubBody');
-    if (state.myListSubTab === 'watchlist') {
-      renderWatchlistSubView(body);
-    } else if (state.myListSubTab === 'playlists') {
+    if (state.myListSubTab === 'playlists') {
       renderPlaylistsSection(body);
     } else {
-      renderSwipeDeckSubView(body);
+      renderWatchlistSubView(body);
     }
   }
 
@@ -1944,11 +1915,7 @@
     container.appendChild(wrap);
     const grid = wrap.querySelector('#myListGrid');
     if (!state.myList.length) {
-      grid.innerHTML = `<div class="swipe-empty-card" style="grid-column:1/-1;"><p style="color:var(--text-muted);margin:0 0 14px;">Sua lista ainda está vazia. Deslize para a direita no <strong>TinderFlix</strong> para salvar seus favoritos!</p><button type="button" class="btn btn-sm btn-primary" id="goToSwipeFromWatchlistBtn">Ir para o TinderFlix</button></div>`;
-      grid.querySelector('#goToSwipeFromWatchlistBtn')?.addEventListener('click', () => {
-        state.myListSubTab = 'swipe';
-        renderCatalogRows();
-      });
+      grid.innerHTML = `<div class="swipe-empty-card" style="grid-column:1/-1;"><p style="color:var(--text-muted);margin:0;">Sua lista de favoritos está vazia. Adicione filmes e séries clicando no ícone de salvar em qualquer título!</p></div>`;
     } else {
       state.myList.forEach((item, idx) => {
         grid.appendChild(createMediaCard(item, { allowRemoveMyList: true, isMyListDrag: true, myListIndex: idx }));
