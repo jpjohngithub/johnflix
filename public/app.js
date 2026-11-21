@@ -3421,7 +3421,7 @@
       if (currentLoadTargetId !== targetId) return;
       el.streamsLoading.classList.add('hidden');
 
-      state.currentStreams = data.streams || [];
+      state.currentStreams = (data.streams || []).filter((s) => isStreamRelevant(s, item));
       el.streamCounter.textContent = state.currentStreams.length;
 
       if (state.activeAddonFilter !== 'all') {
@@ -3456,7 +3456,7 @@
           .then((fullData) => {
             if (currentLoadTargetId !== targetId || !fullData) return;
             const merged = mergeStreamsPayload({ servers: data.servers || [], streams: state.currentStreams }, fullData);
-            state.currentStreams = merged.streams;
+            state.currentStreams = (merged.streams || []).filter((s) => isStreamRelevant(s, item));
             el.streamCounter.textContent = state.currentStreams.length;
 
             if (state.activeAddonFilter !== 'all') {
@@ -4353,13 +4353,52 @@
       return s ? (s.directUrl || s.proxyUrl || s.sourceUrl || s.infoHash || s.serverLabel || '') : '';
     }
 
+  function cleanTitleTokens(str) {
+    return String(str || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .split(/\s+/)
+      .filter((w) => w.length >= 3 && !['the','and','filme','movie','series','temporada','season','dublado','legendado','dual','audio','complete','bluray','webrip','h264','1080p','720p','2160p','x265','4k','full','uhd','original','ingles','english','web','dl','hevc','aac','ddp','repack','remux'].includes(w));
+  }
+
+  function isStreamRelevant(stream, item) {
+    if (!stream || !item) return true;
+    if (item.type === 'tv') return true;
+
+    const rawText = `${stream.rawTitle || ''} ${stream.serverLabel || ''} ${stream.directUrl || ''}`.toLowerCase();
+    if (/bigtits|porn|xxx|erotic|adult\b|fake[_-]?stream|sample\.mp4/i.test(rawText)) return false;
+
+    // Reject FrameXTV generic provider streams that collide with other titles
+    if (stream.addonId === 'framextv' && /\b(?:giant|bowler|citadel|titan)\b/i.test(rawText)) {
+      const itemName = (item.name || '').toLowerCase();
+      if (!itemName.includes('giant') && !itemName.includes('bowler') && !itemName.includes('citadel') && !itemName.includes('titan')) {
+        return false;
+      }
+    }
+
+    const allNames = [item.name, item.originalName, state.currentMeta?.name].filter(Boolean);
+    const itemTokens = Array.from(new Set(allNames.flatMap(cleanTitleTokens)));
+    if (!itemTokens.length) return true;
+
+    const rawTitle = (stream.rawTitle || '').replace(/[\r\n]+/g, ' ');
+    const streamTokens = cleanTitleTokens(rawTitle);
+    if (!streamTokens.length) return true;
+
+    return itemTokens.some((it) =>
+      streamTokens.some((st) => st.includes(it) || it.includes(st) || (st.length >= 5 && it.length >= 5 && st.slice(0, 5) === it.slice(0, 5)))
+    );
+  }
+
   function isStreamPlayableNow(s) {
-    return Boolean(s && (['direct', 'hls'].includes(s.playType) || s.playType === 'torrent'));
+    return Boolean(s && (['direct', 'hls'].includes(s.playType) || s.playType === 'torrent') && isStreamRelevant(s, state.currentItem));
   }
 
   function pickBestPlayableStream(streams) {
     if (!Array.isArray(streams) || !streams.length) return null;
-    return streams.find(isStreamPlayableNow) || streams[0];
+    const relevant = streams.filter((s) => isStreamRelevant(s, state.currentItem));
+    return relevant.find(isStreamPlayableNow) || relevant[0] || null;
   }
 
   function tryNextWorkingStream(failedStream) {
@@ -4368,7 +4407,7 @@
     if (key) failedStreamKeys.add(key);
 
     const candidates = (state.currentStreams || []).filter((s) =>
-      ['direct', 'hls', 'torrent'].includes(s.playType)
+      ['direct', 'hls', 'torrent'].includes(s.playType) && isStreamRelevant(s, state.currentItem)
     );
     // Prefer same audio language first, then any working stream
     const nextSameLang = candidates.find((s) => !failedStreamKeys.has(getStreamKey(s)) && Boolean(s.isDub) === Boolean(failedStream?.isDub));
@@ -4990,7 +5029,7 @@
 
     try {
       const data = await prefetchStreams('series', nextEp.id);
-      state.currentStreams = data.streams || [];
+      state.currentStreams = (data.streams || []).filter((s) => isStreamRelevant(s, item));
       if (state.currentStreams.length > 0) {
         launchCloudPlayer(pickBestPlayableStream(state.currentStreams));
       } else {
