@@ -711,15 +711,18 @@
     });
     el.cloudVideo.addEventListener('timeupdate', () => {
       if (el.cloudVideo.currentTime > 0.2) {
-        if (state.autoPlayTesting) {
-          state.autoPlayTesting = false;
-          clearTimeout(autoPlayTestingTimer);
-        }
-        clearTimeout(playerStallTimer);
-        clearTimeout(blackScreenWatchdogTimer);
-        clearTimeout(playerBufferStallTimer);
-        if (el.playerLoader && !el.playerLoader.classList.contains('hidden')) {
-          el.playerLoader.classList.add('hidden');
+        const hasPicture = (el.cloudVideo.videoWidth > 0 && el.cloudVideo.videoHeight > 0) || state.currentItem?.type === 'tv';
+        if (hasPicture) {
+          if (state.autoPlayTesting) {
+            state.autoPlayTesting = false;
+            clearTimeout(autoPlayTestingTimer);
+          }
+          clearTimeout(playerStallTimer);
+          clearTimeout(blackScreenWatchdogTimer);
+          clearTimeout(playerBufferStallTimer);
+          if (el.playerLoader && !el.playerLoader.classList.contains('hidden')) {
+            el.playerLoader.classList.add('hidden');
+          }
         }
       }
       if (state.currentItem && el.cloudVideo.currentTime > 5) {
@@ -4547,20 +4550,44 @@
     return Boolean(stream.proxyUrl || stream.directUrl || stream.infoHash || stream.sourceUrl);
   }
 
+  const clientSupportsHevc = (() => {
+    try {
+      const v = document.createElement('video');
+      const canHvc = v.canPlayType('video/mp4; codecs="hvc1.1.6.L93.B0"') ||
+                     v.canPlayType('video/mp4; codecs="hev1.1.6.L93.B0"') ||
+                     v.canPlayType('video/mp4; codecs="hvc1"') ||
+                     v.canPlayType('video/mp4; codecs="hev1"');
+      return canHvc === 'probably';
+    } catch (_) {
+      return false;
+    }
+  })();
+
   function isStreamPlayableNow(s) {
-    return Boolean(s && (['direct', 'hls'].includes(s.playType) || s.playType === 'torrent') && isStreamRelevant(s, state.currentItem));
+    if (!s || !isStreamRelevant(s, state.currentItem)) return false;
+    // On devices without native HEVC hardware decoder, direct HEVC/x265 streams will play as audio-only black screen
+    if (!clientSupportsHevc && s.isHevcOrMkv && s.playType === 'direct') {
+      return false;
+    }
+    return ['direct', 'hls', 'torrent'].includes(s.playType);
   }
 
   function pickBestPlayableStream(streams) {
     if (!Array.isArray(streams) || !streams.length) return null;
     const relevant = streams.filter((s) => isStreamRelevant(s, state.currentItem));
-    return relevant.find(isStreamPlayableNow) || relevant[0] || null;
+    if (!relevant.length) return null;
+    const compatible = relevant.filter(isStreamPlayableNow);
+    if (compatible.length) {
+      return compatible.find((s) => s.isDub) || compatible[0];
+    }
+    return relevant[0];
   }
 
-  function tryNextWorkingStream(failedStream) {
-    if (failedStream && state.currentStream !== failedStream) return false;
-    // Disarm and prevent switching if video is already actively playing and progressing
-    if (el.cloudVideo && !el.cloudVideo.paused && el.cloudVideo.currentTime > 0.2) {
+  function tryNextWorkingStream(failedStream, forceFailover = false) {
+    if (failedStream && state.currentStream !== failedStream && !forceFailover) return false;
+    // Only block failover if video has actual visible decoded picture
+    const hasVisiblePicture = el.cloudVideo && ((el.cloudVideo.videoWidth > 0 && el.cloudVideo.videoHeight > 0) || state.currentItem?.type === 'tv');
+    if (!forceFailover && el.cloudVideo && !el.cloudVideo.paused && el.cloudVideo.currentTime > 0.2 && hasVisiblePicture) {
       state.autoPlayTesting = false;
       clearTimeout(autoPlayTestingTimer);
       clearTimeout(playerStallTimer);
@@ -4577,10 +4604,12 @@
     const candidates = (state.currentStreams || []).filter((s) =>
       ['direct', 'hls', 'torrent'].includes(s.playType) && isStreamRelevant(s, state.currentItem)
     );
-    // Prefer same audio language first, then any working stream
+    // Prefer compatible streams (avoiding black-screen HEVC on non-HEVC devices) with same audio language first
+    const nextCompatibleSameLang = candidates.find((s) => !failedStreamKeys.has(getStreamKey(s)) && isStreamPlayableNow(s) && Boolean(s.isDub) === Boolean(failedStream?.isDub));
+    const nextCompatible = candidates.find((s) => !failedStreamKeys.has(getStreamKey(s)) && isStreamPlayableNow(s));
     const nextSameLang = candidates.find((s) => !failedStreamKeys.has(getStreamKey(s)) && Boolean(s.isDub) === Boolean(failedStream?.isDub));
     const nextAny = candidates.find((s) => !failedStreamKeys.has(getStreamKey(s)));
-    const next = nextSameLang || nextAny;
+    const next = nextCompatibleSameLang || nextCompatible || nextSameLang || nextAny;
 
     if (next) {
       el.playerLoaderTitle.textContent = 'Otimizando rota de reprodução...';
@@ -4864,21 +4893,21 @@
     };
 
     let proxyFallbackTried = false;
-    let retrySourceOrNext = () => tryNextWorkingStream(stream);
+    let retrySourceOrNext = (forceFailover = false) => tryNextWorkingStream(stream, forceFailover);
 
     // Detect HEVC / MKV audio-only decode failure on Chrome/Firefox/Mobile (videoWidth === 0 when audio plays)
     const verifyVideoTrack = () => {
       hideLoader();
       applyResume();
       setTimeout(() => {
-        if (state.currentStream === stream && !el.playerOverlay.classList.contains('hidden') && !el.cloudVideo.paused && el.cloudVideo.currentTime > 2.5) {
-          if (el.cloudVideo.videoWidth === 0 && el.cloudVideo.videoHeight === 0 && state.currentItem?.type !== 'tv') {
-            if (stream.isHevcOrMkv && !window.MediaSource?.isTypeSupported?.('video/mp4; codecs="hvc1.1.6.L93.B0"')) {
-              retrySourceOrNext();
-            }
+        if (state.currentStream === stream && !el.playerOverlay.classList.contains('hidden') && !el.cloudVideo.paused && el.cloudVideo.currentTime > 1.2) {
+          const isBlackScreen = el.cloudVideo.videoWidth === 0 && el.cloudVideo.videoHeight === 0 && state.currentItem?.type !== 'tv';
+          if (isBlackScreen) {
+            showToast('Formato de vídeo incompatível com seu dispositivo (tela preta). Alternando para fonte compatível (H.264)...');
+            retrySourceOrNext(true);
           }
         }
-      }, 3500);
+      }, 2400);
     };
 
     el.cloudVideo.onloadedmetadata = () => { applyResume(); hideLoader(); };
@@ -4980,16 +5009,16 @@
     const preferProxy = Boolean(stream.requiresProxy && stream.proxyUrl);
     const primaryDirectSrc = preferProxy ? stream.proxyUrl : (stream.directUrl || stream.proxyUrl);
     const startedViaProxy = Boolean(preferProxy || !stream.directUrl);
-    retrySourceOrNext = () => {
-      if (stream.playType === 'direct' && !startedViaProxy && !proxyFallbackTried && stream.directUrl && stream.proxyUrl && stream.directUrl !== stream.proxyUrl) {
+    retrySourceOrNext = (forceFailover = false) => {
+      if (!forceFailover && stream.playType === 'direct' && !startedViaProxy && !proxyFallbackTried && stream.directUrl && stream.proxyUrl && stream.directUrl !== stream.proxyUrl) {
         proxyFallbackTried = true;
-        el.cloudVideo.onerror = () => tryNextWorkingStream(stream);
+        el.cloudVideo.onerror = () => tryNextWorkingStream(stream, false);
         el.cloudVideo.src = stream.proxyUrl;
         el.cloudVideo.load();
         startVideoPlayback();
         return;
       }
-      tryNextWorkingStream(stream);
+      tryNextWorkingStream(stream, forceFailover);
     };
 
     if (isHls) {
