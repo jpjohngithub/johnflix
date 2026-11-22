@@ -281,8 +281,20 @@
 
         <!-- Modal Recommendations Section -->
         <div class="modal-recs-section hidden" id="modalRecsSection">
-          <h3 class="modal-recs-title">Títulos Semelhantes</h3>
-          <div class="row-slider" id="modalRecsSlider"></div>
+          <div class="modal-recs-header">
+            <h3 class="modal-recs-title">Recomendações</h3>
+            <div class="row-nav">
+              <button type="button" class="row-nav-btn" id="modalRecsPrevBtn" title="Anterior" aria-label="Anterior">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <button type="button" class="row-nav-btn" id="modalRecsNextBtn" title="Próximo" aria-label="Próximo">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="row-slider-wrap">
+            <div class="row-slider" id="modalRecsSlider"></div>
+          </div>
         </div>
       </div>
     </div>

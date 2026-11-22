@@ -111,6 +111,8 @@
     modalPlaylistBtn: document.getElementById('modalPlaylistBtn'),
     modalRecsSection: document.getElementById('modalRecsSection'),
     modalRecsSlider: document.getElementById('modalRecsSlider'),
+    modalRecsPrevBtn: document.getElementById('modalRecsPrevBtn'),
+    modalRecsNextBtn: document.getElementById('modalRecsNextBtn'),
     seriesSelector: document.getElementById('seriesSelector'),
     seasonSelect: document.getElementById('seasonSelect'),
     episodesGrid: document.getElementById('episodesGrid'),
@@ -510,6 +512,14 @@
     });
     if (el.modalPlayBtn) {
       el.modalPlayBtn.addEventListener('click', () => {
+        if (!state.pendingResume && state.currentItem) {
+          const isSeries = state.currentItem.type === 'series';
+          const targetId = isSeries ? `${state.currentItem.id}:${state.currentSeason || 1}:${state.currentEpisode || 1}` : state.currentItem.id;
+          const cw = (state.continueWatching || []).find((i) => isSeries ? i.targetStreamId === targetId : (i.id === state.currentItem.id || i.targetStreamId === targetId));
+          if (cw && cw.savedTime > 5) {
+            state.pendingResume = Number(cw.savedTime);
+          }
+        }
         const list = state.activeAddonFilter === 'all'
           ? state.currentStreams
           : state.currentStreams.filter((s) => s.addonId === state.activeAddonFilter);
@@ -528,6 +538,17 @@
           el.playerTitle.textContent = state.currentItem?.name || 'Reproduzindo';
           showPlayerHud();
         }
+      });
+    }
+
+    if (el.modalRecsPrevBtn) {
+      el.modalRecsPrevBtn.addEventListener('click', () => {
+        el.modalRecsSlider?.scrollBy({ left: -420, behavior: 'smooth' });
+      });
+    }
+    if (el.modalRecsNextBtn) {
+      el.modalRecsNextBtn.addEventListener('click', () => {
+        el.modalRecsSlider?.scrollBy({ left: 420, behavior: 'smooth' });
       });
     }
     el.modalPlaylistBtn.addEventListener('click', () => {
@@ -3323,6 +3344,18 @@
     stopModalTrailer();
 
     state.currentItem = item;
+    if (customSeason) state.currentSeason = Number(customSeason);
+    else if (item.season) state.currentSeason = Number(item.season);
+    else if (!state.currentSeason) state.currentSeason = 1;
+
+    if (customEp) state.currentEpisode = Number(customEp);
+    else if (item.episode) state.currentEpisode = Number(item.episode);
+    else if (!state.currentEpisode) state.currentEpisode = 1;
+
+    if (item.savedTime && !state.pendingResume) {
+      state.pendingResume = Number(item.savedTime);
+    }
+
     state.currentMeta = null;
     state.currentStreams = [];
     state.activeAddonFilter = 'all';
@@ -3520,6 +3553,8 @@
           state.currentEpisode = epNum;
           customStreamId = null;
           const targetEpId = (streamId && streamId.includes(':')) ? streamId : `${state.currentItem.id}:${seasonNum}:${epNum}`;
+          const cwEntry = (state.continueWatching || []).find((i) => i.targetStreamId === targetEpId || (i.id === state.currentItem.id && Number(i.season) === Number(seasonNum) && Number(i.episode) === Number(epNum)));
+          state.pendingResume = cwEntry && cwEntry.savedTime > 5 ? Number(cwEntry.savedTime) : 0;
           loadStreamsForTarget('series', targetEpId, true);
         });
         el.episodesGrid.appendChild(card);
@@ -5094,6 +5129,7 @@
 
     const startVideoPlayback = () => {
       el.cloudVideo.muted = false;
+      applyResume();
       const playPromise = el.cloudVideo.play();
       if (playPromise !== undefined) {
         playPromise.then(() => {
@@ -5139,6 +5175,7 @@
         let hlsMediaRecoveries = 0;
         const isMega = document.documentElement.classList.contains('mega-performance');
         hlsInstance = new window.Hls({
+          startPosition: resumeAt > 5 ? resumeAt : -1,
           enableWorker: true,
           lowLatencyMode: isMega,
           backBufferLength: isMega ? 5 : 15,
@@ -5158,7 +5195,12 @@
         });
         hlsInstance.loadSource(hlsUrl);
         hlsInstance.attachMedia(el.cloudVideo);
-        hlsInstance.on(window.Hls.Events.MANIFEST_PARSED, startVideoPlayback);
+        hlsInstance.on(window.Hls.Events.MANIFEST_PARSED, () => {
+          if (resumeAt > 5) {
+            try { el.cloudVideo.currentTime = resumeAt; } catch (_) {}
+          }
+          startVideoPlayback();
+        });
         hlsInstance.on(window.Hls.Events.ERROR, (_event, data) => {
           if (!data?.fatal) return;
           if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR && hlsMediaRecoveries < 1) {
