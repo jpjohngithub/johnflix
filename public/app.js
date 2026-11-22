@@ -2793,6 +2793,7 @@
     const innerCardHtml = `
       <div class="card-poster-wrap">
         <img class="card-poster" src="${item.poster || fallbackPoster}" alt="${escapeHtml(item.name)}" loading="lazy" decoding="async" fetchpriority="low" onerror="${posterErr}" />
+        <button class="card-info-btn" title="Ver Informações" aria-label="Ver Informações"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button>
         <div class="card-quick-actions">
           <button class="card-action-btn mylist-btn ${inList ? 'active' : ''}" title="${inList ? 'Remover da Minha Lista' : 'Salvar na Minha Lista'}">${inList ? BOOKF_ICON : BOOK_ICON}</button>
           <button class="card-action-btn pl-btn" title="Adicionar à Playlist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg></button>
@@ -2837,6 +2838,14 @@
         }
         state.pendingResume = opts.isContinueWatching ? (item.savedTime || 0) : 0;
         openItemDetails(item, true, item.targetStreamId, item.season, item.episode);
+      });
+    }
+
+    const infoBtn = card.querySelector('.card-info-btn');
+    if (infoBtn) {
+      infoBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openItemDetails(item, false);
       });
     }
 
