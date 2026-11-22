@@ -682,7 +682,7 @@ exports.handler = async (event) => {
       const encodedId = encodeURIComponent(decodedId);
       const isFast = q.fast === '1';
       const activeAddons = ADDONS;
-      const timeoutLimit = isFast ? 2800 : 4200;
+      const timeoutLimit = isFast ? 1800 : 2500;
 
       // Fetch streams across all configured addons
       const rawAddonTasks = activeAddons.map(async (addon) => {

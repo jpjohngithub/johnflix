@@ -35,6 +35,7 @@
     myList: JSON.parse(localStorage.getItem('johnflix_mylist') || '[]'),
     playlists: JSON.parse(localStorage.getItem('johnflix_playlists') || '[]'),
     continueWatching: JSON.parse(localStorage.getItem('johnflix_cw') || '[]'),
+    isResuming: false,
     prevFilter: 'all',
     myListSubTab: 'watchlist',
     swipeGenres: [],
@@ -233,18 +234,16 @@
       return {
         siteName: (saved && typeof saved.siteName === 'string' && saved.siteName.trim()) ? saved.siteName.trim().slice(0, 28) : 'JohnFlix',
         accentColor: (saved && /^#[0-9a-fA-F]{6}$/.test(saved.accentColor)) ? saved.accentColor : '#a855f7',
-        megaPerformance: Boolean(saved?.megaPerformance),
         navStyle: (saved && ['text', 'icons', 'both'].includes(saved.navStyle)) ? saved.navStyle : 'both'
       };
     } catch (e) {
-      return { siteName: 'JohnFlix', accentColor: '#a855f7', megaPerformance: false, navStyle: 'both' };
+      return { siteName: 'JohnFlix', accentColor: '#a855f7', navStyle: 'both' };
     }
   }
 
   function applyCustomConfig(cfg) {
     const name = (cfg && cfg.siteName ? cfg.siteName.trim() : 'JohnFlix') || 'JohnFlix';
     const color = (cfg && /^#[0-9a-fA-F]{6}$/.test(cfg.accentColor)) ? cfg.accentColor : '#a855f7';
-    const megaPerf = Boolean(cfg?.megaPerformance);
     const navStyle = cfg?.navStyle || 'both';
 
     const { r, g, b } = hexToRgb(color);
@@ -260,7 +259,7 @@
     root.style.setProperty('--accent-rgb', `${r}, ${g}, ${b}`);
     root.style.setProperty('--border-subtle', `rgba(${r}, ${g}, ${b}, 0.22)`);
 
-    root.classList.toggle('mega-performance', megaPerf);
+    root.classList.remove('mega-performance');
     root.dataset.navStyle = navStyle;
 
     // Split name into main + highlighted suffix (e.g. "John" + "Flix" or last 4 chars / second word)
@@ -812,11 +811,26 @@
           }
         }
       }
-      if (state.currentItem && el.cloudVideo.currentTime > 5) {
+      if (state.currentItem && el.cloudVideo.currentTime > 5 && !state.isResuming) {
         if (state.pendingResume > 10 && el.cloudVideo.currentTime < 8) return;
         saveContinueWatching(state.currentItem, el.cloudVideo.currentTime, el.cloudVideo.duration);
       }
       checkNextEpisodePrompt();
+    });
+    el.cloudVideo.addEventListener('pause', () => {
+      if (state.currentItem && el.cloudVideo && el.cloudVideo.currentTime > 5 && !state.isResuming) {
+        saveContinueWatching(state.currentItem, el.cloudVideo.currentTime, el.cloudVideo.duration, true);
+      }
+    });
+    window.addEventListener('beforeunload', () => {
+      if (state.currentItem && el.cloudVideo && el.cloudVideo.currentTime > 5 && !state.isResuming) {
+        saveContinueWatching(state.currentItem, el.cloudVideo.currentTime, el.cloudVideo.duration, true);
+      }
+    });
+    window.addEventListener('pagehide', () => {
+      if (state.currentItem && el.cloudVideo && el.cloudVideo.currentTime > 5 && !state.isResuming) {
+        saveContinueWatching(state.currentItem, el.cloudVideo.currentTime, el.cloudVideo.duration, true);
+      }
     });
     el.cloudVideo.addEventListener('ended', () => {
       if (state.activeLoopPlaylistId) {
@@ -2554,24 +2568,6 @@
               </button>
             </div>
 
-            <div class="customize-divider"></div>
-
-            <div class="mega-perf-card">
-              <div class="mega-perf-header">
-                <div>
-                  <span class="mega-perf-badge">MODO ULTRA RÁPIDO</span>
-                  <h4 class="mega-perf-title">MEGA DESEMPENHO</h4>
-                </div>
-                <button type="button" class="mega-perf-toggle-btn ${cfg.megaPerformance ? 'active' : ''}" id="megaPerfToggleBtn">
-                  <span class="mega-perf-dot"></span>
-                  <span class="mega-perf-label">${cfg.megaPerformance ? 'ATIVADO' : 'DESATIVADO'}</span>
-                </button>
-              </div>
-              <p class="mega-perf-desc">
-                Desativa blurs pesados, filtros de vidro e animações complexas. Reduz o consumo de memória RAM, bateria e processador, tornando a navegação instantânea e leve em qualquer celular ou Smart TV.
-              </p>
-            </div>
-
             <div class="customize-actions">
               <button type="button" class="btn btn-primary" id="saveCustomBtn">Salvar Configurações</button>
             </div>
@@ -2605,14 +2601,12 @@
     const colorPicker = section.querySelector('#customHexPicker');
     const hexText = section.querySelector('#customHexText');
     let currentColor = cfg.accentColor;
-    let isMegaPerf = Boolean(cfg.megaPerformance);
-    let currentNavStyle = cfg.navStyle || 'text';
+    let currentNavStyle = cfg.navStyle || 'both';
 
     const liveUpdate = () => {
       const next = {
         siteName: nameInput.value.trim() || 'JohnFlix',
         accentColor: /^#[0-9a-fA-F]{6}$/.test(currentColor) ? currentColor : '#a855f7',
-        megaPerformance: isMegaPerf,
         navStyle: currentNavStyle
       };
       applyCustomConfig(next);
@@ -2629,17 +2623,6 @@
           currentNavStyle = btn.dataset.val;
           liveUpdate();
         });
-      });
-    }
-
-    const megaToggleBtn = section.querySelector('#megaPerfToggleBtn');
-    if (megaToggleBtn) {
-      megaToggleBtn.addEventListener('click', () => {
-        isMegaPerf = !isMegaPerf;
-        megaToggleBtn.classList.toggle('active', isMegaPerf);
-        const label = megaToggleBtn.querySelector('.mega-perf-label');
-        if (label) label.textContent = isMegaPerf ? 'ATIVADO' : 'DESATIVADO';
-        liveUpdate();
       });
     }
 
@@ -2674,7 +2657,6 @@
       const saved = {
         siteName: nameInput.value.trim() || 'JohnFlix',
         accentColor: /^#[0-9a-fA-F]{6}$/.test(currentColor) ? currentColor : '#a855f7',
-        megaPerformance: isMegaPerf,
         navStyle: currentNavStyle
       };
       localStorage.setItem('johnflix_custom', JSON.stringify(saved));
@@ -2683,7 +2665,7 @@
     });
 
     section.querySelector('#resetCustomBtn').addEventListener('click', () => {
-      const def = { siteName: 'JohnFlix', accentColor: '#a855f7', megaPerformance: false, navStyle: 'both' };
+      const def = { siteName: 'JohnFlix', accentColor: '#a855f7', navStyle: 'both' };
       localStorage.setItem('johnflix_custom', JSON.stringify(def));
       applyCustomConfig(def);
       renderCatalogRows();
@@ -5121,6 +5103,10 @@
       ? state.pendingResume
       : (cwEntry && cwEntry.savedTime > 5 ? cwEntry.savedTime : 0);
 
+    if (resumeAt > 5) {
+      state.isResuming = true;
+    }
+
     let resumeApplied = false;
     let resumeRetries = 0;
     const applyResume = () => {
@@ -5129,21 +5115,25 @@
       if (Number.isFinite(dur) && dur > 0 && resumeAt >= dur - 10) {
         resumeApplied = true;
         state.pendingResume = 0;
+        state.isResuming = false;
         return;
       }
       try {
-        el.cloudVideo.currentTime = resumeAt;
+        if (el.cloudVideo.readyState >= 1 || el.cloudVideo.currentTime > 0) {
+          el.cloudVideo.currentTime = resumeAt;
+        }
         if (Math.abs(el.cloudVideo.currentTime - resumeAt) < 2) {
           resumeApplied = true;
           state.pendingResume = 0;
-        } else if (resumeRetries < 8) {
+          state.isResuming = false;
+        } else if (resumeRetries < 15) {
           resumeRetries++;
-          setTimeout(applyResume, 250);
+          setTimeout(applyResume, 180);
         }
       } catch (e) {
-        if (resumeRetries < 8) {
+        if (resumeRetries < 15) {
           resumeRetries++;
-          setTimeout(applyResume, 250);
+          setTimeout(applyResume, 180);
         }
       }
     };
@@ -5752,23 +5742,40 @@
   let lastCwSaveTime = 0;
   function saveContinueWatching(item, currentTime, duration, forceSync = false) {
     if (!item || !item.id) return;
+    if (state.isResuming && !forceSync) return;
     const now = Date.now();
     const isNearEnd = duration > 60 && currentTime > duration - 40;
     if (isNearEnd) {
       removeFromContinueWatching(item.id);
       return;
     }
-    if (!forceSync && now - lastCwSaveTime < 6000) return;
+
+    const targetStreamId = item.type === 'series' ? `${item.id}:${state.currentSeason}:${state.currentEpisode}` : item.id;
+    const existing = (state.continueWatching || []).find((i) =>
+      item.type === 'series'
+        ? (i.targetStreamId === targetStreamId || (i.id === item.id && i.season === state.currentSeason && i.episode === state.currentEpisode))
+        : (i.id === item.id || i.targetStreamId === targetStreamId)
+    );
+
+    if (!forceSync && existing && existing.savedTime > 20 && currentTime < 15) {
+      return;
+    }
+
+    if (!forceSync && now - lastCwSaveTime < 4000) return;
     lastCwSaveTime = now;
 
-    const filtered = state.continueWatching.filter((i) => i.id !== item.id);
+    const filtered = state.continueWatching.filter((i) =>
+      item.type === 'series'
+        ? (i.targetStreamId !== targetStreamId && (i.id !== item.id || i.season !== state.currentSeason || i.episode !== state.currentEpisode))
+        : (i.id !== item.id && i.targetStreamId !== targetStreamId)
+    );
     const epLabel = item.type === 'series' ? `T${state.currentSeason}:E${state.currentEpisode}` : null;
     filtered.unshift({
       ...item,
       epLabel,
       season: state.currentSeason,
       episode: state.currentEpisode,
-      targetStreamId: item.type === 'series' ? `${item.id}:${state.currentSeason}:${state.currentEpisode}` : item.id,
+      targetStreamId,
       savedTime: Math.floor(currentTime),
       duration: Math.floor(duration || 0),
       updatedAt: now

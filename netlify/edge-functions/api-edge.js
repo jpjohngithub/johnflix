@@ -1522,7 +1522,7 @@ export default async (request) => {
       })();
 
       const activeAddons = MOVIE_ADDONS;
-      const timeoutLimit = isFast ? 2800 : 4200;
+      const timeoutLimit = isFast ? 1800 : 2500;
 
       const addonResultsState = activeAddons.map((addon) => ({
         addon,
@@ -1637,10 +1637,13 @@ export default async (request) => {
           .filter(Boolean);
         await Promise.race([
           Promise.all(coreTasks),
-          new Promise((r) => setTimeout(r, 750))
+          new Promise((r) => setTimeout(r, 650))
         ]);
       } else {
-        await Promise.all(addonTasks);
+        await Promise.race([
+          Promise.all(addonTasks),
+          new Promise((r) => setTimeout(r, 2200))
+        ]);
       }
 
       const availablePool = addonResultsState
@@ -1825,7 +1828,7 @@ export default async (request) => {
       });
       if (allStreams.length > 0) {
         const hasFailedAddon = addonResults.some((server) => server.status === 'offline');
-        const cacheTtl = isFast ? 120 : (hasFailedAddon ? 30 : 300);
+        const cacheTtl = isFast ? 180 : (hasFailedAddon ? 120 : 900);
         setEdgeCache(streamCacheKey, bodyStr, cacheTtl);
       }
 
