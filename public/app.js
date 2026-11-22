@@ -69,6 +69,7 @@
     searchGrid: document.getElementById('searchGrid'),
     closeSearchBtn: document.getElementById('closeSearchBtn'),
     heroBanner: document.getElementById('heroBanner'),
+    heroContentBox: document.getElementById('heroContentBox'),
     heroBackdrop: document.getElementById('heroBackdrop'),
     heroTrailerWrap: document.getElementById('heroTrailerWrap'),
     heroRankBadge: document.getElementById('heroRankBadge'),
@@ -326,10 +327,71 @@
     }
   }
 
+  let mouseParallaxRaf = null;
+  let mouseTargetX = 0, mouseTargetY = 0;
+  let mouseCurrX = 0, mouseCurrY = 0;
+
+  function initHeroParallax() {
+    if (!el.heroBanner) return;
+    if (!window.matchMedia('(pointer: fine)').matches) return;
+    if (document.documentElement.classList.contains('mega-performance')) return;
+
+    el.heroBanner.addEventListener('mousemove', (e) => {
+      const rect = el.heroBanner.getBoundingClientRect();
+      mouseTargetX = (e.clientX - rect.left) / rect.width - 0.5;
+      mouseTargetY = (e.clientY - rect.top) / rect.height - 0.5;
+      if (!mouseParallaxRaf) {
+        mouseParallaxRaf = requestAnimationFrame(updateMouseParallax);
+      }
+    }, { passive: true });
+
+    el.heroBanner.addEventListener('mouseleave', () => {
+      mouseTargetX = 0;
+      mouseTargetY = 0;
+      if (!mouseParallaxRaf) {
+        mouseParallaxRaf = requestAnimationFrame(updateMouseParallax);
+      }
+    }, { passive: true });
+  }
+
+  function updateMouseParallax() {
+    mouseCurrX += (mouseTargetX - mouseCurrX) * 0.08;
+    mouseCurrY += (mouseTargetY - mouseCurrY) * 0.08;
+
+    const bgX = -mouseCurrX * 8;
+    const bgY = -mouseCurrY * 8;
+    const logoX = mouseCurrX * 2.2;
+    const logoY = mouseCurrY * 2.2;
+
+    if (el.heroBackdrop) {
+      el.heroBackdrop.style.setProperty('--parallax-x', `${bgX.toFixed(2)}px`);
+      el.heroBackdrop.style.setProperty('--parallax-y', `${bgY.toFixed(2)}px`);
+    }
+    if (el.heroLogo && !el.heroLogo.classList.contains('hidden')) {
+      el.heroLogo.style.transform = `translate(${logoX.toFixed(2)}px, ${logoY.toFixed(2)}px)`;
+    }
+
+    if (Math.abs(mouseTargetX - mouseCurrX) > 0.001 || Math.abs(mouseTargetY - mouseCurrY) > 0.001) {
+      mouseParallaxRaf = requestAnimationFrame(updateMouseParallax);
+    } else {
+      mouseParallaxRaf = null;
+    }
+  }
+
   function bindEvents() {
     window.addEventListener('scroll', () => {
-      el.navbar.classList.toggle('scrolled', window.scrollY > 30);
-    });
+      const sy = window.scrollY;
+      el.navbar.classList.toggle('scrolled', sy > 18);
+      if (sy < 850 && el.heroBackdrop && !document.documentElement.classList.contains('mega-performance')) {
+        const ty = (sy * 0.32).toFixed(1);
+        const blur = Math.min(6, (sy / 140)).toFixed(1);
+        const op = Math.max(0.18, 1 - (sy / 620)).toFixed(2);
+        el.heroBackdrop.style.setProperty('--scroll-ty', `${ty}px`);
+        el.heroBackdrop.style.setProperty('--scroll-blur', `${blur}px`);
+        el.heroBackdrop.style.setProperty('--scroll-op', op);
+      }
+    }, { passive: true });
+    initHeroParallax();
     window.addEventListener('storage', () => {
       try {
         state.myList = JSON.parse(localStorage.getItem('johnflix_mylist') || '[]');
@@ -1253,6 +1315,52 @@
     }
   }
 
+  const heroColorCache = new Map();
+  function setHeroThemeColor(rgbStr) {
+    if (!rgbStr) return;
+    document.documentElement.style.setProperty('--hero-accent-rgb', rgbStr);
+    document.documentElement.style.setProperty('--hero-accent-color', `rgb(${rgbStr})`);
+    document.documentElement.style.setProperty('--hero-accent-glow', `rgba(${rgbStr}, 0.45)`);
+  }
+
+  function applyHeroAmbientColor(imgUrl) {
+    if (!imgUrl) return;
+    if (heroColorCache.has(imgUrl)) {
+      setHeroThemeColor(heroColorCache.get(imgUrl));
+      return;
+    }
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const cv = document.createElement('canvas');
+        cv.width = 16;
+        cv.height = 16;
+        const ctx = cv.getContext('2d', { willReadFrequently: true });
+        ctx.drawImage(img, 0, 0, 16, 16);
+        const data = ctx.getImageData(0, 0, 16, 16).data;
+        let r = 0, g = 0, b = 0, count = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          const pr = data[i], pg = data[i + 1], pb = data[i + 2];
+          const max = Math.max(pr, pg, pb);
+          const min = Math.min(pr, pg, pb);
+          if (max > 45 && min < 215 && (max - min) > 18) {
+            r += pr; g += pg; b += pb; count++;
+          }
+        }
+        if (count > 0) {
+          r = Math.round(r / count);
+          g = Math.round(g / count);
+          b = Math.round(b / count);
+          const col = `${r}, ${g}, ${b}`;
+          heroColorCache.set(imgUrl, col);
+          setHeroThemeColor(col);
+        }
+      } catch (e) {}
+    };
+    img.src = imgUrl;
+  }
+
   function updateHeroSlide() {
     const item = state.heroItems[state.heroIndex];
     if (!item) return;
@@ -1260,6 +1368,14 @@
 
     const bgUrl = getCleanHeroBackdrop(item);
     el.heroBackdrop.style.backgroundImage = `url('${bgUrl}')`;
+    applyHeroAmbientColor(bgUrl || item.poster);
+
+    if (el.heroContentBox) {
+      el.heroContentBox.classList.remove('hero-stagger-active');
+      void el.heroContentBox.offsetWidth;
+      el.heroContentBox.classList.add('hero-stagger-active');
+    }
+
     const bgProbe = new Image();
     bgProbe.onerror = () => {
       if (seq !== state.heroSeq) return;
@@ -2851,9 +2967,18 @@
       card.innerHTML = innerCardHtml;
     }
 
+    const stopBubbleEvents = (el) => {
+      if (!el) return;
+      ['pointerdown', 'mousedown', 'touchstart'].forEach((ev) => {
+        el.addEventListener(ev, (e) => e.stopPropagation(), { passive: true });
+      });
+    };
+
     const playCircle = card.querySelector('.card-play-circle');
     if (playCircle) {
+      stopBubbleEvents(playCircle);
       playCircle.addEventListener('click', (e) => {
+        e.preventDefault();
         e.stopPropagation();
         if (opts.isContinueWatching) {
           if (opts.playlistId) {
@@ -2871,24 +2996,34 @@
     }
 
     const mylistBtn = card.querySelector('.mylist-btn');
-    mylistBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      toggleMyList(item);
-      const nowIn = isInMyList(item.id);
-      mylistBtn.classList.toggle('active', nowIn);
-      mylistBtn.innerHTML = nowIn ? BOOKF_ICON : BOOK_ICON;
-      if (state.activeFilter === 'mylist') renderCatalogRows();
-    });
+    if (mylistBtn) {
+      stopBubbleEvents(mylistBtn);
+      mylistBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleMyList(item);
+        const nowIn = isInMyList(item.id);
+        mylistBtn.classList.toggle('active', nowIn);
+        mylistBtn.innerHTML = nowIn ? BOOKF_ICON : BOOK_ICON;
+        if (state.activeFilter === 'mylist') renderCatalogRows();
+      });
+    }
 
     const plBtn = card.querySelector('.pl-btn');
-    plBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      openPlaylistModal(item);
-    });
+    if (plBtn) {
+      stopBubbleEvents(plBtn);
+      plBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        openPlaylistModal(item);
+      });
+    }
 
     const remBtn = card.querySelector('.remove-btn');
     if (remBtn) {
+      stopBubbleEvents(remBtn);
       remBtn.addEventListener('click', (e) => {
+        e.preventDefault();
         e.stopPropagation();
         if (opts.isContinueWatching) {
           removeFromContinueWatching(item.id);
@@ -5329,7 +5464,9 @@
 
   function stopAndClosePlayer() {
     if (state.currentItem && el.cloudVideo && el.cloudVideo.currentTime > 5) {
-      saveContinueWatching(state.currentItem, el.cloudVideo.currentTime, el.cloudVideo.duration);
+      saveContinueWatching(state.currentItem, el.cloudVideo.currentTime, el.cloudVideo.duration, true);
+    } else {
+      renderContinueWatching();
     }
     closeCastModal();
     clearTimeout(playerHudTimer);
@@ -5612,12 +5749,18 @@
   }
 
   // Continue Watching Management (with Remove button)
-  function saveContinueWatching(item, currentTime, duration) {
+  let lastCwSaveTime = 0;
+  function saveContinueWatching(item, currentTime, duration, forceSync = false) {
     if (!item || !item.id) return;
-    if (duration > 60 && currentTime > duration - 40) {
+    const now = Date.now();
+    const isNearEnd = duration > 60 && currentTime > duration - 40;
+    if (isNearEnd) {
       removeFromContinueWatching(item.id);
       return;
     }
+    if (!forceSync && now - lastCwSaveTime < 6000) return;
+    lastCwSaveTime = now;
+
     const filtered = state.continueWatching.filter((i) => i.id !== item.id);
     const epLabel = item.type === 'series' ? `T${state.currentSeason}:E${state.currentEpisode}` : null;
     filtered.unshift({
@@ -5628,11 +5771,13 @@
       targetStreamId: item.type === 'series' ? `${item.id}:${state.currentSeason}:${state.currentEpisode}` : item.id,
       savedTime: Math.floor(currentTime),
       duration: Math.floor(duration || 0),
-      updatedAt: Date.now()
+      updatedAt: now
     });
     state.continueWatching = filtered.slice(0, 14);
     localStorage.setItem('johnflix_cw', JSON.stringify(state.continueWatching));
-    renderContinueWatching();
+    if (forceSync || (el.playerOverlay && el.playerOverlay.classList.contains('hidden'))) {
+      renderContinueWatching();
+    }
   }
 
   function removeFromContinueWatching(id) {

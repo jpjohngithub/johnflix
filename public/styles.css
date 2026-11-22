@@ -255,21 +255,43 @@ html, body {
   padding: 0 4% 68px;
   overflow: hidden;
 }
+@keyframes heroKenBurns {
+  0% { transform: scale(1) translate(0, 0); }
+  50% { transform: scale(1.035) translate(-0.4%, -0.2%); }
+  100% { transform: scale(1.07) translate(-0.8%, -0.5%); }
+}
+
 .hero-backdrop {
   position: absolute;
-  inset: 0;
+  inset: -14px;
   background-size: cover;
   background-position: center 20%;
-  transition: opacity 0.8s ease, transform 8s ease;
-  transform: scale(1.03);
+  transition: opacity 0.8s ease;
+  animation: heroKenBurns 18s ease-in-out infinite alternate;
+  transform: translateY(var(--scroll-ty, 0px)) translate(var(--parallax-x, 0px), var(--parallax-y, 0px));
+  filter: blur(var(--scroll-blur, 0px)) saturate(1.08) contrast(1.04);
+  opacity: var(--scroll-op, 1);
+  will-change: transform, filter, opacity;
 }
 .hero-vignette {
   position: absolute;
   inset: 0;
+  z-index: 2;
+  pointer-events: none;
   background:
-    linear-gradient(90deg, #06030d 0%, rgba(6,3,13,0.88) 38%, rgba(6,3,13,0.25) 75%, transparent 100%),
-    linear-gradient(0deg, #06030d 0%, rgba(6,3,13,0.6) 22%, transparent 65%),
-    radial-gradient(circle at 20% 80%, rgba(139, 92, 246, 0.22), transparent 50%);
+    linear-gradient(90deg, #06030d 0%, rgba(6, 3, 13, 0.96) 28%, rgba(6, 3, 13, 0.58) 50%, rgba(6, 3, 13, 0.12) 75%, transparent 100%),
+    linear-gradient(0deg, #06030d 0%, #06030d 14%, rgba(6, 3, 13, 0.88) 28%, rgba(6, 3, 13, 0.32) 55%, transparent 85%),
+    radial-gradient(circle at 18% 75%, var(--hero-accent-glow, rgba(168, 85, 247, 0.28)), transparent 55%);
+}
+.hero-vignette::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.025;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  z-index: 2;
 }
 .hero-content {
   position: relative;
@@ -604,17 +626,21 @@ html, body {
 }
 .media-card:hover .card-poster {
   transform: scale(1.06);
+  filter: brightness(0.62) contrast(1.05);
 }
 .card-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(0deg, rgba(6, 3, 14, 0.88) 0%, rgba(6, 3, 14, 0.2) 50%, transparent 100%);
+  background: rgba(4, 2, 10, 0.65);
+  background-image: linear-gradient(0deg, rgba(4, 2, 10, 0.95) 0%, rgba(4, 2, 10, 0.5) 45%, rgba(4, 2, 10, 0.6) 100%);
   opacity: 0;
+  pointer-events: none;
   transition: opacity var(--transition);
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   padding: 14px;
+  z-index: 4;
 }
 .media-card:hover .card-overlay {
   opacity: 1;
@@ -1362,8 +1388,9 @@ html, body {
   display: flex;
   gap: 6px;
   opacity: 0;
-  transition: opacity var(--transition);
-  z-index: 6;
+  transition: opacity 0.22s ease;
+  z-index: 10;
+  pointer-events: auto;
 }
 .media-card:hover .card-quick-actions {
   opacity: 1;
@@ -1380,9 +1407,11 @@ html, body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: var(--transition);
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
   font-size: 0.9rem;
   font-weight: 700;
+  pointer-events: auto;
+  user-select: none;
 }
 .card-action-btn:hover {
   background: var(--purple-bright);
@@ -2039,6 +2068,38 @@ html, body {
   transition: opacity 0.25s ease, transform 0.25s ease;
 }
 
+@keyframes heroStaggerUp {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-stagger-active .hero-top-badges {
+  animation: heroStaggerUp 0.52s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 0ms;
+}
+.hero-stagger-active .hero-brand-wrap {
+  animation: heroStaggerUp 0.52s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 60ms;
+}
+.hero-stagger-active .hero-meta {
+  animation: heroStaggerUp 0.52s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 120ms;
+}
+.hero-stagger-active .hero-desc {
+  animation: heroStaggerUp 0.52s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 180ms;
+}
+.hero-stagger-active .hero-actions {
+  animation: heroStaggerUp 0.52s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 240ms;
+}
+
 .hero-top-badges {
   display: flex;
   align-items: center;
@@ -2056,7 +2117,7 @@ html, body {
   padding: 4px 11px;
   border-radius: 4px;
   background: rgba(168, 85, 247, 0.18);
-  border-left: 3px solid #a855f7;
+  border: 1px solid rgba(168, 85, 247, 0.35);
   color: #e9d5ff;
 }
 
@@ -2294,6 +2355,38 @@ html, body {
   gap: 8px;
   margin: 0;
 }
+.modal-recs-header .row-nav,
+#modalRecsSection .row-nav {
+  display: flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  gap: 8px !important;
+}
+.modal-recs-header .row-nav-btn,
+#modalRecsSection .row-nav-btn {
+  display: inline-flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  color: #fff !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: transform var(--transition), background var(--transition), box-shadow var(--transition) !important;
+}
+.modal-recs-header .row-nav-btn:hover,
+#modalRecsSection .row-nav-btn:hover {
+  background: var(--purple-bright) !important;
+  border-color: var(--purple-bright) !important;
+  box-shadow: 0 0 12px var(--purple-bright) !important;
+  transform: scale(1.08) !important;
+}
 
 @media (max-width: 768px) {
   .hero {
@@ -2398,7 +2491,9 @@ html, body {
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.8), 0 0 20px rgba(168, 85, 247, 0.45), inset 0 0 0 1.5px rgba(216, 180, 254, 0.9);
 }
 .card-overlay {
-  background: linear-gradient(0deg, rgba(5, 2, 12, 0.75) 0%, rgba(5, 2, 12, 0.08) 55%, transparent 100%);
+  background: rgba(4, 2, 10, 0.65);
+  background-image: linear-gradient(0deg, rgba(4, 2, 10, 0.95) 0%, rgba(4, 2, 10, 0.5) 45%, rgba(4, 2, 10, 0.6) 100%);
+  pointer-events: none;
 }
 .card-play-circle {
   width: 44px;
@@ -3583,17 +3678,28 @@ html, body {
   display: none !important;
 }
 
-/* Cleaner navbar with crisp hairline border on scroll */
+/* Cleaner navbar - completely transparent at top (scrollY === 0) for maximum full-bleed hero immersion */
 .navbar {
   height: 70px;
   padding: 0 4.5%;
-  background: linear-gradient(180deg, rgba(7,5,15,.92) 0%, rgba(7,5,15,.42) 68%, transparent 100%);
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+  transition: background 0.35s ease, backdrop-filter 0.35s ease, -webkit-backdrop-filter 0.35s ease, box-shadow 0.35s ease;
+}
+.navbar:not(.scrolled) .brand {
+  filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.75));
+}
+.navbar:not(.scrolled) .search-box {
+  background: rgba(8, 4, 18, 0.55);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 .navbar.scrolled {
-  background: rgba(9, 6, 18, 0.88);
-  backdrop-filter: blur(20px) saturate(135%);
-  -webkit-backdrop-filter: blur(20px) saturate(135%);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.07), 0 12px 32px rgba(0, 0, 0, 0.55);
+  background: rgba(9, 6, 18, 0.88) !important;
+  backdrop-filter: blur(20px) saturate(135%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(135%) !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08), 0 12px 32px rgba(0, 0, 0, 0.6) !important;
 }
 .brand-word {
   font-size: 1.55rem;
@@ -5916,16 +6022,23 @@ html, body {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  transition: opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
-              visibility 0.55s cubic-bezier(0.22, 1, 0.36, 1),
-              transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+              visibility 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+              clip-path 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  clip-path: circle(100% at 50% 50%);
 }
 
 .site-intro-splash.splash-hide {
   opacity: 0;
   visibility: hidden;
-  transform: scale(1.06);
+  clip-path: circle(140% at 50% 50%);
+  transform: scale(1.08);
   pointer-events: none;
+}
+.site-intro-splash.splash-hide .intro-splash-center {
+  transform: scale(1.12);
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .intro-splash-glow {
@@ -6882,6 +6995,12 @@ html.mega-performance .card-poster-wrap {
 html.mega-performance .hero-banner {
   contain: layout paint !important;
   background-image: none !important;
+}
+
+html.mega-performance .hero-backdrop {
+  animation: none !important;
+  transform: none !important;
+  filter: none !important;
 }
 
 html.mega-performance .hero-trailer-wrap,
