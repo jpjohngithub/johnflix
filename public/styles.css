@@ -374,6 +374,24 @@ html, body {
   background: linear-gradient(135deg, var(--purple-bright), #7c3aed);
   color: #fff;
   box-shadow: 0 8px 25px rgba(168, 85, 247, 0.45);
+  position: relative;
+  overflow: hidden;
+}
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -120%;
+  width: 60%;
+  height: 200%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transform: rotate(25deg);
+  animation: btnShimmerSweep 5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  pointer-events: none;
+}
+@keyframes btnShimmerSweep {
+  0%, 65% { left: -120%; }
+  85%, 100% { left: 160%; }
 }
 .btn-primary:hover {
   transform: translateY(-2px) scale(1.02);
@@ -504,6 +522,18 @@ html, body {
   font-size: 1.4rem;
   font-weight: 800;
   letter-spacing: 0.2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.row-title::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 18px;
+  border-radius: 99px;
+  background: linear-gradient(180deg, var(--purple-bright), var(--purple-deep));
+  box-shadow: 0 0 10px var(--purple-bright);
 }
 .row-subtitle {
   font-size: 0.8rem;
@@ -525,10 +555,12 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: var(--transition);
+  transition: transform var(--transition), background var(--transition), box-shadow var(--transition);
 }
 .row-nav-btn:hover {
   background: var(--purple-bright);
+  box-shadow: 0 0 16px var(--purple-glow);
+  transform: scale(1.1);
 }
 
 .row-slider-wrap {
@@ -2348,20 +2380,39 @@ html, body {
 .card-poster-wrap {
   border-radius: 10px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
-  transition: box-shadow 0.3s ease, transform 0.3s ease;
-  transform: translateZ(0);
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+.card-poster-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, transparent 55%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+  z-index: 2;
+}
+.media-card:hover .card-poster-wrap::after {
+  opacity: 1;
 }
 .media-card:hover .card-poster-wrap {
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.75), 0 0 0 2px rgba(255, 255, 255, 0.85);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.8), 0 0 20px rgba(168, 85, 247, 0.45), inset 0 0 0 1.5px rgba(216, 180, 254, 0.9);
 }
 .card-overlay {
-  background: linear-gradient(0deg, rgba(5, 2, 12, 0.7) 0%, rgba(5, 2, 12, 0.08) 55%, transparent 100%);
+  background: linear-gradient(0deg, rgba(5, 2, 12, 0.75) 0%, rgba(5, 2, 12, 0.08) 55%, transparent 100%);
 }
 .card-play-circle {
   width: 44px;
   height: 44px;
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 6px 22px rgba(0, 0, 0, 0.6);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.media-card:hover .card-play-circle {
+  transform: translate(-50%, -50%) scale(1.1);
+  box-shadow: 0 8px 24px rgba(168, 85, 247, 0.6);
 }
 .card-info {
   background: transparent;
@@ -3104,8 +3155,11 @@ body.auth-locked { overflow: hidden; }
 .modal-card .ep-card:hover .ep-pl-btn, .modal-card .ep-card.active .ep-pl-btn { opacity: 1; }
 .modal-card .ep-pl-btn:hover { background: rgba(255,255,255,.16); }
 
-/* Servers */
-.modal-card .streams-section { margin-top: 8px; }
+/* Hide stream sources selection in Details modal to keep UI clean and uncluttered (changed exclusively in player) */
+.modal-card .streams-section,
+#detailsModal .streams-section {
+  display: none !important;
+}
 .modal-card .streams-header { margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,.08); display: flex; flex-direction: column; gap: 14px; }
 .modal-card .stream-counter { display: inline-block; margin-left: 8px; font-size: .72rem; font-weight: 700; color: #a3a3b2; background: rgba(255,255,255,.08); padding: 2px 8px; border-radius: 999px; vertical-align: middle; }
 .modal-card .stream-filters { display: flex; flex-wrap: wrap; gap: 8px; }

@@ -730,6 +730,7 @@
         }
       }
       if (state.currentItem && el.cloudVideo.currentTime > 5) {
+        if (state.pendingResume > 10 && el.cloudVideo.currentTime < 8) return;
         saveContinueWatching(state.currentItem, el.cloudVideo.currentTime, el.cloudVideo.duration);
       }
       checkNextEpisodePrompt();
@@ -4930,16 +4931,43 @@
       }
     };
 
-    const resumeAt = state.pendingResume > 5 ? state.pendingResume : 0;
+    const targetId = state.currentItem?.type === 'series'
+      ? `${state.currentItem.id}:${state.currentSeason}:${state.currentEpisode}`
+      : state.currentItem?.id;
+    const cwEntry = (state.continueWatching || []).find((i) =>
+      (state.currentItem?.type === 'series'
+        ? (i.targetStreamId === targetId || (i.id === state.currentItem?.id && i.season === state.currentSeason && i.episode === state.currentEpisode))
+        : (i.id === state.currentItem?.id || i.targetStreamId === targetId))
+    );
+    const resumeAt = (state.pendingResume > 5)
+      ? state.pendingResume
+      : (cwEntry && cwEntry.savedTime > 5 ? cwEntry.savedTime : 0);
+
     let resumeApplied = false;
+    let resumeRetries = 0;
     const applyResume = () => {
       if (resumeApplied || !resumeAt) return;
       const dur = el.cloudVideo.duration;
-      if (Number.isFinite(dur) && dur > 0 && resumeAt < dur - 10) {
-        try { el.cloudVideo.currentTime = resumeAt; } catch (e) {}
+      if (Number.isFinite(dur) && dur > 0 && resumeAt >= dur - 10) {
+        resumeApplied = true;
+        state.pendingResume = 0;
+        return;
       }
-      resumeApplied = true;
-      state.pendingResume = 0;
+      try {
+        el.cloudVideo.currentTime = resumeAt;
+        if (Math.abs(el.cloudVideo.currentTime - resumeAt) < 2) {
+          resumeApplied = true;
+          state.pendingResume = 0;
+        } else if (resumeRetries < 8) {
+          resumeRetries++;
+          setTimeout(applyResume, 250);
+        }
+      } catch (e) {
+        if (resumeRetries < 8) {
+          resumeRetries++;
+          setTimeout(applyResume, 250);
+        }
+      }
     };
 
     let proxyFallbackTried = false;
@@ -4995,6 +5023,7 @@
 
     el.cloudVideo.onloadedmetadata = () => { applyResume(); hideLoader(); };
     el.cloudVideo.onloadeddata = () => { applyResume(); hideLoader(); };
+    el.cloudVideo.oncanplay = () => { applyResume(); };
     el.cloudVideo.onwaiting = () => {
       clearTimeout(playerBufferStallTimer);
       playerBufferStallTimer = setTimeout(() => {
@@ -5243,6 +5272,9 @@
   }
 
   function stopAndClosePlayer() {
+    if (state.currentItem && el.cloudVideo && el.cloudVideo.currentTime > 5) {
+      saveContinueWatching(state.currentItem, el.cloudVideo.currentTime, el.cloudVideo.duration);
+    }
     closeCastModal();
     clearTimeout(playerHudTimer);
     clearVideoHandlers();
@@ -5526,6 +5558,10 @@
   // Continue Watching Management (with Remove button)
   function saveContinueWatching(item, currentTime, duration) {
     if (!item || !item.id) return;
+    if (duration > 60 && currentTime > duration - 40) {
+      removeFromContinueWatching(item.id);
+      return;
+    }
     const filtered = state.continueWatching.filter((i) => i.id !== item.id);
     const epLabel = item.type === 'series' ? `T${state.currentSeason}:E${state.currentEpisode}` : null;
     filtered.unshift({
