@@ -6767,64 +6767,109 @@ html.mega-performance *::before,
 html.mega-performance *::after {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
   box-shadow: none !important;
   text-shadow: none !important;
   transition: none !important;
   animation: none !important;
+  will-change: auto !important;
+}
+
+html.mega-performance {
+  scroll-behavior: auto !important;
 }
 
 html.mega-performance body {
   background: #000000 !important;
+  --bg-base: #000000 !important;
   --bg-primary: #000000 !important;
   --bg-secondary: #050505 !important;
+  --bg-surface: #050505 !important;
   --bg-card: #0a0a0a !important;
+  --bg-glass: #0a0a0a !important;
+  scroll-behavior: auto !important;
 }
 
 html.mega-performance .top-bar,
 html.mega-performance .footer,
 html.mega-performance .modal-card,
 html.mega-performance .modal-backdrop,
-html.mega-performance .mobile-bottom-nav {
+html.mega-performance .mobile-bottom-nav,
+html.mega-performance .player-controls,
+html.mega-performance .player-topbar,
+html.mega-performance .player-server-drawer,
+html.mega-performance .custom-settings-card {
   background: #050505 !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
 }
 
 html.mega-performance .catalog-row {
   content-visibility: auto !important;
   contain-intrinsic-size: 260px 300px !important;
+  contain: layout paint !important;
 }
 
 html.mega-performance .media-card {
   contain: strict !important;
   will-change: auto !important;
+  transform: none !important;
+}
+
+html.mega-performance .media-card:hover {
+  transform: none !important;
+}
+
+html.mega-performance .card-poster-wrap {
+  contain: strict !important;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 html.mega-performance .hero-banner {
   contain: layout paint !important;
+  background-image: none !important;
 }
 
-/* === NAV STYLE SWITCHER (TEXT / ICONS / BOTH) === */
+html.mega-performance .hero-trailer-wrap,
+html.mega-performance .modal-trailer-wrap,
+html.mega-performance .hero-ambient-glow,
+html.mega-performance .hero-vignette,
+html.mega-performance .live-dot-pulse,
+html.mega-performance .site-intro-splash {
+  display: none !important;
+}
+
+/* === NAV STYLE SWITCHER (DEFAULT: ICONS + NAMES) === */
 .nav-link svg {
-  display: none;
+  display: inline-block;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.nav-link .nav-text {
+  display: inline;
 }
 html[data-nav-style="icons"] .nav-link svg {
   display: inline-block !important;
+  margin-right: 0 !important;
 }
 html[data-nav-style="icons"] .nav-link .nav-text {
   display: none !important;
-}
-html[data-nav-style="both"] .nav-link svg {
-  display: inline-block !important;
-  margin-right: 4px;
-}
-html[data-nav-style="both"] .nav-link .nav-text {
-  display: inline !important;
 }
 html[data-nav-style="text"] .nav-link svg {
   display: none !important;
 }
 html[data-nav-style="text"] .nav-link .nav-text {
+  display: inline !important;
+}
+html[data-nav-style="both"] .nav-link svg {
+  display: inline-block !important;
+  margin-right: 6px !important;
+  vertical-align: middle;
+}
+html[data-nav-style="both"] .nav-link .nav-text {
   display: inline !important;
 }
 

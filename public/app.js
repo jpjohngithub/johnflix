@@ -231,10 +231,10 @@
         siteName: (saved && typeof saved.siteName === 'string' && saved.siteName.trim()) ? saved.siteName.trim().slice(0, 28) : 'JohnFlix',
         accentColor: (saved && /^#[0-9a-fA-F]{6}$/.test(saved.accentColor)) ? saved.accentColor : '#a855f7',
         megaPerformance: Boolean(saved?.megaPerformance),
-        navStyle: (saved && ['text', 'icons', 'both'].includes(saved.navStyle)) ? saved.navStyle : 'text'
+        navStyle: (saved && ['text', 'icons', 'both'].includes(saved.navStyle)) ? saved.navStyle : 'both'
       };
     } catch (e) {
-      return { siteName: 'JohnFlix', accentColor: '#a855f7', megaPerformance: false, navStyle: 'text' };
+      return { siteName: 'JohnFlix', accentColor: '#a855f7', megaPerformance: false, navStyle: 'both' };
     }
   }
 
@@ -242,7 +242,7 @@
     const name = (cfg && cfg.siteName ? cfg.siteName.trim() : 'JohnFlix') || 'JohnFlix';
     const color = (cfg && /^#[0-9a-fA-F]{6}$/.test(cfg.accentColor)) ? cfg.accentColor : '#a855f7';
     const megaPerf = Boolean(cfg?.megaPerformance);
-    const navStyle = cfg?.navStyle || 'text';
+    const navStyle = cfg?.navStyle || 'both';
 
     const { r, g, b } = hexToRgb(color);
     const deep = shiftHex(color, -38);
@@ -295,12 +295,16 @@
     renderContinueWatching();
     bindEvents();
     const splashEl = document.getElementById('siteIntroSplash');
-    setTimeout(() => {
-      if (splashEl) splashEl.classList.add('splash-hide');
-    }, 450);
-    setTimeout(() => {
+    if (document.documentElement.classList.contains('mega-performance')) {
       if (splashEl) splashEl.remove();
-    }, 900);
+    } else {
+      setTimeout(() => {
+        if (splashEl) splashEl.classList.add('splash-hide');
+      }, 450);
+      setTimeout(() => {
+        if (splashEl) splashEl.remove();
+      }, 900);
+    }
     await loadHomeCatalog();
     if (splashEl) splashEl.classList.add('splash-hide');
 
@@ -1041,7 +1045,7 @@
     const seq = state.heroMountSeq;
     const stale = () => seq !== state.heroMountSeq || state.heroItems[state.heroIndex]?.id !== item.id;
 
-    if (window.matchMedia('(hover: none), (pointer: coarse), (max-width: 900px)').matches) {
+    if (document.documentElement.classList.contains('mega-performance') || window.matchMedia('(hover: none), (pointer: coarse), (max-width: 900px)').matches) {
       scheduleHeroAdvance(HERO_DWELL_NO_TRAILER);
       return;
     }
@@ -2541,7 +2545,7 @@
     });
 
     section.querySelector('#resetCustomBtn').addEventListener('click', () => {
-      const def = { siteName: 'JohnFlix', accentColor: '#a855f7', megaPerformance: false, navStyle: 'text' };
+      const def = { siteName: 'JohnFlix', accentColor: '#a855f7', megaPerformance: false, navStyle: 'both' };
       localStorage.setItem('johnflix_custom', JSON.stringify(def));
       applyCustomConfig(def);
       renderCatalogRows();
@@ -3249,7 +3253,7 @@
 
   function mountModalTrailer(ytId) {
     if (!el.modalTrailerWrap) return;
-    if (!ytId || window.matchMedia('(hover: none), (pointer: coarse), (max-width: 900px)').matches) {
+    if (!ytId || document.documentElement.classList.contains('mega-performance') || window.matchMedia('(hover: none), (pointer: coarse), (max-width: 900px)').matches) {
       el.modalTrailerWrap.innerHTML = '';
       el.modalTrailerWrap.classList.remove('playing');
       return;
@@ -5104,13 +5108,14 @@
       const hlsUrl = stream.proxyUrl || stream.directUrl;
       if (window.Hls && window.Hls.isSupported()) {
         let hlsMediaRecoveries = 0;
+        const isMega = document.documentElement.classList.contains('mega-performance');
         hlsInstance = new window.Hls({
           enableWorker: true,
-          lowLatencyMode: false,
-          backBufferLength: 15,
-          maxBufferLength: 10,
-          maxMaxBufferLength: 25,
-          maxBufferSize: 30 * 1000 * 1000,
+          lowLatencyMode: isMega,
+          backBufferLength: isMega ? 5 : 15,
+          maxBufferLength: isMega ? 6 : 10,
+          maxMaxBufferLength: isMega ? 12 : 25,
+          maxBufferSize: (isMega ? 12 : 30) * 1000 * 1000,
           maxBufferHole: 0.4,
           startFragPrefetch: true,
           testBandwidth: false,
