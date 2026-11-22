@@ -561,7 +561,7 @@ html, body {
   transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
 }
 .media-card:hover {
-  transform: translateY(-8px) scale(1.04);
+  transform: none;
   border-color: var(--purple-bright);
   box-shadow: 0 16px 34px rgba(0, 0, 0, 0.75), 0 0 22px rgba(168, 85, 247, 0.4);
   z-index: 5;
@@ -1342,13 +1342,11 @@ html, body {
   display: flex;
   gap: 6px;
   opacity: 0;
-  transform: translateY(-4px);
-  transition: var(--transition);
+  transition: opacity var(--transition);
   z-index: 6;
 }
 .media-card:hover .card-quick-actions {
   opacity: 1;
-  transform: translateY(0);
 }
 .card-action-btn {
   width: 30px;
@@ -2235,7 +2233,7 @@ html, body {
 }
 .media-card.top10-card:hover {
   box-shadow: none;
-  transform: translateY(-6px);
+  transform: none;
 }
 .top10-rank-svg {
   position: absolute;
@@ -2385,7 +2383,7 @@ html, body {
   will-change: transform;
 }
 .media-card:hover {
-  transform: translateY(-4px);
+  transform: none;
   box-shadow: none;
   border: none;
 }
@@ -3680,7 +3678,7 @@ html, body {
   transition: transform .25s ease, box-shadow .25s ease;
 }
 .media-card:hover {
-  transform: translateY(-4px);
+  transform: none;
 }
 .media-card:hover .card-poster-wrap {
   box-shadow: 0 16px 34px rgba(0, 0, 0, 0.8), 0 0 0 1.5px #a855f7;
