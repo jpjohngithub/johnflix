@@ -1381,7 +1381,10 @@
     const seq = ++state.heroSeq;
 
     const bgUrl = getCleanHeroBackdrop(item);
+    el.heroBackdrop.classList.remove('hero-backdrop-crossfade');
+    void el.heroBackdrop.offsetWidth;
     el.heroBackdrop.style.backgroundImage = `url('${bgUrl}')`;
+    el.heroBackdrop.classList.add('hero-backdrop-crossfade');
     applyHeroAmbientColor(bgUrl || item.poster);
 
     if (el.heroContentBox) {
@@ -4775,8 +4778,8 @@
 
     // 2. Se for Apple/iOS ou dispositivo sem decodificador HEVC, prioriza streams nativos H.264/MP4/HLS (sem MKV)
     const compatible = (isApple || !clientSupportsHevc)
-      ? pool.filter((s) => !s.isHevcOrMkv && !/\.mkv(?:$|[?#])/i.test(s.directUrl || s.name || s.title || ''))
-      : pool;
+      ? pool.filter((s) => ['direct', 'hls'].includes(s.playType) && !s.isHevcOrMkv && !/\.mkv(?:$|[?#])/i.test(s.directUrl || s.name || s.title || ''))
+      : pool.filter((s) => ['direct', 'hls'].includes(s.playType) && !s.isHevcOrMkv);
     const activePool = compatible.length ? compatible : pool;
 
     // 3. Nuvem Direta / HLS (Dublado primeiro)
@@ -4794,12 +4797,15 @@
     return activePool.find((s) => s.isDub) || activePool[0];
   }
 
+  let failoverCount = 0;
   function tryNextWorkingStream(failedStream, forceFailover = false) {
     if (failedStream && state.currentStream !== failedStream && !forceFailover) return false;
-    // Only block failover if video has actual visible decoded picture
+    // Only block failover if video has actual visible decoded picture or is already playing past 1.5s
+    const isAdvancing = el.cloudVideo && !el.cloudVideo.paused && el.cloudVideo.currentTime > 1.2;
     const hasVisiblePicture = el.cloudVideo && ((el.cloudVideo.videoWidth > 0 && el.cloudVideo.videoHeight > 0) || state.currentItem?.type === 'tv');
-    if (!forceFailover && el.cloudVideo && !el.cloudVideo.paused && el.cloudVideo.currentTime > 0.2 && hasVisiblePicture) {
+    if (!forceFailover && isAdvancing && (hasVisiblePicture || el.cloudVideo.currentTime > 2.5)) {
       state.autoPlayTesting = false;
+      failoverCount = 0;
       clearTimeout(autoPlayTestingTimer);
       clearTimeout(playerStallTimer);
       clearTimeout(blackScreenWatchdogTimer);
@@ -4811,6 +4817,15 @@
     }
     const key = getStreamKey(failedStream);
     if (key) failedStreamKeys.add(key);
+
+    failoverCount++;
+    if (failoverCount > 4) {
+      failoverCount = 0;
+      el.playerLoaderTitle.textContent = 'Servidor instável ou conexão lenta';
+      el.playerLoaderSub.textContent = 'Toque em "Alternar Servidor" abaixo para escolher outra fonte manualmente.';
+      if (el.playerLoaderSwitchBtn) el.playerLoaderSwitchBtn.classList.remove('hidden');
+      return false;
+    }
 
     const candidates = (state.currentStreams || []).filter((s) =>
       ['direct', 'hls', 'torrent'].includes(s.playType) && isStreamRelevant(s, state.currentItem)
@@ -4909,7 +4924,10 @@
     state.currentStream = stream;
     if (!isAutoFailover) {
       failedStreamKeys.clear();
+      failoverCount = 0;
     }
+    const oldUnmute = document.getElementById('playerUnmuteBanner');
+    if (oldUnmute) oldUnmute.remove();
     stopHeroTrailer();
     stopModalTrailer();
     el.playerOverlay.classList.remove('hidden', 'hud-idle');
@@ -4936,13 +4954,13 @@
       clearTimeout(autoPlayTestingTimer);
       autoPlayTestingTimer = setTimeout(() => {
         if (!state.autoPlayTesting || state.currentStream !== stream) return;
-        if (el.cloudVideo && (!el.cloudVideo.paused || el.cloudVideo.currentTime > 0.1 || el.cloudVideo.readyState >= 3)) {
+        if (el.cloudVideo && (!el.cloudVideo.paused || el.cloudVideo.currentTime > 0.1 || el.cloudVideo.readyState >= 2)) {
           state.autoPlayTesting = false;
           clearTimeout(autoPlayTestingTimer);
           return;
         }
         tryNextWorkingStream(stream);
-      }, 2800);
+      }, 8500);
     }
 
     if (stream.playType === 'torrent' && stream.proxyUrl) startTorrentTelemetry(stream.infoHash);
@@ -5146,7 +5164,7 @@
       hideLoader();
       applyResume();
       setTimeout(() => {
-        if (state.currentStream === stream && !el.playerOverlay.classList.contains('hidden') && !el.cloudVideo.paused && el.cloudVideo.currentTime > 0.8) {
+        if (state.currentStream === stream && !el.playerOverlay.classList.contains('hidden') && !el.cloudVideo.paused && el.cloudVideo.currentTime > 1.8) {
           const isBlackScreen = el.cloudVideo.videoWidth === 0 && el.cloudVideo.videoHeight === 0 && state.currentItem?.type !== 'tv';
           if (isBlackScreen) {
             // Find a compatible H.264 stream so any device gets full picture natively
@@ -5168,9 +5186,13 @@
                 state.currentStream = mirror;
                 if (el.playerLoaderSub) el.playerLoaderSub.textContent = `${mirror.serverLabel} • Modo Compatível`;
                 if (mirror.playType === 'hls' || /\.m3u8(?:$|[?#])/i.test(targetSrc)) {
-                  if (window.Hls && Hls.isSupported()) {
+                  if (el.cloudVideo.canPlayType('application/vnd.apple.mpegurl') && isApple) {
+                    el.cloudVideo.src = targetSrc;
+                    el.cloudVideo.load();
+                    startVideoPlayback();
+                  } else if (window.Hls && Hls.isSupported()) {
                     if (hlsInstance) try { hlsInstance.destroy(); } catch (_) {}
-                    hlsInstance = new Hls({ enableWorker: true, lowLatencyMode: true });
+                    hlsInstance = new Hls({ enableWorker: true });
                     hlsInstance.loadSource(targetSrc);
                     hlsInstance.attachMedia(el.cloudVideo);
                     hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => startVideoPlayback());
@@ -5186,7 +5208,7 @@
             retrySourceOrNext(true);
           }
         }
-      }, 1500);
+      }, 4000);
     };
 
     el.cloudVideo.onloadedmetadata = () => { applyResume(); hideLoader(); };
@@ -5195,10 +5217,10 @@
     el.cloudVideo.onwaiting = () => {
       clearTimeout(playerBufferStallTimer);
       playerBufferStallTimer = setTimeout(() => {
-        if (state.currentStream === stream && !el.playerOverlay.classList.contains('hidden') && el.cloudVideo.currentTime < 1) {
+        if (state.currentStream === stream && !el.playerOverlay.classList.contains('hidden') && el.cloudVideo.currentTime < 0.2) {
           retrySourceOrNext();
         }
-      }, 3500);
+      }, 9000);
     };
     el.cloudVideo.onplay = () => {
       clearTimeout(autoPlayTestingTimer);
@@ -5209,6 +5231,7 @@
     el.cloudVideo.onplaying = () => {
       playbackStarted = true;
       state.autoPlayTesting = false;
+      failoverCount = 0;
       clearTimeout(autoPlayTestingTimer);
       clearTimeout(playerStallTimer);
       clearTimeout(playerBufferStallTimer);
@@ -5217,12 +5240,12 @@
       verifyVideoTrack();
     };
 
-    // Anti-Black-Screen Watchdog: verifies video frames actually decode and advance
-    const stallLimit = state.currentItem?.type === 'tv' ? 8000 : 3500;
+    // Anti-Black-Screen Watchdog: verifies video frames actually decode and advance without premature skipping
+    const stallLimit = state.currentItem?.type === 'tv' ? 14000 : 9500;
     blackScreenWatchdogTimer = setTimeout(() => {
       if (state.currentStream !== stream || el.playerOverlay.classList.contains('hidden')) return;
       if (!el.cloudVideo.classList.contains('hidden')) {
-        const hasFrames = (el.cloudVideo.currentTime > 0.2 && !el.cloudVideo.paused) || el.cloudVideo.videoWidth > 0;
+        const hasFrames = (el.cloudVideo.currentTime > 0.3 && !el.cloudVideo.paused) || el.cloudVideo.videoWidth > 0 || el.cloudVideo.readyState >= 2;
         if (!hasFrames) {
           retrySourceOrNext();
         }
@@ -5230,10 +5253,10 @@
     }, stallLimit);
 
     playerStallTimer = setTimeout(() => {
-      if (state.currentStream === stream && !playbackStarted && !el.playerOverlay.classList.contains('hidden')) {
+      if (state.currentStream === stream && !playbackStarted && el.cloudVideo.readyState < 2 && !el.playerOverlay.classList.contains('hidden')) {
         retrySourceOrNext();
       }
-    }, stallLimit + 300);
+    }, stallLimit + 2500);
 
     // Subtitles auto-fetch via LegendasBR
     Array.from(el.cloudVideo.querySelectorAll('track')).forEach((t) => t.remove());
@@ -5263,6 +5286,43 @@
     const isApple = /iPad|iPhone|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     el.cloudVideo.setAttribute('playsinline', '');
     el.cloudVideo.setAttribute('webkit-playsinline', '');
+    el.cloudVideo.muted = false;
+    el.cloudVideo.volume = 1;
+
+    const showUnmuteBanner = () => {
+      if (!el.cloudVideo || !el.cloudVideo.muted) return;
+      let unmuteBanner = document.getElementById('playerUnmuteBanner');
+      if (!unmuteBanner) {
+        unmuteBanner = document.createElement('button');
+        unmuteBanner.type = 'button';
+        unmuteBanner.id = 'playerUnmuteBanner';
+        unmuteBanner.className = 'player-unmute-banner';
+        unmuteBanner.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="18" height="18"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg><span>Toque para ativar o som</span>`;
+        const doUnmute = (ev) => {
+          if (ev) ev.stopPropagation();
+          try {
+            el.cloudVideo.muted = false;
+            el.cloudVideo.volume = 1;
+          } catch (_) {}
+          unmuteBanner.remove();
+        };
+        unmuteBanner.addEventListener('click', doUnmute);
+        unmuteBanner.addEventListener('touchstart', doUnmute, { passive: true });
+        el.playerOverlay.appendChild(unmuteBanner);
+      }
+      const oneTapUnmute = () => {
+        if (el.cloudVideo && el.cloudVideo.muted) {
+          try {
+            el.cloudVideo.muted = false;
+            el.cloudVideo.volume = 1;
+          } catch (_) {}
+        }
+        const b = document.getElementById('playerUnmuteBanner');
+        if (b) b.remove();
+      };
+      el.playerOverlay.addEventListener('click', oneTapUnmute, { once: true, passive: true });
+      el.playerOverlay.addEventListener('touchstart', oneTapUnmute, { once: true, passive: true });
+    };
 
     const startVideoPlayback = () => {
       applyResume();
@@ -5270,16 +5330,15 @@
       if (playPromise !== undefined) {
         playPromise.then(() => {
           if (state.currentStream === stream) hideLoader();
+          if (el.cloudVideo.muted) showUnmuteBanner();
         }).catch((err) => {
           if (state.currentStream !== stream) return;
           if (err && err.name === 'NotAllowedError') {
-            // Mobile / Safari strict autoplay policy fallback: start muted so video begins immediately
+            // Mobile / Safari strict autoplay policy fallback: start muted and show unmute pill
             el.cloudVideo.muted = true;
             el.cloudVideo.play().then(() => {
               hideLoader();
-              if (!isApple) {
-                setTimeout(() => { try { el.cloudVideo.muted = false; } catch (e) {} }, 300);
-              }
+              showUnmuteBanner();
             }).catch(() => {
               hideLoader();
               retrySourceOrNext();
@@ -5310,27 +5369,34 @@
 
     if (isHls) {
       const hlsUrl = stream.proxyUrl || stream.directUrl;
+      if (isApple && el.cloudVideo.canPlayType('application/vnd.apple.mpegurl')) {
+        el.cloudVideo.onerror = retrySourceOrNext;
+        el.cloudVideo.src = hlsUrl;
+        el.cloudVideo.load();
+        startVideoPlayback();
+        return;
+      }
       if (window.Hls && window.Hls.isSupported()) {
         let hlsMediaRecoveries = 0;
-        const isMega = document.documentElement.classList.contains('mega-performance');
+        let hlsNetworkRecoveries = 0;
         hlsInstance = new window.Hls({
           startPosition: resumeAt > 5 ? resumeAt : -1,
           enableWorker: true,
-          lowLatencyMode: isMega,
-          backBufferLength: isMega ? 5 : 15,
-          maxBufferLength: isMega ? 6 : 10,
-          maxMaxBufferLength: isMega ? 12 : 25,
-          maxBufferSize: (isMega ? 12 : 30) * 1000 * 1000,
-          maxBufferHole: 0.4,
+          lowLatencyMode: false,
+          backBufferLength: 15,
+          maxBufferLength: 15,
+          maxMaxBufferLength: 30,
+          maxBufferSize: 40 * 1000 * 1000,
+          maxBufferHole: 0.5,
           startFragPrefetch: true,
           testBandwidth: false,
           progressive: true,
-          highBufferWatchdogPeriod: 1,
+          highBufferWatchdogPeriod: 2,
           nudgeOffset: 0.1,
-          nudgeMaxRetry: 5,
-          fragLoadingTimeOut: 6000,
-          manifestLoadingTimeOut: 5000,
-          levelLoadingTimeOut: 5000
+          nudgeMaxRetry: 6,
+          fragLoadingTimeOut: 10000,
+          manifestLoadingTimeOut: 8000,
+          levelLoadingTimeOut: 8000
         });
         hlsInstance.loadSource(hlsUrl);
         hlsInstance.attachMedia(el.cloudVideo);
@@ -5342,9 +5408,12 @@
         });
         hlsInstance.on(window.Hls.Events.ERROR, (_event, data) => {
           if (!data?.fatal) return;
-          if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR && hlsMediaRecoveries < 1) {
+          if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR && hlsMediaRecoveries < 2) {
             hlsMediaRecoveries += 1;
             hlsInstance?.recoverMediaError();
+          } else if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR && hlsNetworkRecoveries < 1) {
+            hlsNetworkRecoveries += 1;
+            hlsInstance?.startLoad();
           } else {
             retrySourceOrNext();
           }
