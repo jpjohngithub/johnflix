@@ -1637,7 +1637,7 @@ export default async (request) => {
           .filter(Boolean);
         await Promise.race([
           Promise.all(coreTasks),
-          new Promise((r) => setTimeout(r, 900))
+          new Promise((r) => setTimeout(r, 750))
         ]);
       } else {
         await Promise.all(addonTasks);
@@ -1823,9 +1823,10 @@ export default async (request) => {
         servers: addonResults,
         streams: allStreams
       });
-      if (!isFast && allStreams.length > 0) {
+      if (allStreams.length > 0) {
         const hasFailedAddon = addonResults.some((server) => server.status === 'offline');
-        setEdgeCache(streamCacheKey, bodyStr, hasFailedAddon ? 15 : 300);
+        const cacheTtl = isFast ? 120 : (hasFailedAddon ? 30 : 300);
+        setEdgeCache(streamCacheKey, bodyStr, cacheTtl);
       }
 
       return new Response(bodyStr, { status: 200, headers: streamHeaders });

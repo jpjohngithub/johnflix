@@ -2793,7 +2793,6 @@
     const innerCardHtml = `
       <div class="card-poster-wrap">
         <img class="card-poster" src="${item.poster || fallbackPoster}" alt="${escapeHtml(item.name)}" loading="lazy" decoding="async" fetchpriority="low" onerror="${posterErr}" />
-        <button class="card-info-btn" title="Ver Informações" aria-label="Ver Informações"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></button>
         <div class="card-quick-actions">
           <button class="card-action-btn mylist-btn ${inList ? 'active' : ''}" title="${inList ? 'Remover da Minha Lista' : 'Salvar na Minha Lista'}">${inList ? BOOKF_ICON : BOOK_ICON}</button>
           <button class="card-action-btn pl-btn" title="Adicionar à Playlist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg></button>
@@ -2830,22 +2829,18 @@
     if (playCircle) {
       playCircle.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (opts.playlistId) {
-          state.activeLoopPlaylistId = opts.playlistId;
-          state.activeLoopIndex = opts.playlistIndex || 0;
+        if (opts.isContinueWatching) {
+          if (opts.playlistId) {
+            state.activeLoopPlaylistId = opts.playlistId;
+            state.activeLoopIndex = opts.playlistIndex || 0;
+          } else {
+            state.activeLoopPlaylistId = null;
+          }
+          state.pendingResume = item.savedTime || 0;
+          openItemDetails(item, true, item.targetStreamId, item.season, item.episode);
         } else {
-          state.activeLoopPlaylistId = null;
+          openItemDetails(item, false);
         }
-        state.pendingResume = opts.isContinueWatching ? (item.savedTime || 0) : 0;
-        openItemDetails(item, true, item.targetStreamId, item.season, item.episode);
-      });
-    }
-
-    const infoBtn = card.querySelector('.card-info-btn');
-    if (infoBtn) {
-      infoBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        openItemDetails(item, false);
       });
     }
 
@@ -2896,10 +2891,14 @@
         state.activeLoopPlaylistId = null;
       }
       state.pendingResume = opts.isContinueWatching ? (item.savedTime || 0) : 0;
-      if (item.targetStreamId && item.type === 'series') {
-        openItemDetails(item, true, item.targetStreamId, item.season, item.episode);
+      if (opts.isContinueWatching) {
+        if (item.targetStreamId && item.type === 'series') {
+          openItemDetails(item, true, item.targetStreamId, item.season, item.episode);
+        } else {
+          openItemDetails(item, true);
+        }
       } else {
-        openItemDetails(item, opts.isContinueWatching ? true : false);
+        openItemDetails(item, false);
       }
     });
 
@@ -4778,7 +4777,7 @@
           return;
         }
         tryNextWorkingStream(stream);
-      }, 3800);
+      }, 2800);
     }
 
     if (stream.playType === 'torrent' && stream.proxyUrl) startTorrentTelemetry(stream.infoHash);
@@ -5018,7 +5017,7 @@
     };
 
     // Anti-Black-Screen Watchdog: verifies video frames actually decode and advance
-    const stallLimit = state.currentItem?.type === 'tv' ? 9000 : 4800;
+    const stallLimit = state.currentItem?.type === 'tv' ? 8000 : 3500;
     blackScreenWatchdogTimer = setTimeout(() => {
       if (state.currentStream !== stream || el.playerOverlay.classList.contains('hidden')) return;
       if (!el.cloudVideo.classList.contains('hidden')) {
@@ -5033,7 +5032,7 @@
       if (state.currentStream === stream && !playbackStarted && !el.playerOverlay.classList.contains('hidden')) {
         retrySourceOrNext();
       }
-    }, stallLimit + 400);
+    }, stallLimit + 300);
 
     // Subtitles auto-fetch via LegendasBR
     Array.from(el.cloudVideo.querySelectorAll('track')).forEach((t) => t.remove());
@@ -5108,10 +5107,20 @@
         hlsInstance = new window.Hls({
           enableWorker: true,
           lowLatencyMode: false,
-          backBufferLength: 30,
-          maxBufferLength: 30,
-          maxMaxBufferLength: 60,
-          startFragPrefetch: true
+          backBufferLength: 15,
+          maxBufferLength: 10,
+          maxMaxBufferLength: 25,
+          maxBufferSize: 30 * 1000 * 1000,
+          maxBufferHole: 0.4,
+          startFragPrefetch: true,
+          testBandwidth: false,
+          progressive: true,
+          highBufferWatchdogPeriod: 1,
+          nudgeOffset: 0.1,
+          nudgeMaxRetry: 5,
+          fragLoadingTimeOut: 6000,
+          manifestLoadingTimeOut: 5000,
+          levelLoadingTimeOut: 5000
         });
         hlsInstance.loadSource(hlsUrl);
         hlsInstance.attachMedia(el.cloudVideo);
