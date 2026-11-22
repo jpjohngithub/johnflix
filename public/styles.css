@@ -522,18 +522,6 @@ html, body {
   font-size: 1.4rem;
   font-weight: 800;
   letter-spacing: 0.2px;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-}
-.row-title::before {
-  content: '';
-  display: inline-block;
-  width: 4px;
-  height: 18px;
-  border-radius: 99px;
-  background: linear-gradient(180deg, var(--purple-bright), var(--purple-deep));
-  box-shadow: 0 0 10px var(--purple-bright);
 }
 .row-subtitle {
   font-size: 0.8rem;
@@ -2305,15 +2293,6 @@ html, body {
   align-items: center;
   gap: 8px;
   margin: 0;
-}
-.modal-recs-title::before {
-  content: '';
-  display: inline-block;
-  width: 4px;
-  height: 16px;
-  border-radius: 99px;
-  background: linear-gradient(180deg, var(--purple-bright), var(--purple-deep));
-  box-shadow: 0 0 10px var(--purple-bright);
 }
 
 @media (max-width: 768px) {

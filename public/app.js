@@ -4644,6 +4644,8 @@
     const relevant = streams.filter((s) => isStreamRelevant(s, state.currentItem));
     if (!relevant.length) return null;
 
+    const isApple = /iPad|iPhone|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
     // 1. Prioriza correspondência exata de ano para nunca trocar o filme selecionado
     const itemYear = parseInt(state.currentItem?.year || state.currentItem?.releaseInfo || state.currentMeta?.year, 10);
     const yearMatched = Number.isFinite(itemYear) && itemYear >= 1940
@@ -4654,18 +4656,24 @@
       : [];
     const pool = yearMatched.length ? yearMatched : relevant;
 
-    // 2. Se o dispositivo atual não suportar HEVC, prioriza H.264 nativo para evitar tela preta
-    const compatible = !clientSupportsHevc ? pool.filter((s) => !s.isHevcOrMkv) : pool;
+    // 2. Se for Apple/iOS ou dispositivo sem decodificador HEVC, prioriza streams nativos H.264/MP4/HLS (sem MKV)
+    const compatible = (isApple || !clientSupportsHevc)
+      ? pool.filter((s) => !s.isHevcOrMkv && !/\.mkv(?:$|[?#])/i.test(s.directUrl || s.name || s.title || ''))
+      : pool;
     const activePool = compatible.length ? compatible : pool;
 
-    // 3. Nuvem Direta / HLS (Dublado primeiro, <400ms)
+    // 3. Nuvem Direta / HLS (Dublado primeiro)
     const directDub = activePool.find((s) => ['direct', 'hls'].includes(s.playType) && s.isDub);
     if (directDub) return directDub;
 
     const directAny = activePool.find((s) => ['direct', 'hls'].includes(s.playType));
     if (directAny) return directAny;
 
-    // 4. Fallback P2P Torrent (Dublado primeiro)
+    // 4. Fallback P2P Torrent (Dublado primeiro, desde que tenha proxyUrl em Apple)
+    if (isApple) {
+      const proxiedTorrent = activePool.find((s) => s.playType === 'torrent' && s.proxyUrl);
+      if (proxiedTorrent) return proxiedTorrent;
+    }
     return activePool.find((s) => s.isDub) || activePool[0];
   }
 
@@ -5127,8 +5135,11 @@
         .catch(() => {});
     }
 
+    const isApple = /iPad|iPhone|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    el.cloudVideo.setAttribute('playsinline', '');
+    el.cloudVideo.setAttribute('webkit-playsinline', '');
+
     const startVideoPlayback = () => {
-      el.cloudVideo.muted = false;
       applyResume();
       const playPromise = el.cloudVideo.play();
       if (playPromise !== undefined) {
@@ -5137,11 +5148,13 @@
         }).catch((err) => {
           if (state.currentStream !== stream) return;
           if (err && err.name === 'NotAllowedError') {
-            // Mobile / Safari strict autoplay policy fallback: start muted so video begins immediately, user can tap unmute
+            // Mobile / Safari strict autoplay policy fallback: start muted so video begins immediately
             el.cloudVideo.muted = true;
             el.cloudVideo.play().then(() => {
               hideLoader();
-              setTimeout(() => { try { el.cloudVideo.muted = false; } catch (e) {} }, 300);
+              if (!isApple) {
+                setTimeout(() => { try { el.cloudVideo.muted = false; } catch (e) {} }, 300);
+              }
             }).catch(() => {
               hideLoader();
               retrySourceOrNext();
@@ -5154,9 +5167,10 @@
     };
 
     const isHls = stream.playType === 'hls' || /\.m3u8(?:$|[?#])/i.test(stream.directUrl || stream.proxyUrl || '');
-    const preferProxy = Boolean(stream.requiresProxy && stream.proxyUrl);
-    const primaryDirectSrc = preferProxy ? stream.proxyUrl : (stream.directUrl || stream.proxyUrl);
-    const startedViaProxy = Boolean(preferProxy || !stream.directUrl);
+    const isHttp = Boolean(stream.directUrl && stream.directUrl.startsWith('http://'));
+    const preferProxy = Boolean(stream.requiresProxy || isApple || isHttp);
+    const primaryDirectSrc = (preferProxy && stream.proxyUrl) ? stream.proxyUrl : (stream.directUrl || stream.proxyUrl);
+    const startedViaProxy = Boolean((preferProxy && stream.proxyUrl) || !stream.directUrl);
     retrySourceOrNext = (forceFailover = false) => {
       if (!forceFailover && stream.playType === 'direct' && !startedViaProxy && !proxyFallbackTried && stream.directUrl && stream.proxyUrl && stream.directUrl !== stream.proxyUrl) {
         proxyFallbackTried = true;
