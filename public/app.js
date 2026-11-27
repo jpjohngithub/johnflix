@@ -3528,7 +3528,7 @@
 
     // Start prefetching streams immediately in parallel with metadata!
     const initialTargetId = customStreamId || (item.type === 'series' ? `${item.id}:${customSeason || 1}:${customEp || 1}` : item.id);
-    prefetchStreams(item.type, initialTargetId, item);
+    prefetchStreams(item.type, initialTargetId, item, { fast: Boolean(autoPlayFirst) });
 
     // If user clicked "Assistir" directly, open the Player overlay immediately so they enter the movie in <50ms!
     if (autoPlayFirst) {
@@ -5343,6 +5343,8 @@
               hideLoader();
               retrySourceOrNext();
             });
+          } else if (err && err.name === 'AbortError') {
+            return;
           } else {
             retrySourceOrNext();
           }
@@ -5382,21 +5384,21 @@
         hlsInstance = new window.Hls({
           startPosition: resumeAt > 5 ? resumeAt : -1,
           enableWorker: true,
-          lowLatencyMode: false,
-          backBufferLength: 15,
-          maxBufferLength: 15,
-          maxMaxBufferLength: 30,
-          maxBufferSize: 40 * 1000 * 1000,
-          maxBufferHole: 0.5,
+          lowLatencyMode: true,
+          backBufferLength: 10,
+          maxBufferLength: 8,
+          maxMaxBufferLength: 16,
+          maxBufferSize: 25 * 1000 * 1000,
+          maxBufferHole: 0.3,
           startFragPrefetch: true,
           testBandwidth: false,
           progressive: true,
-          highBufferWatchdogPeriod: 2,
+          highBufferWatchdogPeriod: 1,
           nudgeOffset: 0.1,
           nudgeMaxRetry: 6,
-          fragLoadingTimeOut: 10000,
-          manifestLoadingTimeOut: 8000,
-          levelLoadingTimeOut: 8000
+          fragLoadingTimeOut: 6000,
+          manifestLoadingTimeOut: 5000,
+          levelLoadingTimeOut: 5000
         });
         hlsInstance.loadSource(hlsUrl);
         hlsInstance.attachMedia(el.cloudVideo);
