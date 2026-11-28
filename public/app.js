@@ -1026,6 +1026,37 @@
         el.heroTitle.textContent = 'Indisponível no momento';
       }
     }
+    warmupCatalogStreams();
+  }
+
+  function warmupCatalogStreams() {
+    setTimeout(() => {
+      const targets = [];
+      (state.heroItems || []).slice(0, 3).forEach((item) => {
+        if (item && item.id) targets.push({ type: item.type || 'movie', id: item.type === 'series' ? `${item.id}:1:1` : item.id, item });
+      });
+      (state.continueWatching || []).slice(0, 2).forEach((cw) => {
+        if (cw && (cw.targetStreamId || cw.id)) {
+          targets.push({ type: cw.type || (cw.targetStreamId?.includes(':') ? 'series' : 'movie'), id: cw.targetStreamId || cw.id, item: cw });
+        }
+      });
+      const firstRow = state.catalogRows?.[0]?.items || [];
+      firstRow.slice(0, 3).forEach((item) => {
+        if (item && item.id) targets.push({ type: item.type || 'movie', id: item.type === 'series' ? `${item.id}:1:1` : item.id, item });
+      });
+
+      let delay = 150;
+      const seen = new Set();
+      targets.forEach((t) => {
+        const k = `${t.type}:${t.id}`;
+        if (seen.has(k)) return;
+        seen.add(k);
+        setTimeout(() => {
+          prefetchStreams(t.type, t.id, t.item);
+        }, delay);
+        delay += 600;
+      });
+    }, 600);
   }
 
   // ===== Hero: YouTube IFrame API trailer engine + smart rotation =====
@@ -3125,6 +3156,19 @@
     if (!type || !targetId) return null;
     const isVault = String(targetId).startsWith('vault:') || state.isVaultMode;
     const baseKey = `${isVault ? 'vault' : type}:${targetId}`;
+    try {
+      const sess = sessionStorage.getItem(`jf_str_${baseKey}`);
+      if (sess) {
+        const parsed = JSON.parse(sess);
+        if (parsed && Array.isArray(parsed.streams) && parsed.streams.length > 0 && parsed._savedAt && (Date.now() - parsed._savedAt < 15 * 60 * 1000)) {
+          if (!clientStreamsCache.has(baseKey)) {
+            clientStreamsCache.set(baseKey, { promise: Promise.resolve(parsed), exp: Date.now() + 60000, settled: true });
+          }
+          if (!fast || parsed.settled) return Promise.resolve(parsed);
+        }
+      }
+    } catch (_) {}
+
     const fullExisting = clientStreamsCache.get(baseKey);
     if (fullExisting && fullExisting.exp > Date.now() && (!fast || fullExisting.settled)) {
       return fullExisting.promise;
@@ -3153,6 +3197,11 @@
         cacheEntry.settled = true;
         if (Array.isArray(data?.streams) && data.streams.length > 0) {
           cacheEntry.exp = Date.now() + (fast && data.hasPending ? 15 : 60) * 1000;
+          if (!fast) {
+            try {
+              sessionStorage.setItem(`jf_str_${baseKey}`, JSON.stringify({ ...data, _savedAt: Date.now(), settled: true }));
+            } catch (_) {}
+          }
         } else {
           // Empty/partial results are often caused by a short addon outage. Do not
           // keep them in the client cache and hide recovered sources for 5 minutes.
@@ -3705,6 +3754,24 @@
     renderSeasonEpisodes(initialSeason, autoPlayFirst, customEp, skipInitialStreamLoad);
   }
 
+  function sortStreamsFrontend(a, b) {
+    const rank = (s) => {
+      if (s.playType === 'direct' && !s.isHevcOrMkv && !/hd\.plavio\.site\/.*\/extract\//i.test(s.directUrl || '')) return 0;
+      if (s.playType === 'hls') return 1;
+      if (s.playType === 'direct') return 2;
+      if (s.playType === 'torrent' && s.proxyUrl) return 3;
+      return 4;
+    };
+    if (rank(a) !== rank(b)) return rank(a) - rank(b);
+    const isDegraded = (s) => (s.isHindi || /free\.flixnest\.app\/api\/(?:4khdhub|hdhub4u)\//i.test(s.directUrl || '') || /\b(?:cinejoy|netmirror|multimovies|cinezo)\b|dbonline\.tech-cdn\.top/i.test(`${s.serverLabel || ''} ${s.directUrl || ''}`)) ? 1 : 0;
+    const aDegraded = isDegraded(a);
+    const bDegraded = isDegraded(b);
+    if (aDegraded !== bDegraded) return aDegraded - bDegraded;
+    if (a.isDub !== b.isDub) return a.isDub ? -1 : 1;
+    if (a.is4k !== b.is4k) return a.is4k ? 1 : -1;
+    return (b.seeds || 0) - (a.seeds || 0);
+  }
+
   function mergeStreamsPayload(prevData, nextData) {
     const serverMap = new Map();
     const order = [];
@@ -3734,6 +3801,7 @@
     pushUnique(prevData?.streams);
     pushUnique(nextData?.streams);
     for (const srv of mergedServers) pushUnique(srv.streams);
+    mergedStreams.sort(sortStreamsFrontend);
     return { servers: mergedServers, streams: mergedStreams };
   }
 
@@ -3751,7 +3819,7 @@
       if (currentLoadTargetId !== targetId) return;
       el.streamsLoading.classList.add('hidden');
 
-      state.currentStreams = (data.streams || []).filter((s) => isStreamRelevant(s, item));
+      state.currentStreams = (data.streams || []).filter((s) => isStreamRelevant(s, item)).sort(sortStreamsFrontend);
       el.streamCounter.textContent = state.currentStreams.length;
 
       if (state.activeAddonFilter !== 'all') {
@@ -3785,7 +3853,7 @@
           .then((fullData) => {
             if (currentLoadTargetId !== targetId || !fullData) return;
             const merged = mergeStreamsPayload({ servers: data.servers || [], streams: state.currentStreams }, fullData);
-            state.currentStreams = (merged.streams || []).filter((s) => isStreamRelevant(s, item));
+            state.currentStreams = (merged.streams || []).filter((s) => isStreamRelevant(s, item)).sort(sortStreamsFrontend);
             el.streamCounter.textContent = state.currentStreams.length;
 
             if (state.activeAddonFilter !== 'all') {
